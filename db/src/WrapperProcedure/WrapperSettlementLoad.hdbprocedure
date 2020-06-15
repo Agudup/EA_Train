@@ -1,0 +1,44 @@
+PROCEDURE "WrapperProcedure::WrapperSettlementLoad"( IN ROW "TableTypes::IN_SettlementTT" )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	declare tab_input "Synonyms::SettlementTT";
+	tab_input_select = select
+			"IDSystem",
+		"SettlementID",
+		"ItemNumber",
+		"ASSOC_BusinessEventDataOwner.BusinessPartnerID",
+		"ASSOC_BankingChannel.BankingChannelID",
+		"ASSOC_FinancialContract.IDSystem",
+		"ASSOC_FinancialContract.FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"PostingDirection",
+		"TransactionCurrency",
+		"TransactionAmount",
+		"TransactionPlace"
+		from :row;
+	:tab_input.(
+		"IDSystem",
+		"SettlementID",
+		"ItemNumber",
+		"ASSOC_BusinessEventDataOwner.BusinessPartnerID",
+		"ASSOC_BankingChannel.BankingChannelID",
+		"ASSOC_FinancialContract.IDSystem",
+		"ASSOC_FinancialContract.FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"PostingDirection",
+		"TransactionCurrency",
+		"TransactionAmount",
+		"TransactionPlace"
+	).insert(:tab_input_select);
+	call "Synonyms::SettlementLoad" (:tab_input);
+
+END

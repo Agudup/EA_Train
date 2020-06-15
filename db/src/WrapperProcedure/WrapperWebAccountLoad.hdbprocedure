@@ -1,0 +1,36 @@
+PROCEDURE "WrapperProcedure::WrapperWebAccountLoad"( IN ROW "TableTypes::IN_WebAccountTT" )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	declare tab_input "Synonyms::WebAccountTT";
+	tab_input_select = select
+			"ASSOC_Partner.BusinessPartnerID",
+		"WebAccountProvider",
+		"AccountName",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"C_ActivityLevel",
+		"C_OwnBankFeeds",
+		"C_CompetitionFeeds",
+		"C_Activtities"
+		from :row;
+	:tab_input.(
+		"ASSOC_Partner.BusinessPartnerID",
+		"WebAccountProvider",
+		"AccountName",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"C_ActivityLevel",
+		"C_OwnBankFeeds",
+		"C_CompetitionFeeds",
+		"C_Activtities"
+	).insert(:tab_input_select);
+	call "Synonyms::WebAccountLoad" (:tab_input);
+
+END

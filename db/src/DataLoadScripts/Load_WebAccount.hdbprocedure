@@ -1,0 +1,87 @@
+PROCEDURE "DataLoadScripts::Load_WebAccount" ( )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	create local temporary table "#DataLoadScripts::WebAccountProvider" ("ID" integer, "WebAccountProvider" nvarchar(256));
+	create local temporary table "#DataLoadScripts::ActivityLevel" ("ID" integer, "ActivityLevel" nvarchar(8));
+	create local temporary table "#DataLoadScripts::OwnBankFeed" ("ID" integer, "OwnBankFeed" nvarchar(8));
+	create local temporary table "#DataLoadScripts::CompetitionFeed" ("ID" integer, "CompetitionFeed" nvarchar(8));
+	create local temporary table "#DataLoadScripts::Activity" ("ID" integer, "Activity" nvarchar(100));
+
+	insert into  "#DataLoadScripts::WebAccountProvider" values('1', 'Facebook'); --Facebook
+    insert into  "#DataLoadScripts::WebAccountProvider" values('2', 'Instagram'); --Instagram
+    insert into  "#DataLoadScripts::WebAccountProvider" values('3', 'Twitter'); --Twitter
+
+	insert into  "#DataLoadScripts::ActivityLevel" values('1', 'Heavy'); --Heavy
+    insert into  "#DataLoadScripts::ActivityLevel" values('2', 'Daily'); --Daily
+    insert into  "#DataLoadScripts::ActivityLevel" values('3', '5Days'); --5Days
+	insert into  "#DataLoadScripts::ActivityLevel" values('4', '3Days'); --3Days
+    insert into  "#DataLoadScripts::ActivityLevel" values('5', 'Weekly'); --Weekly
+    insert into  "#DataLoadScripts::ActivityLevel" values('6', 'Rarely'); --Rarely
+	insert into  "#DataLoadScripts::ActivityLevel" values('7', 'Never'); --Never
+
+	insert into  "#DataLoadScripts::OwnBankFeed" values('1', 'Positive'); --Positive
+    insert into  "#DataLoadScripts::OwnBankFeed" values('2', 'Negative'); --Negative
+
+	insert into  "#DataLoadScripts::CompetitionFeed" values('1', 'Positive'); --Positive
+    insert into  "#DataLoadScripts::CompetitionFeed" values('2', 'Negative'); --Negative
+
+	insert into "DataLoadSourceData::WebAccount_Source"(
+		"ASSOC_Partner_BusinessPartnerID",
+    	"WebAccountProvider",
+    	"AccountName",
+    	"BusinessValidFrom",
+    	"BusinessValidTo",
+        "SystemValidFrom",
+        "SystemValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID",
+        "ActivityLevel",
+        "OwnBankFeeds",
+        "CompetitionFeeds",
+        "Activtities"
+	)
+	select
+		"BusinessPartnerID" as "ASSOC_Partner_BusinessPartnerID",
+    	"WebAccountProvider",
+    	"AccountName",
+    	CURRENT_UTCDATE as "BusinessValidFrom",
+    	'99991231' as "BusinessValidTo",
+        CURRENT_UTCTIMESTAMP as "SystemValidFrom",
+        '99991231235959' as "SystemValidTo",
+        '' as "SourceSystemID",
+        '' as "ChangeTimestampInSourceSystem",
+        '' as "ChangingUserInSourceSystem",
+        '' as "ChangingProcessType",
+        '' as "ChangingProcessID",
+        (select "ActivityLevel" from "#DataLoadScripts::ActivityLevel" where "ID" = "ID_AL") as "ActivityLevel",
+        (select "OwnBankFeed" from "#DataLoadScripts::OwnBankFeed" where "ID" = "ID_OBF") as "OwnBankFeeds",
+        (select "CompetitionFeed" from "#DataLoadScripts::CompetitionFeed" where "ID" = "ID_CF") as "CompetitionFeeds",
+        '' as "Activtities"
+	from
+	( select
+		"BusinessPartnerID",
+		concat("GivenName", "LastName") as "AccountName",
+		"WebAccountProvider",
+		--mod(round (RAND()*10, 0), 3 ) + 1 as "ID_WAP",
+		mod(round (RAND()*10, 0), 7 ) + 1 as "ID_AL",
+		mod(round (RAND()*10, 0), 2 ) + 1 as "ID_OBF",
+		mod(round (RAND()*10, 0), 2 ) + 1 as "ID_CF"
+	  from "DataLoadSourceData::BusinessPartner_Source" cross join "#DataLoadScripts::WebAccountProvider"
+	);
+
+	drop table  "#DataLoadScripts::WebAccountProvider";
+	drop table  "#DataLoadScripts::ActivityLevel";
+	drop table  "#DataLoadScripts::OwnBankFeed";
+	drop table  "#DataLoadScripts::CompetitionFeed";
+	drop table  "#DataLoadScripts::Activity";
+END

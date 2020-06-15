@@ -1,0 +1,40 @@
+PROCEDURE "WrapperProcedure::WrapperFinancialContractLoad"( IN ROW "TableTypes::IN_FinancialContractTT" )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	declare tab_input "Synonyms::FinancialContractTT";
+	tab_input_select = select
+			"IDSystem",
+		"FinancialContractID",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"FinancialContractType",
+		"ASSOC_SettlementAccountForDebitCard.IDSystem",
+		"ASSOC_SettlementAccountForDebitCard.FinancialContractID",
+		"ASSOC_PhysicalAsset.PhysicalAssetID",
+		"ASSOC_BankingChannel.BankingChannelID",
+		"FinancialContractCategory",
+		"GuaranteeCategory"
+		from :row;
+	:tab_input.(
+		"IDSystem",
+		"FinancialContractID",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"FinancialContractType",
+		"ASSOC_SettlementAccountForDebitCard.IDSystem",
+		"ASSOC_SettlementAccountForDebitCard.FinancialContractID",
+		"ASSOC_PhysicalAsset.PhysicalAssetID",
+		"ASSOC_BankingChannel.BankingChannelID",
+		"FinancialContractCategory",
+		"GuaranteeCategory"
+	).insert(:tab_input_select);
+	call "Synonyms::FinancialContractLoad" (:tab_input);
+
+END

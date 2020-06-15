@@ -1,0 +1,151 @@
+PROCEDURE "DataLoadScripts::Load_BP_BPCA_FC_Address" ( IN start_val INTEGER , IN end_emp_val INTEGER)
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+    declare var_current_timestamp timestamp;
+    
+    create local temporary table "#DataLoadScripts::GeographicalDetails" ("ID" integer, "Country" VARCHAR(2), "Region" VARCHAR(10), "City" VARCHAR(256));
+    create local temporary table "#DataLoadScripts::EduLevel" ("ID" integer, "Education" VARCHAR(10));
+    create local temporary table "#DataLoadScripts::Gender" ("ID" integer, "Gender" VARCHAR(1), "Salutation" VARCHAR(2));
+	create local temporary table "#DataLoadScripts::FinancialContrCatType" ("ID" integer, "FinancialContractCategory" VARCHAR(40), "FinancialContractType" VARCHAR(40));   
+
+	--Refer to this link for information on Country, region and city - https://en.wikipedia.org/wiki/ISO_3166
+    insert into  "#DataLoadScripts::GeographicalDetails" values(1, 'FR', 'FR-J', 'Paris'); --France, Île-de-France
+    insert into  "#DataLoadScripts::GeographicalDetails" values(2, 'IT', 'IT-34', 'Venice'); --Italy, VenetoEduLevel
+    insert into  "#DataLoadScripts::GeographicalDetails" values(3, 'DE', 'DE-HE', 'Frankfurt'); --Germany, Hessen
+    insert into  "#DataLoadScripts::GeographicalDetails" values(4, 'GR', 'GR-I', 'Athens'); --Greece, Attica
+    insert into  "#DataLoadScripts::GeographicalDetails" values(5, 'CZ', 'CZ-10', 'Prague'); --Czech Republic, Prague
+    insert into  "#DataLoadScripts::GeographicalDetails" values(6, 'DK', 'DK-84', 'Copenhagen'); --Denmark, Capital Region of Denmark
+    
+    insert into  "#DataLoadScripts::EduLevel" values(1, '9thGrade');
+    insert into  "#DataLoadScripts::EduLevel" values(2, 'PhD');    
+    insert into  "#DataLoadScripts::EduLevel" values(3, 'Bachelor');
+    insert into  "#DataLoadScripts::EduLevel" values(4, 'HighSchool'); 
+    insert into  "#DataLoadScripts::EduLevel" values(5, 'Master');
+    insert into  "#DataLoadScripts::EduLevel" values(6, 'ProfDegree'); 
+    insert into  "#DataLoadScripts::EduLevel" values(7, 'SmeCollege');
+    
+    insert into  "#DataLoadScripts::Gender" values(1, 'M' , 'Mr');
+    insert into  "#DataLoadScripts::Gender" values(2, 'F' , 'Ms');
+    
+    
+    insert into  "#DataLoadScripts::FinancialContrCatType" values(1, 'Account', 'Current Account'	);
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(2, 'Account', 'Saving Account'		); 
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(3, 'Account', 'Overnight Account'	); 
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(4, 'Loans',   'Mortgage Loans'		); 
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(5, 'Loans',   'Installment Loans'	); 
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(6, 'Loans',   'Consumer Loans'		); 
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(7, 'Cards',   'Debit Card'			);
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(8, 'Cards',   'PrePayment Card'	);
+	insert into  "#DataLoadScripts::FinancialContrCatType" values(9, 'Cards',   'Credit Card'		);
+	
+	select CURRENT_UTCTIMESTAMP into var_current_timestamp from "Synonyms::DUMMY";
+
+ --Load BP as an Individual
+   INSERT INTO "DataLoadSourceData::BusinessPartner_Source"
+   ("BusinessPartnerID","BusinessValidFrom","BusinessValidTo","BusinessPartnerCategory",
+   "GivenName","LastName","Consultation","Gender","DateOfBirth","EducationLevel", "Country", "Region", "City",
+   "GroupCategory", "AddressType", "SequenceNumber", "ASSOC_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+   "ASSOC_OrganizationalUnit_OrganizationalUnitID", "ASSOC_BusinessPartnerID_BusinessPartnerID", "ASSOC_PhysicalAsset_PhysicalAssetID",
+   "ASSOC_BankingChannel_BankingChannelID", "SystemValidFrom", "SystemValidTo"
+   )
+	   SELECT 
+		    "GENERATED_PERIOD_START" as "BusinessPartnerID",
+		    ADD_MONTHS (TO_DATE ('20080101', 'YYYYMMDD'), RAND() * 100) as "BusinessValidFrom",
+		    '9999-12-31T23:59:59.000Z' as "BusinessValidTo",           
+		    'Individual' as "BusinessPartnerCategory",
+		    (SELECT "givenName" FROM "DataLoadScripts::givenName" WHERE "id" = "ID_GN") as "GivenName",
+		    (SELECT "lastName" FROM "DataLoadScripts::lastName" WHERE "id" = "ID_LN") as "LastName",
+			(SELECT "Salutation" FROM "#DataLoadScripts::Gender" WHERE "ID" = "ID_GENDER") as "Consultation",
+			(SELECT "Gender" FROM "#DataLoadScripts::Gender" WHERE "ID" = "ID_GENDER") as "Gender",
+		    ADD_MONTHS (TO_DATE ('19800101', 'YYYYMMDD'), RAND() * 300) as "DateOfBirth",
+		    (SELECT "Education" FROM "#DataLoadScripts::EduLevel" WHERE "ID" = "ID_EDU" ) as "EducationLevel",
+		    (SELECT "Country" FROM "#DataLoadScripts::GeographicalDetails" WHERE "ID" = "ID_GD" ) as "Country",
+		    (SELECT "Region" FROM "#DataLoadScripts::GeographicalDetails" WHERE "ID" = "ID_GD" ) as "Region",
+		    (SELECT "City" FROM "#DataLoadScripts::GeographicalDetails" WHERE "ID" = "ID_GD" ) as "City",
+		    'CAT_Y' as "GroupCategory",
+		    'Home' as "AddressType",
+		    1 as "SequenceNumber",
+		    '' as "ASSOC_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+	        '' as "ASSOC_OrganizationalUnit_OrganizationalUnitID",
+	        '' as "ASSOC_BusinessPartnerID_BusinessPartnerID",
+	        '' as "ASSOC_PhysicalAsset_PhysicalAssetID",
+	        '' as "ASSOC_BankingChannel_BankingChannelID",
+	        var_current_timestamp as "SystemValidFrom",
+	        '99991231235959' as "SystemValidTo"
+   FROM 
+		(SELECT
+		MOD(ROUND (RAND()*10, 0), 6 ) + 1 AS "ID_GD",
+		MOD(ROUND (RAND()*10, 0), 7 ) + 1 AS "ID_EDU",
+		MOD(ROUND (RAND()*10, 0), 19 ) + 1 AS "ID_GN",
+		MOD(ROUND (RAND()*10, 0), 100 ) + 1 AS "ID_LN",
+		MOD(ROUND (RAND()*10, 0), 1 ) + 1 AS "ID_GENDER",
+		"GENERATED_PERIOD_START"
+		FROM "Synonyms::SERIES_GENERATE_BIGINT"(1, :start_val, :end_emp_val));
+		
+--Filling Participation
+INSERT into "DataLoadSourceData::BusinessPartnerContractAssignment_Source"
+	("ASSOC_PartnerInParticipation_BusinessPartnerID", "ASSOC_FinancialContract_FinancialContractID",
+		"ASSOC_FinancialContract_IDSystem", "Role", "BusinessValidFrom", "BusinessValidTo", "SystemValidFrom", "SystemValidTo"
+	) 
+	SELECT 
+		"BP"."BusinessPartnerID" as "ASSOC_PartnerInParticipation_BusinessPartnerID" ,
+		CONCAT(CONCAT('FC',"GENERATED_PERIOD_START"),"BP"."BusinessPartnerID") as "ASSOC_FinancialContract_FinancialContractID",
+		'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+		'AccountHolder' as "Role",
+		ADD_DAYS(TO_DATE("BP"."BusinessValidFrom"),ROUND(RAND()*100)) as "BusinessValidFrom",
+		'9999-12-31T23:59:59.000Z' as "BusinessValidTo",
+	    var_current_timestamp as "SystemValidFrom",
+	    '99991231235959' as "SystemValidTo"
+		from "Synonyms::SERIES_GENERATE_BIGINT"(1,1,4)
+		cross join "DataLoadSourceData::BusinessPartner_Source" as "BP"
+		where MOD(("GENERATED_PERIOD_START"+"BP"."BusinessPartnerID")*ROUND(RAND()*10,0),2) = 0
+		and "BP"."SystemValidFrom" = var_current_timestamp;
+
+--Filling Financial Contract based on Participation
+	INSERT into "DataLoadSourceData::FinancialContract_Source" (
+	 	"FinancialContractID",
+	 	"BusinessValidFrom",
+	 	"BusinessValidTo",
+	 	"IDSystem",
+	 	"FinancialContractType",
+	 	"FinancialContractCategory",
+	 	"ASSOC_BankingChannel_BankingChannelID",
+	 	"ASSOC_SettlementAccountForDebitCard_IDSystem",
+	 	"ASSOC_SettlementAccountForDebitCard_FinancialContractID",
+	 	"ASSOC_PhysicalAsset_PhysicalAssetID",
+	 	"GuaranteeCategory"
+	 	)
+	 	 SELECT "ASSOC_FinancialContract_FinancialContractID" as "FinancialContractID",
+	 	        "BusinessValidFrom" as "BusinessValidFrom",
+				"BusinessValidTo" as "BusinessValidTo",
+				"ASSOC_FinancialContract_IDSystem" as "IDSystem",
+				(SELECT "FinancialContractType" FROM "#DataLoadScripts::FinancialContrCatType" WHERE "ID" = "ID_Rand" ) as "FinancialContractType",
+				(SELECT "FinancialContractCategory" FROM "#DataLoadScripts::FinancialContrCatType" WHERE "ID" = "ID_Rand" ) as "FinancialContractCategory",
+				MOD(ROUND (RAND()*10, 0), 5) + 1 as "ASSOC_BankingChanne_BankingChannelID",
+	 	        CONCAT('SET_ACC',"ASSOC_FinancialContract_IDSystem")			as "ASSOC_SettlementAccountForDebitCard_IDSystem",
+	 	        CONCAT('SET_ACC',"ASSOC_FinancialContract_FinancialContractID") as "ASSOC_SettlementAccountForDebitCard_FinancialContractID",
+	 	        'PHY_ASSET' as "ASSOC_PhysicalAsset_PhysicalAssetID",
+	 	        'CAT_X' as "GuaranteeCategory"				
+		FROM
+		(
+			SELECT
+			"ASSOC_FinancialContract_FinancialContractID", "BusinessValidFrom","BusinessValidTo",
+			"ASSOC_FinancialContract_IDSystem", "ASSOC_PartnerInParticipation_BusinessPartnerID",
+			MOD(ROUND (RAND()*10, 0), 6 ) + 1 AS "ID_Rand"
+			FROM "DataLoadSourceData::BusinessPartnerContractAssignment_Source"
+			where "SystemValidFrom" = var_current_timestamp
+		);
+   
+   drop table  "#DataLoadScripts::GeographicalDetails";
+   drop table  "#DataLoadScripts::EduLevel";
+   drop table  "#DataLoadScripts::FinancialContrCatType";
+   drop table  "#DataLoadScripts::Gender";
+
+END

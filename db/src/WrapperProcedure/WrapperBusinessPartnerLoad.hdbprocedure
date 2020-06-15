@@ -1,0 +1,39 @@
+PROCEDURE "WrapperProcedure::WrapperBusinessPartnerLoad"( IN ROW "TableTypes::IN_BusinessPartnerTT" )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	declare tab_input "Synonyms::BusinessPartnerTT";
+	tab_input_row = select 
+	"BusinessPartnerID",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"BusinessPartnerCategory",
+		"GroupCategory",
+		"GivenName",
+		"LastName",
+		"Consultation",
+		"Gender",
+		"DateOfBirth",
+		"EducationLevel"
+		from :row;
+	:tab_input.("BusinessPartnerID",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"BusinessPartnerCategory",
+		"GroupCategory",
+		"GivenName",
+		"LastName",
+		"Consultation",
+		"Gender",
+		"DateOfBirth",
+		"EducationLevel"
+	).insert(:tab_input_row);
+	call "Synonyms::BusinessPartnerLoad" (:tab_input);
+
+END

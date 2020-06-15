@@ -1,0 +1,29 @@
+PROCEDURE "WrapperProcedure::WrapperBusinessPartnerContractAssignmentLoad"( IN ROW "TableTypes::IN_BusinessPartnerContractAssignmentTT" )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+    declare tab_input "Synonyms::BusinessPartnerContractAssignmentTT";
+    tab_input_sql = select
+    "ASSOC_FinancialContract.IDSystem",
+				"ASSOC_FinancialContract.FinancialContractID",
+				"ASSOC_PartnerInParticipation.BusinessPartnerID",
+				"Role",
+				"BusinessValidFrom",
+				"BusinessValidTo"
+				from :row;
+    :tab_input.("ASSOC_FinancialContract.IDSystem",
+				"ASSOC_FinancialContract.FinancialContractID",
+				"ASSOC_PartnerInParticipation.BusinessPartnerID",
+				"Role",
+				"BusinessValidFrom",
+				"BusinessValidTo"
+    ).insert(:tab_input_sql);
+	call "Synonyms::BusinessPartnerContractAssignmentLoad" (:tab_input);
+
+END

@@ -1,0 +1,457 @@
+PROCEDURE "DataLoadScripts::Load_Settlement" ( IN no_of_months integer )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	declare var_loan_period integer;
+	declare var_loan_period_ctr integer;
+	declare var_loan_amount bigint;
+	declare var_monthly_installment integer;
+	declare var_salary integer;
+	declare var_no_days integer;
+	declare var_BVF_Max date;
+	declare var_BVF_Min date;
+	declare var_Salary_Max date;
+	declare var_Salary_Min date;
+
+	create local temporary table "#DataLoadScripts::City" ("ID" integer, "City" VARCHAR(256)); 
+
+	--city
+    insert into  "#DataLoadScripts::City" values(1, 'Paris');
+    insert into  "#DataLoadScripts::City" values(2, 'Venice');
+    insert into  "#DataLoadScripts::City" values(3, 'Frankfurt');
+    insert into  "#DataLoadScripts::City" values(4, 'Athens');
+    insert into  "#DataLoadScripts::City" values(5, 'Prague');
+    insert into  "#DataLoadScripts::City" values(6, 'Copenhagen');
+    insert into  "#DataLoadScripts::City" values(7, 'Bangalore');
+    insert into  "#DataLoadScripts::City" values(8, 'New York');
+    insert into  "#DataLoadScripts::City" values(9, 'Johannesburg');
+    insert into  "#DataLoadScripts::City" values(10, 'Tokyo');
+    insert into  "#DataLoadScripts::City" values(11, 'Sydney');
+    insert into  "#DataLoadScripts::City" values(12, 'Perth');
+    insert into  "#DataLoadScripts::City" values(13, 'Rio de Janeiro');
+    insert into  "#DataLoadScripts::City" values(14, 'Walldorf ');
+    insert into  "#DataLoadScripts::City" values(15, 'Seoul');
+    insert into  "#DataLoadScripts::City" values(16, 'London');
+    insert into  "#DataLoadScripts::City" values(17, 'Baghdad');
+    insert into  "#DataLoadScripts::City" values(18, 'Singapore');
+    
+	var_no_days = :no_of_months * 30;
+	
+	select TO_DATE(MAX("BusinessValidFrom")) into var_BVF_Max  from "DataLoadSourceData::FinancialContract_Source";
+	select TO_DATE(MIN("BusinessValidFrom")) into var_BVF_Min  from "DataLoadSourceData::FinancialContract_Source";
+	select TO_DATE(ADD_MONTHS(NEXT_DAY(LAST_DAY(MAX("BusinessValidFrom"))),-1)) into var_Salary_Max  from "DataLoadSourceData::FinancialContract_Source";
+	select TO_DATE(ADD_MONTHS(NEXT_DAY(LAST_DAY(MIN("BusinessValidFrom"))),-1)) into var_Salary_Min  from "DataLoadSourceData::FinancialContract_Source";
+	
+--*********************************************************ACCOUNTS********************************	
+--*************************************************************************************************	
+	--Accounts/Monthly Credit
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_MC_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Cash Transfer' as "TransactionType",
+				 RAND()*10*1000 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				 MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Credit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 1 MONTH',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "City", "FinCon"."BusinessValidFrom"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Account'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",:var_no_days);	
+
+	--Accounts/Daily Debit
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_DD_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Cash Withdrwal' as "TransactionType",
+				 RAND()*10*90 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				( SELECT "City" FROM "#DataLoadScripts::City" WHERE "ID" = ( select MOD(ROUND (RAND()*10, 0), 18 ) + 1 from "Synonyms::DUMMY" ) ) as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Debit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 2 DAY',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Account'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",:var_no_days);    
+
+	--Accounts/Interest Credit once in 6 months
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_IC_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Interest Credit' as "TransactionType",
+				 RAND()*10*30 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Credit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 6 MONTH',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "City", "FinCon"."BusinessValidFrom"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Account'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",:var_no_days);
+--*************************************************************************************************    
+	    
+	
+--*********************************************************CARDS***********************************	
+--*************************************************************************************************
+	--Debit Cards/Daily Debit
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_DCDD_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Cash Withdrawal' as "TransactionType",
+				 RAND()*10*30 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				( SELECT "City" FROM "#DataLoadScripts::City" WHERE "ID" = ( select MOD(ROUND (RAND()*10, 0), 18 ) + 1 from "Synonyms::DUMMY") ) as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Debit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 1 DAY',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Cards'
+	    and "FinCon"."FinancialContractType" = 'Debit Card'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",:var_no_days);  
+	
+	--Prepaid Cards/One time credit
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_PCOC_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Card Recharge' as "TransactionType",
+				 RAND()*10*250 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Credit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 1 DAY',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "City", "FinCon"."BusinessValidFrom"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Cards'
+	    and "FinCon"."FinancialContractType" = 'PrePayment Card'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",1);     
+	
+	--Prepaid Cards/Weekly Debit
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_PCWD_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Cash debit' as "TransactionType",
+				 RAND()*10*30 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Debit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 7 DAY',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "City", "FinCon"."BusinessValidFrom"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Cards'
+	    and "FinCon"."FinancialContractType" = 'PrePayment Card'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",:var_no_days);     
+	    
+	
+	--Credit Cards/Weekly Debit
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_CCWD_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Cash debit' as "TransactionType",
+				 RAND()*10*45 as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				( SELECT "City" FROM "#DataLoadScripts::City" WHERE "ID" = ( select MOD(ROUND (RAND()*10, 0), 18 ) + 1 from "Synonyms::DUMMY") ) as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Debit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 7 DAY',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Cards'
+	    and "FinCon"."FinancialContractType" = 'Credit Card'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",:var_no_days);      
+--*************************************************************************************************
+	
+--*********************************************************LOANS***********************************	
+--*************************************************************************************************
+	var_loan_period_ctr = MOD(ROUND (RAND()*10, 0), 4 ) + 1;
+	if :var_loan_period_ctr = 0 then
+		var_loan_period = 1;
+	else
+		var_loan_period = :var_loan_period_ctr * 5;
+	end if;
+	--Loans/Initial Disbursement
+		var_loan_amount = RAND()*10*10000+:var_loan_period;
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_LNDT_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Disbursement of loan amount' as "TransactionType",
+				:var_loan_amount  as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Credit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 1 DAY',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "FinCon"."BusinessValidFrom", "City"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Loans'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",1);     
+	
+	--Loans/Monthly Installment  
+	var_monthly_installment = ((:var_loan_amount + (:var_loan_amount*(RAND()*10)/100))/:var_loan_period)/12;
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_LNMI_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Monthly Installment' as "TransactionType",
+				 :var_monthly_installment as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Debit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 1 MONTH',:var_BVF_Min,:var_BVF_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "City", "FinCon"."BusinessValidFrom"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Loans'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",var_loan_period);
+	
+	--Salary payment
+	var_salary = :var_monthly_installment * 4;
+	INSERT into "DataLoadSourceData::Settlement_Source" (
+	 	"IDSystem",
+	 	"SettlementID",
+	 	"ItemNumber",
+	 	"ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+		"ASSOC_FinancialContract_IDSystem",
+		"ASSOC_FinancialContract_FinancialContractID",
+		"PostingDate",
+		"TransactionType",
+		"TransactionAmount",
+		"TransactionCurrency",
+		"TransactionPlace",
+		"ASSOC_BankingChannel_BankingChannelID",
+		"PostingDirection"
+		)
+	 	 SELECT 'IDSYS' as "IDSystem",
+	 			CONCAT(CONCAT("FinCon"."FinancialContractID",'_SP_'),TO_NVARCHAR("ELEMENT_NUMBER")),
+	 			1 as "ItemNumber",
+	 			'COMP001' as "ASSOC_BusinessEventDataOwner_BusinessPartnerID",
+	 			'SAP_BCA' as "ASSOC_FinancialContract_IDSystem",
+				 "FinCon"."FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+				"GENERATED_PERIOD_START",
+				'Salary Payment' as "TransactionType",
+				 :var_salary as "TransactionAmount",
+				'EUR' as "TransactionCurrency",
+				"City" as "TransactionPlace",
+				MOD(ROUND (RAND()*10, 0), 5 ) + 1 as "ASSOC_BankingChannel_BankingChannelID",
+				'Credit' as "PostingDirection"
+	    FROM "Synonyms::SERIES_GENERATE_DATE"('INTERVAL 1 MONTH',:var_Salary_Min,:var_Salary_Max)
+	    CROSS JOIN 
+	    ( select "FinancialContractCategory", "FinancialContractType", "FinancialContractID", "City", "FinCon"."BusinessValidFrom", "EducationLevel"
+	      from "DataLoadSourceData::FinancialContract_Source" as "FinCon"
+	      inner join "DataLoadSourceData::BusinessPartnerContractAssignment_Source" as "BPCA" on "FinancialContractID" = "ASSOC_FinancialContract_FinancialContractID"
+	      inner join "DataLoadSourceData::BusinessPartner_Source" as "BP" on "BusinessPartnerID" = "ASSOC_PartnerInParticipation_BusinessPartnerID" ) "FinCon"
+	    where "FinCon"."FinancialContractCategory" = 'Account'
+	    and "FinCon"."FinancialContractType" = 'Saving Account'
+	    and "EducationLevel" <> '9thGrade'
+	    and "GENERATED_PERIOD_START" >= "FinCon"."BusinessValidFrom"
+	    and "GENERATED_PERIOD_START" <= ADD_DAYS("FinCon"."BusinessValidFrom",var_loan_period);
+	    
+	drop table "#DataLoadScripts::City";
+--*************************************************************************************************    
+
+END

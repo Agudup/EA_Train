@@ -1,0 +1,41 @@
+PROCEDURE "WrapperProcedure::WrapperAddressLoad"( IN ROW "TableTypes::IN_AddressTT" )
+   LANGUAGE SQLSCRIPT
+   SQL SECURITY INVOKER
+   --DEFAULT SCHEMA <default_schema_name>
+   --READS SQL DATA 
+   AS
+BEGIN
+   /*************************************
+       Write your procedure logic 
+   *************************************/
+	declare tab_input "Synonyms::AddressTT";
+	tab_input_sql = select
+			"ASSOC_BusinessPartnerID.BusinessPartnerID",
+--		'' as "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+--		'' as "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+--		'' as "ASSOC_PhysicalAsset.PhysicalAssetID",
+		"AddressType",
+		"SequenceNumber",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"City",
+		"Region",
+		"Country"
+		from :row;
+	:tab_input.(
+--		'' as "ASSOC_BankingChannel.BankingChannelID",
+		"ASSOC_BusinessPartnerID.BusinessPartnerID",
+--		'' as "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+--		'' as "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+--		'' as "ASSOC_PhysicalAsset.PhysicalAssetID",
+		"AddressType",
+		"SequenceNumber",
+		"BusinessValidFrom",
+		"BusinessValidTo",
+		"City",
+		"Region",
+		"Country"
+	).insert(:tab_input_sql);
+	call "Synonyms::AddressLoad" (:tab_input);
+
+END
