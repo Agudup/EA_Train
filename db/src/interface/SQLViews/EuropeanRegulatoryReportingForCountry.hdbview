@@ -1,0 +1,24 @@
+view "sap.fsdm.SQLViews::EuropeanRegulatoryReportingForCountry_View" 
+as select
+      "_Country.GeographicalStructureID" ,
+      "_Country.GeographicalUnitID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CREEligibleForReducedRiskWeight" ,
+      "RREEligibleForReducedRiskWeight" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::EuropeanRegulatoryReportingForCountry"
+with associations
+(
+	join "sap.fsdm.SQLViews::GeographicalUnit_View" as "_Country"
+	  on "_Country"."GeographicalStructureID" = "_Country.GeographicalStructureID" AND 
+	     "_Country"."GeographicalUnitID" = "_Country.GeographicalUnitID"
+	     
+);

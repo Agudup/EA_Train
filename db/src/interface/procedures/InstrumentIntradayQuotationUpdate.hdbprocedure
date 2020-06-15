@@ -1,0 +1,131 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentIntradayQuotationUpdate" (IN ROW "sap.fsdm.tabletypes::InstrumentIntradayQuotationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+--Update the existing records 
+
+  --select data matching in current table
+  var_matching = 
+  select    "IN"."PriceDataProvider"  ,
+    "OLD"."PriceDataProvider" AS "OLD_PriceDataProvider" ,
+    "IN"."PriceSeriesType"  ,
+    "OLD"."PriceSeriesType" AS "OLD_PriceSeriesType" ,
+    "IN"."SequenceNumber"  ,
+    "OLD"."SequenceNumber" AS "OLD_SequenceNumber" ,
+    "IN"."Timestamp"  ,
+    "OLD"."Timestamp" AS "OLD_Timestamp" ,
+    "IN"."_Exchange.MarketIdentifierCode"  ,
+    "OLD"."_Exchange.MarketIdentifierCode" AS "OLD__Exchange.MarketIdentifierCode" ,
+    "IN"."_FinancialInstrument.FinancialInstrumentID"  ,
+    "OLD"."_FinancialInstrument.FinancialInstrumentID" AS "OLD__FinancialInstrument.FinancialInstrumentID" ,
+    "IN"."AskQuantity"  ,
+    "OLD"."AskQuantity" AS "OLD_AskQuantity" ,
+    "IN"."BestAsk"  ,
+    "OLD"."BestAsk" AS "OLD_BestAsk" ,
+    "IN"."BestBid"  ,
+    "OLD"."BestBid" AS "OLD_BestBid" ,
+    "IN"."BidQuantity"  ,
+    "OLD"."BidQuantity" AS "OLD_BidQuantity" ,
+    "IN"."Currency"  ,
+    "OLD"."Currency" AS "OLD_Currency" ,
+    "IN"."InstrumentIntradayQuotationCategory"  ,
+    "OLD"."InstrumentIntradayQuotationCategory" AS "OLD_InstrumentIntradayQuotationCategory" ,
+    "IN"."NetAssetValue"  ,
+    "OLD"."NetAssetValue" AS "OLD_NetAssetValue" ,
+    "IN"."NetAssetValueCurrency"  ,
+    "OLD"."NetAssetValueCurrency" AS "OLD_NetAssetValueCurrency" ,
+    "IN"."PriceNotationForm"  ,
+    "OLD"."PriceNotationForm" AS "OLD_PriceNotationForm" ,
+    "IN"."SourceSystemID"  ,
+    "OLD"."SourceSystemID" AS "OLD_SourceSystemID" ,
+    "IN"."ChangeTimestampInSourceSystem"  ,
+    "OLD"."ChangeTimestampInSourceSystem" AS "OLD_ChangeTimestampInSourceSystem" ,
+    "IN"."ChangingUserInSourceSystem"  ,
+    "OLD"."ChangingUserInSourceSystem" AS "OLD_ChangingUserInSourceSystem" ,
+    "IN"."ChangingProcessType"  ,
+    "OLD"."ChangingProcessType" AS "OLD_ChangingProcessType" ,
+    "IN"."ChangingProcessID"  ,
+    "OLD"."ChangingProcessID" AS "OLD_ChangingProcessID" 
+  
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::InstrumentIntradayQuotation" AS "OLD"
+  ON
+  "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" and
+  "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" and
+  "IN"."SequenceNumber" = "OLD"."SequenceNumber" and
+  "IN"."Timestamp" = "OLD"."Timestamp" and
+  "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" and
+  "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+;
+
+
+
+
+--Delete entries for update from current table
+delete from "sap.fsdm::InstrumentIntradayQuotation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD_PriceDataProvider" AS "PriceDataProvider" ,
+"OLD_PriceSeriesType" AS "PriceSeriesType" ,
+"OLD_SequenceNumber" AS "SequenceNumber" ,
+"OLD_Timestamp" AS "Timestamp" ,
+"OLD__Exchange.MarketIdentifierCode" AS "_Exchange.MarketIdentifierCode" ,
+"OLD__FinancialInstrument.FinancialInstrumentID" AS "_FinancialInstrument.FinancialInstrumentID" 
+from :var_matching );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::InstrumentIntradayQuotation"  (
+"PriceDataProvider",
+"PriceSeriesType",
+"SequenceNumber",
+"Timestamp",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID",
+"AskQuantity",
+"BestAsk",
+"BestBid",
+"BidQuantity",
+"Currency",
+"InstrumentIntradayQuotationCategory",
+"NetAssetValue",
+"NetAssetValueCurrency",
+"PriceNotationForm",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "PriceDataProvider"  ,
+  "PriceSeriesType"  ,
+  "SequenceNumber"  ,
+  "Timestamp"  ,
+  "_Exchange.MarketIdentifierCode"  ,
+  "_FinancialInstrument.FinancialInstrumentID"  ,
+  "AskQuantity"  ,
+  "BestAsk"  ,
+  "BestBid"  ,
+  "BidQuantity"  ,
+  "Currency"  ,
+  "InstrumentIntradayQuotationCategory"  ,
+  "NetAssetValue"  ,
+  "NetAssetValueCurrency"  ,
+  "PriceNotationForm"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :var_matching );
+
+
+
+END

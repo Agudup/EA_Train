@@ -1,0 +1,104 @@
+view "sap.fsdm.SQLViews::Valuation_View" 
+as select
+      "Appraiser" ,
+      "RoleOfPayer" ,
+      "Scenario" ,
+      "ValuationMethod" ,
+      "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" ,
+      "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_CollateralPortion.PortionNumber" ,
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_Organization.BusinessPartnerID" ,
+      "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_Receivable.ReceivableID" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_Fund.FundID" ,
+      "_Fund._InvestmentCorporation.BusinessPartnerID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_YieldCurve.YieldCurveID" ,
+      "ContractValuationCategory" ,
+      "CreditEquivalentAmount" ,
+      "CreditEquivalentAmountCurrency" ,
+      "EligibleforReducedRiskWeight" ,
+      "EstimatedMarketValue" ,
+      "EstimatedMarketValueCurrency" ,
+      "LegallyBinding" ,
+      "LendingValue" ,
+      "LendingValueCurrency" ,
+      "NetAssetValue" ,
+      "NetAssetValueCurrency" ,
+      "NetPresentValue" ,
+      "NetPresentValueCurrency" ,
+      "NominalAmountAtTimeOfValuation" ,
+      "NominalAmountAtTimeOfValuationCurrency" ,
+      "ScheduledNextValuationDate" ,
+      "StandardHaircut" ,
+      "Unit" ,
+      "ValuationCategory" ,
+      "ValuedNominalAmount" ,
+      "ValuedNominalAmountCurrency" ,
+      "ValuedQuantity" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Valuation"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartnerRelation_View" as "ASSOC_BusinessInterestInOrganization"
+	  on "ASSOC_BusinessInterestInOrganization"."ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_BusinessInterestInOrganization"."ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_BusinessInterestInOrganization"."BusinessPartnerRelationType" = "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortion_View" as "ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralPortion"."ASSOC_CollateralAgreement.FinancialContractID" = "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralPortion"."ASSOC_CollateralAgreement.IDSystem" = "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "ASSOC_CollateralPortion"."PortionNumber" = "ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Organization"
+	  on "ASSOC_Organization"."BusinessPartnerID" = "ASSOC_Organization.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PhysicalAsset"
+	  on "ASSOC_PhysicalAsset"."PhysicalAssetID" = "ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCurrencyForAccount"
+	  on "ASSOC_PositionCurrencyForAccount"."PositionCurrency" = "ASSOC_PositionCurrencyForAccount.PositionCurrency" AND 
+	     "ASSOC_PositionCurrencyForAccount"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCurrencyForAccount"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_Receivable"
+	  on "ASSOC_Receivable"."ReceivableID" = "ASSOC_Receivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::YieldCurve_View" as "ASSOC_YieldCurve"
+	  on "ASSOC_YieldCurve"."YieldCurveID" = "ASSOC_YieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::Fund_View" as "_Fund"
+	  on "_Fund"."FundID" = "_Fund.FundID" AND 
+	     "_Fund"."_InvestmentCorporation.BusinessPartnerID" = "_Fund._InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID" AND 
+	     "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem"
+	     
+);

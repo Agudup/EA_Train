@@ -1,0 +1,48 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "InstrumentStatus" {
+    key "InstrumentStatusCategory"            : String(40);
+    key "InstrumentStatusType"                : String(40);
+    key "_Instrument"                         : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                   : UTCTimestamp;
+    key "BusinessValidTo"                     : UTCTimestamp;
+        "SystemValidFrom"                     : UTCTimestamp                                                 not null;
+        "SystemValidTo"                       : UTCTimestamp                                                 not null;
+        "_EmployeeResponsibleForStatusChange" : association to BusinessPartner { BusinessPartnerID };
+        "NextStatusReviewDate"                : LocalDate;
+        "Status"                              : String(100);
+        "StatusChangeReason"                  : String(200);
+        "SourceSystemID"                      : String(128);
+        "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+        "ChangingUserInSourceSystem"          : String(128);
+        "ChangingProcessType"                 : String(40);
+        "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InstrumentStatus_Historical" {
+    "InstrumentStatusCategory"            : String(40)                                                   not null;
+    "InstrumentStatusType"                : String(40)                                                   not null;
+    "_Instrument"                         : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                   : UTCTimestamp                                                 not null;
+    "BusinessValidTo"                     : UTCTimestamp                                                 not null;
+    "SystemValidFrom"                     : UTCTimestamp                                                 not null;
+    "SystemValidTo"                       : UTCTimestamp                                                 not null;
+    "_EmployeeResponsibleForStatusChange" : association to BusinessPartner { BusinessPartnerID };
+    "NextStatusReviewDate"                : LocalDate;
+    "Status"                              : String(100);
+    "StatusChangeReason"                  : String(200);
+    "SourceSystemID"                      : String(128);
+    "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+    "ChangingUserInSourceSystem"          : String(128);
+    "ChangingProcessType"                 : String(40);
+    "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,21 @@
+view "sap.fsdm.SQLViews::Currency_View" 
+as select
+      "CurrencyCode" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CurrencyName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Currency"
+with associations
+(
+	join "sap.fsdm.SQLViews::LegalCurrencyInCountry_View" as "_LegalCurrencyInCountry_ASSOC_Currency"
+	  on "CurrencyCode" = "_LegalCurrencyInCountry_ASSOC_Currency"."ASSOC_Currency.CurrencyCode"
+	     
+);

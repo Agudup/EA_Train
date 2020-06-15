@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::ContractClassCoveredByMasterAgreement_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_MasterAgreement.FinancialContractID" as "_MasterAgreement_FinancialContractID",
+      "_MasterAgreement.IDSystem" as "_MasterAgreement_IDSystem",
+      "_ProductClass.ProductClass" as "_ProductClass_ProductClass",
+      "_ProductClass.ProductClassificationSystem" as "_ProductClass_ProductClassificationSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ContractClassCoveredByMasterAgreement"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

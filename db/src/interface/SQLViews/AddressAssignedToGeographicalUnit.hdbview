@@ -1,0 +1,42 @@
+view "sap.fsdm.SQLViews::AddressAssignedToGeographicalUnit_View" 
+as select
+      "ASSOC_Address.AddressType" ,
+      "ASSOC_Address.SequenceNumber" ,
+      "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+      "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "ASSOC_Address._Claim.ID" ,
+      "ASSOC_Address._Claim.IDSystem" ,
+      "ASSOC_GeographicalUnit.GeographicalStructureID" ,
+      "ASSOC_GeographicalUnit.GeographicalUnitID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AddressAssignedToGeographicalUnit"
+with associations
+(
+	join "sap.fsdm.SQLViews::Address_View" as "ASSOC_Address"
+	  on "ASSOC_Address"."ASSOC_BankingChannel.BankingChannelID" = "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" AND 
+	     "ASSOC_Address"."ASSOC_BusinessPartnerID.BusinessPartnerID" = "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "ASSOC_Address"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_Address"."ASSOC_OrganizationalUnit.OrganizationalUnitID" = "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_Address"."ASSOC_PhysicalAsset.PhysicalAssetID" = "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "ASSOC_Address"."AddressType" = "ASSOC_Address.AddressType" AND 
+	     "ASSOC_Address"."SequenceNumber" = "ASSOC_Address.SequenceNumber" AND 
+	     "ASSOC_Address"."_Claim.ID" = "ASSOC_Address._Claim.ID" AND 
+	     "ASSOC_Address"."_Claim.IDSystem" = "ASSOC_Address._Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::GeographicalUnit_View" as "ASSOC_GeographicalUnit"
+	  on "ASSOC_GeographicalUnit"."GeographicalUnitID" = "ASSOC_GeographicalUnit.GeographicalUnitID" AND 
+	     "ASSOC_GeographicalUnit"."GeographicalStructureID" = "ASSOC_GeographicalUnit.GeographicalStructureID"
+	     
+);

@@ -1,0 +1,375 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskExpectedLossDelReadOnly" (IN ROW "sap.fsdm.tabletypes::CreditRiskExpectedLossTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::CreditRiskExpectedLossTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::CreditRiskExpectedLossTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'BestEstimateELMethod=' || TO_VARCHAR("BestEstimateELMethod") || ' ' ||
+                'BestEstimateELTimeHorizon=' || TO_VARCHAR("BestEstimateELTimeHorizon") || ' ' ||
+                'BestEstimateELTimeUnit=' || TO_VARCHAR("BestEstimateELTimeUnit") || ' ' ||
+                'ASSOC_CollateralPortion.PortionNumber=' || TO_VARCHAR("ASSOC_CollateralPortion.PortionNumber") || ' ' ||
+                'ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem=' || TO_VARCHAR("ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                '_Collection.CollectionID=' || TO_VARCHAR("_Collection.CollectionID") || ' ' ||
+                '_Collection.IDSystem=' || TO_VARCHAR("_Collection.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."BestEstimateELMethod",
+                        "IN"."BestEstimateELTimeHorizon",
+                        "IN"."BestEstimateELTimeUnit",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."BestEstimateELMethod",
+                        "IN"."BestEstimateELTimeHorizon",
+                        "IN"."BestEstimateELTimeUnit",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "BestEstimateELMethod",
+                        "BestEstimateELTimeHorizon",
+                        "BestEstimateELTimeUnit",
+                        "ASSOC_CollateralPortion.PortionNumber",
+                        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "_Collection.CollectionID",
+                        "_Collection.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."BestEstimateELMethod",
+                                    "IN"."BestEstimateELTimeHorizon",
+                                    "IN"."BestEstimateELTimeUnit",
+                                    "IN"."ASSOC_CollateralPortion.PortionNumber",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."BestEstimateELMethod",
+                                    "IN"."BestEstimateELTimeHorizon",
+                                    "IN"."BestEstimateELTimeUnit",
+                                    "IN"."ASSOC_CollateralPortion.PortionNumber",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "BestEstimateELMethod",
+            "BestEstimateELTimeHorizon",
+            "BestEstimateELTimeUnit",
+            "ASSOC_CollateralPortion.PortionNumber",
+            "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "ASSOC_FinancialContract.FinancialContractID",
+            "ASSOC_FinancialContract.IDSystem",
+            "_Collection.CollectionID",
+            "_Collection.IDSystem",
+            "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::CreditRiskExpectedLoss" WHERE
+            (
+            "BestEstimateELMethod" ,
+            "BestEstimateELTimeHorizon" ,
+            "BestEstimateELTimeUnit" ,
+            "ASSOC_CollateralPortion.PortionNumber" ,
+            "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+            "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+            "ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_FinancialContract.IDSystem" ,
+            "_Collection.CollectionID" ,
+            "_Collection.IDSystem" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."BestEstimateELMethod",
+            "OLD"."BestEstimateELTimeHorizon",
+            "OLD"."BestEstimateELTimeUnit",
+            "OLD"."ASSOC_CollateralPortion.PortionNumber",
+            "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."_Collection.CollectionID",
+            "OLD"."_Collection.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CreditRiskExpectedLoss" as "OLD"
+        on
+                              ( "IN"."BestEstimateELMethod" = "OLD"."BestEstimateELMethod" or "IN"."BestEstimateELMethod" is null ) and
+                              ( "IN"."BestEstimateELTimeHorizon" = "OLD"."BestEstimateELTimeHorizon" or "IN"."BestEstimateELTimeHorizon" is null ) and
+                              ( "IN"."BestEstimateELTimeUnit" = "OLD"."BestEstimateELTimeUnit" or "IN"."BestEstimateELTimeUnit" is null ) and
+                              ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+                              ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                              ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                              ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "BestEstimateELMethod",
+        "BestEstimateELTimeHorizon",
+        "BestEstimateELTimeUnit",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BestEstimateELCurrency",
+        "BestEstimateExpectedLoss",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_BestEstimateELMethod" as "BestEstimateELMethod" ,
+            "OLD_BestEstimateELTimeHorizon" as "BestEstimateELTimeHorizon" ,
+            "OLD_BestEstimateELTimeUnit" as "BestEstimateELTimeUnit" ,
+            "OLD_ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion.PortionNumber" ,
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID" ,
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BestEstimateELCurrency" as "BestEstimateELCurrency" ,
+            "OLD_BestEstimateExpectedLoss" as "BestEstimateExpectedLoss" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."BestEstimateELMethod",
+                        "OLD"."BestEstimateELTimeHorizon",
+                        "OLD"."BestEstimateELTimeUnit",
+                        "OLD"."ASSOC_CollateralPortion.PortionNumber",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."BestEstimateELMethod" as "OLD_BestEstimateELMethod",
+                                "OLD"."BestEstimateELTimeHorizon" as "OLD_BestEstimateELTimeHorizon",
+                                "OLD"."BestEstimateELTimeUnit" as "OLD_BestEstimateELTimeUnit",
+                                "OLD"."ASSOC_CollateralPortion.PortionNumber" as "OLD_ASSOC_CollateralPortion.PortionNumber",
+                                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BestEstimateELCurrency" as "OLD_BestEstimateELCurrency",
+                                "OLD"."BestEstimateExpectedLoss" as "OLD_BestEstimateExpectedLoss",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskExpectedLoss" as "OLD"
+            on
+                                      ( "IN"."BestEstimateELMethod" = "OLD"."BestEstimateELMethod" or "IN"."BestEstimateELMethod" is null ) and
+                                      ( "IN"."BestEstimateELTimeHorizon" = "OLD"."BestEstimateELTimeHorizon" or "IN"."BestEstimateELTimeHorizon" is null ) and
+                                      ( "IN"."BestEstimateELTimeUnit" = "OLD"."BestEstimateELTimeUnit" or "IN"."BestEstimateELTimeUnit" is null ) and
+                                      ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+                                      ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                                      ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_BestEstimateELMethod" as "BestEstimateELMethod",
+            "OLD_BestEstimateELTimeHorizon" as "BestEstimateELTimeHorizon",
+            "OLD_BestEstimateELTimeUnit" as "BestEstimateELTimeUnit",
+            "OLD_ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion.PortionNumber",
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID",
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BestEstimateELCurrency" as "BestEstimateELCurrency",
+            "OLD_BestEstimateExpectedLoss" as "BestEstimateExpectedLoss",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."BestEstimateELMethod",
+                        "OLD"."BestEstimateELTimeHorizon",
+                        "OLD"."BestEstimateELTimeUnit",
+                        "OLD"."ASSOC_CollateralPortion.PortionNumber",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."BestEstimateELMethod" as "OLD_BestEstimateELMethod",
+                                "OLD"."BestEstimateELTimeHorizon" as "OLD_BestEstimateELTimeHorizon",
+                                "OLD"."BestEstimateELTimeUnit" as "OLD_BestEstimateELTimeUnit",
+                                "OLD"."ASSOC_CollateralPortion.PortionNumber" as "OLD_ASSOC_CollateralPortion.PortionNumber",
+                                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BestEstimateELCurrency" as "OLD_BestEstimateELCurrency",
+                                "OLD"."BestEstimateExpectedLoss" as "OLD_BestEstimateExpectedLoss",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskExpectedLoss" as "OLD"
+            on
+               ( "IN"."BestEstimateELMethod" = "OLD"."BestEstimateELMethod" or "IN"."BestEstimateELMethod" is null ) and
+               ( "IN"."BestEstimateELTimeHorizon" = "OLD"."BestEstimateELTimeHorizon" or "IN"."BestEstimateELTimeHorizon" is null ) and
+               ( "IN"."BestEstimateELTimeUnit" = "OLD"."BestEstimateELTimeUnit" or "IN"."BestEstimateELTimeUnit" is null ) and
+               ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+               ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+               ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+               ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+               ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+               ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,72 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"OrganizationalUnit";
+
+entity "Collection" {
+    key "CollectionID"                     : String(128)                                           default '';
+    key "IDSystem"                         : String(40)                                            default '';
+    key "_Client"                          : association to BusinessPartner { BusinessPartnerID }  not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                          not null;
+        "SystemValidTo"                    : UTCTimestamp                                          not null;
+        "_EmployeeResponsibleForPortfolio" : association to BusinessPartner { BusinessPartnerID };
+        "_OrganizationalUnit"              : association to OrganizationalUnit {
+                                                                                 OrganizationalUnitID,
+                                                                                 ASSOC_OrganizationHostingOrganizationalUnit
+                                                                               };
+        "CollateralPoolCoveringType"       : String(100);
+        "CollateralPoolType"               : String(100);
+        "CollectionCategory"               : String(40);
+        "CollectionName"                   : String(256);
+        "CountryOfCollateralPoolCovering"  : String(2);
+        "Distributed"                      : Boolean;
+        "FinancialInstrumentPortfolioType" : String(40);
+        "InvestmentObjective"              : String(40);
+        "ManagingUnit"                     : String(256);
+        "PortfolioCategory"                : String(80);
+        "TradingDeskType"                  : String(40);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Collection_Historical" {
+    "CollectionID"                     : String(128)                                           default '' not null;
+    "IDSystem"                         : String(40)                                            default '' not null;
+    "_Client"                          : association to BusinessPartner { BusinessPartnerID }  not null;
+    "BusinessValidFrom"                : LocalDate                                             not null;
+    "BusinessValidTo"                  : LocalDate                                             not null;
+    "SystemValidFrom"                  : UTCTimestamp                                          not null;
+    "SystemValidTo"                    : UTCTimestamp                                          not null;
+    "_EmployeeResponsibleForPortfolio" : association to BusinessPartner { BusinessPartnerID };
+    "_OrganizationalUnit"              : association to OrganizationalUnit {
+                                                                             OrganizationalUnitID,
+                                                                             ASSOC_OrganizationHostingOrganizationalUnit
+                                                                           };
+    "CollateralPoolCoveringType"       : String(100);
+    "CollateralPoolType"               : String(100);
+    "CollectionCategory"               : String(40);
+    "CollectionName"                   : String(256);
+    "CountryOfCollateralPoolCovering"  : String(2);
+    "Distributed"                      : Boolean;
+    "FinancialInstrumentPortfolioType" : String(40);
+    "InvestmentObjective"              : String(40);
+    "ManagingUnit"                     : String(256);
+    "PortfolioCategory"                : String(80);
+    "TradingDeskType"                  : String(40);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

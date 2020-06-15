@@ -1,0 +1,164 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartnerRelation";
+using "sap"."fsdm"::"CollateralPortion";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"PhysicalAsset";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"Receivable";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"Fund";
+using "sap"."fsdm"::"YieldCurve";
+
+entity "Valuation" {
+    key "Appraiser"                              : String(20);
+    key "RoleOfPayer"                            : String(50)                                                   default '';
+    key "Scenario"                               : String(20);
+    key "ValuationMethod"                        : String(20);
+    key "ASSOC_BusinessInterestInOrganization"   : association to BusinessPartnerRelation {
+                                                                                            BusinessPartnerRelationType,
+                                                                                            ASSOC_SourceInBusinessPartnerRelation,
+                                                                                            ASSOC_TargetInBusinessPartnerRelation
+                                                                                          }                     not null;
+    key "ASSOC_CollateralPortion"                : association to CollateralPortion {
+                                                                                      PortionNumber,
+                                                                                      ASSOC_CollateralAgreement
+                                                                                    }                           not null;
+    key "ASSOC_FinancialContract"                : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    }                           not null;
+    key "ASSOC_Organization"                     : association to BusinessPartner { BusinessPartnerID }         not null;
+    key "ASSOC_PhysicalAsset"                    : association to PhysicalAsset { PhysicalAssetID }             not null;
+    key "ASSOC_PositionCurrencyForAccount"       : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                            PositionCurrency,
+                                                                                                            ASSOC_MultiCcyAccnt
+                                                                                                          }     not null;
+    key "ASSOC_Receivable"                       : association to Receivable { ReceivableID }                   not null;
+    key "_FinancialInstrument"                   : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_Fund"                                  : association to Fund {
+                                                                         FundID,
+                                                                         _InvestmentCorporation
+                                                                       }                                        not null;
+    key "_SecuritiesAccount"                     : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    }                           not null;
+    key "BusinessValidFrom"                      : LocalDate;
+    key "BusinessValidTo"                        : LocalDate;
+        "SystemValidFrom"                        : UTCTimestamp                                                 not null;
+        "SystemValidTo"                          : UTCTimestamp                                                 not null;
+        "ASSOC_YieldCurve"                       : association to YieldCurve { YieldCurveID };
+        "ContractValuationCategory"              : String(40);
+        "CreditEquivalentAmount"                 : Decimal(34, 6);
+        "CreditEquivalentAmountCurrency"         : String(3);
+    /**
+    *@Deprecated
+    *@Reason: Redundant attribute
+    *@ReplacedBy: EligibleforReducedRiskWeight at entity PhysicalAsset
+    */
+    "EligibleforReducedRiskWeight"               : Boolean;
+        "EstimatedMarketValue"                   : Decimal(34, 6);
+        "EstimatedMarketValueCurrency"           : String(3);
+        "LegallyBinding"                         : Boolean;
+        "LendingValue"                           : Decimal(34, 6);
+        "LendingValueCurrency"                   : String(3);
+        "NetAssetValue"                          : Decimal(34, 6);
+        "NetAssetValueCurrency"                  : String(3);
+        "NetPresentValue"                        : Decimal(34, 6);
+        "NetPresentValueCurrency"                : String(3);
+        "NominalAmountAtTimeOfValuation"         : Decimal(34, 6);
+        "NominalAmountAtTimeOfValuationCurrency" : String(3);
+        "ScheduledNextValuationDate"             : LocalDate;
+        "StandardHaircut"                        : Decimal(15, 11);
+        "Unit"                                   : String(10);
+        "ValuationCategory"                      : String(40);
+        "ValuedNominalAmount"                    : Decimal(34, 6);
+        "ValuedNominalAmountCurrency"            : String(3);
+        "ValuedQuantity"                         : Decimal(34, 6);
+        "SourceSystemID"                         : String(128);
+        "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+        "ChangingUserInSourceSystem"             : String(128);
+        "ChangingProcessType"                    : String(40);
+        "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Valuation_Historical" {
+    "Appraiser"                              : String(20)                                                   not null;
+    "RoleOfPayer"                            : String(50)                                                   default '' not null;
+    "Scenario"                               : String(20)                                                   not null;
+    "ValuationMethod"                        : String(20)                                                   not null;
+    "ASSOC_BusinessInterestInOrganization"   : association to BusinessPartnerRelation {
+                                                                                        BusinessPartnerRelationType,
+                                                                                        ASSOC_SourceInBusinessPartnerRelation,
+                                                                                        ASSOC_TargetInBusinessPartnerRelation
+                                                                                      }                     not null;
+    "ASSOC_CollateralPortion"                : association to CollateralPortion {
+                                                                                  PortionNumber,
+                                                                                  ASSOC_CollateralAgreement
+                                                                                }                           not null;
+    "ASSOC_FinancialContract"                : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                }                           not null;
+    "ASSOC_Organization"                     : association to BusinessPartner { BusinessPartnerID }         not null;
+    "ASSOC_PhysicalAsset"                    : association to PhysicalAsset { PhysicalAssetID }             not null;
+    "ASSOC_PositionCurrencyForAccount"       : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                        PositionCurrency,
+                                                                                                        ASSOC_MultiCcyAccnt
+                                                                                                      }     not null;
+    "ASSOC_Receivable"                       : association to Receivable { ReceivableID }                   not null;
+    "_FinancialInstrument"                   : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_Fund"                                  : association to Fund {
+                                                                     FundID,
+                                                                     _InvestmentCorporation
+                                                                   }                                        not null;
+    "_SecuritiesAccount"                     : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                }                           not null;
+    "BusinessValidFrom"                      : LocalDate                                                    not null;
+    "BusinessValidTo"                        : LocalDate                                                    not null;
+    "SystemValidFrom"                        : UTCTimestamp                                                 not null;
+    "SystemValidTo"                          : UTCTimestamp                                                 not null;
+    "ASSOC_YieldCurve"                       : association to YieldCurve { YieldCurveID };
+    "ContractValuationCategory"              : String(40);
+    "CreditEquivalentAmount"                 : Decimal(34, 6);
+    "CreditEquivalentAmountCurrency"         : String(3);
+    /**
+    *@Deprecated
+    *@Reason: Redundant attribute
+    *@ReplacedBy: EligibleforReducedRiskWeight at entity PhysicalAsset
+    */
+    "EligibleforReducedRiskWeight"           : Boolean;
+    "EstimatedMarketValue"                   : Decimal(34, 6);
+    "EstimatedMarketValueCurrency"           : String(3);
+    "LegallyBinding"                         : Boolean;
+    "LendingValue"                           : Decimal(34, 6);
+    "LendingValueCurrency"                   : String(3);
+    "NetAssetValue"                          : Decimal(34, 6);
+    "NetAssetValueCurrency"                  : String(3);
+    "NetPresentValue"                        : Decimal(34, 6);
+    "NetPresentValueCurrency"                : String(3);
+    "NominalAmountAtTimeOfValuation"         : Decimal(34, 6);
+    "NominalAmountAtTimeOfValuationCurrency" : String(3);
+    "ScheduledNextValuationDate"             : LocalDate;
+    "StandardHaircut"                        : Decimal(15, 11);
+    "Unit"                                   : String(10);
+    "ValuationCategory"                      : String(40);
+    "ValuedNominalAmount"                    : Decimal(34, 6);
+    "ValuedNominalAmountCurrency"            : String(3);
+    "ValuedQuantity"                         : Decimal(34, 6);
+    "SourceSystemID"                         : String(128);
+    "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+    "ChangingUserInSourceSystem"             : String(128);
+    "ChangingProcessType"                    : String(40);
+    "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};

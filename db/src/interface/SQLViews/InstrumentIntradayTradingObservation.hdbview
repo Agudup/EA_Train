@@ -1,0 +1,38 @@
+view "sap.fsdm.SQLViews::InstrumentIntradayTradingObservation_View" 
+as select
+      "PriceDataProvider" ,
+      "PriceSeriesType" ,
+      "SequenceNumber" ,
+      "Timestamp" ,
+      "_Exchange.MarketIdentifierCode" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "Accrual" ,
+      "AddOn" ,
+      "CleanDirtyIndicator" ,
+      "CumOrEx" ,
+      "Currency" ,
+      "InstrumentIntradayPriceCategory" ,
+      "Price" ,
+      "PriceNotationForm" ,
+      "PriceType" ,
+      "Quantity" ,
+      "TickID" ,
+      "TickNominalAmount" ,
+      "TickNominalAmountCurrency" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentIntradayTradingObservation"
+with associations
+(
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

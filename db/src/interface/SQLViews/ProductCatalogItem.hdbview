@@ -1,0 +1,47 @@
+view "sap.fsdm.SQLViews::ProductCatalogItem_View" 
+as select
+      "ProductCatalogItem" ,
+      "_ProductCatalog.CatalogID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ProductCatalogItemCategory" ,
+      "ProductCatalogItemDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProductCatalogItem"
+with associations
+(
+	join "sap.fsdm.SQLViews::EligibleCollateral_View" as "_EligibleCollateral__ProductCatalogItem"
+	  on "ProductCatalogItem" = "_EligibleCollateral__ProductCatalogItem"."_ProductCatalogItem.ProductCatalogItem" AND 
+	     "_ProductCatalog.CatalogID" = "_EligibleCollateral__ProductCatalogItem"."_ProductCatalogItem._ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClassInWeightedBasket_View" as "_InstrumentClassInWeightedBasket__ProductCatalogItem"
+	  on "ProductCatalogItem" = "_InstrumentClassInWeightedBasket__ProductCatalogItem"."_ProductCatalogItem.ProductCatalogItem" AND 
+	     "_ProductCatalog.CatalogID" = "_InstrumentClassInWeightedBasket__ProductCatalogItem"."_ProductCatalogItem._ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogAssignment_View" as "_ProductCatalogAssignment__ProductCatalogItem"
+	  on "ProductCatalogItem" = "_ProductCatalogAssignment__ProductCatalogItem"."_ProductCatalogItem.ProductCatalogItem" AND 
+	     "_ProductCatalog.CatalogID" = "_ProductCatalogAssignment__ProductCatalogItem"."_ProductCatalogItem._ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogHierarchy_View" as "_ProductCatalogHierarchy__Child"
+	  on "ProductCatalogItem" = "_ProductCatalogHierarchy__Child"."_Child.ProductCatalogItem" AND 
+	     "_ProductCatalog.CatalogID" = "_ProductCatalogHierarchy__Child"."_Child._ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogHierarchy_View" as "_ProductCatalogHierarchy__Parent"
+	  on "ProductCatalogItem" = "_ProductCatalogHierarchy__Parent"."_Parent.ProductCatalogItem" AND 
+	     "_ProductCatalog.CatalogID" = "_ProductCatalogHierarchy__Parent"."_Parent._ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalog_View" as "_ProductCatalog"
+	  on "_ProductCatalog"."CatalogID" = "_ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogItemInNonWeightedBasket_View" as "_ProductCatalogItemInNonWeightedBasket__ProductCatalogItem"
+	  on "ProductCatalogItem" = "_ProductCatalogItemInNonWeightedBasket__ProductCatalogItem"."_ProductCatalogItem.ProductCatalogItem" AND 
+	     "_ProductCatalog.CatalogID" = "_ProductCatalogItemInNonWeightedBasket__ProductCatalogItem"."_ProductCatalogItem._ProductCatalog.CatalogID"
+	     
+);

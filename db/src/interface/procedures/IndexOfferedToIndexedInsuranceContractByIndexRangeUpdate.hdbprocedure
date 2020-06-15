@@ -1,0 +1,74 @@
+PROCEDURE "sap.fsdm.procedures::IndexOfferedToIndexedInsuranceContractByIndexRangeUpdate" (IN ROW "sap.fsdm.tabletypes::IndexOfferedToIndexedInsuranceContractByIndexRangeTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+--Update the existing records 
+
+  --select data matching in current table
+  var_matching = 
+  select    "IN"."_Index.IndexID"  ,
+    "OLD"."_Index.IndexID" AS "OLD__Index.IndexID" ,
+    "IN"."_IndexRange.ID"  ,
+    "OLD"."_IndexRange.ID" AS "OLD__IndexRange.ID" ,
+    "IN"."_IndexRange.IDSystem"  ,
+    "OLD"."_IndexRange.IDSystem" AS "OLD__IndexRange.IDSystem" ,
+    "IN"."SourceSystemID"  ,
+    "OLD"."SourceSystemID" AS "OLD_SourceSystemID" ,
+    "IN"."ChangeTimestampInSourceSystem"  ,
+    "OLD"."ChangeTimestampInSourceSystem" AS "OLD_ChangeTimestampInSourceSystem" ,
+    "IN"."ChangingUserInSourceSystem"  ,
+    "OLD"."ChangingUserInSourceSystem" AS "OLD_ChangingUserInSourceSystem" ,
+    "IN"."ChangingProcessType"  ,
+    "OLD"."ChangingProcessType" AS "OLD_ChangingProcessType" ,
+    "IN"."ChangingProcessID"  ,
+    "OLD"."ChangingProcessID" AS "OLD_ChangingProcessID" 
+  
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::IndexOfferedToIndexedInsuranceContractByIndexRange" AS "OLD"
+  ON
+  "IN"."_Index.IndexID" = "OLD"."_Index.IndexID" and
+  "IN"."_IndexRange.ID" = "OLD"."_IndexRange.ID" and
+  "IN"."_IndexRange.IDSystem" = "OLD"."_IndexRange.IDSystem" 
+;
+
+
+
+
+--Delete entries for update from current table
+delete from "sap.fsdm::IndexOfferedToIndexedInsuranceContractByIndexRange" WHERE("_Index.IndexID" ,
+"_IndexRange.ID" ,
+"_IndexRange.IDSystem" 
+)in ( select "OLD__Index.IndexID" AS "_Index.IndexID" ,
+"OLD__IndexRange.ID" AS "_IndexRange.ID" ,
+"OLD__IndexRange.IDSystem" AS "_IndexRange.IDSystem" 
+from :var_matching );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::IndexOfferedToIndexedInsuranceContractByIndexRange"  (
+"_Index.IndexID",
+"_IndexRange.ID",
+"_IndexRange.IDSystem",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "_Index.IndexID"  ,
+  "_IndexRange.ID"  ,
+  "_IndexRange.IDSystem"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :var_matching );
+
+
+
+END

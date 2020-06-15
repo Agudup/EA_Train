@@ -1,0 +1,307 @@
+PROCEDURE "sap.fsdm.procedures::LienLoad" (IN ROW "sap.fsdm.tabletypes::LienTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                '_LienAccount.FinancialContractID=' || TO_VARCHAR("_LienAccount.FinancialContractID") || ' ' ||
+                '_LienAccount.IDSystem=' || TO_VARCHAR("_LienAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_LienAccount.FinancialContractID",
+                        "IN"."_LienAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_LienAccount.FinancialContractID",
+                        "IN"."_LienAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "_LienAccount.FinancialContractID",
+                        "_LienAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."_LienAccount.FinancialContractID",
+                                    "IN"."_LienAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."_LienAccount.FinancialContractID",
+                                    "IN"."_LienAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Lien" (
+        "SequenceNumber",
+        "_LienAccount.FinancialContractID",
+        "_LienAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Comment",
+        "IsLienReleased",
+        "LienAmount",
+        "LienAmountCurrency",
+        "LienExpiryDate",
+        "LienReason",
+        "LienStartDate",
+        "LienType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD__LienAccount.FinancialContractID" as "_LienAccount.FinancialContractID" ,
+            "OLD__LienAccount.IDSystem" as "_LienAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_Comment" as "Comment" ,
+            "OLD_IsLienReleased" as "IsLienReleased" ,
+            "OLD_LienAmount" as "LienAmount" ,
+            "OLD_LienAmountCurrency" as "LienAmountCurrency" ,
+            "OLD_LienExpiryDate" as "LienExpiryDate" ,
+            "OLD_LienReason" as "LienReason" ,
+            "OLD_LienStartDate" as "LienStartDate" ,
+            "OLD_LienType" as "LienType" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_LienAccount.FinancialContractID",
+                        "IN"."_LienAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."_LienAccount.FinancialContractID" as "OLD__LienAccount.FinancialContractID",
+                                "OLD"."_LienAccount.IDSystem" as "OLD__LienAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Comment" as "OLD_Comment",
+                                "OLD"."IsLienReleased" as "OLD_IsLienReleased",
+                                "OLD"."LienAmount" as "OLD_LienAmount",
+                                "OLD"."LienAmountCurrency" as "OLD_LienAmountCurrency",
+                                "OLD"."LienExpiryDate" as "OLD_LienExpiryDate",
+                                "OLD"."LienReason" as "OLD_LienReason",
+                                "OLD"."LienStartDate" as "OLD_LienStartDate",
+                                "OLD"."LienType" as "OLD_LienType",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Lien" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."_LienAccount.FinancialContractID" is null then '' else "IN"."_LienAccount.FinancialContractID" end ) = "OLD"."_LienAccount.FinancialContractID" and
+                ( case when "IN"."_LienAccount.IDSystem" is null then '' else "IN"."_LienAccount.IDSystem" end ) = "OLD"."_LienAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Lien" (
+        "SequenceNumber",
+        "_LienAccount.FinancialContractID",
+        "_LienAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Comment",
+        "IsLienReleased",
+        "LienAmount",
+        "LienAmountCurrency",
+        "LienExpiryDate",
+        "LienReason",
+        "LienStartDate",
+        "LienType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD__LienAccount.FinancialContractID" as "_LienAccount.FinancialContractID",
+            "OLD__LienAccount.IDSystem" as "_LienAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Comment" as "Comment",
+            "OLD_IsLienReleased" as "IsLienReleased",
+            "OLD_LienAmount" as "LienAmount",
+            "OLD_LienAmountCurrency" as "LienAmountCurrency",
+            "OLD_LienExpiryDate" as "LienExpiryDate",
+            "OLD_LienReason" as "LienReason",
+            "OLD_LienStartDate" as "LienStartDate",
+            "OLD_LienType" as "LienType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_LienAccount.FinancialContractID",
+                        "IN"."_LienAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."_LienAccount.FinancialContractID" as "OLD__LienAccount.FinancialContractID",
+                        "OLD"."_LienAccount.IDSystem" as "OLD__LienAccount.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."Comment" as "OLD_Comment",
+                        "OLD"."IsLienReleased" as "OLD_IsLienReleased",
+                        "OLD"."LienAmount" as "OLD_LienAmount",
+                        "OLD"."LienAmountCurrency" as "OLD_LienAmountCurrency",
+                        "OLD"."LienExpiryDate" as "OLD_LienExpiryDate",
+                        "OLD"."LienReason" as "OLD_LienReason",
+                        "OLD"."LienStartDate" as "OLD_LienStartDate",
+                        "OLD"."LienType" as "OLD_LienType",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Lien" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."_LienAccount.FinancialContractID" is null then '' else "IN"."_LienAccount.FinancialContractID" end ) = "OLD"."_LienAccount.FinancialContractID" and
+                ( case when "IN"."_LienAccount.IDSystem" is null then '' else "IN"."_LienAccount.IDSystem" end ) = "OLD"."_LienAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Lien"
+    where (
+        "SequenceNumber",
+        "_LienAccount.FinancialContractID",
+        "_LienAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."_LienAccount.FinancialContractID",
+            "OLD"."_LienAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Lien" as "OLD"
+        on
+           ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+           ( case when "IN"."_LienAccount.FinancialContractID" is null then '' else "IN"."_LienAccount.FinancialContractID" end ) = "OLD"."_LienAccount.FinancialContractID" and
+           ( case when "IN"."_LienAccount.IDSystem" is null then '' else "IN"."_LienAccount.IDSystem" end ) = "OLD"."_LienAccount.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::Lien" (
+        "SequenceNumber",
+        "_LienAccount.FinancialContractID",
+        "_LienAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Comment",
+        "IsLienReleased",
+        "LienAmount",
+        "LienAmountCurrency",
+        "LienExpiryDate",
+        "LienReason",
+        "LienStartDate",
+        "LienType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "_LienAccount.FinancialContractID" is null then '' else "_LienAccount.FinancialContractID" end ) as "_LienAccount.FinancialContractID",
+            ( case when "_LienAccount.IDSystem" is null then '' else "_LienAccount.IDSystem" end ) as "_LienAccount.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "Comment"  ,
+            "IsLienReleased"  ,
+            "LienAmount"  ,
+            "LienAmountCurrency"  ,
+            "LienExpiryDate"  ,
+            "LienReason"  ,
+            "LienStartDate"  ,
+            "LienType"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

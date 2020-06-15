@@ -1,0 +1,39 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Loss";
+using "sap"."fsdm"::"PhysicalAsset";
+
+entity "LossObject" {
+    key "LossObjectID"                   : String(128)                                       default '';
+    key "_PropertyLoss"                  : association to Loss {
+                                                                 LossCategory,
+                                                                 _Claim
+                                                               }                             not null;
+        "_LossObject"                    : association to LossObject {
+                                                                       LossObjectID,
+                                                                       _PropertyLoss
+                                                                     };
+        "_PhysicalAsset"                 : association to PhysicalAsset { PhysicalAssetID };
+        "ActualRepairDate"               : LocalDate;
+        "Currency"                       : String(3);
+        "EstimatedRepairDate"            : LocalDate;
+        "LossCause"                      : String(40);
+        "LossObjectCategory"             : String(40);
+        "LossObjectCurrentMarketValue"   : Decimal(34, 6);
+        "LossObjectRepairCost"           : Decimal(34, 6);
+        "LossObjectRepairableIndicator"  : Boolean;
+        "LossObjectReplaceableIndicator" : Boolean;
+        "LossObjectReplacementValue"     : Decimal(34, 6);
+        "LossObjectType"                 : String(40);
+        "OdometerReading"                : Decimal(7, 0);
+        "SalvageSoldDate"                : LocalDate;
+        "VehicleParkedIndicator"         : Boolean;
+        "SourceSystemID"                 : String(128);
+        "ChangeTimestampInSourceSystem"  : UTCTimestamp;
+        "ChangingUserInSourceSystem"     : String(128);
+        "ChangingProcessType"            : String(40);
+        "ChangingProcessID"              : String(128);
+}
+technical configuration {
+    column store;
+};

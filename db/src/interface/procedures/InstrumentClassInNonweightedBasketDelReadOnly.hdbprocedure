@@ -1,0 +1,213 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentClassInNonweightedBasketDelReadOnly" (IN ROW "sap.fsdm.tabletypes::InstrumentClassInNonweightedBasketTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::InstrumentClassInNonweightedBasketTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::InstrumentClassInNonweightedBasketTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_Basket.FinancialInstrumentID=' || TO_VARCHAR("_Basket.FinancialInstrumentID") || ' ' ||
+                '_InstrumentClass.InstrumentClass=' || TO_VARCHAR("_InstrumentClass.InstrumentClass") || ' ' ||
+                '_InstrumentClass.InstrumentClassificationSystem=' || TO_VARCHAR("_InstrumentClass.InstrumentClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_Basket.FinancialInstrumentID",
+                        "IN"."_InstrumentClass.InstrumentClass",
+                        "IN"."_InstrumentClass.InstrumentClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_Basket.FinancialInstrumentID",
+                        "IN"."_InstrumentClass.InstrumentClass",
+                        "IN"."_InstrumentClass.InstrumentClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_Basket.FinancialInstrumentID",
+                        "_InstrumentClass.InstrumentClass",
+                        "_InstrumentClass.InstrumentClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_Basket.FinancialInstrumentID",
+                                    "IN"."_InstrumentClass.InstrumentClass",
+                                    "IN"."_InstrumentClass.InstrumentClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_Basket.FinancialInstrumentID",
+                                    "IN"."_InstrumentClass.InstrumentClass",
+                                    "IN"."_InstrumentClass.InstrumentClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "_Basket.FinancialInstrumentID",
+            "_InstrumentClass.InstrumentClass",
+            "_InstrumentClass.InstrumentClassificationSystem",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::InstrumentClassInNonweightedBasket" WHERE
+            (
+            "_Basket.FinancialInstrumentID" ,
+            "_InstrumentClass.InstrumentClass" ,
+            "_InstrumentClass.InstrumentClassificationSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."_Basket.FinancialInstrumentID",
+            "OLD"."_InstrumentClass.InstrumentClass",
+            "OLD"."_InstrumentClass.InstrumentClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InstrumentClassInNonweightedBasket" as "OLD"
+        on
+                              ( "IN"."_Basket.FinancialInstrumentID" = "OLD"."_Basket.FinancialInstrumentID" or "IN"."_Basket.FinancialInstrumentID" is null ) and
+                              ( "IN"."_InstrumentClass.InstrumentClass" = "OLD"."_InstrumentClass.InstrumentClass" or "IN"."_InstrumentClass.InstrumentClass" is null ) and
+                              ( "IN"."_InstrumentClass.InstrumentClassificationSystem" = "OLD"."_InstrumentClass.InstrumentClassificationSystem" or "IN"."_InstrumentClass.InstrumentClassificationSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "_Basket.FinancialInstrumentID",
+        "_InstrumentClass.InstrumentClass",
+        "_InstrumentClass.InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD__Basket.FinancialInstrumentID" as "_Basket.FinancialInstrumentID" ,
+            "OLD__InstrumentClass.InstrumentClass" as "_InstrumentClass.InstrumentClass" ,
+            "OLD__InstrumentClass.InstrumentClassificationSystem" as "_InstrumentClass.InstrumentClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."_Basket.FinancialInstrumentID",
+                        "OLD"."_InstrumentClass.InstrumentClass",
+                        "OLD"."_InstrumentClass.InstrumentClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_Basket.FinancialInstrumentID" as "OLD__Basket.FinancialInstrumentID",
+                                "OLD"."_InstrumentClass.InstrumentClass" as "OLD__InstrumentClass.InstrumentClass",
+                                "OLD"."_InstrumentClass.InstrumentClassificationSystem" as "OLD__InstrumentClass.InstrumentClassificationSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InstrumentClassInNonweightedBasket" as "OLD"
+            on
+                                      ( "IN"."_Basket.FinancialInstrumentID" = "OLD"."_Basket.FinancialInstrumentID" or "IN"."_Basket.FinancialInstrumentID" is null ) and
+                                      ( "IN"."_InstrumentClass.InstrumentClass" = "OLD"."_InstrumentClass.InstrumentClass" or "IN"."_InstrumentClass.InstrumentClass" is null ) and
+                                      ( "IN"."_InstrumentClass.InstrumentClassificationSystem" = "OLD"."_InstrumentClass.InstrumentClassificationSystem" or "IN"."_InstrumentClass.InstrumentClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD__Basket.FinancialInstrumentID" as "_Basket.FinancialInstrumentID",
+            "OLD__InstrumentClass.InstrumentClass" as "_InstrumentClass.InstrumentClass",
+            "OLD__InstrumentClass.InstrumentClassificationSystem" as "_InstrumentClass.InstrumentClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."_Basket.FinancialInstrumentID",
+                        "OLD"."_InstrumentClass.InstrumentClass",
+                        "OLD"."_InstrumentClass.InstrumentClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."_Basket.FinancialInstrumentID" as "OLD__Basket.FinancialInstrumentID",
+                                "OLD"."_InstrumentClass.InstrumentClass" as "OLD__InstrumentClass.InstrumentClass",
+                                "OLD"."_InstrumentClass.InstrumentClassificationSystem" as "OLD__InstrumentClass.InstrumentClassificationSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InstrumentClassInNonweightedBasket" as "OLD"
+            on
+               ( "IN"."_Basket.FinancialInstrumentID" = "OLD"."_Basket.FinancialInstrumentID" or "IN"."_Basket.FinancialInstrumentID" is null ) and
+               ( "IN"."_InstrumentClass.InstrumentClass" = "OLD"."_InstrumentClass.InstrumentClass" or "IN"."_InstrumentClass.InstrumentClass" is null ) and
+               ( "IN"."_InstrumentClass.InstrumentClassificationSystem" = "OLD"."_InstrumentClass.InstrumentClassificationSystem" or "IN"."_InstrumentClass.InstrumentClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

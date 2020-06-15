@@ -1,0 +1,373 @@
+PROCEDURE "sap.fsdm.procedures::SecuritiesBalanceLoad" (IN ROW "sap.fsdm.tabletypes::SecuritiesBalanceTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'LotID=' || TO_VARCHAR("LotID") || ' ' ||
+                '_Account.FinancialContractID=' || TO_VARCHAR("_Account.FinancialContractID") || ' ' ||
+                '_Account.IDSystem=' || TO_VARCHAR("_Account.IDSystem") || ' ' ||
+                '_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID=' || TO_VARCHAR("_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."LotID",
+                        "IN"."_Account.FinancialContractID",
+                        "IN"."_Account.IDSystem",
+                        "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."LotID",
+                        "IN"."_Account.FinancialContractID",
+                        "IN"."_Account.IDSystem",
+                        "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "LotID",
+                        "_Account.FinancialContractID",
+                        "_Account.IDSystem",
+                        "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."LotID",
+                                    "IN"."_Account.FinancialContractID",
+                                    "IN"."_Account.IDSystem",
+                                    "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."LotID",
+                                    "IN"."_Account.FinancialContractID",
+                                    "IN"."_Account.IDSystem",
+                                    "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::SecuritiesBalance" (
+        "LotID",
+        "_Account.FinancialContractID",
+        "_Account.IDSystem",
+        "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "LendingValue",
+        "LendingValueCurrency",
+        "MarketValue",
+        "MarketValueCurrency",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "PurchasePrice",
+        "PurchasePriceCurrency",
+        "Quantity",
+        "SecuritiesAccountBalanceCategory",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_LotID" as "LotID" ,
+            "OLD__Account.FinancialContractID" as "_Account.FinancialContractID" ,
+            "OLD__Account.IDSystem" as "_Account.IDSystem" ,
+            "OLD__AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" as "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_LendingValue" as "LendingValue" ,
+            "OLD_LendingValueCurrency" as "LendingValueCurrency" ,
+            "OLD_MarketValue" as "MarketValue" ,
+            "OLD_MarketValueCurrency" as "MarketValueCurrency" ,
+            "OLD_NominalAmount" as "NominalAmount" ,
+            "OLD_NominalAmountCurrency" as "NominalAmountCurrency" ,
+            "OLD_PurchasePrice" as "PurchasePrice" ,
+            "OLD_PurchasePriceCurrency" as "PurchasePriceCurrency" ,
+            "OLD_Quantity" as "Quantity" ,
+            "OLD_SecuritiesAccountBalanceCategory" as "SecuritiesAccountBalanceCategory" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."LotID",
+                        "IN"."_Account.FinancialContractID",
+                        "IN"."_Account.IDSystem",
+                        "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."_Account.FinancialContractID" as "OLD__Account.FinancialContractID",
+                                "OLD"."_Account.IDSystem" as "OLD__Account.IDSystem",
+                                "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" as "OLD__AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."LendingValue" as "OLD_LendingValue",
+                                "OLD"."LendingValueCurrency" as "OLD_LendingValueCurrency",
+                                "OLD"."MarketValue" as "OLD_MarketValue",
+                                "OLD"."MarketValueCurrency" as "OLD_MarketValueCurrency",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."NominalAmountCurrency" as "OLD_NominalAmountCurrency",
+                                "OLD"."PurchasePrice" as "OLD_PurchasePrice",
+                                "OLD"."PurchasePriceCurrency" as "OLD_PurchasePriceCurrency",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."SecuritiesAccountBalanceCategory" as "OLD_SecuritiesAccountBalanceCategory",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::SecuritiesBalance" as "OLD"
+            on
+                ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+                ( case when "IN"."_Account.FinancialContractID" is null then '' else "IN"."_Account.FinancialContractID" end ) = "OLD"."_Account.FinancialContractID" and
+                ( case when "IN"."_Account.IDSystem" is null then '' else "IN"."_Account.IDSystem" end ) = "OLD"."_Account.IDSystem" and
+                ( case when "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null then '' else "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" end ) = "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::SecuritiesBalance" (
+        "LotID",
+        "_Account.FinancialContractID",
+        "_Account.IDSystem",
+        "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "LendingValue",
+        "LendingValueCurrency",
+        "MarketValue",
+        "MarketValueCurrency",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "PurchasePrice",
+        "PurchasePriceCurrency",
+        "Quantity",
+        "SecuritiesAccountBalanceCategory",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_LotID" as "LotID",
+            "OLD__Account.FinancialContractID" as "_Account.FinancialContractID",
+            "OLD__Account.IDSystem" as "_Account.IDSystem",
+            "OLD__AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" as "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_LendingValue" as "LendingValue",
+            "OLD_LendingValueCurrency" as "LendingValueCurrency",
+            "OLD_MarketValue" as "MarketValue",
+            "OLD_MarketValueCurrency" as "MarketValueCurrency",
+            "OLD_NominalAmount" as "NominalAmount",
+            "OLD_NominalAmountCurrency" as "NominalAmountCurrency",
+            "OLD_PurchasePrice" as "PurchasePrice",
+            "OLD_PurchasePriceCurrency" as "PurchasePriceCurrency",
+            "OLD_Quantity" as "Quantity",
+            "OLD_SecuritiesAccountBalanceCategory" as "SecuritiesAccountBalanceCategory",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."LotID",
+                        "IN"."_Account.FinancialContractID",
+                        "IN"."_Account.IDSystem",
+                        "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."LotID" as "OLD_LotID",
+                        "OLD"."_Account.FinancialContractID" as "OLD__Account.FinancialContractID",
+                        "OLD"."_Account.IDSystem" as "OLD__Account.IDSystem",
+                        "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" as "OLD__AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."LendingValue" as "OLD_LendingValue",
+                        "OLD"."LendingValueCurrency" as "OLD_LendingValueCurrency",
+                        "OLD"."MarketValue" as "OLD_MarketValue",
+                        "OLD"."MarketValueCurrency" as "OLD_MarketValueCurrency",
+                        "OLD"."NominalAmount" as "OLD_NominalAmount",
+                        "OLD"."NominalAmountCurrency" as "OLD_NominalAmountCurrency",
+                        "OLD"."PurchasePrice" as "OLD_PurchasePrice",
+                        "OLD"."PurchasePriceCurrency" as "OLD_PurchasePriceCurrency",
+                        "OLD"."Quantity" as "OLD_Quantity",
+                        "OLD"."SecuritiesAccountBalanceCategory" as "OLD_SecuritiesAccountBalanceCategory",
+                        "OLD"."Unit" as "OLD_Unit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::SecuritiesBalance" as "OLD"
+            on
+                ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+                ( case when "IN"."_Account.FinancialContractID" is null then '' else "IN"."_Account.FinancialContractID" end ) = "OLD"."_Account.FinancialContractID" and
+                ( case when "IN"."_Account.IDSystem" is null then '' else "IN"."_Account.IDSystem" end ) = "OLD"."_Account.IDSystem" and
+                ( case when "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null then '' else "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" end ) = "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::SecuritiesBalance"
+    where (
+        "LotID",
+        "_Account.FinancialContractID",
+        "_Account.IDSystem",
+        "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."LotID",
+            "OLD"."_Account.FinancialContractID",
+            "OLD"."_Account.IDSystem",
+            "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::SecuritiesBalance" as "OLD"
+        on
+           ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+           ( case when "IN"."_Account.FinancialContractID" is null then '' else "IN"."_Account.FinancialContractID" end ) = "OLD"."_Account.FinancialContractID" and
+           ( case when "IN"."_Account.IDSystem" is null then '' else "IN"."_Account.IDSystem" end ) = "OLD"."_Account.IDSystem" and
+           ( case when "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null then '' else "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" end ) = "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" and
+           ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::SecuritiesBalance" (
+        "LotID",
+        "_Account.FinancialContractID",
+        "_Account.IDSystem",
+        "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "LendingValue",
+        "LendingValueCurrency",
+        "MarketValue",
+        "MarketValueCurrency",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "PurchasePrice",
+        "PurchasePriceCurrency",
+        "Quantity",
+        "SecuritiesAccountBalanceCategory",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "LotID" is null then '' else "LotID" end ) as "LotID",
+            ( case when "_Account.FinancialContractID" is null then '' else "_Account.FinancialContractID" end ) as "_Account.FinancialContractID",
+            ( case when "_Account.IDSystem" is null then '' else "_Account.IDSystem" end ) as "_Account.IDSystem",
+            ( case when "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null then '' else "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" end ) as "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID",
+            ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "LendingValue"  ,
+            "LendingValueCurrency"  ,
+            "MarketValue"  ,
+            "MarketValueCurrency"  ,
+            "NominalAmount"  ,
+            "NominalAmountCurrency"  ,
+            "PurchasePrice"  ,
+            "PurchasePriceCurrency"  ,
+            "Quantity"  ,
+            "SecuritiesAccountBalanceCategory"  ,
+            "Unit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

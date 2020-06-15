@@ -1,0 +1,372 @@
+PROCEDURE "sap.fsdm.procedures::MortgageRegisterEntryReadOnly" (IN ROW "sap.fsdm.tabletypes::MortgageRegisterEntryTT", OUT CURR_DEL "sap.fsdm.tabletypes::MortgageRegisterEntryTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::MortgageRegisterEntryTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Beneficiary=' || TO_VARCHAR("Beneficiary") || ' ' ||
+                'MortgageRegister=' || TO_VARCHAR("MortgageRegister") || ' ' ||
+                'Rank=' || TO_VARCHAR("Rank") || ' ' ||
+                'Section=' || TO_VARCHAR("Section") || ' ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("ASSOC_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Beneficiary",
+                        "IN"."MortgageRegister",
+                        "IN"."Rank",
+                        "IN"."Section",
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Beneficiary",
+                        "IN"."MortgageRegister",
+                        "IN"."Rank",
+                        "IN"."Section",
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Beneficiary",
+                        "MortgageRegister",
+                        "Rank",
+                        "Section",
+                        "SequenceNumber",
+                        "ASSOC_PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Beneficiary",
+                                    "IN"."MortgageRegister",
+                                    "IN"."Rank",
+                                    "IN"."Section",
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Beneficiary",
+                                    "IN"."MortgageRegister",
+                                    "IN"."Rank",
+                                    "IN"."Section",
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "Beneficiary",
+        "MortgageRegister",
+        "Rank",
+        "Section",
+        "SequenceNumber",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::MortgageRegisterEntry" WHERE
+        (            "Beneficiary" ,
+            "MortgageRegister" ,
+            "Rank" ,
+            "Section" ,
+            "SequenceNumber" ,
+            "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."Beneficiary",
+            "OLD"."MortgageRegister",
+            "OLD"."Rank",
+            "OLD"."Section",
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::MortgageRegisterEntry" as "OLD"
+            on
+               ( case when "IN"."Beneficiary" is null then '' else "IN"."Beneficiary" end ) = "OLD"."Beneficiary" and
+               ( case when "IN"."MortgageRegister" is null then '' else "IN"."MortgageRegister" end ) = "OLD"."MortgageRegister" and
+               ( case when "IN"."Rank" is null then -1 else "IN"."Rank" end ) = "OLD"."Rank" and
+               ( case when "IN"."Section" is null then '' else "IN"."Section" end ) = "OLD"."Section" and
+               ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+               ( case when "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "Beneficiary",
+        "MortgageRegister",
+        "Rank",
+        "Section",
+        "SequenceNumber",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_LandChargeArrangement.FinancialContractID",
+        "ASSOC_LandChargeArrangement.IDSystem",
+        "_MovablesMortgageArrangement.FinancialContractID",
+        "_MovablesMortgageArrangement.IDSystem",
+        "ActualUsableProtectionAmount",
+        "ActualUsableProtectionAmountCurrency",
+        "AdministrativeArea",
+        "AdministrativeSection",
+        "MortgageRegisterType",
+        "ThirdPartyRights",
+        "TitleID",
+        "UnitID",
+        "UsableProtectionAmount",
+        "UsableProtectionAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "Beneficiary" is null then '' else "Beneficiary" end ) as "Beneficiary",
+                    ( case when "MortgageRegister" is null then '' else "MortgageRegister" end ) as "MortgageRegister",
+                    ( case when "Rank" is null then -1 else "Rank" end ) as "Rank",
+                    ( case when "Section" is null then '' else "Section" end ) as "Section",
+                    ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+                    ( case when "ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "ASSOC_PhysicalAsset.PhysicalAssetID" end ) as "ASSOC_PhysicalAsset.PhysicalAssetID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "ASSOC_LandChargeArrangement.FinancialContractID"  ,
+                    "ASSOC_LandChargeArrangement.IDSystem"  ,
+                    "_MovablesMortgageArrangement.FinancialContractID"  ,
+                    "_MovablesMortgageArrangement.IDSystem"  ,
+                    "ActualUsableProtectionAmount"  ,
+                    "ActualUsableProtectionAmountCurrency"  ,
+                    "AdministrativeArea"  ,
+                    "AdministrativeSection"  ,
+                    "MortgageRegisterType"  ,
+                    "ThirdPartyRights"  ,
+                    "TitleID"  ,
+                    "UnitID"  ,
+                    "UsableProtectionAmount"  ,
+                    "UsableProtectionAmountCurrency"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_Beneficiary" as "Beneficiary" ,
+                    "OLD_MortgageRegister" as "MortgageRegister" ,
+                    "OLD_Rank" as "Rank" ,
+                    "OLD_Section" as "Section" ,
+                    "OLD_SequenceNumber" as "SequenceNumber" ,
+                    "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_ASSOC_LandChargeArrangement.FinancialContractID" as "ASSOC_LandChargeArrangement.FinancialContractID" ,
+                    "OLD_ASSOC_LandChargeArrangement.IDSystem" as "ASSOC_LandChargeArrangement.IDSystem" ,
+                    "OLD__MovablesMortgageArrangement.FinancialContractID" as "_MovablesMortgageArrangement.FinancialContractID" ,
+                    "OLD__MovablesMortgageArrangement.IDSystem" as "_MovablesMortgageArrangement.IDSystem" ,
+                    "OLD_ActualUsableProtectionAmount" as "ActualUsableProtectionAmount" ,
+                    "OLD_ActualUsableProtectionAmountCurrency" as "ActualUsableProtectionAmountCurrency" ,
+                    "OLD_AdministrativeArea" as "AdministrativeArea" ,
+                    "OLD_AdministrativeSection" as "AdministrativeSection" ,
+                    "OLD_MortgageRegisterType" as "MortgageRegisterType" ,
+                    "OLD_ThirdPartyRights" as "ThirdPartyRights" ,
+                    "OLD_TitleID" as "TitleID" ,
+                    "OLD_UnitID" as "UnitID" ,
+                    "OLD_UsableProtectionAmount" as "UsableProtectionAmount" ,
+                    "OLD_UsableProtectionAmountCurrency" as "UsableProtectionAmountCurrency" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."Beneficiary",
+                        "IN"."MortgageRegister",
+                        "IN"."Rank",
+                        "IN"."Section",
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Beneficiary" as "OLD_Beneficiary",
+                                "OLD"."MortgageRegister" as "OLD_MortgageRegister",
+                                "OLD"."Rank" as "OLD_Rank",
+                                "OLD"."Section" as "OLD_Section",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_LandChargeArrangement.FinancialContractID" as "OLD_ASSOC_LandChargeArrangement.FinancialContractID",
+                                "OLD"."ASSOC_LandChargeArrangement.IDSystem" as "OLD_ASSOC_LandChargeArrangement.IDSystem",
+                                "OLD"."_MovablesMortgageArrangement.FinancialContractID" as "OLD__MovablesMortgageArrangement.FinancialContractID",
+                                "OLD"."_MovablesMortgageArrangement.IDSystem" as "OLD__MovablesMortgageArrangement.IDSystem",
+                                "OLD"."ActualUsableProtectionAmount" as "OLD_ActualUsableProtectionAmount",
+                                "OLD"."ActualUsableProtectionAmountCurrency" as "OLD_ActualUsableProtectionAmountCurrency",
+                                "OLD"."AdministrativeArea" as "OLD_AdministrativeArea",
+                                "OLD"."AdministrativeSection" as "OLD_AdministrativeSection",
+                                "OLD"."MortgageRegisterType" as "OLD_MortgageRegisterType",
+                                "OLD"."ThirdPartyRights" as "OLD_ThirdPartyRights",
+                                "OLD"."TitleID" as "OLD_TitleID",
+                                "OLD"."UnitID" as "OLD_UnitID",
+                                "OLD"."UsableProtectionAmount" as "OLD_UsableProtectionAmount",
+                                "OLD"."UsableProtectionAmountCurrency" as "OLD_UsableProtectionAmountCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::MortgageRegisterEntry" as "OLD"
+            on
+                ( case when "IN"."Beneficiary" is null then '' else "IN"."Beneficiary" end ) = "OLD"."Beneficiary" and
+                ( case when "IN"."MortgageRegister" is null then '' else "IN"."MortgageRegister" end ) = "OLD"."MortgageRegister" and
+                ( case when "IN"."Rank" is null then -1 else "IN"."Rank" end ) = "OLD"."Rank" and
+                ( case when "IN"."Section" is null then '' else "IN"."Section" end ) = "OLD"."Section" and
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_Beneficiary" as "Beneficiary",
+            "OLD_MortgageRegister" as "MortgageRegister",
+            "OLD_Rank" as "Rank",
+            "OLD_Section" as "Section",
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_LandChargeArrangement.FinancialContractID" as "ASSOC_LandChargeArrangement.FinancialContractID",
+            "OLD_ASSOC_LandChargeArrangement.IDSystem" as "ASSOC_LandChargeArrangement.IDSystem",
+            "OLD__MovablesMortgageArrangement.FinancialContractID" as "_MovablesMortgageArrangement.FinancialContractID",
+            "OLD__MovablesMortgageArrangement.IDSystem" as "_MovablesMortgageArrangement.IDSystem",
+            "OLD_ActualUsableProtectionAmount" as "ActualUsableProtectionAmount",
+            "OLD_ActualUsableProtectionAmountCurrency" as "ActualUsableProtectionAmountCurrency",
+            "OLD_AdministrativeArea" as "AdministrativeArea",
+            "OLD_AdministrativeSection" as "AdministrativeSection",
+            "OLD_MortgageRegisterType" as "MortgageRegisterType",
+            "OLD_ThirdPartyRights" as "ThirdPartyRights",
+            "OLD_TitleID" as "TitleID",
+            "OLD_UnitID" as "UnitID",
+            "OLD_UsableProtectionAmount" as "UsableProtectionAmount",
+            "OLD_UsableProtectionAmountCurrency" as "UsableProtectionAmountCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."Beneficiary",
+                        "IN"."MortgageRegister",
+                        "IN"."Rank",
+                        "IN"."Section",
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."Beneficiary" as "OLD_Beneficiary",
+                        "OLD"."MortgageRegister" as "OLD_MortgageRegister",
+                        "OLD"."Rank" as "OLD_Rank",
+                        "OLD"."Section" as "OLD_Section",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ASSOC_LandChargeArrangement.FinancialContractID" as "OLD_ASSOC_LandChargeArrangement.FinancialContractID",
+                        "OLD"."ASSOC_LandChargeArrangement.IDSystem" as "OLD_ASSOC_LandChargeArrangement.IDSystem",
+                        "OLD"."_MovablesMortgageArrangement.FinancialContractID" as "OLD__MovablesMortgageArrangement.FinancialContractID",
+                        "OLD"."_MovablesMortgageArrangement.IDSystem" as "OLD__MovablesMortgageArrangement.IDSystem",
+                        "OLD"."ActualUsableProtectionAmount" as "OLD_ActualUsableProtectionAmount",
+                        "OLD"."ActualUsableProtectionAmountCurrency" as "OLD_ActualUsableProtectionAmountCurrency",
+                        "OLD"."AdministrativeArea" as "OLD_AdministrativeArea",
+                        "OLD"."AdministrativeSection" as "OLD_AdministrativeSection",
+                        "OLD"."MortgageRegisterType" as "OLD_MortgageRegisterType",
+                        "OLD"."ThirdPartyRights" as "OLD_ThirdPartyRights",
+                        "OLD"."TitleID" as "OLD_TitleID",
+                        "OLD"."UnitID" as "OLD_UnitID",
+                        "OLD"."UsableProtectionAmount" as "OLD_UsableProtectionAmount",
+                        "OLD"."UsableProtectionAmountCurrency" as "OLD_UsableProtectionAmountCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::MortgageRegisterEntry" as "OLD"
+            on
+                ( case when "IN"."Beneficiary" is null then '' else "IN"."Beneficiary" end ) = "OLD"."Beneficiary" and
+                ( case when "IN"."MortgageRegister" is null then '' else "IN"."MortgageRegister" end ) = "OLD"."MortgageRegister" and
+                ( case when "IN"."Rank" is null then -1 else "IN"."Rank" end ) = "OLD"."Rank" and
+                ( case when "IN"."Section" is null then '' else "IN"."Section" end ) = "OLD"."Section" and
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

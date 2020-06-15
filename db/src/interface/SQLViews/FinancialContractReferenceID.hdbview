@@ -1,0 +1,25 @@
+view "sap.fsdm.SQLViews::FinancialContractReferenceID_View" 
+as select
+      "ReferenceIDType" ,
+      "SystemID" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ReferenceID" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FinancialContractReferenceID"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID"
+	     
+);

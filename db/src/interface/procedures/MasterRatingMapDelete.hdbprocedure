@@ -1,0 +1,336 @@
+PROCEDURE "sap.fsdm.procedures::MasterRatingMapDelete" (IN ROW "sap.fsdm.tabletypes::MasterRatingMapTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'IsFxRating=' || TO_VARCHAR("IsFxRating") || ' ' ||
+                'MasterRating=' || TO_VARCHAR("MasterRating") || ' ' ||
+                'MasterRatingScale=' || TO_VARCHAR("MasterRatingScale") || ' ' ||
+                'Rating=' || TO_VARCHAR("Rating") || ' ' ||
+                'RatingAgency=' || TO_VARCHAR("RatingAgency") || ' ' ||
+                'RatingCategory=' || TO_VARCHAR("RatingCategory") || ' ' ||
+                'RatingMethod=' || TO_VARCHAR("RatingMethod") || ' ' ||
+                'TimeHorizon=' || TO_VARCHAR("TimeHorizon") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."IsFxRating",
+                        "IN"."MasterRating",
+                        "IN"."MasterRatingScale",
+                        "IN"."Rating",
+                        "IN"."RatingAgency",
+                        "IN"."RatingCategory",
+                        "IN"."RatingMethod",
+                        "IN"."TimeHorizon"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."IsFxRating",
+                        "IN"."MasterRating",
+                        "IN"."MasterRatingScale",
+                        "IN"."Rating",
+                        "IN"."RatingAgency",
+                        "IN"."RatingCategory",
+                        "IN"."RatingMethod",
+                        "IN"."TimeHorizon"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "IsFxRating",
+                        "MasterRating",
+                        "MasterRatingScale",
+                        "Rating",
+                        "RatingAgency",
+                        "RatingCategory",
+                        "RatingMethod",
+                        "TimeHorizon"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."IsFxRating",
+                                    "IN"."MasterRating",
+                                    "IN"."MasterRatingScale",
+                                    "IN"."Rating",
+                                    "IN"."RatingAgency",
+                                    "IN"."RatingCategory",
+                                    "IN"."RatingMethod",
+                                    "IN"."TimeHorizon"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."IsFxRating",
+                                    "IN"."MasterRating",
+                                    "IN"."MasterRatingScale",
+                                    "IN"."Rating",
+                                    "IN"."RatingAgency",
+                                    "IN"."RatingCategory",
+                                    "IN"."RatingMethod",
+                                    "IN"."TimeHorizon"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::MasterRatingMap" (
+        "IsFxRating",
+        "MasterRating",
+        "MasterRatingScale",
+        "Rating",
+        "RatingAgency",
+        "RatingCategory",
+        "RatingMethod",
+        "TimeHorizon",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "MasterRatingRank",
+        "PDIntervalLowerBoundary",
+        "PDIntervalMidRange",
+        "PDIntervalUpperBoundary",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IsFxRating" as "IsFxRating" ,
+            "OLD_MasterRating" as "MasterRating" ,
+            "OLD_MasterRatingScale" as "MasterRatingScale" ,
+            "OLD_Rating" as "Rating" ,
+            "OLD_RatingAgency" as "RatingAgency" ,
+            "OLD_RatingCategory" as "RatingCategory" ,
+            "OLD_RatingMethod" as "RatingMethod" ,
+            "OLD_TimeHorizon" as "TimeHorizon" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_MasterRatingRank" as "MasterRatingRank" ,
+            "OLD_PDIntervalLowerBoundary" as "PDIntervalLowerBoundary" ,
+            "OLD_PDIntervalMidRange" as "PDIntervalMidRange" ,
+            "OLD_PDIntervalUpperBoundary" as "PDIntervalUpperBoundary" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."IsFxRating",
+                        "OLD"."MasterRating",
+                        "OLD"."MasterRatingScale",
+                        "OLD"."Rating",
+                        "OLD"."RatingAgency",
+                        "OLD"."RatingCategory",
+                        "OLD"."RatingMethod",
+                        "OLD"."TimeHorizon",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."IsFxRating" as "OLD_IsFxRating",
+                "OLD"."MasterRating" as "OLD_MasterRating",
+                "OLD"."MasterRatingScale" as "OLD_MasterRatingScale",
+                "OLD"."Rating" as "OLD_Rating",
+                "OLD"."RatingAgency" as "OLD_RatingAgency",
+                "OLD"."RatingCategory" as "OLD_RatingCategory",
+                "OLD"."RatingMethod" as "OLD_RatingMethod",
+                "OLD"."TimeHorizon" as "OLD_TimeHorizon",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."MasterRatingRank" as "OLD_MasterRatingRank",
+                "OLD"."PDIntervalLowerBoundary" as "OLD_PDIntervalLowerBoundary",
+                "OLD"."PDIntervalMidRange" as "OLD_PDIntervalMidRange",
+                "OLD"."PDIntervalUpperBoundary" as "OLD_PDIntervalUpperBoundary",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::MasterRatingMap" as "OLD"
+            on
+                      ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+                      ( "IN"."MasterRating" = "OLD"."MasterRating" or "IN"."MasterRating" is null ) and
+                      ( "IN"."MasterRatingScale" = "OLD"."MasterRatingScale" or "IN"."MasterRatingScale" is null ) and
+                      ( "IN"."Rating" = "OLD"."Rating" or "IN"."Rating" is null ) and
+                      ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+                      ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+                      ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+                      ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::MasterRatingMap" (
+        "IsFxRating",
+        "MasterRating",
+        "MasterRatingScale",
+        "Rating",
+        "RatingAgency",
+        "RatingCategory",
+        "RatingMethod",
+        "TimeHorizon",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "MasterRatingRank",
+        "PDIntervalLowerBoundary",
+        "PDIntervalMidRange",
+        "PDIntervalUpperBoundary",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IsFxRating" as "IsFxRating",
+            "OLD_MasterRating" as "MasterRating",
+            "OLD_MasterRatingScale" as "MasterRatingScale",
+            "OLD_Rating" as "Rating",
+            "OLD_RatingAgency" as "RatingAgency",
+            "OLD_RatingCategory" as "RatingCategory",
+            "OLD_RatingMethod" as "RatingMethod",
+            "OLD_TimeHorizon" as "TimeHorizon",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_MasterRatingRank" as "MasterRatingRank",
+            "OLD_PDIntervalLowerBoundary" as "PDIntervalLowerBoundary",
+            "OLD_PDIntervalMidRange" as "PDIntervalMidRange",
+            "OLD_PDIntervalUpperBoundary" as "PDIntervalUpperBoundary",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."IsFxRating",
+                        "OLD"."MasterRating",
+                        "OLD"."MasterRatingScale",
+                        "OLD"."Rating",
+                        "OLD"."RatingAgency",
+                        "OLD"."RatingCategory",
+                        "OLD"."RatingMethod",
+                        "OLD"."TimeHorizon",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."IsFxRating" as "OLD_IsFxRating",
+                "OLD"."MasterRating" as "OLD_MasterRating",
+                "OLD"."MasterRatingScale" as "OLD_MasterRatingScale",
+                "OLD"."Rating" as "OLD_Rating",
+                "OLD"."RatingAgency" as "OLD_RatingAgency",
+                "OLD"."RatingCategory" as "OLD_RatingCategory",
+                "OLD"."RatingMethod" as "OLD_RatingMethod",
+                "OLD"."TimeHorizon" as "OLD_TimeHorizon",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."MasterRatingRank" as "OLD_MasterRatingRank",
+                "OLD"."PDIntervalLowerBoundary" as "OLD_PDIntervalLowerBoundary",
+                "OLD"."PDIntervalMidRange" as "OLD_PDIntervalMidRange",
+                "OLD"."PDIntervalUpperBoundary" as "OLD_PDIntervalUpperBoundary",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::MasterRatingMap" as "OLD"
+            on
+                                                ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+                                                ( "IN"."MasterRating" = "OLD"."MasterRating" or "IN"."MasterRating" is null ) and
+                                                ( "IN"."MasterRatingScale" = "OLD"."MasterRatingScale" or "IN"."MasterRatingScale" is null ) and
+                                                ( "IN"."Rating" = "OLD"."Rating" or "IN"."Rating" is null ) and
+                                                ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+                                                ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+                                                ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+                                                ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::MasterRatingMap"
+    where (
+        "IsFxRating",
+        "MasterRating",
+        "MasterRatingScale",
+        "Rating",
+        "RatingAgency",
+        "RatingCategory",
+        "RatingMethod",
+        "TimeHorizon",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."IsFxRating",
+            "OLD"."MasterRating",
+            "OLD"."MasterRatingScale",
+            "OLD"."Rating",
+            "OLD"."RatingAgency",
+            "OLD"."RatingCategory",
+            "OLD"."RatingMethod",
+            "OLD"."TimeHorizon",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::MasterRatingMap" as "OLD"
+        on
+                                       ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+                                       ( "IN"."MasterRating" = "OLD"."MasterRating" or "IN"."MasterRating" is null ) and
+                                       ( "IN"."MasterRatingScale" = "OLD"."MasterRatingScale" or "IN"."MasterRatingScale" is null ) and
+                                       ( "IN"."Rating" = "OLD"."Rating" or "IN"."Rating" is null ) and
+                                       ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+                                       ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+                                       ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+                                       ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

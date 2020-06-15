@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::ProofOfQualificationErase" (IN ROW "sap.fsdm.tabletypes::ProofOfQualificationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "IDSystem" is null and
+                         "IssuingOrganization" is null and
+                         "QualificationIdentifier" is null and
+                         "_IndividualPerson.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ProofOfQualification" WHERE
+("IDSystem" ,
+"IssuingOrganization" ,
+"QualificationIdentifier" ,
+"_IndividualPerson.BusinessPartnerID" 
+)in ( select "OLD"."IDSystem" ,
+"OLD"."IssuingOrganization" ,
+"OLD"."QualificationIdentifier" ,
+"OLD"."_IndividualPerson.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProofOfQualification" "OLD"
+on
+  ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+  ( "IN"."IssuingOrganization" = "OLD"."IssuingOrganization" or "IN"."IssuingOrganization" is null ) and
+  ( "IN"."QualificationIdentifier" = "OLD"."QualificationIdentifier" or "IN"."QualificationIdentifier" is null ) and
+  ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ProofOfQualification_Historical" WHERE
+("IDSystem" ,
+"IssuingOrganization" ,
+"QualificationIdentifier" ,
+"_IndividualPerson.BusinessPartnerID" 
+)in ( select "OLD"."IDSystem" ,
+"OLD"."IssuingOrganization" ,
+"OLD"."QualificationIdentifier" ,
+"OLD"."_IndividualPerson.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProofOfQualification_Historical" "OLD"
+on
+  ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+  ( "IN"."IssuingOrganization" = "OLD"."IssuingOrganization" or "IN"."IssuingOrganization" is null ) and
+  ( "IN"."QualificationIdentifier" = "OLD"."QualificationIdentifier" or "IN"."QualificationIdentifier" is null ) and
+  ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) 
+);
+
+END

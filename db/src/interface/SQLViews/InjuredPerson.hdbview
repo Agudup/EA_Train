@@ -1,0 +1,38 @@
+view "sap.fsdm.SQLViews::InjuredPerson_View" 
+as select
+      "_IndividualPerson.BusinessPartnerID" ,
+      "_PersonalInjury.LossCategory" ,
+      "_PersonalInjury._Claim.ID" ,
+      "_PersonalInjury._Claim.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "DegreeofDisability" ,
+      "ExistingInjuryExistsIndicator" ,
+      "FatalInjuryExistsIndicator" ,
+      "InjuryCause" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InjuredPerson"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClaimItem_View" as "_ClaimItem__InjuredPerson"
+	  on "_PersonalInjury._Claim.IDSystem" = "_ClaimItem__InjuredPerson"."_InjuredPerson._PersonalInjury._Claim.IDSystem" AND 
+	     "_PersonalInjury._Claim.ID" = "_ClaimItem__InjuredPerson"."_InjuredPerson._PersonalInjury._Claim.ID" AND 
+	     "_PersonalInjury.LossCategory" = "_ClaimItem__InjuredPerson"."_InjuredPerson._PersonalInjury.LossCategory" AND 
+	     "_IndividualPerson.BusinessPartnerID" = "_ClaimItem__InjuredPerson"."_InjuredPerson._IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_IndividualPerson"
+	  on "_IndividualPerson"."BusinessPartnerID" = "_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Loss_View" as "_PersonalInjury"
+	  on "_PersonalInjury"."LossCategory" = "_PersonalInjury.LossCategory" AND 
+	     "_PersonalInjury"."_Claim.ID" = "_PersonalInjury._Claim.ID" AND 
+	     "_PersonalInjury"."_Claim.IDSystem" = "_PersonalInjury._Claim.IDSystem"
+	     
+);

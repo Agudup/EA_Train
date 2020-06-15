@@ -1,0 +1,99 @@
+PROCEDURE "sap.fsdm.procedures::AddressEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::AddressTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::AddressTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::AddressTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "AddressType" is null and
+                         "SequenceNumber" is null and
+                         "ASSOC_BankingChannel.BankingChannelID" is null and
+                         "ASSOC_BusinessPartnerID.BusinessPartnerID" is null and
+                         "ASSOC_OrganizationalUnit.OrganizationalUnitID" is null and
+                         "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "ASSOC_PhysicalAsset.PhysicalAssetID" is null and
+                         "_Claim.ID" is null and
+                         "_Claim.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"AddressType",
+"SequenceNumber",
+"ASSOC_BankingChannel.BankingChannelID",
+"ASSOC_BusinessPartnerID.BusinessPartnerID",
+"ASSOC_OrganizationalUnit.OrganizationalUnitID",
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"ASSOC_PhysicalAsset.PhysicalAssetID",
+"_Claim.ID",
+"_Claim.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::Address" WHERE("AddressType" ,
+"SequenceNumber" ,
+"ASSOC_BankingChannel.BankingChannelID" ,
+"ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+)in ( select "AddressType" ,
+"SequenceNumber" ,
+"ASSOC_BankingChannel.BankingChannelID" ,
+"ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"AddressType",
+"SequenceNumber",
+"ASSOC_BankingChannel.BankingChannelID",
+"ASSOC_BusinessPartnerID.BusinessPartnerID",
+"ASSOC_OrganizationalUnit.OrganizationalUnitID",
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"ASSOC_PhysicalAsset.PhysicalAssetID",
+"_Claim.ID",
+"_Claim.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::Address_Historical" WHERE("AddressType" ,
+"SequenceNumber" ,
+"ASSOC_BankingChannel.BankingChannelID" ,
+"ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+)in ( select "AddressType" ,
+"SequenceNumber" ,
+"ASSOC_BankingChannel.BankingChannelID" ,
+"ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+from :ROW );
+
+END

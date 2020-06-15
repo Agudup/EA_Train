@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentIntradayQuotationLoad" (IN ROW "sap.fsdm.tabletypes::InstrumentIntradayQuotationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::InstrumentIntradayQuotation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::InstrumentIntradayQuotation" (
+"PriceDataProvider",
+"PriceSeriesType",
+"SequenceNumber",
+"Timestamp",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID",
+"AskQuantity",
+"BestAsk",
+"BestBid",
+"BidQuantity",
+"Currency",
+"InstrumentIntradayQuotationCategory",
+"NetAssetValue",
+"NetAssetValueCurrency",
+"PriceNotationForm",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "PriceDataProvider"  ,
+  "PriceSeriesType"  ,
+  "SequenceNumber"  ,
+  "Timestamp"  ,
+  "_Exchange.MarketIdentifierCode"  ,
+  "_FinancialInstrument.FinancialInstrumentID"  ,
+  "AskQuantity"  ,
+  "BestAsk"  ,
+  "BestBid"  ,
+  "BidQuantity"  ,
+  "Currency"  ,
+  "InstrumentIntradayQuotationCategory"  ,
+  "NetAssetValue"  ,
+  "NetAssetValueCurrency"  ,
+  "PriceNotationForm"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

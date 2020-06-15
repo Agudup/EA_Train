@@ -1,0 +1,27 @@
+view "sap.fsdm.Views::ValuationSchedule_View" ( IN I_BUSINESS_DATE TIMESTAMP, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "_TotalReturnSwapReturnLeg._Swap.FinancialContractID" as "_TotalReturnSwapReturnLeg__Swap_FinancialContractID",
+      "_TotalReturnSwapReturnLeg._Swap.IDSystem" as "_TotalReturnSwapReturnLeg__Swap_IDSystem",
+      "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" as "_TotalReturnSwapReturnLeg__Underlying_FinancialInstrumentID",
+      "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" as "_TotalReturnSwapReturnLeg__UnderlyingIndex_IndexID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "BusinessCalendar" as "BusinessCalendar",
+      "BusinessDayConvention" as "BusinessDayConvention",
+      "FirstValuationDate" as "FirstValuationDate",
+      "LastValuationDate" as "LastValuationDate",
+      "ValuationDate" as "ValuationDate",
+      "ValuationPeriodLength" as "ValuationPeriodLength",
+      "ValuationPeriodUnit" as "ValuationPeriodUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ValuationSchedule"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

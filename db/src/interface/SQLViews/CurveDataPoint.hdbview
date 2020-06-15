@@ -1,0 +1,23 @@
+view "sap.fsdm.SQLViews::CurveDataPoint_View" 
+as select
+      "TimeToMaturity" ,
+      "ASSOC_YieldCurve.YieldCurveID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "DiscountFactor" ,
+      "Rate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CurveDataPoint"
+with associations
+(
+	join "sap.fsdm.SQLViews::YieldCurve_View" as "ASSOC_YieldCurve"
+	  on "ASSOC_YieldCurve"."YieldCurveID" = "ASSOC_YieldCurve.YieldCurveID"
+	     
+);

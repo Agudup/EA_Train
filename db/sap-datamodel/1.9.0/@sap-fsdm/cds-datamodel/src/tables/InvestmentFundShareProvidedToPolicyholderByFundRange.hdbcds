@@ -1,0 +1,20 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FundRange";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "InvestmentFundShareProvidedToPolicyholderByFundRange" {
+    key "_FundRange"                    : association to FundRange {
+                                                                     ID,
+                                                                     IDSystem
+                                                                   }                                   not null;
+    key "_InvestmentFundShare"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

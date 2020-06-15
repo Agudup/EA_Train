@@ -1,0 +1,51 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartnerRelation";
+
+entity "PartnerRelationClassification" {
+    key "PartnerRelationClass"                           : String(40);
+    key "PartnerRelationClassificationSystem"            : String(128);
+    key "ASSOC_BusinessPartnerRelation"                  : association to BusinessPartnerRelation {
+                                                                                                    BusinessPartnerRelationType,
+                                                                                                    ASSOC_SourceInBusinessPartnerRelation,
+                                                                                                    ASSOC_TargetInBusinessPartnerRelation
+                                                                                                  } not null;
+    key "BusinessValidFrom"                              : LocalDate;
+    key "BusinessValidTo"                                : LocalDate;
+        "SystemValidFrom"                                : UTCTimestamp                             not null;
+        "SystemValidTo"                                  : UTCTimestamp                             not null;
+        "PartnerRelationClassDescription"                : String(256);
+        "PartnerRelationClassificationSystemDescription" : String(256);
+        "SourceSystemID"                                 : String(128);
+        "ChangeTimestampInSourceSystem"                  : UTCTimestamp;
+        "ChangingUserInSourceSystem"                     : String(128);
+        "ChangingProcessType"                            : String(40);
+        "ChangingProcessID"                              : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PartnerRelationClassification_Historical" {
+    "PartnerRelationClass"                           : String(40)                               not null;
+    "PartnerRelationClassificationSystem"            : String(128)                              not null;
+    "ASSOC_BusinessPartnerRelation"                  : association to BusinessPartnerRelation {
+                                                                                                BusinessPartnerRelationType,
+                                                                                                ASSOC_SourceInBusinessPartnerRelation,
+                                                                                                ASSOC_TargetInBusinessPartnerRelation
+                                                                                              } not null;
+    "BusinessValidFrom"                              : LocalDate                                not null;
+    "BusinessValidTo"                                : LocalDate                                not null;
+    "SystemValidFrom"                                : UTCTimestamp                             not null;
+    "SystemValidTo"                                  : UTCTimestamp                             not null;
+    "PartnerRelationClassDescription"                : String(256);
+    "PartnerRelationClassificationSystemDescription" : String(256);
+    "SourceSystemID"                                 : String(128);
+    "ChangeTimestampInSourceSystem"                  : UTCTimestamp;
+    "ChangingUserInSourceSystem"                     : String(128);
+    "ChangingProcessType"                            : String(40);
+    "ChangingProcessID"                              : String(128);
+}
+technical configuration {
+    column store;
+};

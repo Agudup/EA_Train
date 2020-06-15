@@ -1,0 +1,387 @@
+view "sap.fsdm.SQLViews::BusinessPartner_View" 
+as select
+      "BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AristocraticTitle" ,
+      "BusinessPartnerCategory" ,
+      "ChildrenAtHomeIndicator" ,
+      "ConcentrationFactor" ,
+      "Consultation" ,
+      "ContributionsFromAllClearingMembers" ,
+      "CountryOfBirth" ,
+      "CountryOfIncorporation" ,
+      "DateOfBirth" ,
+      "DateOfDeath" ,
+      "DateOfIncorporation" ,
+      "DeceasedFlag" ,
+      "DefaultFundCurrency" ,
+      "EducationLevel" ,
+      "EmployeeID" ,
+      "EmploymentDate" ,
+      "FundType" ,
+      "Gender" ,
+      "GivenName" ,
+      "GlobalSystemRelevantFinancialInstitution" ,
+      "GroupCategory" ,
+      "GroupType" ,
+      "HouseHoldGrossIncome" ,
+      "HouseHoldGrossIncomeCurrency" ,
+      "HouseHoldGrossIncomeTimeUnit" ,
+      "HouseHoldNetIncome" ,
+      "HouseHoldNetIncomeCurrency" ,
+      "HouseHoldNetIncomeTimeUnit" ,
+      "HypotheticalCapitalRequirementsOfCCP" ,
+      "IndividualCategory" ,
+      "InstitutionalProtectionScheme" ,
+      "IsCompany" ,
+      "IsHomeOwner" ,
+      "IsPoliticallyExposedPerson" ,
+      "JobTitle" ,
+      "JointLiabilityType" ,
+      "LastName" ,
+      "LegalForm" ,
+      "MaritalStatus" ,
+      "MiddleName" ,
+      "MinorToMajorDate" ,
+      "Name" ,
+      "NameAtBirth" ,
+      "NameSupplement" ,
+      "Nationality" ,
+      "NumberHouseholdMembers" ,
+      "NumberOfClearingMembers" ,
+      "OrganizationCategory" ,
+      "PlaceOfBirth" ,
+      "PlaceOfRegister" ,
+      "PreferredCorrespondenceLanguage" ,
+      "PrefundedOwnResourcesOfCCP" ,
+      "QualifiedCCP" ,
+      "Register" ,
+      "RegulatedFinancialInstitution" ,
+      "RelationshipStartDate" ,
+      "ReligiousHonorific" ,
+      "ResidingCountry" ,
+      "ResidingSince" ,
+      "ResidingStatus" ,
+      "RiskCountry" ,
+      "RoleInClearing" ,
+      "SecondNationality" ,
+      "ShortName" ,
+      "SmokerIndicator" ,
+      "Title" ,
+      "Type" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BusinessPartner"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountHolderOfExternalSettlementAccount_View" as "_AccountHolderOfExternalSettlementAccount__AccountHolderOfExternalSettlementAccount"
+	  on "BusinessPartnerID" = "_AccountHolderOfExternalSettlementAccount__AccountHolderOfExternalSettlementAccount"."_AccountHolderOfExternalSettlementAccount.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Address_View" as "_Address_ASSOC_BusinessPartnerID"
+	  on "BusinessPartnerID" = "_Address_ASSOC_BusinessPartnerID"."ASSOC_BusinessPartnerID.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::AlternativeBusinessPartnerIdentification_View" as "_AlternativeBusinessPartnerIdentification_ASSOC_BusinessPartnerID"
+	  on "BusinessPartnerID" = "_AlternativeBusinessPartnerIdentification_ASSOC_BusinessPartnerID"."ASSOC_BusinessPartnerID.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::AnalystEstimate_View" as "_AnalystEstimate__BusinessPartner"
+	  on "BusinessPartnerID" = "_AnalystEstimate__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Appointment_View" as "_Appointment__IndividualPerson"
+	  on "BusinessPartnerID" = "_Appointment__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Appointment_View" as "_Appointment__Organization"
+	  on "BusinessPartnerID" = "_Appointment__Organization"."_Organization.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BankEmployeeContractAssignment_View" as "_BankEmployeeContractAssignment_ASSOC_EmployeeResponsibleForContract"
+	  on "BusinessPartnerID" = "_BankEmployeeContractAssignment_ASSOC_EmployeeResponsibleForContract"."ASSOC_EmployeeResponsibleForContract.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannelStatus_View" as "_BankingChannelStatus_ASSOC_ChannelStatusChanger"
+	  on "BusinessPartnerID" = "_BankingChannelStatus_ASSOC_ChannelStatusChanger"."ASSOC_ChannelStatusChanger.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BenefitsRight_View" as "_BenefitsRight__BusinessPartner"
+	  on "BusinessPartnerID" = "_BenefitsRight__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerCentralRole_View" as "_BusinessPartnerCentralRole__BusinessPartner"
+	  on "BusinessPartnerID" = "_BusinessPartnerCentralRole__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerClassification_View" as "_BusinessPartnerClassification_ASSOC_BusinessPartnerID"
+	  on "BusinessPartnerID" = "_BusinessPartnerClassification_ASSOC_BusinessPartnerID"."ASSOC_BusinessPartnerID.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerContractAssignment_View" as "_BusinessPartnerContractAssignment_ASSOC_PartnerInParticipation"
+	  on "BusinessPartnerID" = "_BusinessPartnerContractAssignment_ASSOC_PartnerInParticipation"."ASSOC_PartnerInParticipation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerOrganizationalUnitAssignment_View" as "_BusinessPartnerOrganizationalUnitAssignment_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_BusinessPartnerOrganizationalUnitAssignment_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerPhysicalAssetAssignment_View" as "_BusinessPartnerPhysicalAssetAssignment_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_BusinessPartnerPhysicalAssetAssignment_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerRelation_View" as "_BusinessPartnerRelation_ASSOC_SourceInBusinessPartnerRelation"
+	  on "BusinessPartnerID" = "_BusinessPartnerRelation_ASSOC_SourceInBusinessPartnerRelation"."ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerRelation_View" as "_BusinessPartnerRelation_ASSOC_TargetInBusinessPartnerRelation"
+	  on "BusinessPartnerID" = "_BusinessPartnerRelation_ASSOC_TargetInBusinessPartnerRelation"."ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerStatus_View" as "_BusinessPartnerStatus_ASSOC_EmployeeResponsibleForStatusChange"
+	  on "BusinessPartnerID" = "_BusinessPartnerStatus_ASSOC_EmployeeResponsibleForStatusChange"."ASSOC_EmployeeResponsibleForStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerStatus_View" as "_BusinessPartnerStatus_ASSOC_Partner"
+	  on "BusinessPartnerID" = "_BusinessPartnerStatus_ASSOC_Partner"."ASSOC_Partner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerTradeAssignment_View" as "_BusinessPartnerTradeAssignment__BusinessPartner"
+	  on "BusinessPartnerID" = "_BusinessPartnerTradeAssignment__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CardIssue_View" as "_CardIssue_ASSOC_CardHolder"
+	  on "BusinessPartnerID" = "_CardIssue_ASSOC_CardHolder"."ASSOC_CardHolder.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Claimant_View" as "_Claimant__BusinessPartner"
+	  on "BusinessPartnerID" = "_Claimant__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortion_View" as "_CollateralPortion_ASSOC_CoveredObligorInCaseOfFullCoverage"
+	  on "BusinessPartnerID" = "_CollateralPortion_ASSOC_CoveredObligorInCaseOfFullCoverage"."ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortion_View" as "_CollateralPortion__Creditor"
+	  on "BusinessPartnerID" = "_CollateralPortion__Creditor"."_Creditor.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortionBusinessPartnerAssignment_View" as "_CollateralPortionBusinessPartnerAssignment__BusinessPartner"
+	  on "BusinessPartnerID" = "_CollateralPortionBusinessPartnerAssignment__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_Collection__Client"
+	  on "BusinessPartnerID" = "_Collection__Client"."_Client.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_Collection__EmployeeResponsibleForPortfolio"
+	  on "BusinessPartnerID" = "_Collection__EmployeeResponsibleForPortfolio"."_EmployeeResponsibleForPortfolio.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_BusinessEventDataOwner"
+	  on "BusinessPartnerID" = "_CommunicationEvent_ASSOC_BusinessEventDataOwner"."ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_CompanyEmployeeHandlingTheEvent"
+	  on "BusinessPartnerID" = "_CommunicationEvent_ASSOC_CompanyEmployeeHandlingTheEvent"."ASSOC_CompanyEmployeeHandlingTheEvent.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_EarlyWarningForPartner"
+	  on "BusinessPartnerID" = "_CommunicationEvent_ASSOC_EarlyWarningForPartner"."ASSOC_EarlyWarningForPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_EmployeeResponsibleForEarlyWarning"
+	  on "BusinessPartnerID" = "_CommunicationEvent_ASSOC_EmployeeResponsibleForEarlyWarning"."ASSOC_EmployeeResponsibleForEarlyWarning.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_Sender"
+	  on "BusinessPartnerID" = "_CommunicationEvent_ASSOC_Sender"."ASSOC_Sender.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEventStatus_View" as "_CommunicationEventStatus_ASSOC_StatusChanger"
+	  on "BusinessPartnerID" = "_CommunicationEventStatus_ASSOC_StatusChanger"."ASSOC_StatusChanger.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationExclusions_View" as "_CommunicationExclusions_ASSOC_CommunicatingCompany"
+	  on "BusinessPartnerID" = "_CommunicationExclusions_ASSOC_CommunicatingCompany"."ASSOC_CommunicatingCompany.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationExclusions_View" as "_CommunicationExclusions_ASSOC_Partner"
+	  on "BusinessPartnerID" = "_CommunicationExclusions_ASSOC_Partner"."ASSOC_Partner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CompanyCode_View" as "_CompanyCode_ASSOC_Company"
+	  on "BusinessPartnerID" = "_CompanyCode_ASSOC_Company"."ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ConsentStatementGivenByIndividiualPerson_View" as "_ConsentStatementGivenByIndividiualPerson__IndividualPerson"
+	  on "BusinessPartnerID" = "_ConsentStatementGivenByIndividiualPerson__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ConsolidatedBusinessPartner_View" as "_ConsolidatedBusinessPartner_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_ConsolidatedBusinessPartner_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ConsolidatedBusinessPartner_View" as "_ConsolidatedBusinessPartner_ASSOC_MotherCompany"
+	  on "BusinessPartnerID" = "_ConsolidatedBusinessPartner_ASSOC_MotherCompany"."ASSOC_MotherCompany.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ContractChannelStatus_View" as "_ContractChannelStatus_ASSOC_EmployeeResponsibleForStatusChange"
+	  on "BusinessPartnerID" = "_ContractChannelStatus_ASSOC_EmployeeResponsibleForStatusChange"."ASSOC_EmployeeResponsibleForStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ContractStatus_View" as "_ContractStatus_ASSOC_EmployeeResponsibleForStatusChange"
+	  on "BusinessPartnerID" = "_ContractStatus_ASSOC_EmployeeResponsibleForStatusChange"."ASSOC_EmployeeResponsibleForStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditDefaultSwapReferenceEntity_View" as "_CreditDefaultSwapReferenceEntity__ReferenceEntity"
+	  on "BusinessPartnerID" = "_CreditDefaultSwapReferenceEntity__ReferenceEntity"."_ReferenceEntity.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskProbabilityOfDefault_View" as "_CreditRiskProbabilityOfDefault_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_CreditRiskProbabilityOfDefault_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CurrencyRoles_View" as "_CurrencyRoles__BusinessPartner"
+	  on "BusinessPartnerID" = "_CurrencyRoles__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::DataProtectionAndPrivacyDetails_View" as "_DataProtectionAndPrivacyDetails_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_DataProtectionAndPrivacyDetails_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::DigitalBankingPlatformAccess_View" as "_DigitalBankingPlatformAccess_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_DigitalBankingPlatformAccess_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Document_View" as "_Document_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_Document_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveLimit_View" as "_EffectiveLimit_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_EffectiveLimit_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ElectronicFundsTransferMethod_View" as "_ElectronicFundsTransferMethod__BusinessPartner"
+	  on "BusinessPartnerID" = "_ElectronicFundsTransferMethod__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::EligibleCollateral_View" as "_EligibleCollateral__Organization"
+	  on "BusinessPartnerID" = "_EligibleCollateral__Organization"."_Organization.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::EmailAddress_View" as "_EmailAddress_ASSOC_Partner"
+	  on "BusinessPartnerID" = "_EmailAddress_ASSOC_Partner"."ASSOC_Partner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::EuropeanRegulatoryReportingForBusinessPartner_View" as "_EuropeanRegulatoryReportingForBusinessPartner__BusinessPartner"
+	  on "BusinessPartnerID" = "_EuropeanRegulatoryReportingForBusinessPartner__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange__OrganizationRunningTheExchange"
+	  on "BusinessPartnerID" = "_Exchange__OrganizationRunningTheExchange"."_OrganizationRunningTheExchange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__BusinessPartner"
+	  on "BusinessPartnerID" = "_FSSubledgerDocument__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContractDelegation_View" as "_FinancialContractDelegation_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_FinancialContractDelegation_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContractDelegation_View" as "_FinancialContractDelegation_ASSOC_Delegator"
+	  on "BusinessPartnerID" = "_FinancialContractDelegation_ASSOC_Delegator"."ASSOC_Delegator.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__IssuerOfSecurity"
+	  on "BusinessPartnerID" = "_FinancialInstrument__IssuerOfSecurity"."_IssuerOfSecurity.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "_FinancialStandardProduct_ASSOC_Company"
+	  on "BusinessPartnerID" = "_FinancialStandardProduct_ASSOC_Company"."ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStatementData_View" as "_FinancialStatementData_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_FinancialStatementData_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Fund_View" as "_Fund__InvestmentCorporation"
+	  on "BusinessPartnerID" = "_Fund__InvestmentCorporation"."_InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::GLDocument_View" as "_GLDocument__CompanyCode"
+	  on "BusinessPartnerID" = "_GLDocument__CompanyCode"."_CompanyCode.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::GLDocument_View" as "_GLDocument__CounterpartyCompanyCode"
+	  on "BusinessPartnerID" = "_GLDocument__CounterpartyCompanyCode"."_CounterpartyCompanyCode.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::IdentifyingDocument_View" as "_IdentifyingDocument_ASSOC_IndividualPerson"
+	  on "BusinessPartnerID" = "_IdentifyingDocument_ASSOC_IndividualPerson"."ASSOC_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::IndexConstituent_View" as "_IndexConstituent__ReferenceEntity"
+	  on "BusinessPartnerID" = "_IndexConstituent__ReferenceEntity"."_ReferenceEntity.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClassAssignment_View" as "_IndustryClassAssignment_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_IndustryClassAssignment_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InjuredPerson_View" as "_InjuredPerson__IndividualPerson"
+	  on "BusinessPartnerID" = "_InjuredPerson__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentStatus_View" as "_InstrumentStatus__EmployeeResponsibleForStatusChange"
+	  on "BusinessPartnerID" = "_InstrumentStatus__EmployeeResponsibleForStatusChange"."_EmployeeResponsibleForStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredDriver_View" as "_InsuredDriver__IndividualPerson"
+	  on "BusinessPartnerID" = "_InsuredDriver__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredPerson_View" as "_InsuredPerson__IndividualPerson"
+	  on "BusinessPartnerID" = "_InsuredPerson__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::License_View" as "_License__BusinessPartner"
+	  on "BusinessPartnerID" = "_License__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::MarketAdmissionStatus_View" as "_MarketAdmissionStatus__BusinessPartner"
+	  on "BusinessPartnerID" = "_MarketAdmissionStatus__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Occupation_View" as "_Occupation_ASSOC_IndividualPerson"
+	  on "BusinessPartnerID" = "_Occupation_ASSOC_IndividualPerson"."ASSOC_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit"
+	  on "BusinessPartnerID" = "_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhoneNumber_View" as "_PhoneNumber_ASSOC_Partner"
+	  on "BusinessPartnerID" = "_PhoneNumber_ASSOC_Partner"."ASSOC_Partner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAssetLiquidationEvent_View" as "_PhysicalAssetLiquidationEvent_ASSOC_BusinessEventDataOwner"
+	  on "BusinessPartnerID" = "_PhysicalAssetLiquidationEvent_ASSOC_BusinessEventDataOwner"."ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PoliticallyExposedPersonInCountry_View" as "_PoliticallyExposedPersonInCountry__IndividualPerson"
+	  on "BusinessPartnerID" = "_PoliticallyExposedPersonInCountry__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ProofOfQualification_View" as "_ProofOfQualification__IndividualPerson"
+	  on "BusinessPartnerID" = "_ProofOfQualification__IndividualPerson"."_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Rating_View" as "_Rating_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_Rating_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Rating_View" as "_Rating_ASSOC_EmployeeResponsibleForRating"
+	  on "BusinessPartnerID" = "_Rating_ASSOC_EmployeeResponsibleForRating"."ASSOC_EmployeeResponsibleForRating.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Rating_View" as "_Rating__EmployeeApprovingTheRating"
+	  on "BusinessPartnerID" = "_Rating__EmployeeApprovingTheRating"."_EmployeeApprovingTheRating.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ReceivableBusinessPatnerAssignment_View" as "_ReceivableBusinessPatnerAssignment_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_ReceivableBusinessPatnerAssignment_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::RegulatoryIndicatorForBusinessPartner_View" as "_RegulatoryIndicatorForBusinessPartner_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_RegulatoryIndicatorForBusinessPartner_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::RelevantAccountingSystems_View" as "_RelevantAccountingSystems__Company"
+	  on "BusinessPartnerID" = "_RelevantAccountingSystems__Company"."_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::RelevantRegulations_View" as "_RelevantRegulations__Company"
+	  on "BusinessPartnerID" = "_RelevantRegulations__Company"."_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Representation_View" as "_Representation_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_Representation_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Representation_View" as "_Representation_ASSOC_ContactPerson"
+	  on "BusinessPartnerID" = "_Representation_ASSOC_ContactPerson"."ASSOC_ContactPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::RetirementPlan_View" as "_RetirementPlan__BusinessPartner"
+	  on "BusinessPartnerID" = "_RetirementPlan__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_BusinessEventDataOwner"
+	  on "BusinessPartnerID" = "_Settlement_ASSOC_BusinessEventDataOwner"."ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardReferenceObligation_View" as "_StandardReferenceObligation__BusinessPartner"
+	  on "BusinessPartnerID" = "_StandardReferenceObligation__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Subclaim_View" as "_Subclaim__BusinessPartner"
+	  on "BusinessPartnerID" = "_Subclaim__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__BusinessPartner"
+	  on "BusinessPartnerID" = "_SubledgerAccountbalance__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Subrogation_View" as "_Subrogation__BusinessPartner"
+	  on "BusinessPartnerID" = "_Subrogation__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TaxComplianceData_View" as "_TaxComplianceData__BusinessPartner"
+	  on "BusinessPartnerID" = "_TaxComplianceData__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__BusinessEventDataOwner"
+	  on "BusinessPartnerID" = "_Trade__BusinessEventDataOwner"."_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TradeStatus_View" as "_TradeStatus__EmployeeResponsibleForTradeStatusChange"
+	  on "BusinessPartnerID" = "_TradeStatus__EmployeeResponsibleForTradeStatusChange"."_EmployeeResponsibleForTradeStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder_ASSOC_BusinessEventDataOwner"
+	  on "BusinessPartnerID" = "_TransferOrder_ASSOC_BusinessEventDataOwner"."ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder_ASSOC_Initiator"
+	  on "BusinessPartnerID" = "_TransferOrder_ASSOC_Initiator"."ASSOC_Initiator.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrderStatus_View" as "_TransferOrderStatus_ASSOC_EmployeeResponsibleForTransferOrderStatusChange"
+	  on "BusinessPartnerID" = "_TransferOrderStatus_ASSOC_EmployeeResponsibleForTransferOrderStatusChange"."ASSOC_EmployeeResponsibleForTransferOrderStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::UniformResource_View" as "_UniformResource__BusinessPartner"
+	  on "BusinessPartnerID" = "_UniformResource__BusinessPartner"."_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_Organization"
+	  on "BusinessPartnerID" = "_Valuation_ASSOC_Organization"."ASSOC_Organization.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::VoiceAccess_View" as "_VoiceAccess_ASSOC_BusinessPartner"
+	  on "BusinessPartnerID" = "_VoiceAccess_ASSOC_BusinessPartner"."ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::WebAccount_View" as "_WebAccount_ASSOC_Partner"
+	  on "BusinessPartnerID" = "_WebAccount_ASSOC_Partner"."ASSOC_Partner.BusinessPartnerID"
+	     
+);

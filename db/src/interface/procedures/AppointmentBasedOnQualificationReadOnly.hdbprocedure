@@ -1,0 +1,288 @@
+PROCEDURE "sap.fsdm.procedures::AppointmentBasedOnQualificationReadOnly" (IN ROW "sap.fsdm.tabletypes::AppointmentBasedOnQualificationTT", OUT CURR_DEL "sap.fsdm.tabletypes::AppointmentBasedOnQualificationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::AppointmentBasedOnQualificationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_Appointment.SequenceNumber=' || TO_VARCHAR("_Appointment.SequenceNumber") || ' ' ||
+                '_Appointment._IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("_Appointment._IndividualPerson.BusinessPartnerID") || ' ' ||
+                '_ProofOfQualification.IDSystem=' || TO_VARCHAR("_ProofOfQualification.IDSystem") || ' ' ||
+                '_ProofOfQualification.IssuingOrganization=' || TO_VARCHAR("_ProofOfQualification.IssuingOrganization") || ' ' ||
+                '_ProofOfQualification.QualificationIdentifier=' || TO_VARCHAR("_ProofOfQualification.QualificationIdentifier") || ' ' ||
+                '_ProofOfQualification._IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("_ProofOfQualification._IndividualPerson.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_ProofOfQualification.IDSystem",
+                        "IN"."_ProofOfQualification.IssuingOrganization",
+                        "IN"."_ProofOfQualification.QualificationIdentifier",
+                        "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_ProofOfQualification.IDSystem",
+                        "IN"."_ProofOfQualification.IssuingOrganization",
+                        "IN"."_ProofOfQualification.QualificationIdentifier",
+                        "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_Appointment.SequenceNumber",
+                        "_Appointment._IndividualPerson.BusinessPartnerID",
+                        "_ProofOfQualification.IDSystem",
+                        "_ProofOfQualification.IssuingOrganization",
+                        "_ProofOfQualification.QualificationIdentifier",
+                        "_ProofOfQualification._IndividualPerson.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_Appointment.SequenceNumber",
+                                    "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                                    "IN"."_ProofOfQualification.IDSystem",
+                                    "IN"."_ProofOfQualification.IssuingOrganization",
+                                    "IN"."_ProofOfQualification.QualificationIdentifier",
+                                    "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_Appointment.SequenceNumber",
+                                    "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                                    "IN"."_ProofOfQualification.IDSystem",
+                                    "IN"."_ProofOfQualification.IssuingOrganization",
+                                    "IN"."_ProofOfQualification.QualificationIdentifier",
+                                    "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "_Appointment.SequenceNumber",
+        "_Appointment._IndividualPerson.BusinessPartnerID",
+        "_ProofOfQualification.IDSystem",
+        "_ProofOfQualification.IssuingOrganization",
+        "_ProofOfQualification.QualificationIdentifier",
+        "_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::AppointmentBasedOnQualification" WHERE
+        (            "_Appointment.SequenceNumber" ,
+            "_Appointment._IndividualPerson.BusinessPartnerID" ,
+            "_ProofOfQualification.IDSystem" ,
+            "_ProofOfQualification.IssuingOrganization" ,
+            "_ProofOfQualification.QualificationIdentifier" ,
+            "_ProofOfQualification._IndividualPerson.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."_Appointment.SequenceNumber",
+            "OLD"."_Appointment._IndividualPerson.BusinessPartnerID",
+            "OLD"."_ProofOfQualification.IDSystem",
+            "OLD"."_ProofOfQualification.IssuingOrganization",
+            "OLD"."_ProofOfQualification.QualificationIdentifier",
+            "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::AppointmentBasedOnQualification" as "OLD"
+            on
+               ( case when "IN"."_Appointment.SequenceNumber" is null then -1 else "IN"."_Appointment.SequenceNumber" end ) = "OLD"."_Appointment.SequenceNumber" and
+               ( case when "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_Appointment._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" and
+               ( case when "IN"."_ProofOfQualification.IDSystem" is null then '' else "IN"."_ProofOfQualification.IDSystem" end ) = "OLD"."_ProofOfQualification.IDSystem" and
+               ( case when "IN"."_ProofOfQualification.IssuingOrganization" is null then '' else "IN"."_ProofOfQualification.IssuingOrganization" end ) = "OLD"."_ProofOfQualification.IssuingOrganization" and
+               ( case when "IN"."_ProofOfQualification.QualificationIdentifier" is null then '' else "IN"."_ProofOfQualification.QualificationIdentifier" end ) = "OLD"."_ProofOfQualification.QualificationIdentifier" and
+               ( case when "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "_Appointment.SequenceNumber",
+        "_Appointment._IndividualPerson.BusinessPartnerID",
+        "_ProofOfQualification.IDSystem",
+        "_ProofOfQualification.IssuingOrganization",
+        "_ProofOfQualification.QualificationIdentifier",
+        "_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "_Appointment.SequenceNumber" is null then -1 else "_Appointment.SequenceNumber" end ) as "_Appointment.SequenceNumber",
+                    ( case when "_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "_Appointment._IndividualPerson.BusinessPartnerID" end ) as "_Appointment._IndividualPerson.BusinessPartnerID",
+                    ( case when "_ProofOfQualification.IDSystem" is null then '' else "_ProofOfQualification.IDSystem" end ) as "_ProofOfQualification.IDSystem",
+                    ( case when "_ProofOfQualification.IssuingOrganization" is null then '' else "_ProofOfQualification.IssuingOrganization" end ) as "_ProofOfQualification.IssuingOrganization",
+                    ( case when "_ProofOfQualification.QualificationIdentifier" is null then '' else "_ProofOfQualification.QualificationIdentifier" end ) as "_ProofOfQualification.QualificationIdentifier",
+                    ( case when "_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null then '' else "_ProofOfQualification._IndividualPerson.BusinessPartnerID" end ) as "_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD__Appointment.SequenceNumber" as "_Appointment.SequenceNumber" ,
+                    "OLD__Appointment._IndividualPerson.BusinessPartnerID" as "_Appointment._IndividualPerson.BusinessPartnerID" ,
+                    "OLD__ProofOfQualification.IDSystem" as "_ProofOfQualification.IDSystem" ,
+                    "OLD__ProofOfQualification.IssuingOrganization" as "_ProofOfQualification.IssuingOrganization" ,
+                    "OLD__ProofOfQualification.QualificationIdentifier" as "_ProofOfQualification.QualificationIdentifier" ,
+                    "OLD__ProofOfQualification._IndividualPerson.BusinessPartnerID" as "_ProofOfQualification._IndividualPerson.BusinessPartnerID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_ProofOfQualification.IDSystem",
+                        "IN"."_ProofOfQualification.IssuingOrganization",
+                        "IN"."_ProofOfQualification.QualificationIdentifier",
+                        "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_Appointment.SequenceNumber" as "OLD__Appointment.SequenceNumber",
+                                "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" as "OLD__Appointment._IndividualPerson.BusinessPartnerID",
+                                "OLD"."_ProofOfQualification.IDSystem" as "OLD__ProofOfQualification.IDSystem",
+                                "OLD"."_ProofOfQualification.IssuingOrganization" as "OLD__ProofOfQualification.IssuingOrganization",
+                                "OLD"."_ProofOfQualification.QualificationIdentifier" as "OLD__ProofOfQualification.QualificationIdentifier",
+                                "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" as "OLD__ProofOfQualification._IndividualPerson.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AppointmentBasedOnQualification" as "OLD"
+            on
+                ( case when "IN"."_Appointment.SequenceNumber" is null then -1 else "IN"."_Appointment.SequenceNumber" end ) = "OLD"."_Appointment.SequenceNumber" and
+                ( case when "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_Appointment._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" and
+                ( case when "IN"."_ProofOfQualification.IDSystem" is null then '' else "IN"."_ProofOfQualification.IDSystem" end ) = "OLD"."_ProofOfQualification.IDSystem" and
+                ( case when "IN"."_ProofOfQualification.IssuingOrganization" is null then '' else "IN"."_ProofOfQualification.IssuingOrganization" end ) = "OLD"."_ProofOfQualification.IssuingOrganization" and
+                ( case when "IN"."_ProofOfQualification.QualificationIdentifier" is null then '' else "IN"."_ProofOfQualification.QualificationIdentifier" end ) = "OLD"."_ProofOfQualification.QualificationIdentifier" and
+                ( case when "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD__Appointment.SequenceNumber" as "_Appointment.SequenceNumber",
+            "OLD__Appointment._IndividualPerson.BusinessPartnerID" as "_Appointment._IndividualPerson.BusinessPartnerID",
+            "OLD__ProofOfQualification.IDSystem" as "_ProofOfQualification.IDSystem",
+            "OLD__ProofOfQualification.IssuingOrganization" as "_ProofOfQualification.IssuingOrganization",
+            "OLD__ProofOfQualification.QualificationIdentifier" as "_ProofOfQualification.QualificationIdentifier",
+            "OLD__ProofOfQualification._IndividualPerson.BusinessPartnerID" as "_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_ProofOfQualification.IDSystem",
+                        "IN"."_ProofOfQualification.IssuingOrganization",
+                        "IN"."_ProofOfQualification.QualificationIdentifier",
+                        "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_Appointment.SequenceNumber" as "OLD__Appointment.SequenceNumber",
+                        "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" as "OLD__Appointment._IndividualPerson.BusinessPartnerID",
+                        "OLD"."_ProofOfQualification.IDSystem" as "OLD__ProofOfQualification.IDSystem",
+                        "OLD"."_ProofOfQualification.IssuingOrganization" as "OLD__ProofOfQualification.IssuingOrganization",
+                        "OLD"."_ProofOfQualification.QualificationIdentifier" as "OLD__ProofOfQualification.QualificationIdentifier",
+                        "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" as "OLD__ProofOfQualification._IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AppointmentBasedOnQualification" as "OLD"
+            on
+                ( case when "IN"."_Appointment.SequenceNumber" is null then -1 else "IN"."_Appointment.SequenceNumber" end ) = "OLD"."_Appointment.SequenceNumber" and
+                ( case when "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_Appointment._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" and
+                ( case when "IN"."_ProofOfQualification.IDSystem" is null then '' else "IN"."_ProofOfQualification.IDSystem" end ) = "OLD"."_ProofOfQualification.IDSystem" and
+                ( case when "IN"."_ProofOfQualification.IssuingOrganization" is null then '' else "IN"."_ProofOfQualification.IssuingOrganization" end ) = "OLD"."_ProofOfQualification.IssuingOrganization" and
+                ( case when "IN"."_ProofOfQualification.QualificationIdentifier" is null then '' else "IN"."_ProofOfQualification.QualificationIdentifier" end ) = "OLD"."_ProofOfQualification.QualificationIdentifier" and
+                ( case when "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

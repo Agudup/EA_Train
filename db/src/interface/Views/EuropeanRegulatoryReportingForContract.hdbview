@@ -1,0 +1,32 @@
+view "sap.fsdm.Views::EuropeanRegulatoryReportingForContract_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Collection.CollectionID" as "_Collection_CollectionID",
+      "_Collection.IDSystem" as "_Collection_IDSystem",
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount_FinancialContractID",
+      "_SecuritiesAccount.IDSystem" as "_SecuritiesAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "CoveredBondsCollateralizedByEligibleAssets" as "CoveredBondsCollateralizedByEligibleAssets",
+      "CoveredBondsPortfolioInformationAvailable" as "CoveredBondsPortfolioInformationAvailable",
+      "CoversLiquidityRiskInCountryOfIssuer" as "CoversLiquidityRiskInCountryOfIssuer",
+      "FulfillsCollateralRequirementsCRR" as "FulfillsCollateralRequirementsCRR",
+      "LiquidityClassificationOfAsset" as "LiquidityClassificationOfAsset",
+      "LocalFunding" as "LocalFunding",
+      "MarketabilityRequirementsHighLiquidAsset" as "MarketabilityRequirementsHighLiquidAsset",
+      "OperationalRequirementsEligibleLiabilitiesMREL" as "OperationalRequirementsEligibleLiabilitiesMREL",
+      "OwnCapitalDesignation" as "OwnCapitalDesignation",
+      "TradingInventory" as "TradingInventory",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::EuropeanRegulatoryReportingForContract"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

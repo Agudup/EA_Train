@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::AccruedPerformanceThreshold_View" ( IN I_BUSINESS_DATE TIMESTAMP, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_IndexSpecification._Index.IndexID" as "_IndexSpecification__Index_IndexID",
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage_ID",
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage__InsuranceContract_IDSystem",
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AccruedCapRate" as "AccruedCapRate",
+      "AccruedShieldRate" as "AccruedShieldRate",
+      "AccruedStepRate" as "AccruedStepRate",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::AccruedPerformanceThreshold"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

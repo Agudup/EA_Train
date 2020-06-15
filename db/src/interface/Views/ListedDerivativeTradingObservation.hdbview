@@ -1,0 +1,34 @@
+view "sap.fsdm.Views::ListedDerivativeTradingObservation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "MaturityDate" as "MaturityDate",
+      "PriceDataProvider" as "PriceDataProvider",
+      "PriceSeriesType" as "PriceSeriesType",
+      "PutOrCall" as "PutOrCall",
+      "SequenceNumber" as "SequenceNumber",
+      "StrikePrice" as "StrikePrice",
+      "Timestamp" as "Timestamp",
+      "_Exchange.MarketIdentifierCode" as "_Exchange_MarketIdentifierCode",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice_ReferencePriceID",
+      "Currency" as "Currency",
+      "ListedDerivativeSymbol" as "ListedDerivativeSymbol",
+      "ListedDerivativeTradingObservationCategory" as "ListedDerivativeTradingObservationCategory",
+      "Price" as "Price",
+      "PriceNotationForm" as "PriceNotationForm",
+      "Quantity" as "Quantity",
+      "StrikePriceCurrency" as "StrikePriceCurrency",
+      "TickID" as "TickID",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ListedDerivativeTradingObservation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

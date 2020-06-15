@@ -1,0 +1,44 @@
+view "sap.fsdm.SQLViews::CollateralPoolAssetAssignment_View" 
+as select
+      "_CollateralPool.CollectionID" ,
+      "_CollateralPool.IDSystem" ,
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AmountAssignedToPool" ,
+      "AssetAssignmentCategory" ,
+      "CurrencyOfAmountAssignedToPool" ,
+      "LongShort" ,
+      "PoolCoverageType" ,
+      "ShareAssignedToPool" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CollateralPoolAssetAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::Collection_View" as "_CollateralPool"
+	  on "_CollateralPool"."IDSystem" = "_CollateralPool.IDSystem" AND 
+	     "_CollateralPool"."CollectionID" = "_CollateralPool.CollectionID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID" AND 
+	     "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem"
+	     
+);

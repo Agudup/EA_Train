@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::CoveredFinancialInstrumentAssignmentErase" (IN ROW "sap.fsdm.tabletypes::CoveredFinancialInstrumentAssignmentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_CollateralPool.CollectionID" is null and
+                         "_CollateralPool.IDSystem" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CoveredFinancialInstrumentAssignment" WHERE
+("_CollateralPool.CollectionID" ,
+"_CollateralPool.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."_CollateralPool.CollectionID" ,
+"OLD"."_CollateralPool.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CoveredFinancialInstrumentAssignment" "OLD"
+on
+  ( "IN"."_CollateralPool.CollectionID" = "OLD"."_CollateralPool.CollectionID" or "IN"."_CollateralPool.CollectionID" is null ) and
+  ( "IN"."_CollateralPool.IDSystem" = "OLD"."_CollateralPool.IDSystem" or "IN"."_CollateralPool.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CoveredFinancialInstrumentAssignment_Historical" WHERE
+("_CollateralPool.CollectionID" ,
+"_CollateralPool.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."_CollateralPool.CollectionID" ,
+"OLD"."_CollateralPool.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CoveredFinancialInstrumentAssignment_Historical" "OLD"
+on
+  ( "IN"."_CollateralPool.CollectionID" = "OLD"."_CollateralPool.CollectionID" or "IN"."_CollateralPool.CollectionID" is null ) and
+  ( "IN"."_CollateralPool.IDSystem" = "OLD"."_CollateralPool.IDSystem" or "IN"."_CollateralPool.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+END

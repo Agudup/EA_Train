@@ -1,0 +1,88 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "DueSettlement" {
+    key "DueDate"                           : LocalDate                                                    default '0001-01-01';
+    key "DueSettlementsDeterminationMethod" : String(20)                                                   default '';
+    key "ItemNumber"                        : Integer                                                      default -1;
+    key "Scenario"                          : String(20)                                                   default '';
+    key "ASSOC_FinancialContract"           : association to FinancialContract {
+                                                                                 FinancialContractID,
+                                                                                 IDSystem
+                                                                               }                           not null;
+    key "ASSOC_PositionCurrencyForAccount"  : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                       PositionCurrency,
+                                                                                                       ASSOC_MultiCcyAccnt
+                                                                                                     }     not null;
+    key "_Collection"                       : association to Collection {
+                                                                          CollectionID,
+                                                                          IDSystem
+                                                                        }                                  not null;
+    key "_FinancialInstrument"              : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                 : LocalDate;
+    key "BusinessValidTo"                   : LocalDate;
+        "SystemValidFrom"                   : UTCTimestamp                                                 not null;
+        "SystemValidTo"                     : UTCTimestamp                                                 not null;
+        "ASSOC_SettlementAccount"           : association to FinancialContract {
+                                                                                 FinancialContractID,
+                                                                                 IDSystem
+                                                                               };
+        "Currency"                          : String(3);
+        "DueAmount"                         : Decimal(34, 6);
+        "PostingDirection"                  : String(6);
+        "TransactionType"                   : String(40);
+        "UnsignedDueAmount"                 : Decimal(34, 6);
+        "SourceSystemID"                    : String(128);
+        "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+        "ChangingUserInSourceSystem"        : String(128);
+        "ChangingProcessType"               : String(40);
+        "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "DueSettlement_Historical" {
+    "DueDate"                           : LocalDate                                                    default '0001-01-01' not null;
+    "DueSettlementsDeterminationMethod" : String(20)                                                   default '' not null;
+    "ItemNumber"                        : Integer                                                      default -1 not null;
+    "Scenario"                          : String(20)                                                   default '' not null;
+    "ASSOC_FinancialContract"           : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    "ASSOC_PositionCurrencyForAccount"  : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                   PositionCurrency,
+                                                                                                   ASSOC_MultiCcyAccnt
+                                                                                                 }     not null;
+    "_Collection"                       : association to Collection {
+                                                                      CollectionID,
+                                                                      IDSystem
+                                                                    }                                  not null;
+    "_FinancialInstrument"              : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                 : LocalDate                                                    not null;
+    "BusinessValidTo"                   : LocalDate                                                    not null;
+    "SystemValidFrom"                   : UTCTimestamp                                                 not null;
+    "SystemValidTo"                     : UTCTimestamp                                                 not null;
+    "ASSOC_SettlementAccount"           : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           };
+    "Currency"                          : String(3);
+    "DueAmount"                         : Decimal(34, 6);
+    "PostingDirection"                  : String(6);
+    "TransactionType"                   : String(40);
+    "UnsignedDueAmount"                 : Decimal(34, 6);
+    "SourceSystemID"                    : String(128);
+    "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+    "ChangingUserInSourceSystem"        : String(128);
+    "ChangingProcessType"               : String(40);
+    "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};

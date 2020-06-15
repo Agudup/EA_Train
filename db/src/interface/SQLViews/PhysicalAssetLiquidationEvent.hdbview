@@ -1,0 +1,31 @@
+view "sap.fsdm.SQLViews::PhysicalAssetLiquidationEvent_View" 
+as select
+      "LiquidationEventDate" ,
+      "LiquidationEventType" ,
+      "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_BusinessEventDataOwner.BusinessPartnerID" ,
+      "LiquidationEventOutcome" ,
+      "RealizedLiquidationAmount" ,
+      "RealizedLiquidationAmountCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PhysicalAssetLiquidationEvent"
+with associations
+(
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessEventDataOwner"
+	  on "ASSOC_BusinessEventDataOwner"."BusinessPartnerID" = "ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PhysicalAsset"
+	  on "ASSOC_PhysicalAsset"."PhysicalAssetID" = "ASSOC_PhysicalAsset.PhysicalAssetID"
+	     
+);

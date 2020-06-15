@@ -1,0 +1,42 @@
+PROCEDURE "sap.fsdm.procedures::ClaimantLoad" (IN ROW "sap.fsdm.tabletypes::ClaimantTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::Claimant" WHERE("_BusinessPartner.BusinessPartnerID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+)in ( select "_BusinessPartner.BusinessPartnerID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::Claimant" (
+"_BusinessPartner.BusinessPartnerID",
+"_Claim.ID",
+"_Claim.IDSystem",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "_BusinessPartner.BusinessPartnerID"  ,
+  "_Claim.ID"  ,
+  "_Claim.IDSystem"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

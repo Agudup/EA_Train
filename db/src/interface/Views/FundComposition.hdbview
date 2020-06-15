@@ -1,0 +1,22 @@
+view "sap.fsdm.Views::FundComposition_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "AssetClass" as "AssetClass",
+      "_Fund.FundID" as "_Fund_FundID",
+      "_Fund._InvestmentCorporation.BusinessPartnerID" as "_Fund__InvestmentCorporation_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AssetClassAmount" as "AssetClassAmount",
+      "AssetClassAmountCurrency" as "AssetClassAmountCurrency",
+      "AssetClassPercentage" as "AssetClassPercentage",
+      "DifferentiationCriterion" as "DifferentiationCriterion",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::FundComposition"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::CollateralPortionBusinessPartnerAssignment_View" 
+as select
+      "_BusinessPartner.BusinessPartnerID" ,
+      "_CollateralPortion.PortionNumber" ,
+      "_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+      "_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "RankAmongBusinessPartnersCoveredByTheCollateral" ,
+      "RankAmongCollateralsCoveringTheBusinessPartner" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CollateralPortionBusinessPartnerAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortion_View" as "_CollateralPortion"
+	  on "_CollateralPortion"."ASSOC_CollateralAgreement.FinancialContractID" = "_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "_CollateralPortion"."ASSOC_CollateralAgreement.IDSystem" = "_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "_CollateralPortion"."PortionNumber" = "_CollateralPortion.PortionNumber"
+	     
+);

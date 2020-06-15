@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::BusinessPartnerStatusErase" (IN ROW "sap.fsdm.tabletypes::BusinessPartnerStatusTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PartnerStatusCategory" is null and
+                         "PartnerStatusType" is null and
+                         "ASSOC_Partner.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::BusinessPartnerStatus" WHERE
+("PartnerStatusCategory" ,
+"PartnerStatusType" ,
+"ASSOC_Partner.BusinessPartnerID" 
+)in ( select "OLD"."PartnerStatusCategory" ,
+"OLD"."PartnerStatusType" ,
+"OLD"."ASSOC_Partner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::BusinessPartnerStatus" "OLD"
+on
+  ( "IN"."PartnerStatusCategory" = "OLD"."PartnerStatusCategory" or "IN"."PartnerStatusCategory" is null ) and
+  ( "IN"."PartnerStatusType" = "OLD"."PartnerStatusType" or "IN"."PartnerStatusType" is null ) and
+  ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::BusinessPartnerStatus_Historical" WHERE
+("PartnerStatusCategory" ,
+"PartnerStatusType" ,
+"ASSOC_Partner.BusinessPartnerID" 
+)in ( select "OLD"."PartnerStatusCategory" ,
+"OLD"."PartnerStatusType" ,
+"OLD"."ASSOC_Partner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::BusinessPartnerStatus_Historical" "OLD"
+on
+  ( "IN"."PartnerStatusCategory" = "OLD"."PartnerStatusCategory" or "IN"."PartnerStatusCategory" is null ) and
+  ( "IN"."PartnerStatusType" = "OLD"."PartnerStatusType" or "IN"."PartnerStatusType" is null ) and
+  ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+);
+
+END

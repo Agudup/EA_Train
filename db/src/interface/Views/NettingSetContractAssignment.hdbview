@@ -1,0 +1,20 @@
+view "sap.fsdm.Views::NettingSetContractAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_NettingSet.NettingSetID" as "_NettingSet_NettingSetID",
+      "_NettingSet._MasterAgreement.FinancialContractID" as "_NettingSet__MasterAgreement_FinancialContractID",
+      "_NettingSet._MasterAgreement.IDSystem" as "_NettingSet__MasterAgreement_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::NettingSetContractAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

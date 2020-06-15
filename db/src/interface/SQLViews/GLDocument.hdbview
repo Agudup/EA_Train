@@ -1,0 +1,89 @@
+view "sap.fsdm.SQLViews::GLDocument_View" 
+as select
+      "DocumentNumber" ,
+      "FiscalYear" ,
+      "ItemNumber" ,
+      "Ledger" ,
+      "PostingDate" ,
+      "_AccountingSystem.AccountingSystemID" ,
+      "_CompanyCode.BusinessPartnerID" ,
+      "_CounterpartyCompanyCode.BusinessPartnerID" ,
+      "_GLAccount.GLAccount" ,
+      "_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+      "_ProfitCenter.OrganizationalUnitID" ,
+      "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_ProfitCenterAtCounterparty.OrganizationalUnitID" ,
+      "_ProfitCenterAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "AmountInFunctionalCurrency" ,
+      "AmountInGroupCurrency" ,
+      "AmountInHardCurrency" ,
+      "AmountInIndexCurrency" ,
+      "AmountInLocalCurrency" ,
+      "AmountInTransactionCurrency" ,
+      "BusinessSegment" ,
+      "BusinessSegmentAtCounterparty" ,
+      "CreationTimestamp" ,
+      "DocumentDate" ,
+      "FiscalPeriod" ,
+      "FunctionalCurrency" ,
+      "GroupCurrency" ,
+      "HardCurrency" ,
+      "IndexCurrency" ,
+      "InversedFlag" ,
+      "InvertedFlag" ,
+      "LocalCurrency" ,
+      "MovementType" ,
+      "PostingDirection" ,
+      "RecordType" ,
+      "RefDocumentNumber" ,
+      "RefFiscalYear" ,
+      "ReferenceTaxCode" ,
+      "ResetedFlag" ,
+      "TaxBaseAmountInFunctionalCurrency" ,
+      "TaxBaseAmountInTransactionCurrency" ,
+      "TaxCode" ,
+      "TaxCountry" ,
+      "TransactionCurrency" ,
+      "TransactionReference" ,
+      "TransactionType" ,
+      "ValueDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::GLDocument"
+with associations
+(
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__GLDocumentItem"
+	  on "DocumentNumber" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem.DocumentNumber" AND 
+	     "FiscalYear" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem.FiscalYear" AND 
+	     "ItemNumber" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem.ItemNumber" AND 
+	     "Ledger" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem.Ledger" AND 
+	     "PostingDate" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem.PostingDate" AND 
+	     "_AccountingSystem.AccountingSystemID" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem._AccountingSystem.AccountingSystemID" AND 
+	     "_CompanyCode.BusinessPartnerID" = "_FSSubledgerDocument__GLDocumentItem"."_GLDocumentItem._CompanyCode.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystem"
+	  on "_AccountingSystem"."AccountingSystemID" = "_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_CompanyCode"
+	  on "_CompanyCode"."BusinessPartnerID" = "_CompanyCode.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_CounterpartyCompanyCode"
+	  on "_CounterpartyCompanyCode"."BusinessPartnerID" = "_CounterpartyCompanyCode.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::GLAccount_View" as "_GLAccount"
+	  on "_GLAccount"."GLAccount" = "_GLAccount.GLAccount" AND 
+	     "_GLAccount"."_ChartOfAccounts.ChartOfAccountId" = "_GLAccount._ChartOfAccounts.ChartOfAccountId"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_ProfitCenter"
+	  on "_ProfitCenter"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_ProfitCenter"."OrganizationalUnitID" = "_ProfitCenter.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_ProfitCenterAtCounterparty"
+	  on "_ProfitCenterAtCounterparty"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_ProfitCenterAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_ProfitCenterAtCounterparty"."OrganizationalUnitID" = "_ProfitCenterAtCounterparty.OrganizationalUnitID"
+	     
+);

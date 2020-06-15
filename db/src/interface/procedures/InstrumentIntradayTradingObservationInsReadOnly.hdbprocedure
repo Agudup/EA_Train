@@ -1,0 +1,68 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentIntradayTradingObservationInsReadOnly" (IN ROW "sap.fsdm.tabletypes::InstrumentIntradayTradingObservationTT", OUT CURR_INS "sap.fsdm.tabletypes::InstrumentIntradayTradingObservationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+
+declare in_tt "sap.fsdm.tabletypes::InstrumentIntradayTradingObservationTT" default select    ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+    ( case when "PriceSeriesType" is null then '' else "PriceSeriesType" end ) as "PriceSeriesType",
+    ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+    ( case when "Timestamp" is null then '0001-01-01 01:01:01' else "Timestamp" end ) as "Timestamp",
+    ( case when "_Exchange.MarketIdentifierCode" is null then '' else "_Exchange.MarketIdentifierCode" end ) as "_Exchange.MarketIdentifierCode",
+    ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+    "Accrual",
+    "AddOn",
+    "CleanDirtyIndicator",
+    "CumOrEx",
+    "Currency",
+    "InstrumentIntradayPriceCategory",
+    "Price",
+    "PriceNotationForm",
+    "PriceType",
+    "Quantity",
+    "TickID",
+    "TickNominalAmount",
+    "TickNominalAmountCurrency",
+    "Unit",
+    "SourceSystemID",
+    "ChangeTimestampInSourceSystem",
+    "ChangingUserInSourceSystem",
+    "ChangingProcessType",
+    "ChangingProcessID"
+from :ROW;
+
+--Insert ALL the input data
+
+CURR_INS = select 
+   "PriceDataProvider"  ,
+  "PriceSeriesType"  ,
+  "SequenceNumber"  ,
+  "Timestamp"  ,
+  "_Exchange.MarketIdentifierCode"  ,
+  "_FinancialInstrument.FinancialInstrumentID"  ,
+  "Accrual"  ,
+  "AddOn"  ,
+  "CleanDirtyIndicator"  ,
+  "CumOrEx"  ,
+  "Currency"  ,
+  "InstrumentIntradayPriceCategory"  ,
+  "Price"  ,
+  "PriceNotationForm"  ,
+  "PriceType"  ,
+  "Quantity"  ,
+  "TickID"  ,
+  "TickNominalAmount"  ,
+  "TickNominalAmountCurrency"  ,
+  "Unit"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW;
+
+
+
+END

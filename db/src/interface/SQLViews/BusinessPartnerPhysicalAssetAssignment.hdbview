@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::BusinessPartnerPhysicalAssetAssignment_View" 
+as select
+      "BusinessPartnerRole" ,
+      "RentedPropertyType" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AcquisitionDate" ,
+      "BusinessPartnerPhysicalAssetAssignmentCategory" ,
+      "NetRentIncome" ,
+      "NetRentIncomeCurrency" ,
+      "PartialOwnership" ,
+      "RentalIncomePeriodLength" ,
+      "RentalIncomePeriodTimeUnit" ,
+      "RentedPropertyQuantity" ,
+      "RentedPropertyUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BusinessPartnerPhysicalAssetAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PhysicalAsset"
+	  on "ASSOC_PhysicalAsset"."PhysicalAssetID" = "ASSOC_PhysicalAsset.PhysicalAssetID"
+	     
+);

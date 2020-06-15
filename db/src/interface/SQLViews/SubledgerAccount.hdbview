@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::SubledgerAccount_View" 
+as select
+      "SubledgerAccount" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_SubledgerAccountGroup.SubledgerAccountGroupId" ,
+      "AssetLiabilityAssignment" ,
+      "SubledgerAccountDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SubledgerAccount"
+with associations
+(
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__SubledgerAccount"
+	  on "SubledgerAccount" = "_FSSubledgerDocument__SubledgerAccount"."_SubledgerAccount.SubledgerAccount"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStatementSegment_View" as "_FinancialStatementSegment__SubledgerAccount"
+	  on "SubledgerAccount" = "_FinancialStatementSegment__SubledgerAccount"."_SubledgerAccount.SubledgerAccount"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountGroup_View" as "_SubledgerAccountGroup"
+	  on "_SubledgerAccountGroup"."SubledgerAccountGroupId" = "_SubledgerAccountGroup.SubledgerAccountGroupId"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__SubledgerAccount"
+	  on "SubledgerAccount" = "_SubledgerAccountbalance__SubledgerAccount"."_SubledgerAccount.SubledgerAccount"
+	     
+);

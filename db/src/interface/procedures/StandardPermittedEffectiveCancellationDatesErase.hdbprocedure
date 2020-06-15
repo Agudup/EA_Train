@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::StandardPermittedEffectiveCancellationDatesErase" (IN ROW "sap.fsdm.tabletypes::StandardPermittedEffectiveCancellationDatesTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "SequenceNumber" is null and
+                         "ASSOC_StandardTerminationOption.SequenceNumber" is null and
+                         "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" is null and
+                         "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" is null and
+                         "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" is null and
+                         "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::StandardPermittedEffectiveCancellationDates" WHERE
+("SequenceNumber" ,
+"ASSOC_StandardTerminationOption.SequenceNumber" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_StandardTerminationOption.SequenceNumber" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::StandardPermittedEffectiveCancellationDates" "OLD"
+on
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.SequenceNumber" = "OLD"."ASSOC_StandardTerminationOption.SequenceNumber" or "IN"."ASSOC_StandardTerminationOption.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::StandardPermittedEffectiveCancellationDates_Historical" WHERE
+("SequenceNumber" ,
+"ASSOC_StandardTerminationOption.SequenceNumber" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_StandardTerminationOption.SequenceNumber" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" ,
+"OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::StandardPermittedEffectiveCancellationDates_Historical" "OLD"
+on
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.SequenceNumber" = "OLD"."ASSOC_StandardTerminationOption.SequenceNumber" or "IN"."ASSOC_StandardTerminationOption.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" is null ) and
+  ( "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) 
+);
+
+END

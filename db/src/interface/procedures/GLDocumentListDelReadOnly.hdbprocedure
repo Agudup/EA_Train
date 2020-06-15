@@ -1,0 +1,35 @@
+PROCEDURE "sap.fsdm.procedures::GLDocumentListDelReadOnly" (IN ROW "sap.fsdm.tabletypes::GLDocumentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::GLDocumentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"DocumentNumber",
+"FiscalYear",
+"ItemNumber",
+"Ledger",
+"PostingDate",
+"_AccountingSystem.AccountingSystemID",
+"_CompanyCode.BusinessPartnerID"
+from "sap.fsdm::GLDocument" WHERE("DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"Ledger" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_CompanyCode.BusinessPartnerID" 
+)in ( select "DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"Ledger" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_CompanyCode.BusinessPartnerID" 
+from :ROW );
+
+
+END

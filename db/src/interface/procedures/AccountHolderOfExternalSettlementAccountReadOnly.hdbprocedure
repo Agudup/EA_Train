@@ -1,0 +1,49 @@
+PROCEDURE "sap.fsdm.procedures::AccountHolderOfExternalSettlementAccountReadOnly" (IN ROW "sap.fsdm.tabletypes::AccountHolderOfExternalSettlementAccountTT" , OUT CURR_DEL "sap.fsdm.tabletypes::AccountHolderOfExternalSettlementAccountTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::AccountHolderOfExternalSettlementAccountTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"_AccountHolderOfExternalSettlementAccount.BusinessPartnerID",
+"_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole",
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID",
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem"
+from "sap.fsdm::AccountHolderOfExternalSettlementAccount" WHERE("_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" ,
+"_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" ,
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" ,
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" 
+)in ( select     ( case when "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" is null then '' else "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" end ) as "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID",
+    ( case when "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" is null then '' else "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" end ) as "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole",
+    ( case when "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" is null then '' else "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" end ) as "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID",
+    ( case when "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" is null then '' else "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" end ) as "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"_AccountHolderOfExternalSettlementAccount.BusinessPartnerID",
+"_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole",
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID",
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" is null then '' else "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" end ) as "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID",
+    ( case when "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" is null then '' else "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" end ) as "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole",
+    ( case when "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" is null then '' else "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" end ) as "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID",
+    ( case when "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" is null then '' else "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" end ) as "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem",
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

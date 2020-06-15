@@ -1,0 +1,61 @@
+view "sap.fsdm.SQLViews::AssignedRightAsCollateral_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_SimpleCollateralAgreement.FinancialContractID" ,
+      "ASSOC_SimpleCollateralAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_AssignedBusinessInterest.BusinessPartnerRelationType" ,
+      "ASSOC_AssignedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_AssignedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_AssignedFinancialContract.FinancialContractID" ,
+      "ASSOC_AssignedFinancialContract.IDSystem" ,
+      "ASSOC_AssignedReceivable.ReceivableID" ,
+      "ASSOC_ReceivableRepresentingAssignedBankAccount.ReceivableID" ,
+      "AssignedAmount" ,
+      "AssignedAmountCurrency" ,
+      "AssignedPercentage" ,
+      "AssignmentOfRightCategory" ,
+      "InitialCollateralValue" ,
+      "InitialCollateralValueCurrency" ,
+      "RoleOfObligorInAssignedContract" ,
+      "ThirdPartyAccountIdentificationSystem" ,
+      "ThirdPartyBankAccountCurrency" ,
+      "ThirdPartyBankAccountHolderName" ,
+      "ThirdPartyBankAccountID" ,
+      "ThirdPartyBankID" ,
+      "ThirdPartyBankIdentificationSystem" ,
+      "ThirdPartyBankName" ,
+      "ThirdPartyIBAN" ,
+      "ThirdPartySWIFT" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AssignedRightAsCollateral"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartnerRelation_View" as "ASSOC_AssignedBusinessInterest"
+	  on "ASSOC_AssignedBusinessInterest"."ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_AssignedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_AssignedBusinessInterest"."ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_AssignedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_AssignedBusinessInterest"."BusinessPartnerRelationType" = "ASSOC_AssignedBusinessInterest.BusinessPartnerRelationType"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_AssignedFinancialContract"
+	  on "ASSOC_AssignedFinancialContract"."IDSystem" = "ASSOC_AssignedFinancialContract.IDSystem" AND 
+	     "ASSOC_AssignedFinancialContract"."FinancialContractID" = "ASSOC_AssignedFinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_AssignedReceivable"
+	  on "ASSOC_AssignedReceivable"."ReceivableID" = "ASSOC_AssignedReceivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_ReceivableRepresentingAssignedBankAccount"
+	  on "ASSOC_ReceivableRepresentingAssignedBankAccount"."ReceivableID" = "ASSOC_ReceivableRepresentingAssignedBankAccount.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_SimpleCollateralAgreement"
+	  on "ASSOC_SimpleCollateralAgreement"."FinancialContractID" = "ASSOC_SimpleCollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_SimpleCollateralAgreement"."IDSystem" = "ASSOC_SimpleCollateralAgreement.IDSystem"
+	     
+);

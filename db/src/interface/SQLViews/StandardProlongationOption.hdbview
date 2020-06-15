@@ -1,0 +1,41 @@
+view "sap.fsdm.SQLViews::StandardProlongationOption_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" ,
+      "ASSOC_StandardFixedTermDeposit.IDSystem" ,
+      "ASSOC_StandardFixedTermDeposit.PricingScheme" ,
+      "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AdditionalTermLength" ,
+      "AdditionalTermLengthTimeUnit" ,
+      "AutomaticProlongation" ,
+      "AutomaticProlongationTriggerPeriodLength" ,
+      "AutomaticProlongationTriggerPeriodTimeUnit" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "NoticePeriodLength" ,
+      "NoticePeriodTimeUnit" ,
+      "PeriodUntilExercisePeriodEnd" ,
+      "PeriodUntilExercisePeriodStart" ,
+      "PeriodUntilTimeUnit" ,
+      "ProlongationOptionType" ,
+      "ProlongationRightHolder" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardProlongationOption"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "ASSOC_StandardFixedTermDeposit"
+	  on "ASSOC_StandardFixedTermDeposit"."PricingScheme" = "ASSOC_StandardFixedTermDeposit.PricingScheme" AND 
+	     "ASSOC_StandardFixedTermDeposit"."IDSystem" = "ASSOC_StandardFixedTermDeposit.IDSystem" AND 
+	     "ASSOC_StandardFixedTermDeposit"."FinancialStandardProductID" = "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" AND 
+	     "ASSOC_StandardFixedTermDeposit"."ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+	     
+);

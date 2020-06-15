@@ -1,0 +1,444 @@
+PROCEDURE "sap.fsdm.procedures::SubrogationReadOnly" (IN ROW "sap.fsdm.tabletypes::SubrogationTT", OUT CURR_DEL "sap.fsdm.tabletypes::SubrogationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::SubrogationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("_BusinessPartner.BusinessPartnerID") || ' ' ||
+                '_Claim.ID=' || TO_VARCHAR("_Claim.ID") || ' ' ||
+                '_Claim.IDSystem=' || TO_VARCHAR("_Claim.IDSystem") || ' ' ||
+                '_Subclaim._Claimant._BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("_Subclaim._Claimant._BusinessPartner.BusinessPartnerID") || ' ' ||
+                '_Subclaim._Claimant._Claim.ID=' || TO_VARCHAR("_Subclaim._Claimant._Claim.ID") || ' ' ||
+                '_Subclaim._Claimant._Claim.IDSystem=' || TO_VARCHAR("_Subclaim._Claimant._Claim.IDSystem") || ' ' ||
+                '_Subclaim._InsuranceCoverage.ID=' || TO_VARCHAR("_Subclaim._InsuranceCoverage.ID") || ' ' ||
+                '_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "IN"."_Claim.ID",
+                        "IN"."_Claim.IDSystem",
+                        "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                        "IN"."_Subclaim._Claimant._Claim.ID",
+                        "IN"."_Subclaim._Claimant._Claim.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage.ID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "IN"."_Claim.ID",
+                        "IN"."_Claim.IDSystem",
+                        "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                        "IN"."_Subclaim._Claimant._Claim.ID",
+                        "IN"."_Subclaim._Claimant._Claim.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage.ID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_BusinessPartner.BusinessPartnerID",
+                        "_Claim.ID",
+                        "_Claim.IDSystem",
+                        "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                        "_Subclaim._Claimant._Claim.ID",
+                        "_Subclaim._Claimant._Claim.IDSystem",
+                        "_Subclaim._InsuranceCoverage.ID",
+                        "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_BusinessPartner.BusinessPartnerID",
+                                    "IN"."_Claim.ID",
+                                    "IN"."_Claim.IDSystem",
+                                    "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                                    "IN"."_Subclaim._Claimant._Claim.ID",
+                                    "IN"."_Subclaim._Claimant._Claim.IDSystem",
+                                    "IN"."_Subclaim._InsuranceCoverage.ID",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_BusinessPartner.BusinessPartnerID",
+                                    "IN"."_Claim.ID",
+                                    "IN"."_Claim.IDSystem",
+                                    "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                                    "IN"."_Subclaim._Claimant._Claim.ID",
+                                    "IN"."_Subclaim._Claimant._Claim.IDSystem",
+                                    "IN"."_Subclaim._InsuranceCoverage.ID",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "_BusinessPartner.BusinessPartnerID",
+        "_Claim.ID",
+        "_Claim.IDSystem",
+        "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+        "_Subclaim._Claimant._Claim.ID",
+        "_Subclaim._Claimant._Claim.IDSystem",
+        "_Subclaim._InsuranceCoverage.ID",
+        "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::Subrogation" WHERE
+        (            "_BusinessPartner.BusinessPartnerID" ,
+            "_Claim.ID" ,
+            "_Claim.IDSystem" ,
+            "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+            "_Subclaim._Claimant._Claim.ID" ,
+            "_Subclaim._Claimant._Claim.IDSystem" ,
+            "_Subclaim._InsuranceCoverage.ID" ,
+            "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+            "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."_BusinessPartner.BusinessPartnerID",
+            "OLD"."_Claim.ID",
+            "OLD"."_Claim.IDSystem",
+            "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+            "OLD"."_Subclaim._Claimant._Claim.ID",
+            "OLD"."_Subclaim._Claimant._Claim.IDSystem",
+            "OLD"."_Subclaim._InsuranceCoverage.ID",
+            "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::Subrogation" as "OLD"
+            on
+               ( case when "IN"."_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_BusinessPartner.BusinessPartnerID" end ) = "OLD"."_BusinessPartner.BusinessPartnerID" and
+               ( case when "IN"."_Claim.ID" is null then '' else "IN"."_Claim.ID" end ) = "OLD"."_Claim.ID" and
+               ( case when "IN"."_Claim.IDSystem" is null then '' else "IN"."_Claim.IDSystem" end ) = "OLD"."_Claim.IDSystem" and
+               ( case when "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" and
+               ( case when "IN"."_Subclaim._Claimant._Claim.ID" is null then '' else "IN"."_Subclaim._Claimant._Claim.ID" end ) = "OLD"."_Subclaim._Claimant._Claim.ID" and
+               ( case when "IN"."_Subclaim._Claimant._Claim.IDSystem" is null then '' else "IN"."_Subclaim._Claimant._Claim.IDSystem" end ) = "OLD"."_Subclaim._Claimant._Claim.IDSystem" and
+               ( case when "IN"."_Subclaim._InsuranceCoverage.ID" is null then '' else "IN"."_Subclaim._InsuranceCoverage.ID" end ) = "OLD"."_Subclaim._InsuranceCoverage.ID" and
+               ( case when "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" and
+               ( case when "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" and
+               ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+               ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+               ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "_BusinessPartner.BusinessPartnerID",
+        "_Claim.ID",
+        "_Claim.IDSystem",
+        "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+        "_Subclaim._Claimant._Claim.ID",
+        "_Subclaim._Claimant._Claim.IDSystem",
+        "_Subclaim._InsuranceCoverage.ID",
+        "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Amount",
+        "LiabilityPercent",
+        "LifeCycleStatusCode",
+        "ProbabilityPercent",
+        "Reason",
+        "Type",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "_BusinessPartner.BusinessPartnerID" is null then '' else "_BusinessPartner.BusinessPartnerID" end ) as "_BusinessPartner.BusinessPartnerID",
+                    ( case when "_Claim.ID" is null then '' else "_Claim.ID" end ) as "_Claim.ID",
+                    ( case when "_Claim.IDSystem" is null then '' else "_Claim.IDSystem" end ) as "_Claim.IDSystem",
+                    ( case when "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null then '' else "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" end ) as "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                    ( case when "_Subclaim._Claimant._Claim.ID" is null then '' else "_Subclaim._Claimant._Claim.ID" end ) as "_Subclaim._Claimant._Claim.ID",
+                    ( case when "_Subclaim._Claimant._Claim.IDSystem" is null then '' else "_Subclaim._Claimant._Claim.IDSystem" end ) as "_Subclaim._Claimant._Claim.IDSystem",
+                    ( case when "_Subclaim._InsuranceCoverage.ID" is null then '' else "_Subclaim._InsuranceCoverage.ID" end ) as "_Subclaim._InsuranceCoverage.ID",
+                    ( case when "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) as "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                    ( case when "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" end ) as "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                    ( case when "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) as "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                    ( case when "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) as "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                    ( case when "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) as "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "Amount"  ,
+                    "LiabilityPercent"  ,
+                    "LifeCycleStatusCode"  ,
+                    "ProbabilityPercent"  ,
+                    "Reason"  ,
+                    "Type"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD__BusinessPartner.BusinessPartnerID" as "_BusinessPartner.BusinessPartnerID" ,
+                    "OLD__Claim.ID" as "_Claim.ID" ,
+                    "OLD__Claim.IDSystem" as "_Claim.IDSystem" ,
+                    "OLD__Subclaim._Claimant._BusinessPartner.BusinessPartnerID" as "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+                    "OLD__Subclaim._Claimant._Claim.ID" as "_Subclaim._Claimant._Claim.ID" ,
+                    "OLD__Subclaim._Claimant._Claim.IDSystem" as "_Subclaim._Claimant._Claim.IDSystem" ,
+                    "OLD__Subclaim._InsuranceCoverage.ID" as "_Subclaim._InsuranceCoverage.ID" ,
+                    "OLD__Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+                    "OLD__Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" as "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+                    "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+                    "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+                    "OLD__Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_Amount" as "Amount" ,
+                    "OLD_LiabilityPercent" as "LiabilityPercent" ,
+                    "OLD_LifeCycleStatusCode" as "LifeCycleStatusCode" ,
+                    "OLD_ProbabilityPercent" as "ProbabilityPercent" ,
+                    "OLD_Reason" as "Reason" ,
+                    "OLD_Type" as "Type" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "IN"."_Claim.ID",
+                        "IN"."_Claim.IDSystem",
+                        "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                        "IN"."_Subclaim._Claimant._Claim.ID",
+                        "IN"."_Subclaim._Claimant._Claim.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage.ID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_BusinessPartner.BusinessPartnerID" as "OLD__BusinessPartner.BusinessPartnerID",
+                                "OLD"."_Claim.ID" as "OLD__Claim.ID",
+                                "OLD"."_Claim.IDSystem" as "OLD__Claim.IDSystem",
+                                "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" as "OLD__Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                                "OLD"."_Subclaim._Claimant._Claim.ID" as "OLD__Subclaim._Claimant._Claim.ID",
+                                "OLD"."_Subclaim._Claimant._Claim.IDSystem" as "OLD__Subclaim._Claimant._Claim.IDSystem",
+                                "OLD"."_Subclaim._InsuranceCoverage.ID" as "OLD__Subclaim._InsuranceCoverage.ID",
+                                "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Amount" as "OLD_Amount",
+                                "OLD"."LiabilityPercent" as "OLD_LiabilityPercent",
+                                "OLD"."LifeCycleStatusCode" as "OLD_LifeCycleStatusCode",
+                                "OLD"."ProbabilityPercent" as "OLD_ProbabilityPercent",
+                                "OLD"."Reason" as "OLD_Reason",
+                                "OLD"."Type" as "OLD_Type",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Subrogation" as "OLD"
+            on
+                ( case when "IN"."_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_BusinessPartner.BusinessPartnerID" end ) = "OLD"."_BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."_Claim.ID" is null then '' else "IN"."_Claim.ID" end ) = "OLD"."_Claim.ID" and
+                ( case when "IN"."_Claim.IDSystem" is null then '' else "IN"."_Claim.IDSystem" end ) = "OLD"."_Claim.IDSystem" and
+                ( case when "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."_Subclaim._Claimant._Claim.ID" is null then '' else "IN"."_Subclaim._Claimant._Claim.ID" end ) = "OLD"."_Subclaim._Claimant._Claim.ID" and
+                ( case when "IN"."_Subclaim._Claimant._Claim.IDSystem" is null then '' else "IN"."_Subclaim._Claimant._Claim.IDSystem" end ) = "OLD"."_Subclaim._Claimant._Claim.IDSystem" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage.ID" is null then '' else "IN"."_Subclaim._InsuranceCoverage.ID" end ) = "OLD"."_Subclaim._InsuranceCoverage.ID" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD__BusinessPartner.BusinessPartnerID" as "_BusinessPartner.BusinessPartnerID",
+            "OLD__Claim.ID" as "_Claim.ID",
+            "OLD__Claim.IDSystem" as "_Claim.IDSystem",
+            "OLD__Subclaim._Claimant._BusinessPartner.BusinessPartnerID" as "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+            "OLD__Subclaim._Claimant._Claim.ID" as "_Subclaim._Claimant._Claim.ID",
+            "OLD__Subclaim._Claimant._Claim.IDSystem" as "_Subclaim._Claimant._Claim.IDSystem",
+            "OLD__Subclaim._InsuranceCoverage.ID" as "_Subclaim._InsuranceCoverage.ID",
+            "OLD__Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" as "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Amount" as "Amount",
+            "OLD_LiabilityPercent" as "LiabilityPercent",
+            "OLD_LifeCycleStatusCode" as "LifeCycleStatusCode",
+            "OLD_ProbabilityPercent" as "ProbabilityPercent",
+            "OLD_Reason" as "Reason",
+            "OLD_Type" as "Type",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "IN"."_Claim.ID",
+                        "IN"."_Claim.IDSystem",
+                        "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                        "IN"."_Subclaim._Claimant._Claim.ID",
+                        "IN"."_Subclaim._Claimant._Claim.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage.ID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_BusinessPartner.BusinessPartnerID" as "OLD__BusinessPartner.BusinessPartnerID",
+                        "OLD"."_Claim.ID" as "OLD__Claim.ID",
+                        "OLD"."_Claim.IDSystem" as "OLD__Claim.IDSystem",
+                        "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" as "OLD__Subclaim._Claimant._BusinessPartner.BusinessPartnerID",
+                        "OLD"."_Subclaim._Claimant._Claim.ID" as "OLD__Subclaim._Claimant._Claim.ID",
+                        "OLD"."_Subclaim._Claimant._Claim.IDSystem" as "OLD__Subclaim._Claimant._Claim.IDSystem",
+                        "OLD"."_Subclaim._InsuranceCoverage.ID" as "OLD__Subclaim._InsuranceCoverage.ID",
+                        "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__Subclaim._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."Amount" as "OLD_Amount",
+                        "OLD"."LiabilityPercent" as "OLD_LiabilityPercent",
+                        "OLD"."LifeCycleStatusCode" as "OLD_LifeCycleStatusCode",
+                        "OLD"."ProbabilityPercent" as "OLD_ProbabilityPercent",
+                        "OLD"."Reason" as "OLD_Reason",
+                        "OLD"."Type" as "OLD_Type",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Subrogation" as "OLD"
+            on
+                ( case when "IN"."_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_BusinessPartner.BusinessPartnerID" end ) = "OLD"."_BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."_Claim.ID" is null then '' else "IN"."_Claim.ID" end ) = "OLD"."_Claim.ID" and
+                ( case when "IN"."_Claim.IDSystem" is null then '' else "IN"."_Claim.IDSystem" end ) = "OLD"."_Claim.IDSystem" and
+                ( case when "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."_Subclaim._Claimant._Claim.ID" is null then '' else "IN"."_Subclaim._Claimant._Claim.ID" end ) = "OLD"."_Subclaim._Claimant._Claim.ID" and
+                ( case when "IN"."_Subclaim._Claimant._Claim.IDSystem" is null then '' else "IN"."_Subclaim._Claimant._Claim.IDSystem" end ) = "OLD"."_Subclaim._Claimant._Claim.IDSystem" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage.ID" is null then '' else "IN"."_Subclaim._InsuranceCoverage.ID" end ) = "OLD"."_Subclaim._InsuranceCoverage.ID" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

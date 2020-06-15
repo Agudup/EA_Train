@@ -1,0 +1,76 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Exchange";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "TimeIntervalPriceObservation" {
+    key "PriceDataProvider"                    : String(256)                                                  default '';
+    key "PriceSeriesType"                      : String(40)                                                   default '';
+    key "TimeIntervalEnd"                      : UTCTimestamp;
+    key "TimeIntervalStart"                    : UTCTimestamp;
+    key "_Exchange"                            : association to Exchange { MarketIdentifierCode }             not null;
+    key "_FinancialInstrument"                 : association to FinancialInstrument { FinancialInstrumentID } not null;
+        "SystemValidFrom"                      : UTCTimestamp                                                 not null;
+        "SystemValidTo"                        : UTCTimestamp                                                 not null;
+        "AdjustedClosePrice"                   : Decimal(34, 6);
+        "AdjustmentFactor"                     : Decimal(34, 6);
+        "CleanDirtyIndicator"                  : String(20);
+        "Close"                                : Decimal(34, 6);
+        "Currency"                             : String(3);
+        "High"                                 : Decimal(34, 6);
+        "Low"                                  : Decimal(34, 6);
+        "NumberOfTrades"                       : Integer;
+        "Open"                                 : Decimal(34, 6);
+        "PriceNotationForm"                    : String(40);
+        "PriceType"                            : String(40);
+        "TimeIntervalPriceObservationCategory" : String(40);
+        "TradedNominalAmount"                  : Decimal(34, 6);
+        "TradedNominalAmountCurrency"          : String(3);
+        "TradedQuantity"                       : Decimal(34, 6);
+        "Unit"                                 : String(10);
+        "Volume"                               : Decimal(34, 6);
+        "SourceSystemID"                       : String(128);
+        "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+        "ChangingUserInSourceSystem"           : String(128);
+        "ChangingProcessType"                  : String(40);
+        "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "TimeIntervalPriceObservation_Historical" {
+    "PriceDataProvider"                    : String(256)                                                  default '' not null;
+    "PriceSeriesType"                      : String(40)                                                   default '' not null;
+    "TimeIntervalEnd"                      : UTCTimestamp                                                 not null;
+    "TimeIntervalStart"                    : UTCTimestamp                                                 not null;
+    "_Exchange"                            : association to Exchange { MarketIdentifierCode }             not null;
+    "_FinancialInstrument"                 : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "SystemValidFrom"                      : UTCTimestamp                                                 not null;
+    "SystemValidTo"                        : UTCTimestamp                                                 not null;
+    "AdjustedClosePrice"                   : Decimal(34, 6);
+    "AdjustmentFactor"                     : Decimal(34, 6);
+    "CleanDirtyIndicator"                  : String(20);
+    "Close"                                : Decimal(34, 6);
+    "Currency"                             : String(3);
+    "High"                                 : Decimal(34, 6);
+    "Low"                                  : Decimal(34, 6);
+    "NumberOfTrades"                       : Integer;
+    "Open"                                 : Decimal(34, 6);
+    "PriceNotationForm"                    : String(40);
+    "PriceType"                            : String(40);
+    "TimeIntervalPriceObservationCategory" : String(40);
+    "TradedNominalAmount"                  : Decimal(34, 6);
+    "TradedNominalAmountCurrency"          : String(3);
+    "TradedQuantity"                       : Decimal(34, 6);
+    "Unit"                                 : String(10);
+    "Volume"                               : Decimal(34, 6);
+    "SourceSystemID"                       : String(128);
+    "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+    "ChangingUserInSourceSystem"           : String(128);
+    "ChangingProcessType"                  : String(40);
+    "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};

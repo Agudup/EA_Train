@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::TotalReturnSwapReturnLeg_View" ( IN I_BUSINESS_DATE TIMESTAMP, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Swap.FinancialContractID" as "_Swap_FinancialContractID",
+      "_Swap.IDSystem" as "_Swap_IDSystem",
+      "_Underlying.FinancialInstrumentID" as "_Underlying_FinancialInstrumentID",
+      "_UnderlyingIndex.IndexID" as "_UnderlyingIndex_IndexID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::TotalReturnSwapReturnLeg"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

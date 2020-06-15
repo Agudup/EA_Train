@@ -1,0 +1,280 @@
+PROCEDURE "sap.fsdm.procedures::TransferOrderPaymentNoteLoad" (IN ROW "sap.fsdm.tabletypes::TransferOrderPaymentNoteTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_TransferOrderItem.IDSystem=' || TO_VARCHAR("ASSOC_TransferOrderItem.IDSystem") || ' ' ||
+                'ASSOC_TransferOrderItem.ItemNumber=' || TO_VARCHAR("ASSOC_TransferOrderItem.ItemNumber") || ' ' ||
+                'ASSOC_TransferOrderItem.TransferOrderID=' || TO_VARCHAR("ASSOC_TransferOrderItem.TransferOrderID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_TransferOrderItem.IDSystem",
+                        "IN"."ASSOC_TransferOrderItem.ItemNumber",
+                        "IN"."ASSOC_TransferOrderItem.TransferOrderID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_TransferOrderItem.IDSystem",
+                        "IN"."ASSOC_TransferOrderItem.ItemNumber",
+                        "IN"."ASSOC_TransferOrderItem.TransferOrderID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_TransferOrderItem.IDSystem",
+                        "ASSOC_TransferOrderItem.ItemNumber",
+                        "ASSOC_TransferOrderItem.TransferOrderID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_TransferOrderItem.IDSystem",
+                                    "IN"."ASSOC_TransferOrderItem.ItemNumber",
+                                    "IN"."ASSOC_TransferOrderItem.TransferOrderID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_TransferOrderItem.IDSystem",
+                                    "IN"."ASSOC_TransferOrderItem.ItemNumber",
+                                    "IN"."ASSOC_TransferOrderItem.TransferOrderID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::TransferOrderPaymentNote" (
+        "SequenceNumber",
+        "ASSOC_TransferOrderItem.IDSystem",
+        "ASSOC_TransferOrderItem.ItemNumber",
+        "ASSOC_TransferOrderItem.TransferOrderID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PaymentNoteContent",
+        "PaymentNoteContentType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_TransferOrderItem.IDSystem" as "ASSOC_TransferOrderItem.IDSystem" ,
+            "OLD_ASSOC_TransferOrderItem.ItemNumber" as "ASSOC_TransferOrderItem.ItemNumber" ,
+            "OLD_ASSOC_TransferOrderItem.TransferOrderID" as "ASSOC_TransferOrderItem.TransferOrderID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_PaymentNoteContent" as "PaymentNoteContent" ,
+            "OLD_PaymentNoteContentType" as "PaymentNoteContentType" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_TransferOrderItem.IDSystem",
+                        "IN"."ASSOC_TransferOrderItem.ItemNumber",
+                        "IN"."ASSOC_TransferOrderItem.TransferOrderID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_TransferOrderItem.IDSystem" as "OLD_ASSOC_TransferOrderItem.IDSystem",
+                                "OLD"."ASSOC_TransferOrderItem.ItemNumber" as "OLD_ASSOC_TransferOrderItem.ItemNumber",
+                                "OLD"."ASSOC_TransferOrderItem.TransferOrderID" as "OLD_ASSOC_TransferOrderItem.TransferOrderID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."PaymentNoteContent" as "OLD_PaymentNoteContent",
+                                "OLD"."PaymentNoteContentType" as "OLD_PaymentNoteContentType",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TransferOrderPaymentNote" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_TransferOrderItem.IDSystem" is null then '' else "IN"."ASSOC_TransferOrderItem.IDSystem" end ) = "OLD"."ASSOC_TransferOrderItem.IDSystem" and
+                ( case when "IN"."ASSOC_TransferOrderItem.ItemNumber" is null then -1 else "IN"."ASSOC_TransferOrderItem.ItemNumber" end ) = "OLD"."ASSOC_TransferOrderItem.ItemNumber" and
+                ( case when "IN"."ASSOC_TransferOrderItem.TransferOrderID" is null then '' else "IN"."ASSOC_TransferOrderItem.TransferOrderID" end ) = "OLD"."ASSOC_TransferOrderItem.TransferOrderID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::TransferOrderPaymentNote" (
+        "SequenceNumber",
+        "ASSOC_TransferOrderItem.IDSystem",
+        "ASSOC_TransferOrderItem.ItemNumber",
+        "ASSOC_TransferOrderItem.TransferOrderID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PaymentNoteContent",
+        "PaymentNoteContentType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_TransferOrderItem.IDSystem" as "ASSOC_TransferOrderItem.IDSystem",
+            "OLD_ASSOC_TransferOrderItem.ItemNumber" as "ASSOC_TransferOrderItem.ItemNumber",
+            "OLD_ASSOC_TransferOrderItem.TransferOrderID" as "ASSOC_TransferOrderItem.TransferOrderID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_PaymentNoteContent" as "PaymentNoteContent",
+            "OLD_PaymentNoteContentType" as "PaymentNoteContentType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_TransferOrderItem.IDSystem",
+                        "IN"."ASSOC_TransferOrderItem.ItemNumber",
+                        "IN"."ASSOC_TransferOrderItem.TransferOrderID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_TransferOrderItem.IDSystem" as "OLD_ASSOC_TransferOrderItem.IDSystem",
+                        "OLD"."ASSOC_TransferOrderItem.ItemNumber" as "OLD_ASSOC_TransferOrderItem.ItemNumber",
+                        "OLD"."ASSOC_TransferOrderItem.TransferOrderID" as "OLD_ASSOC_TransferOrderItem.TransferOrderID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."PaymentNoteContent" as "OLD_PaymentNoteContent",
+                        "OLD"."PaymentNoteContentType" as "OLD_PaymentNoteContentType",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TransferOrderPaymentNote" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_TransferOrderItem.IDSystem" is null then '' else "IN"."ASSOC_TransferOrderItem.IDSystem" end ) = "OLD"."ASSOC_TransferOrderItem.IDSystem" and
+                ( case when "IN"."ASSOC_TransferOrderItem.ItemNumber" is null then -1 else "IN"."ASSOC_TransferOrderItem.ItemNumber" end ) = "OLD"."ASSOC_TransferOrderItem.ItemNumber" and
+                ( case when "IN"."ASSOC_TransferOrderItem.TransferOrderID" is null then '' else "IN"."ASSOC_TransferOrderItem.TransferOrderID" end ) = "OLD"."ASSOC_TransferOrderItem.TransferOrderID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::TransferOrderPaymentNote"
+    where (
+        "SequenceNumber",
+        "ASSOC_TransferOrderItem.IDSystem",
+        "ASSOC_TransferOrderItem.ItemNumber",
+        "ASSOC_TransferOrderItem.TransferOrderID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_TransferOrderItem.IDSystem",
+            "OLD"."ASSOC_TransferOrderItem.ItemNumber",
+            "OLD"."ASSOC_TransferOrderItem.TransferOrderID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::TransferOrderPaymentNote" as "OLD"
+        on
+           ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+           ( case when "IN"."ASSOC_TransferOrderItem.IDSystem" is null then '' else "IN"."ASSOC_TransferOrderItem.IDSystem" end ) = "OLD"."ASSOC_TransferOrderItem.IDSystem" and
+           ( case when "IN"."ASSOC_TransferOrderItem.ItemNumber" is null then -1 else "IN"."ASSOC_TransferOrderItem.ItemNumber" end ) = "OLD"."ASSOC_TransferOrderItem.ItemNumber" and
+           ( case when "IN"."ASSOC_TransferOrderItem.TransferOrderID" is null then '' else "IN"."ASSOC_TransferOrderItem.TransferOrderID" end ) = "OLD"."ASSOC_TransferOrderItem.TransferOrderID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::TransferOrderPaymentNote" (
+        "SequenceNumber",
+        "ASSOC_TransferOrderItem.IDSystem",
+        "ASSOC_TransferOrderItem.ItemNumber",
+        "ASSOC_TransferOrderItem.TransferOrderID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PaymentNoteContent",
+        "PaymentNoteContentType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "ASSOC_TransferOrderItem.IDSystem" is null then '' else "ASSOC_TransferOrderItem.IDSystem" end ) as "ASSOC_TransferOrderItem.IDSystem",
+            ( case when "ASSOC_TransferOrderItem.ItemNumber" is null then -1 else "ASSOC_TransferOrderItem.ItemNumber" end ) as "ASSOC_TransferOrderItem.ItemNumber",
+            ( case when "ASSOC_TransferOrderItem.TransferOrderID" is null then '' else "ASSOC_TransferOrderItem.TransferOrderID" end ) as "ASSOC_TransferOrderItem.TransferOrderID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "PaymentNoteContent"  ,
+            "PaymentNoteContentType"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

@@ -1,0 +1,38 @@
+view "sap.fsdm.Views::Fund_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "FundID" as "FundID",
+      "_InvestmentCorporation.BusinessPartnerID" as "_InvestmentCorporation_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AssetClass" as "AssetClass",
+      "BaseCurrency" as "BaseCurrency",
+      "Benchmark" as "Benchmark",
+      "CustodianBank" as "CustodianBank",
+      "CutoffTime" as "CutoffTime",
+      "CutoffTimeZone" as "CutoffTimeZone",
+      "Domicile" as "Domicile",
+      "FinancialYearEnd" as "FinancialYearEnd",
+      "FundFamily" as "FundFamily",
+      "FundManagingInstitution" as "FundManagingInstitution",
+      "FundName" as "FundName",
+      "FundType" as "FundType",
+      "InvestmentStyle" as "InvestmentStyle",
+      "LaunchDate" as "LaunchDate",
+      "NAVCalculationPeriodLength" as "NAVCalculationPeriodLength",
+      "NAVCalculationTimeUnit" as "NAVCalculationTimeUnit",
+      "NAVDayBeforeCutoffTime" as "NAVDayBeforeCutoffTime",
+      "PortfolioManagingInstitution" as "PortfolioManagingInstitution",
+      "RegulatoryAuthority" as "RegulatoryAuthority",
+      "ReplicationType" as "ReplicationType",
+      "SwingPricingMechanism" as "SwingPricingMechanism",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::Fund"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

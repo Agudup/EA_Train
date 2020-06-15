@@ -1,0 +1,34 @@
+view "sap.fsdm.SQLViews::ValuationSchedule_View" 
+as select
+      "SequenceNumber" ,
+      "_TotalReturnSwapReturnLeg._Swap.FinancialContractID" ,
+      "_TotalReturnSwapReturnLeg._Swap.IDSystem" ,
+      "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" ,
+      "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "FirstValuationDate" ,
+      "LastValuationDate" ,
+      "ValuationDate" ,
+      "ValuationPeriodLength" ,
+      "ValuationPeriodUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ValuationSchedule"
+with associations
+(
+	join "sap.fsdm.SQLViews::TotalReturnSwapReturnLeg_View" as "_TotalReturnSwapReturnLeg"
+	  on "_TotalReturnSwapReturnLeg"."_Swap.FinancialContractID" = "_TotalReturnSwapReturnLeg._Swap.FinancialContractID" AND 
+	     "_TotalReturnSwapReturnLeg"."_Swap.IDSystem" = "_TotalReturnSwapReturnLeg._Swap.IDSystem" AND 
+	     "_TotalReturnSwapReturnLeg"."_Underlying.FinancialInstrumentID" = "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" AND 
+	     "_TotalReturnSwapReturnLeg"."_UnderlyingIndex.IndexID" = "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID"
+	     
+);

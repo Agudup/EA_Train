@@ -1,0 +1,42 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"Exchange";
+
+entity "MarketAdmissionStatus" {
+    key "MarketAdmissionLevel"          : String(10);
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_Exchange"                     : association to Exchange { MarketIdentifierCode }     not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "MarketAdmissionStatus"         : String(100);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "MarketAdmissionStatus_Historical" {
+    "MarketAdmissionLevel"          : String(10)                                           not null;
+    "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "_Exchange"                     : association to Exchange { MarketIdentifierCode }     not null;
+    "BusinessValidFrom"             : UTCTimestamp                                         not null;
+    "BusinessValidTo"               : UTCTimestamp                                         not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "MarketAdmissionStatus"         : String(100);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

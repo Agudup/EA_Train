@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::OrganizationalUnitContractAssignmentErase" (IN ROW "sap.fsdm.tabletypes::OrganizationalUnitContractAssignmentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "RoleOfOrganizationalUnit" is null and
+                         "ASSOC_Contract.FinancialContractID" is null and
+                         "ASSOC_Contract.IDSystem" is null and
+                         "ASSOC_OrgUnit.OrganizationalUnitID" is null and
+                         "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::OrganizationalUnitContractAssignment" WHERE
+("RoleOfOrganizationalUnit" ,
+"ASSOC_Contract.FinancialContractID" ,
+"ASSOC_Contract.IDSystem" ,
+"ASSOC_OrgUnit.OrganizationalUnitID" ,
+"ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+)in ( select "OLD"."RoleOfOrganizationalUnit" ,
+"OLD"."ASSOC_Contract.FinancialContractID" ,
+"OLD"."ASSOC_Contract.IDSystem" ,
+"OLD"."ASSOC_OrgUnit.OrganizationalUnitID" ,
+"OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::OrganizationalUnitContractAssignment" "OLD"
+on
+  ( "IN"."RoleOfOrganizationalUnit" = "OLD"."RoleOfOrganizationalUnit" or "IN"."RoleOfOrganizationalUnit" is null ) and
+  ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+  ( "IN"."ASSOC_OrgUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" or "IN"."ASSOC_OrgUnit.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::OrganizationalUnitContractAssignment_Historical" WHERE
+("RoleOfOrganizationalUnit" ,
+"ASSOC_Contract.FinancialContractID" ,
+"ASSOC_Contract.IDSystem" ,
+"ASSOC_OrgUnit.OrganizationalUnitID" ,
+"ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+)in ( select "OLD"."RoleOfOrganizationalUnit" ,
+"OLD"."ASSOC_Contract.FinancialContractID" ,
+"OLD"."ASSOC_Contract.IDSystem" ,
+"OLD"."ASSOC_OrgUnit.OrganizationalUnitID" ,
+"OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::OrganizationalUnitContractAssignment_Historical" "OLD"
+on
+  ( "IN"."RoleOfOrganizationalUnit" = "OLD"."RoleOfOrganizationalUnit" or "IN"."RoleOfOrganizationalUnit" is null ) and
+  ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+  ( "IN"."ASSOC_OrgUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" or "IN"."ASSOC_OrgUnit.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+);
+
+END

@@ -1,0 +1,47 @@
+view "sap.fsdm.SQLViews::MortgageRegisterEntry_View" 
+as select
+      "Beneficiary" ,
+      "MortgageRegister" ,
+      "Rank" ,
+      "Section" ,
+      "SequenceNumber" ,
+      "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_LandChargeArrangement.FinancialContractID" ,
+      "ASSOC_LandChargeArrangement.IDSystem" ,
+      "_MovablesMortgageArrangement.FinancialContractID" ,
+      "_MovablesMortgageArrangement.IDSystem" ,
+      "ActualUsableProtectionAmount" ,
+      "ActualUsableProtectionAmountCurrency" ,
+      "AdministrativeArea" ,
+      "AdministrativeSection" ,
+      "MortgageRegisterType" ,
+      "ThirdPartyRights" ,
+      "TitleID" ,
+      "UnitID" ,
+      "UsableProtectionAmount" ,
+      "UsableProtectionAmountCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::MortgageRegisterEntry"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_LandChargeArrangement"
+	  on "ASSOC_LandChargeArrangement"."IDSystem" = "ASSOC_LandChargeArrangement.IDSystem" AND 
+	     "ASSOC_LandChargeArrangement"."FinancialContractID" = "ASSOC_LandChargeArrangement.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PhysicalAsset"
+	  on "ASSOC_PhysicalAsset"."PhysicalAssetID" = "ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_MovablesMortgageArrangement"
+	  on "_MovablesMortgageArrangement"."FinancialContractID" = "_MovablesMortgageArrangement.FinancialContractID" AND 
+	     "_MovablesMortgageArrangement"."IDSystem" = "_MovablesMortgageArrangement.IDSystem"
+	     
+);

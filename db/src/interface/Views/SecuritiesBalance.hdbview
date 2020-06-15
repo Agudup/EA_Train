@@ -1,0 +1,31 @@
+view "sap.fsdm.Views::SecuritiesBalance_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "LotID" as "LotID",
+      "_Account.FinancialContractID" as "_Account_FinancialContractID",
+      "_Account.IDSystem" as "_Account_IDSystem",
+      "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" as "_AccountingSystemOfSecuritiesLotBalance_AccountingSystemID",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "LendingValue" as "LendingValue",
+      "LendingValueCurrency" as "LendingValueCurrency",
+      "MarketValue" as "MarketValue",
+      "MarketValueCurrency" as "MarketValueCurrency",
+      "NominalAmount" as "NominalAmount",
+      "NominalAmountCurrency" as "NominalAmountCurrency",
+      "PurchasePrice" as "PurchasePrice",
+      "PurchasePriceCurrency" as "PurchasePriceCurrency",
+      "Quantity" as "Quantity",
+      "SecuritiesAccountBalanceCategory" as "SecuritiesAccountBalanceCategory",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::SecuritiesBalance"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

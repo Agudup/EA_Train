@@ -1,0 +1,252 @@
+PROCEDURE "sap.fsdm.procedures::TradeLotAssignmentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::TradeLotAssignmentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::TradeLotAssignmentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::TradeLotAssignmentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'LotID=' || TO_VARCHAR("LotID") || ' ' ||
+                '_AccountingSystemOfTradeLotAssignment.AccountingSystemID=' || TO_VARCHAR("_AccountingSystemOfTradeLotAssignment.AccountingSystemID") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."LotID",
+                        "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."LotID",
+                        "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "LotID",
+                        "_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."LotID",
+                                    "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."LotID",
+                                    "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "LotID",
+            "_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+            "_Trade.IDSystem",
+            "_Trade.TradeID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::TradeLotAssignment" WHERE
+            (
+            "LotID" ,
+            "_AccountingSystemOfTradeLotAssignment.AccountingSystemID" ,
+            "_Trade.IDSystem" ,
+            "_Trade.TradeID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."LotID",
+            "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::TradeLotAssignment" as "OLD"
+        on
+                              ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                              ( "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" = "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" or "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" is null ) and
+                              ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+                              ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "LotID",
+        "_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "Quantity",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_LotID" as "LotID" ,
+            "OLD__AccountingSystemOfTradeLotAssignment.AccountingSystemID" as "_AccountingSystemOfTradeLotAssignment.AccountingSystemID" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_NominalAmount" as "NominalAmount" ,
+            "OLD_NominalAmountCurrency" as "NominalAmountCurrency" ,
+            "OLD_Quantity" as "Quantity" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."LotID",
+                        "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" as "OLD__AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."NominalAmountCurrency" as "OLD_NominalAmountCurrency",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeLotAssignment" as "OLD"
+            on
+                                      ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                                      ( "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" = "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" or "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" is null ) and
+                                      ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+                                      ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_LotID" as "LotID",
+            "OLD__AccountingSystemOfTradeLotAssignment.AccountingSystemID" as "_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_NominalAmount" as "NominalAmount",
+            "OLD_NominalAmountCurrency" as "NominalAmountCurrency",
+            "OLD_Quantity" as "Quantity",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."LotID",
+                        "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" as "OLD__AccountingSystemOfTradeLotAssignment.AccountingSystemID",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."NominalAmountCurrency" as "OLD_NominalAmountCurrency",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeLotAssignment" as "OLD"
+            on
+               ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+               ( "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" = "OLD"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" or "IN"."_AccountingSystemOfTradeLotAssignment.AccountingSystemID" is null ) and
+               ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+               ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

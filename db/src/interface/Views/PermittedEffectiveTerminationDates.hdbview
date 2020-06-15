@@ -1,0 +1,26 @@
+view "sap.fsdm.Views::PermittedEffectiveTerminationDates_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_TerminationOption.SequenceNumber" as "ASSOC_TerminationOption_SequenceNumber",
+      "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_TerminationOption_ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" as "ASSOC_TerminationOption_ASSOC_FinancialContract_IDSystem",
+      "ASSOC_TerminationOption._Trade.IDSystem" as "ASSOC_TerminationOption__Trade_IDSystem",
+      "ASSOC_TerminationOption._Trade.TradeID" as "ASSOC_TerminationOption__Trade_TradeID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "EndDay" as "EndDay",
+      "EndMonth" as "EndMonth",
+      "EndYear" as "EndYear",
+      "RepetitionPeriodLength" as "RepetitionPeriodLength",
+      "RepetitionPeriodTimeUnit" as "RepetitionPeriodTimeUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PermittedEffectiveTerminationDates"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

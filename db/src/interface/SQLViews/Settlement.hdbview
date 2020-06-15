@@ -1,0 +1,228 @@
+view "sap.fsdm.SQLViews::Settlement_View" 
+as select
+      "IDSystem" ,
+      "ItemNumber" ,
+      "SettlementID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_BusinessEventDataOwner.BusinessPartnerID" ,
+      "ASSOC_CalculatedInterestAndFeesResult.CalculationPeriodID" ,
+      "ASSOC_CalculatedInterestAndFeesResult.InterestAndFeeCalculationMethod" ,
+      "ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+      "ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_CalculatedInterestAndFeesResult.BusinessValidFrom" ,
+      "ASSOC_CalculatedInterestAndFeesResult.ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+      "ASSOC_CalculatedInterestAndFeesResult.ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+      "ASSOC_CardIssue.CardIssueID" ,
+      "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+      "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+      "ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+      "ASSOC_CardIssue._BankAccount.IDSystem" ,
+      "ASSOC_CashInventory.CashAccountID" ,
+      "ASSOC_CashInventory.IDSystem" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_LocallyManagedDestinationAccount.FinancialContractID" ,
+      "ASSOC_LocallyManagedDestinationAccount.IDSystem" ,
+      "ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_Reverses.SettlementID" ,
+      "ASSOC_Reverses.IDSystem" ,
+      "ASSOC_TaxedItemOfTaxItem.SettlementID" ,
+      "ASSOC_TaxedItemOfTaxItem.IDSystem" ,
+      "ASSOC_TaxedItemOfTaxItem.ItemNumber" ,
+      "ASSOC_TransferOrder.IDSystem" ,
+      "ASSOC_TransferOrder.ItemNumber" ,
+      "ASSOC_TransferOrder.TransferOrderID" ,
+      "_Address.AddressType" ,
+      "_Address.SequenceNumber" ,
+      "_Address.ASSOC_BankingChannel.BankingChannelID" ,
+      "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+      "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "_Address._Claim.ID" ,
+      "_Address._Claim.IDSystem" ,
+      "_CreditCardLoan.ID" ,
+      "_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+      "_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_Trade.IDSystem" ,
+      "_Trade.TradeID" ,
+      "AmountInPositionCurrency" ,
+      "CreationTimestamp" ,
+      "CurrencyTranslationTimestamp" ,
+      "CustomerFacingTransactionType" ,
+      "EndDateOfInterestPeriod" ,
+      "InitiatingPaymentChannel" ,
+      "IsPostingOnInitiatingAccount" ,
+      "Latitude" ,
+      "Longitude" ,
+      "MerchantCategoryCode" ,
+      "MerchantDiscount" ,
+      "MerchantDiscountCurrency" ,
+      "MerchantID" ,
+      "MerchantName" ,
+      "NominalAmount" ,
+      "NominalAmountCurrency" ,
+      "OtherAccountIdentificationSystem" ,
+      "OtherBankAccountCurrency" ,
+      "OtherBankAccountHolderName" ,
+      "OtherBankAccountID" ,
+      "OtherBankID" ,
+      "OtherBankIdentificationSystem" ,
+      "OtherBankName" ,
+      "OtherIBAN" ,
+      "OtherSWIFT" ,
+      "POSTerminalID" ,
+      "PaymentAuthenticationMethod" ,
+      "PaymentChannel" ,
+      "PaymentSequenceGeneratedByTerminal" ,
+      "PaymentTerminalFIID" ,
+      "PositionCurrency" ,
+      "PostingDate" ,
+      "PostingDirection" ,
+      "Quantity" ,
+      "RelevanceOfPostprocessing" ,
+      "ReversalByValueIndicator" ,
+      "SettlementCategory" ,
+      "SettlementItemCategory" ,
+      "SettlementType" ,
+      "TaxBaseAmount" ,
+      "TaxBaseAmountCurrency" ,
+      "TaxCode" ,
+      "TaxCountry" ,
+      "TaxReferenceCode" ,
+      "TaxableAmountInTransactionCurrency" ,
+      "TransactionAmount" ,
+      "TransactionAuthorizationCode" ,
+      "TransactionCity" ,
+      "TransactionCountry" ,
+      "TransactionCurrency" ,
+      "TransactionPlace" ,
+      "TransactionRegion" ,
+      "TransactionType" ,
+      "Unit" ,
+      "UnsignedAmountInPositionCurrency" ,
+      "UnsignedTransactionAmount" ,
+      "UsedExchangeRate" ,
+      "ValueDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Settlement"
+with associations
+(
+	join "sap.fsdm.SQLViews::CardProgramTransactionDetails_View" as "_CardProgramTransactionDetails_ASSOC_BusinessTransactionItem"
+	  on "IDSystem" = "_CardProgramTransactionDetails_ASSOC_BusinessTransactionItem"."ASSOC_BusinessTransactionItem.IDSystem" AND 
+	     "ItemNumber" = "_CardProgramTransactionDetails_ASSOC_BusinessTransactionItem"."ASSOC_BusinessTransactionItem.ItemNumber" AND 
+	     "SettlementID" = "_CardProgramTransactionDetails_ASSOC_BusinessTransactionItem"."ASSOC_BusinessTransactionItem.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::ClassificationOfSettlement_View" as "_ClassificationOfSettlement_ASSOC_Settlement"
+	  on "IDSystem" = "_ClassificationOfSettlement_ASSOC_Settlement"."ASSOC_Settlement.IDSystem" AND 
+	     "SettlementID" = "_ClassificationOfSettlement_ASSOC_Settlement"."ASSOC_Settlement.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::DeferralCalculatedResult_View" as "_DeferralCalculatedResult__SettlementItem"
+	  on "IDSystem" = "_DeferralCalculatedResult__SettlementItem"."_SettlementItem.IDSystem" AND 
+	     "ItemNumber" = "_DeferralCalculatedResult__SettlementItem"."_SettlementItem.ItemNumber" AND 
+	     "SettlementID" = "_DeferralCalculatedResult__SettlementItem"."_SettlementItem.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__SettlementItem"
+	  on "IDSystem" = "_FSSubledgerDocument__SettlementItem"."_SettlementItem.IDSystem" AND 
+	     "ItemNumber" = "_FSSubledgerDocument__SettlementItem"."_SettlementItem.ItemNumber" AND 
+	     "SettlementID" = "_FSSubledgerDocument__SettlementItem"."_SettlementItem.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::PriceGain_View" as "_PriceGain__SettlementItem"
+	  on "SettlementID" = "_PriceGain__SettlementItem"."_SettlementItem.SettlementID" AND 
+	     "ItemNumber" = "_PriceGain__SettlementItem"."_SettlementItem.ItemNumber" AND 
+	     "IDSystem" = "_PriceGain__SettlementItem"."_SettlementItem.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessEventDataOwner"
+	  on "ASSOC_BusinessEventDataOwner"."BusinessPartnerID" = "ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InterestAndFeeCalculationResult_View" as "ASSOC_CalculatedInterestAndFeesResult"
+	  on "ASSOC_CalculatedInterestAndFeesResult"."InterestAndFeeCalculationMethod" = "ASSOC_CalculatedInterestAndFeesResult.InterestAndFeeCalculationMethod" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."CalculationPeriodID" = "ASSOC_CalculatedInterestAndFeesResult.CalculationPeriodID" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."BusinessValidFrom" = "ASSOC_CalculatedInterestAndFeesResult.BusinessValidFrom" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "ASSOC_CalculatedInterestAndFeesResult.ASSOC_FinancialContractOfCalculatedItems.IDSystem" AND 
+	     "ASSOC_CalculatedInterestAndFeesResult"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "ASSOC_CalculatedInterestAndFeesResult.ASSOC_FinancialContractOfCalculatedItems.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::CardIssue_View" as "ASSOC_CardIssue"
+	  on "ASSOC_CardIssue"."ASSOC_CardAgreement.FinancialContractID" = "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" AND 
+	     "ASSOC_CardIssue"."ASSOC_CardAgreement.IDSystem" = "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "ASSOC_CardIssue"."CardIssueID" = "ASSOC_CardIssue.CardIssueID" AND 
+	     "ASSOC_CardIssue"."_BankAccount.FinancialContractID" = "ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "ASSOC_CardIssue"."_BankAccount.IDSystem" = "ASSOC_CardIssue._BankAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CashInventory_View" as "ASSOC_CashInventory"
+	  on "ASSOC_CashInventory"."CashAccountID" = "ASSOC_CashInventory.CashAccountID" AND 
+	     "ASSOC_CashInventory"."IDSystem" = "ASSOC_CashInventory.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_LocallyManagedDestinationAccount"
+	  on "ASSOC_LocallyManagedDestinationAccount"."FinancialContractID" = "ASSOC_LocallyManagedDestinationAccount.FinancialContractID" AND 
+	     "ASSOC_LocallyManagedDestinationAccount"."IDSystem" = "ASSOC_LocallyManagedDestinationAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCurrencyForAccount"
+	  on "ASSOC_PositionCurrencyForAccount"."PositionCurrency" = "ASSOC_PositionCurrencyForAccount.PositionCurrency" AND 
+	     "ASSOC_PositionCurrencyForAccount"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCurrencyForAccount"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "ASSOC_Reverses"
+	  on "ASSOC_Reverses"."IDSystem" = "ASSOC_Reverses.IDSystem" AND 
+	     "ASSOC_Reverses"."SettlementID" = "ASSOC_Reverses.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "ASSOC_TaxedItemOfTaxItem"
+	  on "ASSOC_TaxedItemOfTaxItem"."IDSystem" = "ASSOC_TaxedItemOfTaxItem.IDSystem" AND 
+	     "ASSOC_TaxedItemOfTaxItem"."ItemNumber" = "ASSOC_TaxedItemOfTaxItem.ItemNumber" AND 
+	     "ASSOC_TaxedItemOfTaxItem"."SettlementID" = "ASSOC_TaxedItemOfTaxItem.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "ASSOC_TransferOrder"
+	  on "ASSOC_TransferOrder"."IDSystem" = "ASSOC_TransferOrder.IDSystem" AND 
+	     "ASSOC_TransferOrder"."ItemNumber" = "ASSOC_TransferOrder.ItemNumber" AND 
+	     "ASSOC_TransferOrder"."TransferOrderID" = "ASSOC_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::Address_View" as "_Address"
+	  on "_Address"."_Claim.IDSystem" = "_Address._Claim.IDSystem" AND 
+	     "_Address"."_Claim.ID" = "_Address._Claim.ID" AND 
+	     "_Address"."SequenceNumber" = "_Address.SequenceNumber" AND 
+	     "_Address"."AddressType" = "_Address.AddressType" AND 
+	     "_Address"."ASSOC_PhysicalAsset.PhysicalAssetID" = "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "_Address"."ASSOC_OrganizationalUnit.OrganizationalUnitID" = "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "_Address"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_Address"."ASSOC_BusinessPartnerID.BusinessPartnerID" = "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "_Address"."ASSOC_BankingChannel.BankingChannelID" = "_Address.ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditCardLoan_View" as "_CreditCardLoan"
+	  on "_CreditCardLoan"."ID" = "_CreditCardLoan.ID" AND 
+	     "_CreditCardLoan"."_CreditCardAgreement.FinancialContractID" = "_CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardLoan"."_CreditCardAgreement.IDSystem" = "_CreditCardLoan._CreditCardAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade"
+	  on "_Trade"."IDSystem" = "_Trade.IDSystem" AND 
+	     "_Trade"."TradeID" = "_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::SettlementNote_View" as "_SettlementNote_ASSOC_SettlementItem"
+	  on "IDSystem" = "_SettlementNote_ASSOC_SettlementItem"."ASSOC_SettlementItem.IDSystem" AND 
+	     "ItemNumber" = "_SettlementNote_ASSOC_SettlementItem"."ASSOC_SettlementItem.ItemNumber" AND 
+	     "SettlementID" = "_SettlementNote_ASSOC_SettlementItem"."ASSOC_SettlementItem.SettlementID"
+	     
+);

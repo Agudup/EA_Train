@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::ProductClassHierarchyRelation_View" 
+as select
+      "ProductHierarchy" ,
+      "ASSOC_Child.ProductClass" ,
+      "ASSOC_Child.ProductClassificationSystem" ,
+      "ASSOC_Parent.ProductClass" ,
+      "ASSOC_Parent.ProductClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ProductHierarchyName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProductClassHierarchyRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::ProductClass_View" as "ASSOC_Child"
+	  on "ASSOC_Child"."ProductClass" = "ASSOC_Child.ProductClass" AND 
+	     "ASSOC_Child"."ProductClassificationSystem" = "ASSOC_Child.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClass_View" as "ASSOC_Parent"
+	  on "ASSOC_Parent"."ProductClass" = "ASSOC_Parent.ProductClass" AND 
+	     "ASSOC_Parent"."ProductClassificationSystem" = "ASSOC_Parent.ProductClassificationSystem"
+	     
+);

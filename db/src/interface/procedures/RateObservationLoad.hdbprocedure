@@ -1,0 +1,41 @@
+PROCEDURE "sap.fsdm.procedures::RateObservationLoad" (IN ROW "sap.fsdm.tabletypes::RateObservationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+delete from "sap.fsdm::RateObservation" WHERE("RateDataProvider" ,
+"Timestamp" ,
+"ASSOC_ReferenceRateID.ReferenceRateID" 
+)in ( select     ( case when "RateDataProvider" is null then '' else "RateDataProvider" end ) as "RateDataProvider",
+    ( case when "Timestamp" is null then '0001-01-01 01:01:01' else "Timestamp" end ) as "Timestamp",
+    ( case when "ASSOC_ReferenceRateID.ReferenceRateID" is null then '' else "ASSOC_ReferenceRateID.ReferenceRateID" end ) as "ASSOC_ReferenceRateID.ReferenceRateID"
+from :row );
+
+--Insert ALL the input data
+insert into "sap.fsdm::RateObservation"  (
+"RateDataProvider",
+"Timestamp",
+"ASSOC_ReferenceRateID.ReferenceRateID",
+"Rate",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+     ( case when "RateDataProvider" is null then '' else "RateDataProvider" end ) as "RateDataProvider",
+    ( case when "Timestamp" is null then '0001-01-01 01:01:01' else "Timestamp" end ) as "Timestamp",
+    ( case when "ASSOC_ReferenceRateID.ReferenceRateID" is null then '' else "ASSOC_ReferenceRateID.ReferenceRateID" end ) as "ASSOC_ReferenceRateID.ReferenceRateID",
+  "Rate"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

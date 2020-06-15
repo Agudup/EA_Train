@@ -1,0 +1,61 @@
+view "sap.fsdm.SQLViews::StandardPaymentSchedule_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+      "ASSOC_FinancialStandardProduct.IDSystem" ,
+      "ASSOC_FinancialStandardProduct.PricingScheme" ,
+      "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DayOfMonthOfPayment" ,
+      "InstallmentAmount" ,
+      "InstallmentCurrency" ,
+      "InstallmentLagPeriodLength" ,
+      "InstallmentLagTimeUnit" ,
+      "InstallmentPeriodLength" ,
+      "InstallmentPeriodTimeUnit" ,
+      "InstallmentsRelativeToInterestPaymentDates" ,
+      "PartialPaymentRequestsPermitted" ,
+      "PaymentToBeRequested" ,
+      "PeriodUntilBulletPayment" ,
+      "PeriodUntilBulletPaymentTimeUnit" ,
+      "PeriodUntilFirstPayment" ,
+      "PeriodUntilFirstRegularInstallment" ,
+      "PeriodUntilLastPayment" ,
+      "RoleOfPayer" ,
+      "StandardPaymentScheduleCategory" ,
+      "StandardPaymentScheduleType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardPaymentSchedule"
+with associations
+(
+	join "sap.fsdm.SQLViews::StandardPaymentIntervalListEntry_View" as "_StandardPaymentIntervalListEntry_ASSOC_StandardPaymentIntervalList"
+	  on "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "_StandardPaymentIntervalListEntry_ASSOC_StandardPaymentIntervalList"."ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "_StandardPaymentIntervalListEntry_ASSOC_StandardPaymentIntervalList"."ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_FinancialStandardProduct.IDSystem" = "_StandardPaymentIntervalListEntry_ASSOC_StandardPaymentIntervalList"."ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "ASSOC_FinancialStandardProduct.PricingScheme" = "_StandardPaymentIntervalListEntry_ASSOC_StandardPaymentIntervalList"."ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.PricingScheme" AND 
+	     "SequenceNumber" = "_StandardPaymentIntervalListEntry_ASSOC_StandardPaymentIntervalList"."ASSOC_StandardPaymentIntervalList.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::StandardPaymentListEntry_View" as "_StandardPaymentListEntry_ASSOC_StandardPaymentList"
+	  on "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "_StandardPaymentListEntry_ASSOC_StandardPaymentList"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "_StandardPaymentListEntry_ASSOC_StandardPaymentList"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_FinancialStandardProduct.IDSystem" = "_StandardPaymentListEntry_ASSOC_StandardPaymentList"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "ASSOC_FinancialStandardProduct.PricingScheme" = "_StandardPaymentListEntry_ASSOC_StandardPaymentList"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" AND 
+	     "SequenceNumber" = "_StandardPaymentListEntry_ASSOC_StandardPaymentList"."ASSOC_StandardPaymentList.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "ASSOC_FinancialStandardProduct"
+	  on "ASSOC_FinancialStandardProduct"."PricingScheme" = "ASSOC_FinancialStandardProduct.PricingScheme" AND 
+	     "ASSOC_FinancialStandardProduct"."IDSystem" = "ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "ASSOC_FinancialStandardProduct"."FinancialStandardProductID" = "ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_FinancialStandardProduct"."ASSOC_Company.BusinessPartnerID" = "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+	     
+);

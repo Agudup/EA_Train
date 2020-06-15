@@ -1,0 +1,81 @@
+view "sap.fsdm.SQLViews::CollateralPortion_View" 
+as select
+      "PortionNumber" ,
+      "ASSOC_CollateralAgreement.FinancialContractID" ,
+      "ASSOC_CollateralAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" ,
+      "_Creditor.BusinessPartnerID" ,
+      "AgreedCoverageEndDate" ,
+      "AgreedCoverageStartDate" ,
+      "CollateralPortionCoverageCategory" ,
+      "CoveredPercentageOfObligations" ,
+      "MaximumCollateralPortionAmount" ,
+      "MaximumCollateralPortionAmountCurrency" ,
+      "PercentageOfTotalCollateralForPortion" ,
+      "PortionName" ,
+      "RankAgainstOtherPortions" ,
+      "RoleOfCreditor" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CollateralPortion"
+with associations
+(
+	join "sap.fsdm.SQLViews::CollateralDistributionResult_View" as "_CollateralDistributionResult_ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralAgreement.FinancialContractID" = "_CollateralDistributionResult_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_CollateralDistributionResult_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "PortionNumber" = "_CollateralDistributionResult_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_CollateralAgreement"
+	  on "ASSOC_CollateralAgreement"."FinancialContractID" = "ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement"."IDSystem" = "ASSOC_CollateralAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_CoveredObligorInCaseOfFullCoverage"
+	  on "ASSOC_CoveredObligorInCaseOfFullCoverage"."BusinessPartnerID" = "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_Creditor"
+	  on "_Creditor"."BusinessPartnerID" = "_Creditor.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortionBusinessPartnerAssignment_View" as "_CollateralPortionBusinessPartnerAssignment__CollateralPortion"
+	  on "ASSOC_CollateralAgreement.FinancialContractID" = "_CollateralPortionBusinessPartnerAssignment__CollateralPortion"."_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_CollateralPortionBusinessPartnerAssignment__CollateralPortion"."_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "PortionNumber" = "_CollateralPortionBusinessPartnerAssignment__CollateralPortion"."_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPortionContractAssignment_View" as "_CollateralPortionContractAssignment_ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralAgreement.FinancialContractID" = "_CollateralPortionContractAssignment_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_CollateralPortionContractAssignment_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "PortionNumber" = "_CollateralPortionContractAssignment_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExpectedLoss_View" as "_CreditRiskExpectedLoss_ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralAgreement.FinancialContractID" = "_CreditRiskExpectedLoss_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_CreditRiskExpectedLoss_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "PortionNumber" = "_CreditRiskExpectedLoss_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExposure_View" as "_CreditRiskExposure_ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralAgreement.FinancialContractID" = "_CreditRiskExposure_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_CreditRiskExposure_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "PortionNumber" = "_CreditRiskExposure_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskLossGivenDefault_View" as "_CreditRiskLossGivenDefault_ASSOC_CollateralPortion"
+	  on "PortionNumber" = "_CreditRiskLossGivenDefault_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.PortionNumber" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_CreditRiskLossGivenDefault_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "ASSOC_CollateralAgreement.FinancialContractID" = "_CreditRiskLossGivenDefault_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__CollateralPortion"
+	  on "PortionNumber" = "_FinancialInstrument__CollateralPortion"."_CollateralPortion.PortionNumber" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_FinancialInstrument__CollateralPortion"."_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "ASSOC_CollateralAgreement.FinancialContractID" = "_FinancialInstrument__CollateralPortion"."_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralAgreement.FinancialContractID" = "_Valuation_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralAgreement.IDSystem" = "_Valuation_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "PortionNumber" = "_Valuation_ASSOC_CollateralPortion"."ASSOC_CollateralPortion.PortionNumber"
+	     
+);

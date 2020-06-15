@@ -1,0 +1,33 @@
+view "sap.fsdm.Views::PremiumSplitting_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ComponentType" as "ComponentType",
+      "_InsuranceCoverage.ID" as "_InsuranceCoverage_ID",
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage__InsuranceContract_IDSystem",
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "_InsuranceCoverageOption.Type" as "_InsuranceCoverageOption_Type",
+      "_InsuranceCoverageOption._InsuranceCoverage.ID" as "_InsuranceCoverageOption__InsuranceCoverage_ID",
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverageOption__InsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverageOption__InsuranceCoverage__InsuranceContract_IDSystem",
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverageOption__InsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverageOption__InsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverageOption__InsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "Amount" as "Amount",
+      "AnalysisPeriodEndDate" as "AnalysisPeriodEndDate",
+      "AnalysisPeriodStartDate" as "AnalysisPeriodStartDate",
+      "Currency" as "Currency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PremiumSplitting"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

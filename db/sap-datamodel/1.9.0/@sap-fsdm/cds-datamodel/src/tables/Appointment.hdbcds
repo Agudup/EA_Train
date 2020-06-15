@@ -1,0 +1,47 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "Appointment" {
+    key "SequenceNumber"                : Integer;
+    key "_IndividualPerson"             : association to BusinessPartner { BusinessPartnerID }  not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                          not null;
+        "SystemValidTo"                 : UTCTimestamp                                          not null;
+        "_Organization"                 : association to BusinessPartner { BusinessPartnerID };
+        "AppointingOrganization"        : String(256);
+        "AppointmentType"               : String(40);
+        "DateOfAppointment"             : LocalDate;
+        "SubjectOfAppointment"          : String(256);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Appointment_Historical" {
+    "SequenceNumber"                : Integer                                               not null;
+    "_IndividualPerson"             : association to BusinessPartner { BusinessPartnerID }  not null;
+    "BusinessValidFrom"             : LocalDate                                             not null;
+    "BusinessValidTo"               : LocalDate                                             not null;
+    "SystemValidFrom"               : UTCTimestamp                                          not null;
+    "SystemValidTo"                 : UTCTimestamp                                          not null;
+    "_Organization"                 : association to BusinessPartner { BusinessPartnerID };
+    "AppointingOrganization"        : String(256);
+    "AppointmentType"               : String(40);
+    "DateOfAppointment"             : LocalDate;
+    "SubjectOfAppointment"          : String(256);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

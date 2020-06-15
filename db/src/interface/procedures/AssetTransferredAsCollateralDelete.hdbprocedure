@@ -1,0 +1,229 @@
+PROCEDURE "sap.fsdm.procedures::AssetTransferredAsCollateralDelete" (IN ROW "sap.fsdm.tabletypes::AssetTransferredAsCollateralTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("ASSOC_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                'ASSOC_SimpleCollateralAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_SimpleCollateralAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_SimpleCollateralAgreement.IDSystem=' || TO_VARCHAR("ASSOC_SimpleCollateralAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_SimpleCollateralAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_SimpleCollateralAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                        "ASSOC_SimpleCollateralAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_SimpleCollateralAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_SimpleCollateralAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::AssetTransferredAsCollateral" (
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_SimpleCollateralAgreement.FinancialContractID",
+        "ASSOC_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InitialCollateralValue",
+        "InitialCollateralValueCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "OLD_ASSOC_SimpleCollateralAgreement.FinancialContractID" as "ASSOC_SimpleCollateralAgreement.FinancialContractID" ,
+            "OLD_ASSOC_SimpleCollateralAgreement.IDSystem" as "ASSOC_SimpleCollateralAgreement.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_InitialCollateralValue" as "InitialCollateralValue" ,
+            "OLD_InitialCollateralValueCurrency" as "InitialCollateralValueCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID" as "OLD_ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem" as "OLD_ASSOC_SimpleCollateralAgreement.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."InitialCollateralValue" as "OLD_InitialCollateralValue",
+                "OLD"."InitialCollateralValueCurrency" as "OLD_InitialCollateralValueCurrency",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AssetTransferredAsCollateral" as "OLD"
+            on
+                      ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                      ( "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID" = "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID" or "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SimpleCollateralAgreement.IDSystem" = "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem" or "IN"."ASSOC_SimpleCollateralAgreement.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::AssetTransferredAsCollateral" (
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_SimpleCollateralAgreement.FinancialContractID",
+        "ASSOC_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InitialCollateralValue",
+        "InitialCollateralValueCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD_ASSOC_SimpleCollateralAgreement.FinancialContractID" as "ASSOC_SimpleCollateralAgreement.FinancialContractID",
+            "OLD_ASSOC_SimpleCollateralAgreement.IDSystem" as "ASSOC_SimpleCollateralAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_InitialCollateralValue" as "InitialCollateralValue",
+            "OLD_InitialCollateralValueCurrency" as "InitialCollateralValueCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID" as "OLD_ASSOC_SimpleCollateralAgreement.FinancialContractID",
+                "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem" as "OLD_ASSOC_SimpleCollateralAgreement.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."InitialCollateralValue" as "OLD_InitialCollateralValue",
+                "OLD"."InitialCollateralValueCurrency" as "OLD_InitialCollateralValueCurrency",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AssetTransferredAsCollateral" as "OLD"
+            on
+                                                ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                                                ( "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID" = "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID" or "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SimpleCollateralAgreement.IDSystem" = "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem" or "IN"."ASSOC_SimpleCollateralAgreement.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::AssetTransferredAsCollateral"
+    where (
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_SimpleCollateralAgreement.FinancialContractID",
+        "ASSOC_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID",
+            "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::AssetTransferredAsCollateral" as "OLD"
+        on
+                                       ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                                       ( "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID" = "OLD"."ASSOC_SimpleCollateralAgreement.FinancialContractID" or "IN"."ASSOC_SimpleCollateralAgreement.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SimpleCollateralAgreement.IDSystem" = "OLD"."ASSOC_SimpleCollateralAgreement.IDSystem" or "IN"."ASSOC_SimpleCollateralAgreement.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

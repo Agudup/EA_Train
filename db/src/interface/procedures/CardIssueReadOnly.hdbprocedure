@@ -1,0 +1,370 @@
+PROCEDURE "sap.fsdm.procedures::CardIssueReadOnly" (IN ROW "sap.fsdm.tabletypes::CardIssueTT", OUT CURR_DEL "sap.fsdm.tabletypes::CardIssueTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::CardIssueTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CardIssueID=' || TO_VARCHAR("CardIssueID") || ' ' ||
+                'ASSOC_CardAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_CardAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_CardAgreement.IDSystem=' || TO_VARCHAR("ASSOC_CardAgreement.IDSystem") || ' ' ||
+                '_BankAccount.FinancialContractID=' || TO_VARCHAR("_BankAccount.FinancialContractID") || ' ' ||
+                '_BankAccount.IDSystem=' || TO_VARCHAR("_BankAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CardIssueID",
+                        "IN"."ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardAgreement.IDSystem",
+                        "IN"."_BankAccount.FinancialContractID",
+                        "IN"."_BankAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CardIssueID",
+                        "IN"."ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardAgreement.IDSystem",
+                        "IN"."_BankAccount.FinancialContractID",
+                        "IN"."_BankAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CardIssueID",
+                        "ASSOC_CardAgreement.FinancialContractID",
+                        "ASSOC_CardAgreement.IDSystem",
+                        "_BankAccount.FinancialContractID",
+                        "_BankAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CardIssueID",
+                                    "IN"."ASSOC_CardAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CardAgreement.IDSystem",
+                                    "IN"."_BankAccount.FinancialContractID",
+                                    "IN"."_BankAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CardIssueID",
+                                    "IN"."ASSOC_CardAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CardAgreement.IDSystem",
+                                    "IN"."_BankAccount.FinancialContractID",
+                                    "IN"."_BankAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "CardIssueID",
+        "ASSOC_CardAgreement.FinancialContractID",
+        "ASSOC_CardAgreement.IDSystem",
+        "_BankAccount.FinancialContractID",
+        "_BankAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::CardIssue" WHERE
+        (            "CardIssueID" ,
+            "ASSOC_CardAgreement.FinancialContractID" ,
+            "ASSOC_CardAgreement.IDSystem" ,
+            "_BankAccount.FinancialContractID" ,
+            "_BankAccount.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."CardIssueID",
+            "OLD"."ASSOC_CardAgreement.FinancialContractID",
+            "OLD"."ASSOC_CardAgreement.IDSystem",
+            "OLD"."_BankAccount.FinancialContractID",
+            "OLD"."_BankAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::CardIssue" as "OLD"
+            on
+               ( case when "IN"."CardIssueID" is null then '' else "IN"."CardIssueID" end ) = "OLD"."CardIssueID" and
+               ( case when "IN"."ASSOC_CardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CardAgreement.FinancialContractID" and
+               ( case when "IN"."ASSOC_CardAgreement.IDSystem" is null then '' else "IN"."ASSOC_CardAgreement.IDSystem" end ) = "OLD"."ASSOC_CardAgreement.IDSystem" and
+               ( case when "IN"."_BankAccount.FinancialContractID" is null then '' else "IN"."_BankAccount.FinancialContractID" end ) = "OLD"."_BankAccount.FinancialContractID" and
+               ( case when "IN"."_BankAccount.IDSystem" is null then '' else "IN"."_BankAccount.IDSystem" end ) = "OLD"."_BankAccount.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "CardIssueID",
+        "ASSOC_CardAgreement.FinancialContractID",
+        "ASSOC_CardAgreement.IDSystem",
+        "_BankAccount.FinancialContractID",
+        "_BankAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_CardHolder.BusinessPartnerID",
+        "ApplicationDate",
+        "ApprovalDate",
+        "BusinessNameOnCard",
+        "CardBIN",
+        "CardStatus",
+        "CommonDesignID",
+        "EmbossedName",
+        "HasChip",
+        "HasMagneticStrip",
+        "HasPIN",
+        "HasPhoto",
+        "IndividualDesignID",
+        "IsMainCard",
+        "IsNFCenabled",
+        "IssueDate",
+        "PhotoReferenceID",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "CardIssueID" is null then '' else "CardIssueID" end ) as "CardIssueID",
+                    ( case when "ASSOC_CardAgreement.FinancialContractID" is null then '' else "ASSOC_CardAgreement.FinancialContractID" end ) as "ASSOC_CardAgreement.FinancialContractID",
+                    ( case when "ASSOC_CardAgreement.IDSystem" is null then '' else "ASSOC_CardAgreement.IDSystem" end ) as "ASSOC_CardAgreement.IDSystem",
+                    ( case when "_BankAccount.FinancialContractID" is null then '' else "_BankAccount.FinancialContractID" end ) as "_BankAccount.FinancialContractID",
+                    ( case when "_BankAccount.IDSystem" is null then '' else "_BankAccount.IDSystem" end ) as "_BankAccount.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "ASSOC_CardHolder.BusinessPartnerID"  ,
+                    "ApplicationDate"  ,
+                    "ApprovalDate"  ,
+                    "BusinessNameOnCard"  ,
+                    "CardBIN"  ,
+                    "CardStatus"  ,
+                    "CommonDesignID"  ,
+                    "EmbossedName"  ,
+                    "HasChip"  ,
+                    "HasMagneticStrip"  ,
+                    "HasPIN"  ,
+                    "HasPhoto"  ,
+                    "IndividualDesignID"  ,
+                    "IsMainCard"  ,
+                    "IsNFCenabled"  ,
+                    "IssueDate"  ,
+                    "PhotoReferenceID"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_CardIssueID" as "CardIssueID" ,
+                    "OLD_ASSOC_CardAgreement.FinancialContractID" as "ASSOC_CardAgreement.FinancialContractID" ,
+                    "OLD_ASSOC_CardAgreement.IDSystem" as "ASSOC_CardAgreement.IDSystem" ,
+                    "OLD__BankAccount.FinancialContractID" as "_BankAccount.FinancialContractID" ,
+                    "OLD__BankAccount.IDSystem" as "_BankAccount.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_ASSOC_CardHolder.BusinessPartnerID" as "ASSOC_CardHolder.BusinessPartnerID" ,
+                    "OLD_ApplicationDate" as "ApplicationDate" ,
+                    "OLD_ApprovalDate" as "ApprovalDate" ,
+                    "OLD_BusinessNameOnCard" as "BusinessNameOnCard" ,
+                    "OLD_CardBIN" as "CardBIN" ,
+                    "OLD_CardStatus" as "CardStatus" ,
+                    "OLD_CommonDesignID" as "CommonDesignID" ,
+                    "OLD_EmbossedName" as "EmbossedName" ,
+                    "OLD_HasChip" as "HasChip" ,
+                    "OLD_HasMagneticStrip" as "HasMagneticStrip" ,
+                    "OLD_HasPIN" as "HasPIN" ,
+                    "OLD_HasPhoto" as "HasPhoto" ,
+                    "OLD_IndividualDesignID" as "IndividualDesignID" ,
+                    "OLD_IsMainCard" as "IsMainCard" ,
+                    "OLD_IsNFCenabled" as "IsNFCenabled" ,
+                    "OLD_IssueDate" as "IssueDate" ,
+                    "OLD_PhotoReferenceID" as "PhotoReferenceID" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."CardIssueID",
+                        "IN"."ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardAgreement.IDSystem",
+                        "IN"."_BankAccount.FinancialContractID",
+                        "IN"."_BankAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."CardIssueID" as "OLD_CardIssueID",
+                                "OLD"."ASSOC_CardAgreement.FinancialContractID" as "OLD_ASSOC_CardAgreement.FinancialContractID",
+                                "OLD"."ASSOC_CardAgreement.IDSystem" as "OLD_ASSOC_CardAgreement.IDSystem",
+                                "OLD"."_BankAccount.FinancialContractID" as "OLD__BankAccount.FinancialContractID",
+                                "OLD"."_BankAccount.IDSystem" as "OLD__BankAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_CardHolder.BusinessPartnerID" as "OLD_ASSOC_CardHolder.BusinessPartnerID",
+                                "OLD"."ApplicationDate" as "OLD_ApplicationDate",
+                                "OLD"."ApprovalDate" as "OLD_ApprovalDate",
+                                "OLD"."BusinessNameOnCard" as "OLD_BusinessNameOnCard",
+                                "OLD"."CardBIN" as "OLD_CardBIN",
+                                "OLD"."CardStatus" as "OLD_CardStatus",
+                                "OLD"."CommonDesignID" as "OLD_CommonDesignID",
+                                "OLD"."EmbossedName" as "OLD_EmbossedName",
+                                "OLD"."HasChip" as "OLD_HasChip",
+                                "OLD"."HasMagneticStrip" as "OLD_HasMagneticStrip",
+                                "OLD"."HasPIN" as "OLD_HasPIN",
+                                "OLD"."HasPhoto" as "OLD_HasPhoto",
+                                "OLD"."IndividualDesignID" as "OLD_IndividualDesignID",
+                                "OLD"."IsMainCard" as "OLD_IsMainCard",
+                                "OLD"."IsNFCenabled" as "OLD_IsNFCenabled",
+                                "OLD"."IssueDate" as "OLD_IssueDate",
+                                "OLD"."PhotoReferenceID" as "OLD_PhotoReferenceID",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CardIssue" as "OLD"
+            on
+                ( case when "IN"."CardIssueID" is null then '' else "IN"."CardIssueID" end ) = "OLD"."CardIssueID" and
+                ( case when "IN"."ASSOC_CardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CardAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CardAgreement.IDSystem" is null then '' else "IN"."ASSOC_CardAgreement.IDSystem" end ) = "OLD"."ASSOC_CardAgreement.IDSystem" and
+                ( case when "IN"."_BankAccount.FinancialContractID" is null then '' else "IN"."_BankAccount.FinancialContractID" end ) = "OLD"."_BankAccount.FinancialContractID" and
+                ( case when "IN"."_BankAccount.IDSystem" is null then '' else "IN"."_BankAccount.IDSystem" end ) = "OLD"."_BankAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_CardIssueID" as "CardIssueID",
+            "OLD_ASSOC_CardAgreement.FinancialContractID" as "ASSOC_CardAgreement.FinancialContractID",
+            "OLD_ASSOC_CardAgreement.IDSystem" as "ASSOC_CardAgreement.IDSystem",
+            "OLD__BankAccount.FinancialContractID" as "_BankAccount.FinancialContractID",
+            "OLD__BankAccount.IDSystem" as "_BankAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_CardHolder.BusinessPartnerID" as "ASSOC_CardHolder.BusinessPartnerID",
+            "OLD_ApplicationDate" as "ApplicationDate",
+            "OLD_ApprovalDate" as "ApprovalDate",
+            "OLD_BusinessNameOnCard" as "BusinessNameOnCard",
+            "OLD_CardBIN" as "CardBIN",
+            "OLD_CardStatus" as "CardStatus",
+            "OLD_CommonDesignID" as "CommonDesignID",
+            "OLD_EmbossedName" as "EmbossedName",
+            "OLD_HasChip" as "HasChip",
+            "OLD_HasMagneticStrip" as "HasMagneticStrip",
+            "OLD_HasPIN" as "HasPIN",
+            "OLD_HasPhoto" as "HasPhoto",
+            "OLD_IndividualDesignID" as "IndividualDesignID",
+            "OLD_IsMainCard" as "IsMainCard",
+            "OLD_IsNFCenabled" as "IsNFCenabled",
+            "OLD_IssueDate" as "IssueDate",
+            "OLD_PhotoReferenceID" as "PhotoReferenceID",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."CardIssueID",
+                        "IN"."ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardAgreement.IDSystem",
+                        "IN"."_BankAccount.FinancialContractID",
+                        "IN"."_BankAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."CardIssueID" as "OLD_CardIssueID",
+                        "OLD"."ASSOC_CardAgreement.FinancialContractID" as "OLD_ASSOC_CardAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CardAgreement.IDSystem" as "OLD_ASSOC_CardAgreement.IDSystem",
+                        "OLD"."_BankAccount.FinancialContractID" as "OLD__BankAccount.FinancialContractID",
+                        "OLD"."_BankAccount.IDSystem" as "OLD__BankAccount.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ASSOC_CardHolder.BusinessPartnerID" as "OLD_ASSOC_CardHolder.BusinessPartnerID",
+                        "OLD"."ApplicationDate" as "OLD_ApplicationDate",
+                        "OLD"."ApprovalDate" as "OLD_ApprovalDate",
+                        "OLD"."BusinessNameOnCard" as "OLD_BusinessNameOnCard",
+                        "OLD"."CardBIN" as "OLD_CardBIN",
+                        "OLD"."CardStatus" as "OLD_CardStatus",
+                        "OLD"."CommonDesignID" as "OLD_CommonDesignID",
+                        "OLD"."EmbossedName" as "OLD_EmbossedName",
+                        "OLD"."HasChip" as "OLD_HasChip",
+                        "OLD"."HasMagneticStrip" as "OLD_HasMagneticStrip",
+                        "OLD"."HasPIN" as "OLD_HasPIN",
+                        "OLD"."HasPhoto" as "OLD_HasPhoto",
+                        "OLD"."IndividualDesignID" as "OLD_IndividualDesignID",
+                        "OLD"."IsMainCard" as "OLD_IsMainCard",
+                        "OLD"."IsNFCenabled" as "OLD_IsNFCenabled",
+                        "OLD"."IssueDate" as "OLD_IssueDate",
+                        "OLD"."PhotoReferenceID" as "OLD_PhotoReferenceID",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CardIssue" as "OLD"
+            on
+                ( case when "IN"."CardIssueID" is null then '' else "IN"."CardIssueID" end ) = "OLD"."CardIssueID" and
+                ( case when "IN"."ASSOC_CardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CardAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CardAgreement.IDSystem" is null then '' else "IN"."ASSOC_CardAgreement.IDSystem" end ) = "OLD"."ASSOC_CardAgreement.IDSystem" and
+                ( case when "IN"."_BankAccount.FinancialContractID" is null then '' else "IN"."_BankAccount.FinancialContractID" end ) = "OLD"."_BankAccount.FinancialContractID" and
+                ( case when "IN"."_BankAccount.IDSystem" is null then '' else "IN"."_BankAccount.IDSystem" end ) = "OLD"."_BankAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

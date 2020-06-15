@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::CardIssueErase" (IN ROW "sap.fsdm.tabletypes::CardIssueTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "CardIssueID" is null and
+                         "ASSOC_CardAgreement.FinancialContractID" is null and
+                         "ASSOC_CardAgreement.IDSystem" is null and
+                         "_BankAccount.FinancialContractID" is null and
+                         "_BankAccount.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CardIssue" WHERE
+("CardIssueID" ,
+"ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardAgreement.IDSystem" ,
+"_BankAccount.FinancialContractID" ,
+"_BankAccount.IDSystem" 
+)in ( select "OLD"."CardIssueID" ,
+"OLD"."ASSOC_CardAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CardAgreement.IDSystem" ,
+"OLD"."_BankAccount.FinancialContractID" ,
+"OLD"."_BankAccount.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::CardIssue" "OLD"
+on
+  ( "IN"."CardIssueID" = "OLD"."CardIssueID" or "IN"."CardIssueID" is null ) and
+  ( "IN"."ASSOC_CardAgreement.FinancialContractID" = "OLD"."ASSOC_CardAgreement.FinancialContractID" or "IN"."ASSOC_CardAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CardAgreement.IDSystem" = "OLD"."ASSOC_CardAgreement.IDSystem" or "IN"."ASSOC_CardAgreement.IDSystem" is null ) and
+  ( "IN"."_BankAccount.FinancialContractID" = "OLD"."_BankAccount.FinancialContractID" or "IN"."_BankAccount.FinancialContractID" is null ) and
+  ( "IN"."_BankAccount.IDSystem" = "OLD"."_BankAccount.IDSystem" or "IN"."_BankAccount.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CardIssue_Historical" WHERE
+("CardIssueID" ,
+"ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardAgreement.IDSystem" ,
+"_BankAccount.FinancialContractID" ,
+"_BankAccount.IDSystem" 
+)in ( select "OLD"."CardIssueID" ,
+"OLD"."ASSOC_CardAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CardAgreement.IDSystem" ,
+"OLD"."_BankAccount.FinancialContractID" ,
+"OLD"."_BankAccount.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::CardIssue_Historical" "OLD"
+on
+  ( "IN"."CardIssueID" = "OLD"."CardIssueID" or "IN"."CardIssueID" is null ) and
+  ( "IN"."ASSOC_CardAgreement.FinancialContractID" = "OLD"."ASSOC_CardAgreement.FinancialContractID" or "IN"."ASSOC_CardAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CardAgreement.IDSystem" = "OLD"."ASSOC_CardAgreement.IDSystem" or "IN"."ASSOC_CardAgreement.IDSystem" is null ) and
+  ( "IN"."_BankAccount.FinancialContractID" = "OLD"."_BankAccount.FinancialContractID" or "IN"."_BankAccount.FinancialContractID" is null ) and
+  ( "IN"."_BankAccount.IDSystem" = "OLD"."_BankAccount.IDSystem" or "IN"."_BankAccount.IDSystem" is null ) 
+);
+
+END

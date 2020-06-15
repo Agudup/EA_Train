@@ -1,0 +1,94 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "RefinancingRelation" {
+    key "RefinancingType"                          : String(40)                                                   default '';
+    key "ASSOC_RefinancedContract"                 : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                           not null;
+    key "ASSOC_RefinancedPositionCurrency"         : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                              PositionCurrency,
+                                                                                                              ASSOC_MultiCcyAccnt
+                                                                                                            }     not null;
+    key "ASSOC_RefinancingContract"                : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                           not null;
+    key "ASSOC_RefinancingPositionCurrency"        : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                              PositionCurrency,
+                                                                                                              ASSOC_MultiCcyAccnt
+                                                                                                            }     not null;
+    key "_CollectionOfRefinancedSecuritiesHolding" : association to Collection {
+                                                                                 CollectionID,
+                                                                                 IDSystem
+                                                                               }                                  not null;
+    key "_InstrumentOfRefinancedSecuritiesHolding" : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                                                 not null;
+        "SystemValidTo"                            : UTCTimestamp                                                 not null;
+        "DisclosedRefinancing"                     : Boolean;
+        "IndemnificationAgreement"                 : Boolean;
+        "IndemnificationPercentage"                : Decimal(15, 11);
+        "MaximumAssumedLiabilityAmount"            : Decimal(34, 6);
+        "MaximumAssumedLiabilityAmountCurrency"    : String(3);
+        "PositionCurrency"                         : String(3);
+        "RefinancedAmountInPositionCurrency"       : Decimal(34, 6);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "RefinancingRelation_Historical" {
+    "RefinancingType"                          : String(40)                                                   default '' not null;
+    "ASSOC_RefinancedContract"                 : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                           not null;
+    "ASSOC_RefinancedPositionCurrency"         : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                          PositionCurrency,
+                                                                                                          ASSOC_MultiCcyAccnt
+                                                                                                        }     not null;
+    "ASSOC_RefinancingContract"                : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                           not null;
+    "ASSOC_RefinancingPositionCurrency"        : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                          PositionCurrency,
+                                                                                                          ASSOC_MultiCcyAccnt
+                                                                                                        }     not null;
+    "_CollectionOfRefinancedSecuritiesHolding" : association to Collection {
+                                                                             CollectionID,
+                                                                             IDSystem
+                                                                           }                                  not null;
+    "_InstrumentOfRefinancedSecuritiesHolding" : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                        : LocalDate                                                    not null;
+    "BusinessValidTo"                          : LocalDate                                                    not null;
+    "SystemValidFrom"                          : UTCTimestamp                                                 not null;
+    "SystemValidTo"                            : UTCTimestamp                                                 not null;
+    "DisclosedRefinancing"                     : Boolean;
+    "IndemnificationAgreement"                 : Boolean;
+    "IndemnificationPercentage"                : Decimal(15, 11);
+    "MaximumAssumedLiabilityAmount"            : Decimal(34, 6);
+    "MaximumAssumedLiabilityAmountCurrency"    : String(3);
+    "PositionCurrency"                         : String(3);
+    "RefinancedAmountInPositionCurrency"       : Decimal(34, 6);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,50 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"Trade";
+
+entity "BusinessPartnerTradeAssignment" {
+    key "BusinessPartnerRole"           : String(50);
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_Trade"                        : association to Trade {
+                                                                 IDSystem,
+                                                                 TradeID
+                                                               }                               not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "ContractDataOwner"             : Boolean;
+        "MainCounterparty"              : Boolean;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BusinessPartnerTradeAssignment_Historical" {
+    "BusinessPartnerRole"           : String(50)                                           not null;
+    "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "_Trade"                        : association to Trade {
+                                                             IDSystem,
+                                                             TradeID
+                                                           }                               not null;
+    "BusinessValidFrom"             : UTCTimestamp                                         not null;
+    "BusinessValidTo"               : UTCTimestamp                                         not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "ContractDataOwner"             : Boolean;
+    "MainCounterparty"              : Boolean;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

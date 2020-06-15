@@ -1,0 +1,299 @@
+PROCEDURE "sap.fsdm.procedures::EarlyRepaymentRuleLoad" (IN ROW "sap.fsdm.tabletypes::EarlyRepaymentRuleTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_Loan.FinancialContractID=' || TO_VARCHAR("ASSOC_Loan.FinancialContractID") || ' ' ||
+                'ASSOC_Loan.IDSystem=' || TO_VARCHAR("ASSOC_Loan.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_Loan.FinancialContractID",
+                        "IN"."ASSOC_Loan.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_Loan.FinancialContractID",
+                        "IN"."ASSOC_Loan.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_Loan.FinancialContractID",
+                        "ASSOC_Loan.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_Loan.FinancialContractID",
+                                    "IN"."ASSOC_Loan.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_Loan.FinancialContractID",
+                                    "IN"."ASSOC_Loan.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::EarlyRepaymentRule" (
+        "SequenceNumber",
+        "ASSOC_Loan.FinancialContractID",
+        "ASSOC_Loan.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "EarlyRepaymentEndDate",
+        "EarlyRepaymentStartDate",
+        "MaximumPrepaymentAmount",
+        "MinimumPrepaymentAmount",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "PrepaymentAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_Loan.FinancialContractID" as "ASSOC_Loan.FinancialContractID" ,
+            "OLD_ASSOC_Loan.IDSystem" as "ASSOC_Loan.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_EarlyRepaymentEndDate" as "EarlyRepaymentEndDate" ,
+            "OLD_EarlyRepaymentStartDate" as "EarlyRepaymentStartDate" ,
+            "OLD_MaximumPrepaymentAmount" as "MaximumPrepaymentAmount" ,
+            "OLD_MinimumPrepaymentAmount" as "MinimumPrepaymentAmount" ,
+            "OLD_NoticePeriodLength" as "NoticePeriodLength" ,
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit" ,
+            "OLD_PrepaymentAmountCurrency" as "PrepaymentAmountCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_Loan.FinancialContractID",
+                        "IN"."ASSOC_Loan.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_Loan.FinancialContractID" as "OLD_ASSOC_Loan.FinancialContractID",
+                                "OLD"."ASSOC_Loan.IDSystem" as "OLD_ASSOC_Loan.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."EarlyRepaymentEndDate" as "OLD_EarlyRepaymentEndDate",
+                                "OLD"."EarlyRepaymentStartDate" as "OLD_EarlyRepaymentStartDate",
+                                "OLD"."MaximumPrepaymentAmount" as "OLD_MaximumPrepaymentAmount",
+                                "OLD"."MinimumPrepaymentAmount" as "OLD_MinimumPrepaymentAmount",
+                                "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                                "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                                "OLD"."PrepaymentAmountCurrency" as "OLD_PrepaymentAmountCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EarlyRepaymentRule" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_Loan.FinancialContractID" is null then '' else "IN"."ASSOC_Loan.FinancialContractID" end ) = "OLD"."ASSOC_Loan.FinancialContractID" and
+                ( case when "IN"."ASSOC_Loan.IDSystem" is null then '' else "IN"."ASSOC_Loan.IDSystem" end ) = "OLD"."ASSOC_Loan.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::EarlyRepaymentRule" (
+        "SequenceNumber",
+        "ASSOC_Loan.FinancialContractID",
+        "ASSOC_Loan.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "EarlyRepaymentEndDate",
+        "EarlyRepaymentStartDate",
+        "MaximumPrepaymentAmount",
+        "MinimumPrepaymentAmount",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "PrepaymentAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_Loan.FinancialContractID" as "ASSOC_Loan.FinancialContractID",
+            "OLD_ASSOC_Loan.IDSystem" as "ASSOC_Loan.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_EarlyRepaymentEndDate" as "EarlyRepaymentEndDate",
+            "OLD_EarlyRepaymentStartDate" as "EarlyRepaymentStartDate",
+            "OLD_MaximumPrepaymentAmount" as "MaximumPrepaymentAmount",
+            "OLD_MinimumPrepaymentAmount" as "MinimumPrepaymentAmount",
+            "OLD_NoticePeriodLength" as "NoticePeriodLength",
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+            "OLD_PrepaymentAmountCurrency" as "PrepaymentAmountCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_Loan.FinancialContractID",
+                        "IN"."ASSOC_Loan.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_Loan.FinancialContractID" as "OLD_ASSOC_Loan.FinancialContractID",
+                        "OLD"."ASSOC_Loan.IDSystem" as "OLD_ASSOC_Loan.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."EarlyRepaymentEndDate" as "OLD_EarlyRepaymentEndDate",
+                        "OLD"."EarlyRepaymentStartDate" as "OLD_EarlyRepaymentStartDate",
+                        "OLD"."MaximumPrepaymentAmount" as "OLD_MaximumPrepaymentAmount",
+                        "OLD"."MinimumPrepaymentAmount" as "OLD_MinimumPrepaymentAmount",
+                        "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                        "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                        "OLD"."PrepaymentAmountCurrency" as "OLD_PrepaymentAmountCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EarlyRepaymentRule" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_Loan.FinancialContractID" is null then '' else "IN"."ASSOC_Loan.FinancialContractID" end ) = "OLD"."ASSOC_Loan.FinancialContractID" and
+                ( case when "IN"."ASSOC_Loan.IDSystem" is null then '' else "IN"."ASSOC_Loan.IDSystem" end ) = "OLD"."ASSOC_Loan.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::EarlyRepaymentRule"
+    where (
+        "SequenceNumber",
+        "ASSOC_Loan.FinancialContractID",
+        "ASSOC_Loan.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_Loan.FinancialContractID",
+            "OLD"."ASSOC_Loan.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::EarlyRepaymentRule" as "OLD"
+        on
+           ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+           ( case when "IN"."ASSOC_Loan.FinancialContractID" is null then '' else "IN"."ASSOC_Loan.FinancialContractID" end ) = "OLD"."ASSOC_Loan.FinancialContractID" and
+           ( case when "IN"."ASSOC_Loan.IDSystem" is null then '' else "IN"."ASSOC_Loan.IDSystem" end ) = "OLD"."ASSOC_Loan.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::EarlyRepaymentRule" (
+        "SequenceNumber",
+        "ASSOC_Loan.FinancialContractID",
+        "ASSOC_Loan.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "EarlyRepaymentEndDate",
+        "EarlyRepaymentStartDate",
+        "MaximumPrepaymentAmount",
+        "MinimumPrepaymentAmount",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "PrepaymentAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "ASSOC_Loan.FinancialContractID" is null then '' else "ASSOC_Loan.FinancialContractID" end ) as "ASSOC_Loan.FinancialContractID",
+            ( case when "ASSOC_Loan.IDSystem" is null then '' else "ASSOC_Loan.IDSystem" end ) as "ASSOC_Loan.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "EarlyRepaymentEndDate"  ,
+            "EarlyRepaymentStartDate"  ,
+            "MaximumPrepaymentAmount"  ,
+            "MinimumPrepaymentAmount"  ,
+            "NoticePeriodLength"  ,
+            "NoticePeriodTimeUnit"  ,
+            "PrepaymentAmountCurrency"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

@@ -1,0 +1,23 @@
+view "sap.fsdm.Views::PledgedFinancialInstruments_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_PledgedObject.SequenceNumber" as "_PledgedObject_SequenceNumber",
+      "_PledgedObject.ASSOC_Pledge.FinancialContractID" as "_PledgedObject_ASSOC_Pledge_FinancialContractID",
+      "_PledgedObject.ASSOC_Pledge.IDSystem" as "_PledgedObject_ASSOC_Pledge_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PledgedNominalAmount" as "PledgedNominalAmount",
+      "PledgedNominalAmountCurrency" as "PledgedNominalAmountCurrency",
+      "PledgedQuantity" as "PledgedQuantity",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PledgedFinancialInstruments"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,67 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "CreditRiskExposureAtDefault" {
+    key "EADEstimationMethod"           : String(20)                                                   default '';
+    key "EADTimeHorizon"                : Decimal(34, 6)                                               default 0;
+    key "EADTimeHorizonTimeUnit"        : String(12)                                                   default '';
+    key "RiskProvisionScenario"         : String(100)                                                  default '';
+    key "ASSOC_FinancialContract"       : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_Collection"                   : association to Collection {
+                                                                      CollectionID,
+                                                                      IDSystem
+                                                                    }                                  not null;
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "CreditConversionFactor"        : Decimal(15, 11);
+        "EADCurrency"                   : String(3);
+        "ExposureAtDefault"             : Decimal(34, 6);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CreditRiskExposureAtDefault_Historical" {
+    "EADEstimationMethod"           : String(20)                                                   default '' not null;
+    "EADTimeHorizon"                : Decimal(34, 6)                                               default 0 not null;
+    "EADTimeHorizonTimeUnit"        : String(12)                                                   default '' not null;
+    "RiskProvisionScenario"         : String(100)                                                  default '' not null;
+    "ASSOC_FinancialContract"       : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_Collection"                   : association to Collection {
+                                                                  CollectionID,
+                                                                  IDSystem
+                                                                }                                  not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"             : LocalDate                                                    not null;
+    "BusinessValidTo"               : LocalDate                                                    not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "CreditConversionFactor"        : Decimal(15, 11);
+    "EADCurrency"                   : String(3);
+    "ExposureAtDefault"             : Decimal(34, 6);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

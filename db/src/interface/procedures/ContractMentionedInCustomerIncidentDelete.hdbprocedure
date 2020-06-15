@@ -1,0 +1,47 @@
+PROCEDURE "sap.fsdm.procedures::ContractMentionedInCustomerIncidentDelete" (IN ROW "sap.fsdm.tabletypes::ContractMentionedInCustomerIncidentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" is null and
+                         "ASSOC_ContractMentionedInCustomerIncident.IDSystem" is null and
+                         "ASSOC_CustomerIncident.CommunicationEventID" is null and
+                         "ASSOC_CustomerIncident.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning   --delete matching data in current tabledelete from "sap.fsdm::ContractMentionedInCustomerIncident" WHERE("ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"ASSOC_CustomerIncident.CommunicationEventID" ,
+"ASSOC_CustomerIncident.IDSystem" 
+)in ( select 
+"OLD"."ASSOC_ContractMentionedInCustomerIncident.FinancialContractID"  as "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"OLD"."ASSOC_ContractMentionedInCustomerIncident.IDSystem"  as "ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"OLD"."ASSOC_CustomerIncident.CommunicationEventID"  as "ASSOC_CustomerIncident.CommunicationEventID" ,
+"OLD"."ASSOC_CustomerIncident.IDSystem"  as "ASSOC_CustomerIncident.IDSystem" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::ContractMentionedInCustomerIncident" AS "OLD"
+  ON
+  ( "IN"."ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" = "OLD"."ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" or "IN"."ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_ContractMentionedInCustomerIncident.IDSystem" = "OLD"."ASSOC_ContractMentionedInCustomerIncident.IDSystem" or "IN"."ASSOC_ContractMentionedInCustomerIncident.IDSystem" is null ) and
+  ( "IN"."ASSOC_CustomerIncident.CommunicationEventID" = "OLD"."ASSOC_CustomerIncident.CommunicationEventID" or "IN"."ASSOC_CustomerIncident.CommunicationEventID" is null ) and
+  ( "IN"."ASSOC_CustomerIncident.IDSystem" = "OLD"."ASSOC_CustomerIncident.IDSystem" or "IN"."ASSOC_CustomerIncident.IDSystem" is null ) 
+);
+
+END

@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::PartnerClassHierarchyRelationErase" (IN ROW "sap.fsdm.tabletypes::PartnerClassHierarchyRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PartnerClassHierarchy" is null and
+                         "ASSOC_Child.PartnerClass" is null and
+                         "ASSOC_Child.PartnerClassificationSystem" is null and
+                         "ASSOC_Parent.PartnerClass" is null and
+                         "ASSOC_Parent.PartnerClassificationSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::PartnerClassHierarchyRelation" WHERE
+("PartnerClassHierarchy" ,
+"ASSOC_Child.PartnerClass" ,
+"ASSOC_Child.PartnerClassificationSystem" ,
+"ASSOC_Parent.PartnerClass" ,
+"ASSOC_Parent.PartnerClassificationSystem" 
+)in ( select "OLD"."PartnerClassHierarchy" ,
+"OLD"."ASSOC_Child.PartnerClass" ,
+"OLD"."ASSOC_Child.PartnerClassificationSystem" ,
+"OLD"."ASSOC_Parent.PartnerClass" ,
+"OLD"."ASSOC_Parent.PartnerClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::PartnerClassHierarchyRelation" "OLD"
+on
+  ( "IN"."PartnerClassHierarchy" = "OLD"."PartnerClassHierarchy" or "IN"."PartnerClassHierarchy" is null ) and
+  ( "IN"."ASSOC_Child.PartnerClass" = "OLD"."ASSOC_Child.PartnerClass" or "IN"."ASSOC_Child.PartnerClass" is null ) and
+  ( "IN"."ASSOC_Child.PartnerClassificationSystem" = "OLD"."ASSOC_Child.PartnerClassificationSystem" or "IN"."ASSOC_Child.PartnerClassificationSystem" is null ) and
+  ( "IN"."ASSOC_Parent.PartnerClass" = "OLD"."ASSOC_Parent.PartnerClass" or "IN"."ASSOC_Parent.PartnerClass" is null ) and
+  ( "IN"."ASSOC_Parent.PartnerClassificationSystem" = "OLD"."ASSOC_Parent.PartnerClassificationSystem" or "IN"."ASSOC_Parent.PartnerClassificationSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::PartnerClassHierarchyRelation_Historical" WHERE
+("PartnerClassHierarchy" ,
+"ASSOC_Child.PartnerClass" ,
+"ASSOC_Child.PartnerClassificationSystem" ,
+"ASSOC_Parent.PartnerClass" ,
+"ASSOC_Parent.PartnerClassificationSystem" 
+)in ( select "OLD"."PartnerClassHierarchy" ,
+"OLD"."ASSOC_Child.PartnerClass" ,
+"OLD"."ASSOC_Child.PartnerClassificationSystem" ,
+"OLD"."ASSOC_Parent.PartnerClass" ,
+"OLD"."ASSOC_Parent.PartnerClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::PartnerClassHierarchyRelation_Historical" "OLD"
+on
+  ( "IN"."PartnerClassHierarchy" = "OLD"."PartnerClassHierarchy" or "IN"."PartnerClassHierarchy" is null ) and
+  ( "IN"."ASSOC_Child.PartnerClass" = "OLD"."ASSOC_Child.PartnerClass" or "IN"."ASSOC_Child.PartnerClass" is null ) and
+  ( "IN"."ASSOC_Child.PartnerClassificationSystem" = "OLD"."ASSOC_Child.PartnerClassificationSystem" or "IN"."ASSOC_Child.PartnerClassificationSystem" is null ) and
+  ( "IN"."ASSOC_Parent.PartnerClass" = "OLD"."ASSOC_Parent.PartnerClass" or "IN"."ASSOC_Parent.PartnerClass" is null ) and
+  ( "IN"."ASSOC_Parent.PartnerClassificationSystem" = "OLD"."ASSOC_Parent.PartnerClassificationSystem" or "IN"."ASSOC_Parent.PartnerClassificationSystem" is null ) 
+);
+
+END

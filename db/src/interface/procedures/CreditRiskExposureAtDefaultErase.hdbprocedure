@@ -1,0 +1,100 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskExposureAtDefaultErase" (IN ROW "sap.fsdm.tabletypes::CreditRiskExposureAtDefaultTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "EADEstimationMethod" is null and
+                         "EADTimeHorizon" is null and
+                         "EADTimeHorizonTimeUnit" is null and
+                         "RiskProvisionScenario" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "_Collection.CollectionID" is null and
+                         "_Collection.IDSystem" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CreditRiskExposureAtDefault" WHERE
+("EADEstimationMethod" ,
+"EADTimeHorizon" ,
+"EADTimeHorizonTimeUnit" ,
+"RiskProvisionScenario" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_Collection.CollectionID" ,
+"_Collection.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."EADEstimationMethod" ,
+"OLD"."EADTimeHorizon" ,
+"OLD"."EADTimeHorizonTimeUnit" ,
+"OLD"."RiskProvisionScenario" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."_Collection.CollectionID" ,
+"OLD"."_Collection.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CreditRiskExposureAtDefault" "OLD"
+on
+  ( "IN"."EADEstimationMethod" = "OLD"."EADEstimationMethod" or "IN"."EADEstimationMethod" is null ) and
+  ( "IN"."EADTimeHorizon" = "OLD"."EADTimeHorizon" or "IN"."EADTimeHorizon" is null ) and
+  ( "IN"."EADTimeHorizonTimeUnit" = "OLD"."EADTimeHorizonTimeUnit" or "IN"."EADTimeHorizonTimeUnit" is null ) and
+  ( "IN"."RiskProvisionScenario" = "OLD"."RiskProvisionScenario" or "IN"."RiskProvisionScenario" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+  ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CreditRiskExposureAtDefault_Historical" WHERE
+("EADEstimationMethod" ,
+"EADTimeHorizon" ,
+"EADTimeHorizonTimeUnit" ,
+"RiskProvisionScenario" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_Collection.CollectionID" ,
+"_Collection.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."EADEstimationMethod" ,
+"OLD"."EADTimeHorizon" ,
+"OLD"."EADTimeHorizonTimeUnit" ,
+"OLD"."RiskProvisionScenario" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."_Collection.CollectionID" ,
+"OLD"."_Collection.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CreditRiskExposureAtDefault_Historical" "OLD"
+on
+  ( "IN"."EADEstimationMethod" = "OLD"."EADEstimationMethod" or "IN"."EADEstimationMethod" is null ) and
+  ( "IN"."EADTimeHorizon" = "OLD"."EADTimeHorizon" or "IN"."EADTimeHorizon" is null ) and
+  ( "IN"."EADTimeHorizonTimeUnit" = "OLD"."EADTimeHorizonTimeUnit" or "IN"."EADTimeHorizonTimeUnit" is null ) and
+  ( "IN"."RiskProvisionScenario" = "OLD"."RiskProvisionScenario" or "IN"."RiskProvisionScenario" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+  ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+END

@@ -1,0 +1,49 @@
+PROCEDURE "sap.fsdm.procedures::DataReleaseInfoDelReadOnly" (IN ROW "sap.fsdm.tabletypes::DataReleaseInfoTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::DataReleaseInfoTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "FiscalPeriod" is null and
+                         "KeyDate" is null and
+                         "Object" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning--Delete entries for update from current table
+CURR_DEL = select 
+"FiscalPeriod",
+"KeyDate",
+"Object"
+from "sap.fsdm::DataReleaseInfo" WHERE("FiscalPeriod" ,
+"KeyDate" ,
+"Object" 
+)in ( select 
+"OLD"."FiscalPeriod"  as "FiscalPeriod" ,
+"OLD"."KeyDate"  as "KeyDate" ,
+"OLD"."Object"  as "Object" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::DataReleaseInfo" AS "OLD"
+  ON
+  ( "IN"."FiscalPeriod" = "OLD"."FiscalPeriod" or "IN"."FiscalPeriod" is null ) and
+  ( "IN"."KeyDate" = "OLD"."KeyDate" or "IN"."KeyDate" is null ) and
+  ( "IN"."Object" = "OLD"."Object" or "IN"."Object" is null ) 
+);
+
+END

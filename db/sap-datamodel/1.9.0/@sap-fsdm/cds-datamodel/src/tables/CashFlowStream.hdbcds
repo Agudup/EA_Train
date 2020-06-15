@@ -1,0 +1,169 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"Interest";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"ReferenceRate";
+using "sap"."fsdm"::"FSSubledgerDocument";
+
+entity "CashFlowStream" {
+    key "CashFlowEndDate"                            : UTCTimestamp;
+    key "CashFlowScenario"                           : String(10);
+    key "CashFlowSource"                             : String(10);
+    key "CashFlowStartDate"                          : UTCTimestamp;
+    key "CashFlowType"                               : String(120);
+    key "ItemNumber"                                 : Integer;
+    key "ASSOC_Contract"                             : association to FinancialContract {
+                                                                                          FinancialContractID,
+                                                                                          IDSystem
+                                                                                        }                           not null;
+    key "ASSOC_InterestSpecification"                : association to Interest {
+                                                                                 SequenceNumber,
+                                                                                 ASSOC_CcyOfMultiCcyAccnt,
+                                                                                 ASSOC_FinancialContract,
+                                                                                 _DebtInstrument,
+                                                                                 _OptionOfReferenceRateSpecification,
+                                                                                 _OptionOfStrikeSpecification,
+                                                                                 _Trade
+                                                                               }                                    not null;
+    key "ASSOC_PositionCurrencyOfCashFlow"           : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                                PositionCurrency,
+                                                                                                                ASSOC_MultiCcyAccnt
+                                                                                                              }     not null;
+    key "_CollectionOfCashFlow"                      : association to Collection {
+                                                                                   CollectionID,
+                                                                                   IDSystem
+                                                                                 }                                  not null;
+    key "_Instrument"                                : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                          : LocalDate;
+    key "BusinessValidTo"                            : LocalDate;
+        "SystemValidFrom"                            : UTCTimestamp                                                 not null;
+        "SystemValidTo"                              : UTCTimestamp                                                 not null;
+        "ASSOC_ReferenceRate"                        : association to ReferenceRate { ReferenceRateID };
+        "_FSSubLedgerDocumentItem"                   : association to FSSubledgerDocument {
+                                                                                            CompanyCode,
+                                                                                            DocumentNumber,
+                                                                                            FiscalYear,
+                                                                                            ItemNumber,
+                                                                                            PostingDate,
+                                                                                            _AccountingSystem
+                                                                                          };
+        "AmountInPositionCurrency"                   : Decimal(34, 6);
+        "AmountInTransactionCurrency"                : Decimal(34, 6);
+        "ApplicableInterestRate"                     : Decimal(15, 11);
+        "CashFlowCategory"                           : String(40);
+        "CashFlowItemCategory"                       : String(40);
+        "CashFlowItemType"                           : String(80);
+        "CurrencyOfPrincipalAmount"                  : String(3);
+        "DueDate"                                    : LocalDate;
+        "InterestFixingDate"                         : LocalDate;
+        "InterestPeriodEndDate"                      : LocalDate;
+        "InterestPeriodStartDate"                    : LocalDate;
+        "InvestmentHoldingNominalAmount"             : Decimal(34, 6);
+        "InvestmentHoldingNominalAmountCurrency"     : String(3);
+        "InvestmentHoldingQuantity"                  : Decimal(34, 6);
+        "InvestmentHoldingUnit"                      : String(10);
+        "NumberOfBaseDaysUsedForInterestCalculation" : Integer;
+        "NumberOfDaysUsedForInterestCalculation"     : Integer;
+        "PositionCurrency"                           : String(3);
+        "PostingDirection"                           : String(6);
+        "PrincipalAmount"                            : Decimal(34, 6);
+        "SettledDate"                                : LocalDate;
+        "SpreadIncludedInApplicableRate"             : Decimal(15, 11);
+        "TradeDate"                                  : LocalDate;
+        "TransactionCurrency"                        : String(3);
+        "UnsignedAmountInPositionCurrency"           : Decimal(34, 6);
+        "UnsignedAmountInTransactionCurrency"        : Decimal(34, 6);
+        "UsedExchangeRate"                           : Decimal(34, 6);
+        "ValueDate"                                  : LocalDate;
+        "SourceSystemID"                             : String(128);
+        "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+        "ChangingUserInSourceSystem"                 : String(128);
+        "ChangingProcessType"                        : String(40);
+        "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CashFlowStream_Historical" {
+    "CashFlowEndDate"                            : UTCTimestamp                                                 not null;
+    "CashFlowScenario"                           : String(10)                                                   not null;
+    "CashFlowSource"                             : String(10)                                                   not null;
+    "CashFlowStartDate"                          : UTCTimestamp                                                 not null;
+    "CashFlowType"                               : String(120)                                                  not null;
+    "ItemNumber"                                 : Integer                                                      not null;
+    "ASSOC_Contract"                             : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    }                           not null;
+    "ASSOC_InterestSpecification"                : association to Interest {
+                                                                             SequenceNumber,
+                                                                             ASSOC_CcyOfMultiCcyAccnt,
+                                                                             ASSOC_FinancialContract,
+                                                                             _DebtInstrument,
+                                                                             _OptionOfReferenceRateSpecification,
+                                                                             _OptionOfStrikeSpecification,
+                                                                             _Trade
+                                                                           }                                    not null;
+    "ASSOC_PositionCurrencyOfCashFlow"           : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                            PositionCurrency,
+                                                                                                            ASSOC_MultiCcyAccnt
+                                                                                                          }     not null;
+    "_CollectionOfCashFlow"                      : association to Collection {
+                                                                               CollectionID,
+                                                                               IDSystem
+                                                                             }                                  not null;
+    "_Instrument"                                : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                          : LocalDate                                                    not null;
+    "BusinessValidTo"                            : LocalDate                                                    not null;
+    "SystemValidFrom"                            : UTCTimestamp                                                 not null;
+    "SystemValidTo"                              : UTCTimestamp                                                 not null;
+    "ASSOC_ReferenceRate"                        : association to ReferenceRate { ReferenceRateID };
+    "_FSSubLedgerDocumentItem"                   : association to FSSubledgerDocument {
+                                                                                        CompanyCode,
+                                                                                        DocumentNumber,
+                                                                                        FiscalYear,
+                                                                                        ItemNumber,
+                                                                                        PostingDate,
+                                                                                        _AccountingSystem
+                                                                                      };
+    "AmountInPositionCurrency"                   : Decimal(34, 6);
+    "AmountInTransactionCurrency"                : Decimal(34, 6);
+    "ApplicableInterestRate"                     : Decimal(15, 11);
+    "CashFlowCategory"                           : String(40);
+    "CashFlowItemCategory"                       : String(40);
+    "CashFlowItemType"                           : String(80);
+    "CurrencyOfPrincipalAmount"                  : String(3);
+    "DueDate"                                    : LocalDate;
+    "InterestFixingDate"                         : LocalDate;
+    "InterestPeriodEndDate"                      : LocalDate;
+    "InterestPeriodStartDate"                    : LocalDate;
+    "InvestmentHoldingNominalAmount"             : Decimal(34, 6);
+    "InvestmentHoldingNominalAmountCurrency"     : String(3);
+    "InvestmentHoldingQuantity"                  : Decimal(34, 6);
+    "InvestmentHoldingUnit"                      : String(10);
+    "NumberOfBaseDaysUsedForInterestCalculation" : Integer;
+    "NumberOfDaysUsedForInterestCalculation"     : Integer;
+    "PositionCurrency"                           : String(3);
+    "PostingDirection"                           : String(6);
+    "PrincipalAmount"                            : Decimal(34, 6);
+    "SettledDate"                                : LocalDate;
+    "SpreadIncludedInApplicableRate"             : Decimal(15, 11);
+    "TradeDate"                                  : LocalDate;
+    "TransactionCurrency"                        : String(3);
+    "UnsignedAmountInPositionCurrency"           : Decimal(34, 6);
+    "UnsignedAmountInTransactionCurrency"        : Decimal(34, 6);
+    "UsedExchangeRate"                           : Decimal(34, 6);
+    "ValueDate"                                  : LocalDate;
+    "SourceSystemID"                             : String(128);
+    "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+    "ChangingUserInSourceSystem"                 : String(128);
+    "ChangingProcessType"                        : String(40);
+    "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::ClassificationOfTransferOrder_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ASSOC_TransferOrder.IDSystem" as "ASSOC_TransferOrder_IDSystem",
+      "ASSOC_TransferOrder.TransferOrderID" as "ASSOC_TransferOrder_TransferOrderID",
+      "ASSOC_TransferOrderClass.TransferOrderClass" as "ASSOC_TransferOrderClass_TransferOrderClass",
+      "ASSOC_TransferOrderClass.TransferOrderClassificationSystem" as "ASSOC_TransferOrderClass_TransferOrderClassificationSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ClassificationOfTransferOrder"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

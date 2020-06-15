@@ -1,0 +1,337 @@
+PROCEDURE "sap.fsdm.procedures::SettlementAccountAssignmentDelete" (IN ROW "sap.fsdm.tabletypes::SettlementAccountAssignmentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SettlementAccountRole=' || TO_VARCHAR("SettlementAccountRole") || ' ' ||
+                'ASSOC_BaseContract.FinancialContractID=' || TO_VARCHAR("ASSOC_BaseContract.FinancialContractID") || ' ' ||
+                'ASSOC_BaseContract.IDSystem=' || TO_VARCHAR("ASSOC_BaseContract.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SettlementAccountRole",
+                        "IN"."ASSOC_BaseContract.FinancialContractID",
+                        "IN"."ASSOC_BaseContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SettlementAccountRole",
+                        "IN"."ASSOC_BaseContract.FinancialContractID",
+                        "IN"."ASSOC_BaseContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SettlementAccountRole",
+                        "ASSOC_BaseContract.FinancialContractID",
+                        "ASSOC_BaseContract.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SettlementAccountRole",
+                                    "IN"."ASSOC_BaseContract.FinancialContractID",
+                                    "IN"."ASSOC_BaseContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SettlementAccountRole",
+                                    "IN"."ASSOC_BaseContract.FinancialContractID",
+                                    "IN"."ASSOC_BaseContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::SettlementAccountAssignment" (
+        "SettlementAccountRole",
+        "ASSOC_BaseContract.FinancialContractID",
+        "ASSOC_BaseContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_SettlementAccount.FinancialContractID",
+        "ASSOC_SettlementAccount.IDSystem",
+        "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName",
+        "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType",
+        "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID",
+        "DayOfMonthOfSettlement",
+        "DirectSettlement",
+        "ExternalSettlementAccountIdentificationSystem",
+        "ExternalSettlementBankAccountCurrency",
+        "ExternalSettlementBankAccountHolderName",
+        "ExternalSettlementBankAccountID",
+        "ExternalSettlementBankID",
+        "ExternalSettlementBankIdentificationSystem",
+        "ExternalSettlementBankName",
+        "ExternalSettlementIBAN",
+        "ExternalSettlementSWIFT",
+        "SettlementContractAssignmentCategory",
+        "SettlementMethod",
+        "SettlementPeriodLength",
+        "SettlementPeriodTimeUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SettlementAccountRole" as "SettlementAccountRole" ,
+            "OLD_ASSOC_BaseContract.FinancialContractID" as "ASSOC_BaseContract.FinancialContractID" ,
+            "OLD_ASSOC_BaseContract.IDSystem" as "ASSOC_BaseContract.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_SettlementAccount.FinancialContractID" as "ASSOC_SettlementAccount.FinancialContractID" ,
+            "OLD_ASSOC_SettlementAccount.IDSystem" as "ASSOC_SettlementAccount.IDSystem" ,
+            "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" as "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" ,
+            "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" as "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" ,
+            "OLD__ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" as "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" ,
+            "OLD_DayOfMonthOfSettlement" as "DayOfMonthOfSettlement" ,
+            "OLD_DirectSettlement" as "DirectSettlement" ,
+            "OLD_ExternalSettlementAccountIdentificationSystem" as "ExternalSettlementAccountIdentificationSystem" ,
+            "OLD_ExternalSettlementBankAccountCurrency" as "ExternalSettlementBankAccountCurrency" ,
+            "OLD_ExternalSettlementBankAccountHolderName" as "ExternalSettlementBankAccountHolderName" ,
+            "OLD_ExternalSettlementBankAccountID" as "ExternalSettlementBankAccountID" ,
+            "OLD_ExternalSettlementBankID" as "ExternalSettlementBankID" ,
+            "OLD_ExternalSettlementBankIdentificationSystem" as "ExternalSettlementBankIdentificationSystem" ,
+            "OLD_ExternalSettlementBankName" as "ExternalSettlementBankName" ,
+            "OLD_ExternalSettlementIBAN" as "ExternalSettlementIBAN" ,
+            "OLD_ExternalSettlementSWIFT" as "ExternalSettlementSWIFT" ,
+            "OLD_SettlementContractAssignmentCategory" as "SettlementContractAssignmentCategory" ,
+            "OLD_SettlementMethod" as "SettlementMethod" ,
+            "OLD_SettlementPeriodLength" as "SettlementPeriodLength" ,
+            "OLD_SettlementPeriodTimeUnit" as "SettlementPeriodTimeUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SettlementAccountRole",
+                        "OLD"."ASSOC_BaseContract.FinancialContractID",
+                        "OLD"."ASSOC_BaseContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."SettlementAccountRole" as "OLD_SettlementAccountRole",
+                "OLD"."ASSOC_BaseContract.FinancialContractID" as "OLD_ASSOC_BaseContract.FinancialContractID",
+                "OLD"."ASSOC_BaseContract.IDSystem" as "OLD_ASSOC_BaseContract.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_SettlementAccount.FinancialContractID" as "OLD_ASSOC_SettlementAccount.FinancialContractID",
+                "OLD"."ASSOC_SettlementAccount.IDSystem" as "OLD_ASSOC_SettlementAccount.IDSystem",
+                "OLD"."_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" as "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName",
+                "OLD"."_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" as "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType",
+                "OLD"."_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" as "OLD__ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID",
+                "OLD"."DayOfMonthOfSettlement" as "OLD_DayOfMonthOfSettlement",
+                "OLD"."DirectSettlement" as "OLD_DirectSettlement",
+                "OLD"."ExternalSettlementAccountIdentificationSystem" as "OLD_ExternalSettlementAccountIdentificationSystem",
+                "OLD"."ExternalSettlementBankAccountCurrency" as "OLD_ExternalSettlementBankAccountCurrency",
+                "OLD"."ExternalSettlementBankAccountHolderName" as "OLD_ExternalSettlementBankAccountHolderName",
+                "OLD"."ExternalSettlementBankAccountID" as "OLD_ExternalSettlementBankAccountID",
+                "OLD"."ExternalSettlementBankID" as "OLD_ExternalSettlementBankID",
+                "OLD"."ExternalSettlementBankIdentificationSystem" as "OLD_ExternalSettlementBankIdentificationSystem",
+                "OLD"."ExternalSettlementBankName" as "OLD_ExternalSettlementBankName",
+                "OLD"."ExternalSettlementIBAN" as "OLD_ExternalSettlementIBAN",
+                "OLD"."ExternalSettlementSWIFT" as "OLD_ExternalSettlementSWIFT",
+                "OLD"."SettlementContractAssignmentCategory" as "OLD_SettlementContractAssignmentCategory",
+                "OLD"."SettlementMethod" as "OLD_SettlementMethod",
+                "OLD"."SettlementPeriodLength" as "OLD_SettlementPeriodLength",
+                "OLD"."SettlementPeriodTimeUnit" as "OLD_SettlementPeriodTimeUnit",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::SettlementAccountAssignment" as "OLD"
+            on
+                      ( "IN"."SettlementAccountRole" = "OLD"."SettlementAccountRole" or "IN"."SettlementAccountRole" is null ) and
+                      ( "IN"."ASSOC_BaseContract.FinancialContractID" = "OLD"."ASSOC_BaseContract.FinancialContractID" or "IN"."ASSOC_BaseContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_BaseContract.IDSystem" = "OLD"."ASSOC_BaseContract.IDSystem" or "IN"."ASSOC_BaseContract.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::SettlementAccountAssignment" (
+        "SettlementAccountRole",
+        "ASSOC_BaseContract.FinancialContractID",
+        "ASSOC_BaseContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_SettlementAccount.FinancialContractID",
+        "ASSOC_SettlementAccount.IDSystem",
+        "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName",
+        "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType",
+        "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID",
+        "DayOfMonthOfSettlement",
+        "DirectSettlement",
+        "ExternalSettlementAccountIdentificationSystem",
+        "ExternalSettlementBankAccountCurrency",
+        "ExternalSettlementBankAccountHolderName",
+        "ExternalSettlementBankAccountID",
+        "ExternalSettlementBankID",
+        "ExternalSettlementBankIdentificationSystem",
+        "ExternalSettlementBankName",
+        "ExternalSettlementIBAN",
+        "ExternalSettlementSWIFT",
+        "SettlementContractAssignmentCategory",
+        "SettlementMethod",
+        "SettlementPeriodLength",
+        "SettlementPeriodTimeUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SettlementAccountRole" as "SettlementAccountRole",
+            "OLD_ASSOC_BaseContract.FinancialContractID" as "ASSOC_BaseContract.FinancialContractID",
+            "OLD_ASSOC_BaseContract.IDSystem" as "ASSOC_BaseContract.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_SettlementAccount.FinancialContractID" as "ASSOC_SettlementAccount.FinancialContractID",
+            "OLD_ASSOC_SettlementAccount.IDSystem" as "ASSOC_SettlementAccount.IDSystem",
+            "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" as "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName",
+            "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" as "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType",
+            "OLD__ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" as "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID",
+            "OLD_DayOfMonthOfSettlement" as "DayOfMonthOfSettlement",
+            "OLD_DirectSettlement" as "DirectSettlement",
+            "OLD_ExternalSettlementAccountIdentificationSystem" as "ExternalSettlementAccountIdentificationSystem",
+            "OLD_ExternalSettlementBankAccountCurrency" as "ExternalSettlementBankAccountCurrency",
+            "OLD_ExternalSettlementBankAccountHolderName" as "ExternalSettlementBankAccountHolderName",
+            "OLD_ExternalSettlementBankAccountID" as "ExternalSettlementBankAccountID",
+            "OLD_ExternalSettlementBankID" as "ExternalSettlementBankID",
+            "OLD_ExternalSettlementBankIdentificationSystem" as "ExternalSettlementBankIdentificationSystem",
+            "OLD_ExternalSettlementBankName" as "ExternalSettlementBankName",
+            "OLD_ExternalSettlementIBAN" as "ExternalSettlementIBAN",
+            "OLD_ExternalSettlementSWIFT" as "ExternalSettlementSWIFT",
+            "OLD_SettlementContractAssignmentCategory" as "SettlementContractAssignmentCategory",
+            "OLD_SettlementMethod" as "SettlementMethod",
+            "OLD_SettlementPeriodLength" as "SettlementPeriodLength",
+            "OLD_SettlementPeriodTimeUnit" as "SettlementPeriodTimeUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SettlementAccountRole",
+                        "OLD"."ASSOC_BaseContract.FinancialContractID",
+                        "OLD"."ASSOC_BaseContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."SettlementAccountRole" as "OLD_SettlementAccountRole",
+                "OLD"."ASSOC_BaseContract.FinancialContractID" as "OLD_ASSOC_BaseContract.FinancialContractID",
+                "OLD"."ASSOC_BaseContract.IDSystem" as "OLD_ASSOC_BaseContract.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_SettlementAccount.FinancialContractID" as "OLD_ASSOC_SettlementAccount.FinancialContractID",
+                "OLD"."ASSOC_SettlementAccount.IDSystem" as "OLD_ASSOC_SettlementAccount.IDSystem",
+                "OLD"."_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" as "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName",
+                "OLD"."_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" as "OLD__ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType",
+                "OLD"."_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" as "OLD__ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID",
+                "OLD"."DayOfMonthOfSettlement" as "OLD_DayOfMonthOfSettlement",
+                "OLD"."DirectSettlement" as "OLD_DirectSettlement",
+                "OLD"."ExternalSettlementAccountIdentificationSystem" as "OLD_ExternalSettlementAccountIdentificationSystem",
+                "OLD"."ExternalSettlementBankAccountCurrency" as "OLD_ExternalSettlementBankAccountCurrency",
+                "OLD"."ExternalSettlementBankAccountHolderName" as "OLD_ExternalSettlementBankAccountHolderName",
+                "OLD"."ExternalSettlementBankAccountID" as "OLD_ExternalSettlementBankAccountID",
+                "OLD"."ExternalSettlementBankID" as "OLD_ExternalSettlementBankID",
+                "OLD"."ExternalSettlementBankIdentificationSystem" as "OLD_ExternalSettlementBankIdentificationSystem",
+                "OLD"."ExternalSettlementBankName" as "OLD_ExternalSettlementBankName",
+                "OLD"."ExternalSettlementIBAN" as "OLD_ExternalSettlementIBAN",
+                "OLD"."ExternalSettlementSWIFT" as "OLD_ExternalSettlementSWIFT",
+                "OLD"."SettlementContractAssignmentCategory" as "OLD_SettlementContractAssignmentCategory",
+                "OLD"."SettlementMethod" as "OLD_SettlementMethod",
+                "OLD"."SettlementPeriodLength" as "OLD_SettlementPeriodLength",
+                "OLD"."SettlementPeriodTimeUnit" as "OLD_SettlementPeriodTimeUnit",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::SettlementAccountAssignment" as "OLD"
+            on
+                                                ( "IN"."SettlementAccountRole" = "OLD"."SettlementAccountRole" or "IN"."SettlementAccountRole" is null ) and
+                                                ( "IN"."ASSOC_BaseContract.FinancialContractID" = "OLD"."ASSOC_BaseContract.FinancialContractID" or "IN"."ASSOC_BaseContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_BaseContract.IDSystem" = "OLD"."ASSOC_BaseContract.IDSystem" or "IN"."ASSOC_BaseContract.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::SettlementAccountAssignment"
+    where (
+        "SettlementAccountRole",
+        "ASSOC_BaseContract.FinancialContractID",
+        "ASSOC_BaseContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SettlementAccountRole",
+            "OLD"."ASSOC_BaseContract.FinancialContractID",
+            "OLD"."ASSOC_BaseContract.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::SettlementAccountAssignment" as "OLD"
+        on
+                                       ( "IN"."SettlementAccountRole" = "OLD"."SettlementAccountRole" or "IN"."SettlementAccountRole" is null ) and
+                                       ( "IN"."ASSOC_BaseContract.FinancialContractID" = "OLD"."ASSOC_BaseContract.FinancialContractID" or "IN"."ASSOC_BaseContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_BaseContract.IDSystem" = "OLD"."ASSOC_BaseContract.IDSystem" or "IN"."ASSOC_BaseContract.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

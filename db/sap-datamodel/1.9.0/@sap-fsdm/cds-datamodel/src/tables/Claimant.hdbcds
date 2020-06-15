@@ -1,0 +1,20 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"Claim";
+
+entity "Claimant" {
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_Claim"                        : association to Claim {
+                                                                 ID,
+                                                                 IDSystem
+                                                               }                               not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

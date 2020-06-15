@@ -1,0 +1,255 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentClassHierarchyRelationDelete" (IN ROW "sap.fsdm.tabletypes::InstrumentClassHierarchyRelationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'InstrumentHierarchy=' || TO_VARCHAR("InstrumentHierarchy") || ' ' ||
+                '_Child.InstrumentClass=' || TO_VARCHAR("_Child.InstrumentClass") || ' ' ||
+                '_Child.InstrumentClassificationSystem=' || TO_VARCHAR("_Child.InstrumentClassificationSystem") || ' ' ||
+                '_Parent.InstrumentClass=' || TO_VARCHAR("_Parent.InstrumentClass") || ' ' ||
+                '_Parent.InstrumentClassificationSystem=' || TO_VARCHAR("_Parent.InstrumentClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."InstrumentHierarchy",
+                        "IN"."_Child.InstrumentClass",
+                        "IN"."_Child.InstrumentClassificationSystem",
+                        "IN"."_Parent.InstrumentClass",
+                        "IN"."_Parent.InstrumentClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."InstrumentHierarchy",
+                        "IN"."_Child.InstrumentClass",
+                        "IN"."_Child.InstrumentClassificationSystem",
+                        "IN"."_Parent.InstrumentClass",
+                        "IN"."_Parent.InstrumentClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "InstrumentHierarchy",
+                        "_Child.InstrumentClass",
+                        "_Child.InstrumentClassificationSystem",
+                        "_Parent.InstrumentClass",
+                        "_Parent.InstrumentClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."InstrumentHierarchy",
+                                    "IN"."_Child.InstrumentClass",
+                                    "IN"."_Child.InstrumentClassificationSystem",
+                                    "IN"."_Parent.InstrumentClass",
+                                    "IN"."_Parent.InstrumentClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."InstrumentHierarchy",
+                                    "IN"."_Child.InstrumentClass",
+                                    "IN"."_Child.InstrumentClassificationSystem",
+                                    "IN"."_Parent.InstrumentClass",
+                                    "IN"."_Parent.InstrumentClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InstrumentClassHierarchyRelation" (
+        "InstrumentHierarchy",
+        "_Child.InstrumentClass",
+        "_Child.InstrumentClassificationSystem",
+        "_Parent.InstrumentClass",
+        "_Parent.InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InstrumentHierarchy" as "InstrumentHierarchy" ,
+            "OLD__Child.InstrumentClass" as "_Child.InstrumentClass" ,
+            "OLD__Child.InstrumentClassificationSystem" as "_Child.InstrumentClassificationSystem" ,
+            "OLD__Parent.InstrumentClass" as "_Parent.InstrumentClass" ,
+            "OLD__Parent.InstrumentClassificationSystem" as "_Parent.InstrumentClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."InstrumentHierarchy",
+                        "OLD"."_Child.InstrumentClass",
+                        "OLD"."_Child.InstrumentClassificationSystem",
+                        "OLD"."_Parent.InstrumentClass",
+                        "OLD"."_Parent.InstrumentClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."InstrumentHierarchy" as "OLD_InstrumentHierarchy",
+                "OLD"."_Child.InstrumentClass" as "OLD__Child.InstrumentClass",
+                "OLD"."_Child.InstrumentClassificationSystem" as "OLD__Child.InstrumentClassificationSystem",
+                "OLD"."_Parent.InstrumentClass" as "OLD__Parent.InstrumentClass",
+                "OLD"."_Parent.InstrumentClassificationSystem" as "OLD__Parent.InstrumentClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InstrumentClassHierarchyRelation" as "OLD"
+            on
+                      ( "IN"."InstrumentHierarchy" = "OLD"."InstrumentHierarchy" or "IN"."InstrumentHierarchy" is null ) and
+                      ( "IN"."_Child.InstrumentClass" = "OLD"."_Child.InstrumentClass" or "IN"."_Child.InstrumentClass" is null ) and
+                      ( "IN"."_Child.InstrumentClassificationSystem" = "OLD"."_Child.InstrumentClassificationSystem" or "IN"."_Child.InstrumentClassificationSystem" is null ) and
+                      ( "IN"."_Parent.InstrumentClass" = "OLD"."_Parent.InstrumentClass" or "IN"."_Parent.InstrumentClass" is null ) and
+                      ( "IN"."_Parent.InstrumentClassificationSystem" = "OLD"."_Parent.InstrumentClassificationSystem" or "IN"."_Parent.InstrumentClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InstrumentClassHierarchyRelation" (
+        "InstrumentHierarchy",
+        "_Child.InstrumentClass",
+        "_Child.InstrumentClassificationSystem",
+        "_Parent.InstrumentClass",
+        "_Parent.InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InstrumentHierarchy" as "InstrumentHierarchy",
+            "OLD__Child.InstrumentClass" as "_Child.InstrumentClass",
+            "OLD__Child.InstrumentClassificationSystem" as "_Child.InstrumentClassificationSystem",
+            "OLD__Parent.InstrumentClass" as "_Parent.InstrumentClass",
+            "OLD__Parent.InstrumentClassificationSystem" as "_Parent.InstrumentClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."InstrumentHierarchy",
+                        "OLD"."_Child.InstrumentClass",
+                        "OLD"."_Child.InstrumentClassificationSystem",
+                        "OLD"."_Parent.InstrumentClass",
+                        "OLD"."_Parent.InstrumentClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."InstrumentHierarchy" as "OLD_InstrumentHierarchy",
+                "OLD"."_Child.InstrumentClass" as "OLD__Child.InstrumentClass",
+                "OLD"."_Child.InstrumentClassificationSystem" as "OLD__Child.InstrumentClassificationSystem",
+                "OLD"."_Parent.InstrumentClass" as "OLD__Parent.InstrumentClass",
+                "OLD"."_Parent.InstrumentClassificationSystem" as "OLD__Parent.InstrumentClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InstrumentClassHierarchyRelation" as "OLD"
+            on
+                                                ( "IN"."InstrumentHierarchy" = "OLD"."InstrumentHierarchy" or "IN"."InstrumentHierarchy" is null ) and
+                                                ( "IN"."_Child.InstrumentClass" = "OLD"."_Child.InstrumentClass" or "IN"."_Child.InstrumentClass" is null ) and
+                                                ( "IN"."_Child.InstrumentClassificationSystem" = "OLD"."_Child.InstrumentClassificationSystem" or "IN"."_Child.InstrumentClassificationSystem" is null ) and
+                                                ( "IN"."_Parent.InstrumentClass" = "OLD"."_Parent.InstrumentClass" or "IN"."_Parent.InstrumentClass" is null ) and
+                                                ( "IN"."_Parent.InstrumentClassificationSystem" = "OLD"."_Parent.InstrumentClassificationSystem" or "IN"."_Parent.InstrumentClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InstrumentClassHierarchyRelation"
+    where (
+        "InstrumentHierarchy",
+        "_Child.InstrumentClass",
+        "_Child.InstrumentClassificationSystem",
+        "_Parent.InstrumentClass",
+        "_Parent.InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."InstrumentHierarchy",
+            "OLD"."_Child.InstrumentClass",
+            "OLD"."_Child.InstrumentClassificationSystem",
+            "OLD"."_Parent.InstrumentClass",
+            "OLD"."_Parent.InstrumentClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InstrumentClassHierarchyRelation" as "OLD"
+        on
+                                       ( "IN"."InstrumentHierarchy" = "OLD"."InstrumentHierarchy" or "IN"."InstrumentHierarchy" is null ) and
+                                       ( "IN"."_Child.InstrumentClass" = "OLD"."_Child.InstrumentClass" or "IN"."_Child.InstrumentClass" is null ) and
+                                       ( "IN"."_Child.InstrumentClassificationSystem" = "OLD"."_Child.InstrumentClassificationSystem" or "IN"."_Child.InstrumentClassificationSystem" is null ) and
+                                       ( "IN"."_Parent.InstrumentClass" = "OLD"."_Parent.InstrumentClass" or "IN"."_Parent.InstrumentClass" is null ) and
+                                       ( "IN"."_Parent.InstrumentClassificationSystem" = "OLD"."_Parent.InstrumentClassificationSystem" or "IN"."_Parent.InstrumentClassificationSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

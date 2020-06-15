@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::ServicePeriodErase" (IN ROW "sap.fsdm.tabletypes::ServicePeriodTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "StartDate" is null and
+                         "_Section._ReinsuranceContract.FinancialContractID" is null and
+                         "_Section._ReinsuranceContract.IDSystem" is null and
+                         "_Section.SectionID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ServicePeriod" WHERE
+("StartDate" ,
+"_Section._ReinsuranceContract.FinancialContractID" ,
+"_Section._ReinsuranceContract.IDSystem" ,
+"_Section.SectionID" 
+)in ( select "OLD"."StartDate" ,
+"OLD"."_Section._ReinsuranceContract.FinancialContractID" ,
+"OLD"."_Section._ReinsuranceContract.IDSystem" ,
+"OLD"."_Section.SectionID" 
+from :ROW "IN"
+inner join "sap.fsdm::ServicePeriod" "OLD"
+on
+  ( "IN"."StartDate" = "OLD"."StartDate" or "IN"."StartDate" is null ) and
+  ( "IN"."_Section._ReinsuranceContract.FinancialContractID" = "OLD"."_Section._ReinsuranceContract.FinancialContractID" or "IN"."_Section._ReinsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Section._ReinsuranceContract.IDSystem" = "OLD"."_Section._ReinsuranceContract.IDSystem" or "IN"."_Section._ReinsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Section.SectionID" = "OLD"."_Section.SectionID" or "IN"."_Section.SectionID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ServicePeriod_Historical" WHERE
+("StartDate" ,
+"_Section._ReinsuranceContract.FinancialContractID" ,
+"_Section._ReinsuranceContract.IDSystem" ,
+"_Section.SectionID" 
+)in ( select "OLD"."StartDate" ,
+"OLD"."_Section._ReinsuranceContract.FinancialContractID" ,
+"OLD"."_Section._ReinsuranceContract.IDSystem" ,
+"OLD"."_Section.SectionID" 
+from :ROW "IN"
+inner join "sap.fsdm::ServicePeriod_Historical" "OLD"
+on
+  ( "IN"."StartDate" = "OLD"."StartDate" or "IN"."StartDate" is null ) and
+  ( "IN"."_Section._ReinsuranceContract.FinancialContractID" = "OLD"."_Section._ReinsuranceContract.FinancialContractID" or "IN"."_Section._ReinsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Section._ReinsuranceContract.IDSystem" = "OLD"."_Section._ReinsuranceContract.IDSystem" or "IN"."_Section._ReinsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Section.SectionID" = "OLD"."_Section.SectionID" or "IN"."_Section.SectionID" is null ) 
+);
+
+END

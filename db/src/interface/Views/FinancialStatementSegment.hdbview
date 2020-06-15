@@ -1,0 +1,22 @@
+view "sap.fsdm.Views::FinancialStatementSegment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "FinancialStatementSegmentID" as "FinancialStatementSegmentID",
+      "_FinancialStatementStructure.FinancialStatementStructureID" as "_FinancialStatementStructure_FinancialStatementStructureID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_GLAccount.GLAccount" as "_GLAccount_GLAccount",
+      "_GLAccount._ChartOfAccounts.ChartOfAccountId" as "_GLAccount__ChartOfAccounts_ChartOfAccountId",
+      "_SubledgerAccount.SubledgerAccount" as "_SubledgerAccount_SubledgerAccount",
+      "AssetLiabilityAssignment" as "AssetLiabilityAssignment",
+      "FinancialStatementSegmentDescription" as "FinancialStatementSegmentDescription",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::FinancialStatementSegment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

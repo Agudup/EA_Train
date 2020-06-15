@@ -1,0 +1,61 @@
+view "sap.fsdm.SQLViews::BusinessPartnerRelation_View" 
+as select
+      "BusinessPartnerRelationType" ,
+      "ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessPartnerRelationCategory" ,
+      "EquityStakePercentage" ,
+      "EquityVotingRightsPercentage" ,
+      "HeadOfGroup" ,
+      "LiabilityShare" ,
+      "MainMember" ,
+      "NominalAmount" ,
+      "NominalAmountCurrency" ,
+      "PrimaryGroup" ,
+      "ProfitTransferAgreementExists" ,
+      "Quantity" ,
+      "ReasonForPartnerRelation" ,
+      "ReasonForPartnerRelationCode" ,
+      "ShareInGroup" ,
+      "TargetIsPrimarySingleBorrowerUnit" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BusinessPartnerRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::AssignedRightAsCollateral_View" as "_AssignedRightAsCollateral_ASSOC_AssignedBusinessInterest"
+	  on "ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "_AssignedRightAsCollateral_ASSOC_AssignedBusinessInterest"."ASSOC_AssignedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "_AssignedRightAsCollateral_ASSOC_AssignedBusinessInterest"."ASSOC_AssignedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "BusinessPartnerRelationType" = "_AssignedRightAsCollateral_ASSOC_AssignedBusinessInterest"."ASSOC_AssignedBusinessInterest.BusinessPartnerRelationType"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_SourceInBusinessPartnerRelation"
+	  on "ASSOC_SourceInBusinessPartnerRelation"."BusinessPartnerID" = "ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_TargetInBusinessPartnerRelation"
+	  on "ASSOC_TargetInBusinessPartnerRelation"."BusinessPartnerID" = "ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PartnerRelationClassification_View" as "_PartnerRelationClassification_ASSOC_BusinessPartnerRelation"
+	  on "ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "_PartnerRelationClassification_ASSOC_BusinessPartnerRelation"."ASSOC_BusinessPartnerRelation.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "_PartnerRelationClassification_ASSOC_BusinessPartnerRelation"."ASSOC_BusinessPartnerRelation.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "BusinessPartnerRelationType" = "_PartnerRelationClassification_ASSOC_BusinessPartnerRelation"."ASSOC_BusinessPartnerRelation.BusinessPartnerRelationType"
+	     ,
+	join "sap.fsdm.SQLViews::PledgedObject_View" as "_PledgedObject_ASSOC_PledgedBusinessInterest"
+	  on "ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "_PledgedObject_ASSOC_PledgedBusinessInterest"."ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "_PledgedObject_ASSOC_PledgedBusinessInterest"."ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "BusinessPartnerRelationType" = "_PledgedObject_ASSOC_PledgedBusinessInterest"."ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_BusinessInterestInOrganization"
+	  on "ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "_Valuation_ASSOC_BusinessInterestInOrganization"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "_Valuation_ASSOC_BusinessInterestInOrganization"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "BusinessPartnerRelationType" = "_Valuation_ASSOC_BusinessInterestInOrganization"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType"
+	     
+);

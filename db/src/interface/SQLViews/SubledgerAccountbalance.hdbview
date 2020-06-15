@@ -1,0 +1,89 @@
+view "sap.fsdm.SQLViews::SubledgerAccountbalance_View" 
+as select
+      "AccountingBalanceType" ,
+      "FiscalYear" ,
+      "PostingDate" ,
+      "_AccountingSystem.AccountingSystemID" ,
+      "_BusinessPartner.BusinessPartnerID" ,
+      "_BusinessSegment.OrganizationalUnitID" ,
+      "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+      "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_CompanyCode.CompanyCode" ,
+      "_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "_GLAccount.GLAccount" ,
+      "_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+      "_ProductClass.ProductClass" ,
+      "_ProductClass.ProductClassificationSystem" ,
+      "_ProfitCenter.OrganizationalUnitID" ,
+      "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+      "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_SubledgerAccount.SubledgerAccount" ,
+      "AmountInFunctionalCurrency" ,
+      "AmountInGroupCurrency" ,
+      "AmountInHardCurrency" ,
+      "AmountInIndexCurrency" ,
+      "AmountInLocalCurrency" ,
+      "AmountInTransactionCurrency" ,
+      "FiscalPeriodEnd" ,
+      "FiscalPeriodStart" ,
+      "FunctionalCurrency" ,
+      "GroupCurrency" ,
+      "HardCurrency" ,
+      "IndexCurrency" ,
+      "LocalCurrency" ,
+      "TransactionCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SubledgerAccountbalance"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystem"
+	  on "_AccountingSystem"."AccountingSystemID" = "_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_BusinessSegment"
+	  on "_BusinessSegment"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_BusinessSegment"."OrganizationalUnitID" = "_BusinessSegment.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_BusinessSegmentAtCounterparty"
+	  on "_BusinessSegmentAtCounterparty"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_BusinessSegmentAtCounterparty"."OrganizationalUnitID" = "_BusinessSegmentAtCounterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::CompanyCode_View" as "_CompanyCode"
+	  on "_CompanyCode"."ASSOC_Company.BusinessPartnerID" = "_CompanyCode.ASSOC_Company.BusinessPartnerID" AND 
+	     "_CompanyCode"."CompanyCode" = "_CompanyCode.CompanyCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::GLAccount_View" as "_GLAccount"
+	  on "_GLAccount"."_ChartOfAccounts.ChartOfAccountId" = "_GLAccount._ChartOfAccounts.ChartOfAccountId" AND 
+	     "_GLAccount"."GLAccount" = "_GLAccount.GLAccount"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClass_View" as "_ProductClass"
+	  on "_ProductClass"."ProductClass" = "_ProductClass.ProductClass" AND 
+	     "_ProductClass"."ProductClassificationSystem" = "_ProductClass.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_ProfitCenter"
+	  on "_ProfitCenter"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_ProfitCenter"."OrganizationalUnitID" = "_ProfitCenter.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_ProftCenterAtCouterparty"
+	  on "_ProftCenterAtCouterparty"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_ProftCenterAtCouterparty"."OrganizationalUnitID" = "_ProftCenterAtCouterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccount_View" as "_SubledgerAccount"
+	  on "_SubledgerAccount"."SubledgerAccount" = "_SubledgerAccount.SubledgerAccount"
+	     
+);

@@ -1,0 +1,64 @@
+PROCEDURE "sap.fsdm.procedures::LicenseEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::LicenseTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::LicenseTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::LicenseTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "Authority" is null and
+                         "IDSystem" is null and
+                         "SubjectOfLicenseIdentifier" is null and
+                         "_BusinessPartner.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"Authority",
+"IDSystem",
+"SubjectOfLicenseIdentifier",
+"_BusinessPartner.BusinessPartnerID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::License" WHERE("Authority" ,
+"IDSystem" ,
+"SubjectOfLicenseIdentifier" ,
+"_BusinessPartner.BusinessPartnerID" 
+)in ( select "Authority" ,
+"IDSystem" ,
+"SubjectOfLicenseIdentifier" ,
+"_BusinessPartner.BusinessPartnerID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"Authority",
+"IDSystem",
+"SubjectOfLicenseIdentifier",
+"_BusinessPartner.BusinessPartnerID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::License_Historical" WHERE("Authority" ,
+"IDSystem" ,
+"SubjectOfLicenseIdentifier" ,
+"_BusinessPartner.BusinessPartnerID" 
+)in ( select "Authority" ,
+"IDSystem" ,
+"SubjectOfLicenseIdentifier" ,
+"_BusinessPartner.BusinessPartnerID" 
+from :ROW );
+
+END

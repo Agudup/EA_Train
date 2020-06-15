@@ -1,0 +1,51 @@
+PROCEDURE "sap.fsdm.procedures::ProductCatalogItemErase" (IN ROW "sap.fsdm.tabletypes::ProductCatalogItemTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ProductCatalogItem" is null and
+                         "_ProductCatalog.CatalogID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ProductCatalogItem" WHERE
+("ProductCatalogItem" ,
+"_ProductCatalog.CatalogID" 
+)in ( select "OLD"."ProductCatalogItem" ,
+"OLD"."_ProductCatalog.CatalogID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProductCatalogItem" "OLD"
+on
+  ( "IN"."ProductCatalogItem" = "OLD"."ProductCatalogItem" or "IN"."ProductCatalogItem" is null ) and
+  ( "IN"."_ProductCatalog.CatalogID" = "OLD"."_ProductCatalog.CatalogID" or "IN"."_ProductCatalog.CatalogID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ProductCatalogItem_Historical" WHERE
+("ProductCatalogItem" ,
+"_ProductCatalog.CatalogID" 
+)in ( select "OLD"."ProductCatalogItem" ,
+"OLD"."_ProductCatalog.CatalogID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProductCatalogItem_Historical" "OLD"
+on
+  ( "IN"."ProductCatalogItem" = "OLD"."ProductCatalogItem" or "IN"."ProductCatalogItem" is null ) and
+  ( "IN"."_ProductCatalog.CatalogID" = "OLD"."_ProductCatalog.CatalogID" or "IN"."_ProductCatalog.CatalogID" is null ) 
+);
+
+END

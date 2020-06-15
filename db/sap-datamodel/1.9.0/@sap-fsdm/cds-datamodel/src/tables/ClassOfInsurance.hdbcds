@@ -1,0 +1,51 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"SectionCoverage";
+
+entity "ClassOfInsurance" {
+    key "ClassOfInsurance"              : String(40);
+    key "SubClassOfInsurance"           : String(40);
+    key "SubSubClassOfInsurance"        : String(40);
+    key "_ReinsuranceCoverage"          : association to SectionCoverage {
+                                                                           CoverageID,
+                                                                           SectionID,
+                                                                           _ReinsuranceContract
+                                                                         } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                     not null;
+        "SystemValidTo"                 : UTCTimestamp                     not null;
+        "DefaultIndicator"              : Boolean;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ClassOfInsurance_Historical" {
+    "ClassOfInsurance"              : String(40)                       not null;
+    "SubClassOfInsurance"           : String(40)                       not null;
+    "SubSubClassOfInsurance"        : String(40)                       not null;
+    "_ReinsuranceCoverage"          : association to SectionCoverage {
+                                                                       CoverageID,
+                                                                       SectionID,
+                                                                       _ReinsuranceContract
+                                                                     } not null;
+    "BusinessValidFrom"             : LocalDate                        not null;
+    "BusinessValidTo"               : LocalDate                        not null;
+    "SystemValidFrom"               : UTCTimestamp                     not null;
+    "SystemValidTo"                 : UTCTimestamp                     not null;
+    "DefaultIndicator"              : Boolean;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

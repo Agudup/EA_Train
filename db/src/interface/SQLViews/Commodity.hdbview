@@ -1,0 +1,56 @@
+view "sap.fsdm.SQLViews::Commodity_View" 
+as select
+      "CommodityID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BaseCommodityName" ,
+      "Brand" ,
+      "CalorificValue" ,
+      "CoalComposition" ,
+      "CoalProperties" ,
+      "CoalType" ,
+      "CommodityCategory" ,
+      "CommodityDescription" ,
+      "CommodityName" ,
+      "EnergyCommodityCategory" ,
+      "GasType" ,
+      "Grade" ,
+      "OilType" ,
+      "Shape" ,
+      "Voltage" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Commodity"
+with associations
+(
+	join "sap.fsdm.SQLViews::CommodityAtExchange_View" as "_CommodityAtExchange__Commodity"
+	  on "CommodityID" = "_CommodityAtExchange__Commodity"."_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::CommodityEndOfDayPriceObservation_View" as "_CommodityEndOfDayPriceObservation__Commodity"
+	  on "CommodityID" = "_CommodityEndOfDayPriceObservation__Commodity"."_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::CommodityIntradayTradingObservation_View" as "_CommodityIntradayTradingObservation__Commodity"
+	  on "CommodityID" = "_CommodityIntradayTradingObservation__Commodity"."_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::CommodityReferencePrice_View" as "_CommodityReferencePrice__Commodity"
+	  on "CommodityID" = "_CommodityReferencePrice__Commodity"."_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__Commodity"
+	  on "CommodityID" = "_FinancialContract__Commodity"."_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__Leg2Commodity"
+	  on "CommodityID" = "_FinancialContract__Leg2Commodity"."_Leg2Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__UnderlyingCommodity"
+	  on "CommodityID" = "_FinancialInstrument__UnderlyingCommodity"."_UnderlyingCommodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__Commodity"
+	  on "CommodityID" = "_Trade__Commodity"."_Commodity.CommodityID"
+	     
+);

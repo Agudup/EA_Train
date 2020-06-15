@@ -1,0 +1,51 @@
+PROCEDURE "sap.fsdm.procedures::ExecutionResultReadOnly" (IN ROW "sap.fsdm.tabletypes::ExecutionResultTT" , OUT CURR_DEL "sap.fsdm.tabletypes::ExecutionResultTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::ExecutionResultTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"_TransferOrder.IDSystem",
+"_TransferOrder.TransferOrderID"
+from "sap.fsdm::ExecutionResult" WHERE("_TransferOrder.IDSystem" ,
+"_TransferOrder.TransferOrderID" 
+)in ( select     ( case when "_TransferOrder.IDSystem" is null then '' else "_TransferOrder.IDSystem" end ) as "_TransferOrder.IDSystem",
+    ( case when "_TransferOrder.TransferOrderID" is null then '' else "_TransferOrder.TransferOrderID" end ) as "_TransferOrder.TransferOrderID"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"_TransferOrder.IDSystem",
+"_TransferOrder.TransferOrderID",
+"ConsecutiveExecutionFailureCount",
+"ExecutionAttemptedCount",
+"ExecutionFailureCount",
+"ExecutionResultCategory",
+"ExecutionSuspendedUptoDate",
+"LastExecutionAttemptDate",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "_TransferOrder.IDSystem" is null then '' else "_TransferOrder.IDSystem" end ) as "_TransferOrder.IDSystem",
+    ( case when "_TransferOrder.TransferOrderID" is null then '' else "_TransferOrder.TransferOrderID" end ) as "_TransferOrder.TransferOrderID",
+  "ConsecutiveExecutionFailureCount"  ,
+  "ExecutionAttemptedCount"  ,
+  "ExecutionFailureCount"  ,
+  "ExecutionResultCategory"  ,
+  "ExecutionSuspendedUptoDate"  ,
+  "LastExecutionAttemptDate"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

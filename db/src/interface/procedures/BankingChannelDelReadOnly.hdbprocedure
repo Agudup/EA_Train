@@ -1,0 +1,225 @@
+PROCEDURE "sap.fsdm.procedures::BankingChannelDelReadOnly" (IN ROW "sap.fsdm.tabletypes::BankingChannelTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::BankingChannelTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::BankingChannelTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'BankingChannelID=' || TO_VARCHAR("BankingChannelID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."BankingChannelID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."BankingChannelID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "BankingChannelID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."BankingChannelID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."BankingChannelID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "BankingChannelID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::BankingChannel" WHERE
+            (
+            "BankingChannelID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."BankingChannelID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::BankingChannel" as "OLD"
+        on
+                              ( "IN"."BankingChannelID" = "OLD"."BankingChannelID" or "IN"."BankingChannelID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "BankingChannelID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_BranchOfTerminal.BankingChannelID",
+        "ASSOC_CashInventory.CashAccountID",
+        "ASSOC_CashInventory.IDSystem",
+        "ASSOC_OrgUnitManagingChannel.OrganizationalUnitID",
+        "ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "AuthenticationMethod",
+        "BankingChannelCategory",
+        "Description",
+        "TerminalType",
+        "URL",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_BankingChannelID" as "BankingChannelID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_BranchOfTerminal.BankingChannelID" as "ASSOC_BranchOfTerminal.BankingChannelID" ,
+            "OLD_ASSOC_CashInventory.CashAccountID" as "ASSOC_CashInventory.CashAccountID" ,
+            "OLD_ASSOC_CashInventory.IDSystem" as "ASSOC_CashInventory.IDSystem" ,
+            "OLD_ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" as "ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" ,
+            "OLD_ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "OLD_AuthenticationMethod" as "AuthenticationMethod" ,
+            "OLD_BankingChannelCategory" as "BankingChannelCategory" ,
+            "OLD_Description" as "Description" ,
+            "OLD_TerminalType" as "TerminalType" ,
+            "OLD_URL" as "URL" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."BankingChannelID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."BankingChannelID" as "OLD_BankingChannelID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_BranchOfTerminal.BankingChannelID" as "OLD_ASSOC_BranchOfTerminal.BankingChannelID",
+                                "OLD"."ASSOC_CashInventory.CashAccountID" as "OLD_ASSOC_CashInventory.CashAccountID",
+                                "OLD"."ASSOC_CashInventory.IDSystem" as "OLD_ASSOC_CashInventory.IDSystem",
+                                "OLD"."ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" as "OLD_ASSOC_OrgUnitManagingChannel.OrganizationalUnitID",
+                                "OLD"."ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."AuthenticationMethod" as "OLD_AuthenticationMethod",
+                                "OLD"."BankingChannelCategory" as "OLD_BankingChannelCategory",
+                                "OLD"."Description" as "OLD_Description",
+                                "OLD"."TerminalType" as "OLD_TerminalType",
+                                "OLD"."URL" as "OLD_URL",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BankingChannel" as "OLD"
+            on
+                                      ( "IN"."BankingChannelID" = "OLD"."BankingChannelID" or "IN"."BankingChannelID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_BankingChannelID" as "BankingChannelID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_BranchOfTerminal.BankingChannelID" as "ASSOC_BranchOfTerminal.BankingChannelID",
+            "OLD_ASSOC_CashInventory.CashAccountID" as "ASSOC_CashInventory.CashAccountID",
+            "OLD_ASSOC_CashInventory.IDSystem" as "ASSOC_CashInventory.IDSystem",
+            "OLD_ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" as "ASSOC_OrgUnitManagingChannel.OrganizationalUnitID",
+            "OLD_ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD_AuthenticationMethod" as "AuthenticationMethod",
+            "OLD_BankingChannelCategory" as "BankingChannelCategory",
+            "OLD_Description" as "Description",
+            "OLD_TerminalType" as "TerminalType",
+            "OLD_URL" as "URL",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."BankingChannelID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."BankingChannelID" as "OLD_BankingChannelID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_BranchOfTerminal.BankingChannelID" as "OLD_ASSOC_BranchOfTerminal.BankingChannelID",
+                                "OLD"."ASSOC_CashInventory.CashAccountID" as "OLD_ASSOC_CashInventory.CashAccountID",
+                                "OLD"."ASSOC_CashInventory.IDSystem" as "OLD_ASSOC_CashInventory.IDSystem",
+                                "OLD"."ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" as "OLD_ASSOC_OrgUnitManagingChannel.OrganizationalUnitID",
+                                "OLD"."ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."AuthenticationMethod" as "OLD_AuthenticationMethod",
+                                "OLD"."BankingChannelCategory" as "OLD_BankingChannelCategory",
+                                "OLD"."Description" as "OLD_Description",
+                                "OLD"."TerminalType" as "OLD_TerminalType",
+                                "OLD"."URL" as "OLD_URL",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BankingChannel" as "OLD"
+            on
+               ( "IN"."BankingChannelID" = "OLD"."BankingChannelID" or "IN"."BankingChannelID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

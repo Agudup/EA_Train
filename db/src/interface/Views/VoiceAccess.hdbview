@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::VoiceAccess_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "AccountName" as "AccountName",
+      "ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner_BusinessPartnerID",
+      "ASSOC_VoiceAccessSystem.BankingChannelID" as "ASSOC_VoiceAccessSystem_BankingChannelID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "VoiceAccessStatus" as "VoiceAccessStatus",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::VoiceAccess"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

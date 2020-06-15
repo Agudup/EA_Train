@@ -1,0 +1,38 @@
+view "sap.fsdm.Views::SettlementAccountAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SettlementAccountRole" as "SettlementAccountRole",
+      "ASSOC_BaseContract.FinancialContractID" as "ASSOC_BaseContract_FinancialContractID",
+      "ASSOC_BaseContract.IDSystem" as "ASSOC_BaseContract_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_SettlementAccount.FinancialContractID" as "ASSOC_SettlementAccount_FinancialContractID",
+      "ASSOC_SettlementAccount.IDSystem" as "ASSOC_SettlementAccount_IDSystem",
+      "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" as "_ElectronicFundsTransferMethod_ElectronicFundsTransferMethodName",
+      "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" as "_ElectronicFundsTransferMethod_ElectronicFundsTransferMethodType",
+      "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" as "_ElectronicFundsTransferMethod__BusinessPartner_BusinessPartnerID",
+      "DayOfMonthOfSettlement" as "DayOfMonthOfSettlement",
+      "DirectSettlement" as "DirectSettlement",
+      "ExternalSettlementAccountIdentificationSystem" as "ExternalSettlementAccountIdentificationSystem",
+      "ExternalSettlementBankAccountCurrency" as "ExternalSettlementBankAccountCurrency",
+      "ExternalSettlementBankAccountHolderName" as "ExternalSettlementBankAccountHolderName",
+      "ExternalSettlementBankAccountID" as "ExternalSettlementBankAccountID",
+      "ExternalSettlementBankID" as "ExternalSettlementBankID",
+      "ExternalSettlementBankIdentificationSystem" as "ExternalSettlementBankIdentificationSystem",
+      "ExternalSettlementBankName" as "ExternalSettlementBankName",
+      "ExternalSettlementIBAN" as "ExternalSettlementIBAN",
+      "ExternalSettlementSWIFT" as "ExternalSettlementSWIFT",
+      "SettlementContractAssignmentCategory" as "SettlementContractAssignmentCategory",
+      "SettlementMethod" as "SettlementMethod",
+      "SettlementPeriodLength" as "SettlementPeriodLength",
+      "SettlementPeriodTimeUnit" as "SettlementPeriodTimeUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::SettlementAccountAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

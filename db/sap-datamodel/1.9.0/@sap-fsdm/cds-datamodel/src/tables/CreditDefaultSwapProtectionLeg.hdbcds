@@ -1,0 +1,59 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"Index";
+
+entity "CreditDefaultSwapProtectionLeg" {
+    key "_CreditDefaultSwap"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                            not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                                  not null;
+        "SystemValidTo"                 : UTCTimestamp                                                  not null;
+        "_Basket"                       : association to FinancialInstrument { FinancialInstrumentID };
+        "_CDSIndex"                     : association to Index { IndexID };
+        "_DebtInstrument"               : association to FinancialInstrument { FinancialInstrumentID };
+        "CreditEventBackstopDate"       : LocalDate;
+        "ProtectionCurrency"            : String(3);
+        "ProtectionStartDate"           : LocalDate;
+        "ReferenceEntityPairCode"       : String(9);
+        "ReferencePrice"                : Decimal(15, 11);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CreditDefaultSwapProtectionLeg_Historical" {
+    "_CreditDefaultSwap"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                            not null;
+    "BusinessValidFrom"             : UTCTimestamp                                                  not null;
+    "BusinessValidTo"               : UTCTimestamp                                                  not null;
+    "SystemValidFrom"               : UTCTimestamp                                                  not null;
+    "SystemValidTo"                 : UTCTimestamp                                                  not null;
+    "_Basket"                       : association to FinancialInstrument { FinancialInstrumentID };
+    "_CDSIndex"                     : association to Index { IndexID };
+    "_DebtInstrument"               : association to FinancialInstrument { FinancialInstrumentID };
+    "CreditEventBackstopDate"       : LocalDate;
+    "ProtectionCurrency"            : String(3);
+    "ProtectionStartDate"           : LocalDate;
+    "ReferenceEntityPairCode"       : String(9);
+    "ReferencePrice"                : Decimal(15, 11);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

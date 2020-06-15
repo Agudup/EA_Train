@@ -1,0 +1,270 @@
+PROCEDURE "sap.fsdm.procedures::TrancheInSyndicationReadOnly" (IN ROW "sap.fsdm.tabletypes::TrancheInSyndicationTT", OUT CURR_DEL "sap.fsdm.tabletypes::TrancheInSyndicationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::TrancheInSyndicationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'TrancheSequenceNumber=' || TO_VARCHAR("TrancheSequenceNumber") || ' ' ||
+                '_SyndicationAgreement.FinancialContractID=' || TO_VARCHAR("_SyndicationAgreement.FinancialContractID") || ' ' ||
+                '_SyndicationAgreement.IDSystem=' || TO_VARCHAR("_SyndicationAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."TrancheSequenceNumber",
+                        "IN"."_SyndicationAgreement.FinancialContractID",
+                        "IN"."_SyndicationAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."TrancheSequenceNumber",
+                        "IN"."_SyndicationAgreement.FinancialContractID",
+                        "IN"."_SyndicationAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "TrancheSequenceNumber",
+                        "_SyndicationAgreement.FinancialContractID",
+                        "_SyndicationAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."TrancheSequenceNumber",
+                                    "IN"."_SyndicationAgreement.FinancialContractID",
+                                    "IN"."_SyndicationAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."TrancheSequenceNumber",
+                                    "IN"."_SyndicationAgreement.FinancialContractID",
+                                    "IN"."_SyndicationAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "TrancheSequenceNumber",
+        "_SyndicationAgreement.FinancialContractID",
+        "_SyndicationAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::TrancheInSyndication" WHERE
+        (            "TrancheSequenceNumber" ,
+            "_SyndicationAgreement.FinancialContractID" ,
+            "_SyndicationAgreement.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."TrancheSequenceNumber",
+            "OLD"."_SyndicationAgreement.FinancialContractID",
+            "OLD"."_SyndicationAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::TrancheInSyndication" as "OLD"
+            on
+               ( case when "IN"."TrancheSequenceNumber" is null then -1 else "IN"."TrancheSequenceNumber" end ) = "OLD"."TrancheSequenceNumber" and
+               ( case when "IN"."_SyndicationAgreement.FinancialContractID" is null then '' else "IN"."_SyndicationAgreement.FinancialContractID" end ) = "OLD"."_SyndicationAgreement.FinancialContractID" and
+               ( case when "IN"."_SyndicationAgreement.IDSystem" is null then '' else "IN"."_SyndicationAgreement.IDSystem" end ) = "OLD"."_SyndicationAgreement.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "TrancheSequenceNumber",
+        "_SyndicationAgreement.FinancialContractID",
+        "_SyndicationAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "IsTrancheRevolving",
+        "Status",
+        "TrancheAmount",
+        "TrancheCurrency",
+        "TrancheEndDate",
+        "TrancheStartDate",
+        "TrancheType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "TrancheSequenceNumber" is null then -1 else "TrancheSequenceNumber" end ) as "TrancheSequenceNumber",
+                    ( case when "_SyndicationAgreement.FinancialContractID" is null then '' else "_SyndicationAgreement.FinancialContractID" end ) as "_SyndicationAgreement.FinancialContractID",
+                    ( case when "_SyndicationAgreement.IDSystem" is null then '' else "_SyndicationAgreement.IDSystem" end ) as "_SyndicationAgreement.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "IsTrancheRevolving"  ,
+                    "Status"  ,
+                    "TrancheAmount"  ,
+                    "TrancheCurrency"  ,
+                    "TrancheEndDate"  ,
+                    "TrancheStartDate"  ,
+                    "TrancheType"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_TrancheSequenceNumber" as "TrancheSequenceNumber" ,
+                    "OLD__SyndicationAgreement.FinancialContractID" as "_SyndicationAgreement.FinancialContractID" ,
+                    "OLD__SyndicationAgreement.IDSystem" as "_SyndicationAgreement.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_IsTrancheRevolving" as "IsTrancheRevolving" ,
+                    "OLD_Status" as "Status" ,
+                    "OLD_TrancheAmount" as "TrancheAmount" ,
+                    "OLD_TrancheCurrency" as "TrancheCurrency" ,
+                    "OLD_TrancheEndDate" as "TrancheEndDate" ,
+                    "OLD_TrancheStartDate" as "TrancheStartDate" ,
+                    "OLD_TrancheType" as "TrancheType" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."TrancheSequenceNumber",
+                        "IN"."_SyndicationAgreement.FinancialContractID",
+                        "IN"."_SyndicationAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."TrancheSequenceNumber" as "OLD_TrancheSequenceNumber",
+                                "OLD"."_SyndicationAgreement.FinancialContractID" as "OLD__SyndicationAgreement.FinancialContractID",
+                                "OLD"."_SyndicationAgreement.IDSystem" as "OLD__SyndicationAgreement.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."IsTrancheRevolving" as "OLD_IsTrancheRevolving",
+                                "OLD"."Status" as "OLD_Status",
+                                "OLD"."TrancheAmount" as "OLD_TrancheAmount",
+                                "OLD"."TrancheCurrency" as "OLD_TrancheCurrency",
+                                "OLD"."TrancheEndDate" as "OLD_TrancheEndDate",
+                                "OLD"."TrancheStartDate" as "OLD_TrancheStartDate",
+                                "OLD"."TrancheType" as "OLD_TrancheType",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TrancheInSyndication" as "OLD"
+            on
+                ( case when "IN"."TrancheSequenceNumber" is null then -1 else "IN"."TrancheSequenceNumber" end ) = "OLD"."TrancheSequenceNumber" and
+                ( case when "IN"."_SyndicationAgreement.FinancialContractID" is null then '' else "IN"."_SyndicationAgreement.FinancialContractID" end ) = "OLD"."_SyndicationAgreement.FinancialContractID" and
+                ( case when "IN"."_SyndicationAgreement.IDSystem" is null then '' else "IN"."_SyndicationAgreement.IDSystem" end ) = "OLD"."_SyndicationAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_TrancheSequenceNumber" as "TrancheSequenceNumber",
+            "OLD__SyndicationAgreement.FinancialContractID" as "_SyndicationAgreement.FinancialContractID",
+            "OLD__SyndicationAgreement.IDSystem" as "_SyndicationAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_IsTrancheRevolving" as "IsTrancheRevolving",
+            "OLD_Status" as "Status",
+            "OLD_TrancheAmount" as "TrancheAmount",
+            "OLD_TrancheCurrency" as "TrancheCurrency",
+            "OLD_TrancheEndDate" as "TrancheEndDate",
+            "OLD_TrancheStartDate" as "TrancheStartDate",
+            "OLD_TrancheType" as "TrancheType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."TrancheSequenceNumber",
+                        "IN"."_SyndicationAgreement.FinancialContractID",
+                        "IN"."_SyndicationAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."TrancheSequenceNumber" as "OLD_TrancheSequenceNumber",
+                        "OLD"."_SyndicationAgreement.FinancialContractID" as "OLD__SyndicationAgreement.FinancialContractID",
+                        "OLD"."_SyndicationAgreement.IDSystem" as "OLD__SyndicationAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."IsTrancheRevolving" as "OLD_IsTrancheRevolving",
+                        "OLD"."Status" as "OLD_Status",
+                        "OLD"."TrancheAmount" as "OLD_TrancheAmount",
+                        "OLD"."TrancheCurrency" as "OLD_TrancheCurrency",
+                        "OLD"."TrancheEndDate" as "OLD_TrancheEndDate",
+                        "OLD"."TrancheStartDate" as "OLD_TrancheStartDate",
+                        "OLD"."TrancheType" as "OLD_TrancheType",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TrancheInSyndication" as "OLD"
+            on
+                ( case when "IN"."TrancheSequenceNumber" is null then -1 else "IN"."TrancheSequenceNumber" end ) = "OLD"."TrancheSequenceNumber" and
+                ( case when "IN"."_SyndicationAgreement.FinancialContractID" is null then '' else "IN"."_SyndicationAgreement.FinancialContractID" end ) = "OLD"."_SyndicationAgreement.FinancialContractID" and
+                ( case when "IN"."_SyndicationAgreement.IDSystem" is null then '' else "IN"."_SyndicationAgreement.IDSystem" end ) = "OLD"."_SyndicationAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

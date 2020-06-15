@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::ProductCatalogHierarchyErase" (IN ROW "sap.fsdm.tabletypes::ProductCatalogHierarchyTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_Child.ProductCatalogItem" is null and
+                         "_Child._ProductCatalog.CatalogID" is null and
+                         "_Parent.ProductCatalogItem" is null and
+                         "_Parent._ProductCatalog.CatalogID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ProductCatalogHierarchy" WHERE
+("_Child.ProductCatalogItem" ,
+"_Child._ProductCatalog.CatalogID" ,
+"_Parent.ProductCatalogItem" ,
+"_Parent._ProductCatalog.CatalogID" 
+)in ( select "OLD"."_Child.ProductCatalogItem" ,
+"OLD"."_Child._ProductCatalog.CatalogID" ,
+"OLD"."_Parent.ProductCatalogItem" ,
+"OLD"."_Parent._ProductCatalog.CatalogID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProductCatalogHierarchy" "OLD"
+on
+  ( "IN"."_Child.ProductCatalogItem" = "OLD"."_Child.ProductCatalogItem" or "IN"."_Child.ProductCatalogItem" is null ) and
+  ( "IN"."_Child._ProductCatalog.CatalogID" = "OLD"."_Child._ProductCatalog.CatalogID" or "IN"."_Child._ProductCatalog.CatalogID" is null ) and
+  ( "IN"."_Parent.ProductCatalogItem" = "OLD"."_Parent.ProductCatalogItem" or "IN"."_Parent.ProductCatalogItem" is null ) and
+  ( "IN"."_Parent._ProductCatalog.CatalogID" = "OLD"."_Parent._ProductCatalog.CatalogID" or "IN"."_Parent._ProductCatalog.CatalogID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ProductCatalogHierarchy_Historical" WHERE
+("_Child.ProductCatalogItem" ,
+"_Child._ProductCatalog.CatalogID" ,
+"_Parent.ProductCatalogItem" ,
+"_Parent._ProductCatalog.CatalogID" 
+)in ( select "OLD"."_Child.ProductCatalogItem" ,
+"OLD"."_Child._ProductCatalog.CatalogID" ,
+"OLD"."_Parent.ProductCatalogItem" ,
+"OLD"."_Parent._ProductCatalog.CatalogID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProductCatalogHierarchy_Historical" "OLD"
+on
+  ( "IN"."_Child.ProductCatalogItem" = "OLD"."_Child.ProductCatalogItem" or "IN"."_Child.ProductCatalogItem" is null ) and
+  ( "IN"."_Child._ProductCatalog.CatalogID" = "OLD"."_Child._ProductCatalog.CatalogID" or "IN"."_Child._ProductCatalog.CatalogID" is null ) and
+  ( "IN"."_Parent.ProductCatalogItem" = "OLD"."_Parent.ProductCatalogItem" or "IN"."_Parent.ProductCatalogItem" is null ) and
+  ( "IN"."_Parent._ProductCatalog.CatalogID" = "OLD"."_Parent._ProductCatalog.CatalogID" or "IN"."_Parent._ProductCatalog.CatalogID" is null ) 
+);
+
+END

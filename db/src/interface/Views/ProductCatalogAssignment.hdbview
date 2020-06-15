@@ -1,0 +1,27 @@
+view "sap.fsdm.Views::ProductCatalogAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_FinancialStandardProduct.FinancialStandardProductID" as "_FinancialStandardProduct_FinancialStandardProductID",
+      "_FinancialStandardProduct.IDSystem" as "_FinancialStandardProduct_IDSystem",
+      "_FinancialStandardProduct.PricingScheme" as "_FinancialStandardProduct_PricingScheme",
+      "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "_FinancialStandardProduct_ASSOC_Company_BusinessPartnerID",
+      "_ProductCatalogItem.ProductCatalogItem" as "_ProductCatalogItem_ProductCatalogItem",
+      "_ProductCatalogItem._ProductCatalog.CatalogID" as "_ProductCatalogItem__ProductCatalog_CatalogID",
+      "_Trade.IDSystem" as "_Trade_IDSystem",
+      "_Trade.TradeID" as "_Trade_TradeID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ProductCatalogAssignmentCategory" as "ProductCatalogAssignmentCategory",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ProductCatalogAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::LegalCurrencyInCountryErase" (IN ROW "sap.fsdm.tabletypes::LegalCurrencyInCountryTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_Country.GeographicalStructureID" is null and
+                         "ASSOC_Country.GeographicalUnitID" is null and
+                         "ASSOC_Currency.CurrencyCode" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::LegalCurrencyInCountry" WHERE
+("ASSOC_Country.GeographicalStructureID" ,
+"ASSOC_Country.GeographicalUnitID" ,
+"ASSOC_Currency.CurrencyCode" 
+)in ( select "OLD"."ASSOC_Country.GeographicalStructureID" ,
+"OLD"."ASSOC_Country.GeographicalUnitID" ,
+"OLD"."ASSOC_Currency.CurrencyCode" 
+from :ROW "IN"
+inner join "sap.fsdm::LegalCurrencyInCountry" "OLD"
+on
+  ( "IN"."ASSOC_Country.GeographicalStructureID" = "OLD"."ASSOC_Country.GeographicalStructureID" or "IN"."ASSOC_Country.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_Country.GeographicalUnitID" = "OLD"."ASSOC_Country.GeographicalUnitID" or "IN"."ASSOC_Country.GeographicalUnitID" is null ) and
+  ( "IN"."ASSOC_Currency.CurrencyCode" = "OLD"."ASSOC_Currency.CurrencyCode" or "IN"."ASSOC_Currency.CurrencyCode" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::LegalCurrencyInCountry_Historical" WHERE
+("ASSOC_Country.GeographicalStructureID" ,
+"ASSOC_Country.GeographicalUnitID" ,
+"ASSOC_Currency.CurrencyCode" 
+)in ( select "OLD"."ASSOC_Country.GeographicalStructureID" ,
+"OLD"."ASSOC_Country.GeographicalUnitID" ,
+"OLD"."ASSOC_Currency.CurrencyCode" 
+from :ROW "IN"
+inner join "sap.fsdm::LegalCurrencyInCountry_Historical" "OLD"
+on
+  ( "IN"."ASSOC_Country.GeographicalStructureID" = "OLD"."ASSOC_Country.GeographicalStructureID" or "IN"."ASSOC_Country.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_Country.GeographicalUnitID" = "OLD"."ASSOC_Country.GeographicalUnitID" or "IN"."ASSOC_Country.GeographicalUnitID" is null ) and
+  ( "IN"."ASSOC_Currency.CurrencyCode" = "OLD"."ASSOC_Currency.CurrencyCode" or "IN"."ASSOC_Currency.CurrencyCode" is null ) 
+);
+
+END

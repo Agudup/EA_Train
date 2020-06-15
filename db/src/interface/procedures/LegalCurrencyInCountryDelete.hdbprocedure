@@ -1,0 +1,217 @@
+PROCEDURE "sap.fsdm.procedures::LegalCurrencyInCountryDelete" (IN ROW "sap.fsdm.tabletypes::LegalCurrencyInCountryTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_Country.GeographicalStructureID=' || TO_VARCHAR("ASSOC_Country.GeographicalStructureID") || ' ' ||
+                'ASSOC_Country.GeographicalUnitID=' || TO_VARCHAR("ASSOC_Country.GeographicalUnitID") || ' ' ||
+                'ASSOC_Currency.CurrencyCode=' || TO_VARCHAR("ASSOC_Currency.CurrencyCode") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_Country.GeographicalStructureID",
+                        "IN"."ASSOC_Country.GeographicalUnitID",
+                        "IN"."ASSOC_Currency.CurrencyCode"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_Country.GeographicalStructureID",
+                        "IN"."ASSOC_Country.GeographicalUnitID",
+                        "IN"."ASSOC_Currency.CurrencyCode"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_Country.GeographicalStructureID",
+                        "ASSOC_Country.GeographicalUnitID",
+                        "ASSOC_Currency.CurrencyCode"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_Country.GeographicalStructureID",
+                                    "IN"."ASSOC_Country.GeographicalUnitID",
+                                    "IN"."ASSOC_Currency.CurrencyCode"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_Country.GeographicalStructureID",
+                                    "IN"."ASSOC_Country.GeographicalUnitID",
+                                    "IN"."ASSOC_Currency.CurrencyCode"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::LegalCurrencyInCountry" (
+        "ASSOC_Country.GeographicalStructureID",
+        "ASSOC_Country.GeographicalUnitID",
+        "ASSOC_Currency.CurrencyCode",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_Country.GeographicalStructureID" as "ASSOC_Country.GeographicalStructureID" ,
+            "OLD_ASSOC_Country.GeographicalUnitID" as "ASSOC_Country.GeographicalUnitID" ,
+            "OLD_ASSOC_Currency.CurrencyCode" as "ASSOC_Currency.CurrencyCode" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_Country.GeographicalStructureID",
+                        "OLD"."ASSOC_Country.GeographicalUnitID",
+                        "OLD"."ASSOC_Currency.CurrencyCode",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."ASSOC_Country.GeographicalStructureID" as "OLD_ASSOC_Country.GeographicalStructureID",
+                "OLD"."ASSOC_Country.GeographicalUnitID" as "OLD_ASSOC_Country.GeographicalUnitID",
+                "OLD"."ASSOC_Currency.CurrencyCode" as "OLD_ASSOC_Currency.CurrencyCode",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::LegalCurrencyInCountry" as "OLD"
+            on
+                      ( "IN"."ASSOC_Country.GeographicalStructureID" = "OLD"."ASSOC_Country.GeographicalStructureID" or "IN"."ASSOC_Country.GeographicalStructureID" is null ) and
+                      ( "IN"."ASSOC_Country.GeographicalUnitID" = "OLD"."ASSOC_Country.GeographicalUnitID" or "IN"."ASSOC_Country.GeographicalUnitID" is null ) and
+                      ( "IN"."ASSOC_Currency.CurrencyCode" = "OLD"."ASSOC_Currency.CurrencyCode" or "IN"."ASSOC_Currency.CurrencyCode" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::LegalCurrencyInCountry" (
+        "ASSOC_Country.GeographicalStructureID",
+        "ASSOC_Country.GeographicalUnitID",
+        "ASSOC_Currency.CurrencyCode",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_Country.GeographicalStructureID" as "ASSOC_Country.GeographicalStructureID",
+            "OLD_ASSOC_Country.GeographicalUnitID" as "ASSOC_Country.GeographicalUnitID",
+            "OLD_ASSOC_Currency.CurrencyCode" as "ASSOC_Currency.CurrencyCode",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_Country.GeographicalStructureID",
+                        "OLD"."ASSOC_Country.GeographicalUnitID",
+                        "OLD"."ASSOC_Currency.CurrencyCode",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."ASSOC_Country.GeographicalStructureID" as "OLD_ASSOC_Country.GeographicalStructureID",
+                "OLD"."ASSOC_Country.GeographicalUnitID" as "OLD_ASSOC_Country.GeographicalUnitID",
+                "OLD"."ASSOC_Currency.CurrencyCode" as "OLD_ASSOC_Currency.CurrencyCode",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::LegalCurrencyInCountry" as "OLD"
+            on
+                                                ( "IN"."ASSOC_Country.GeographicalStructureID" = "OLD"."ASSOC_Country.GeographicalStructureID" or "IN"."ASSOC_Country.GeographicalStructureID" is null ) and
+                                                ( "IN"."ASSOC_Country.GeographicalUnitID" = "OLD"."ASSOC_Country.GeographicalUnitID" or "IN"."ASSOC_Country.GeographicalUnitID" is null ) and
+                                                ( "IN"."ASSOC_Currency.CurrencyCode" = "OLD"."ASSOC_Currency.CurrencyCode" or "IN"."ASSOC_Currency.CurrencyCode" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::LegalCurrencyInCountry"
+    where (
+        "ASSOC_Country.GeographicalStructureID",
+        "ASSOC_Country.GeographicalUnitID",
+        "ASSOC_Currency.CurrencyCode",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ASSOC_Country.GeographicalStructureID",
+            "OLD"."ASSOC_Country.GeographicalUnitID",
+            "OLD"."ASSOC_Currency.CurrencyCode",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::LegalCurrencyInCountry" as "OLD"
+        on
+                                       ( "IN"."ASSOC_Country.GeographicalStructureID" = "OLD"."ASSOC_Country.GeographicalStructureID" or "IN"."ASSOC_Country.GeographicalStructureID" is null ) and
+                                       ( "IN"."ASSOC_Country.GeographicalUnitID" = "OLD"."ASSOC_Country.GeographicalUnitID" or "IN"."ASSOC_Country.GeographicalUnitID" is null ) and
+                                       ( "IN"."ASSOC_Currency.CurrencyCode" = "OLD"."ASSOC_Currency.CurrencyCode" or "IN"."ASSOC_Currency.CurrencyCode" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

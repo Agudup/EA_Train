@@ -1,0 +1,50 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "CoveredFinancialContractAssignment" {
+    key "_CollateralPool"               : association to Collection {
+                                                                      CollectionID,
+                                                                      IDSystem
+                                                                    }        not null;
+    key "_FinancialContract"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                       not null;
+        "SystemValidTo"                 : UTCTimestamp                       not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CoveredFinancialContractAssignment_Historical" {
+    "_CollateralPool"               : association to Collection {
+                                                                  CollectionID,
+                                                                  IDSystem
+                                                                }        not null;
+    "_FinancialContract"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       } not null;
+    "BusinessValidFrom"             : LocalDate                          not null;
+    "BusinessValidTo"               : LocalDate                          not null;
+    "SystemValidFrom"               : UTCTimestamp                       not null;
+    "SystemValidTo"                 : UTCTimestamp                       not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

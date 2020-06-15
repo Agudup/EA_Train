@@ -1,0 +1,43 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "EmailAddress" {
+    key "EmailAddressType"              : String(40);
+    key "SequenceNumber"                : Integer;
+    key "ASSOC_Partner"                 : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "EmailAddress"                  : String(100);
+        "IsPreferred"                   : Boolean;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "EmailAddress_Historical" {
+    "EmailAddressType"              : String(40)                                           not null;
+    "SequenceNumber"                : Integer                                              not null;
+    "ASSOC_Partner"                 : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "EmailAddress"                  : String(100);
+    "IsPreferred"                   : Boolean;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

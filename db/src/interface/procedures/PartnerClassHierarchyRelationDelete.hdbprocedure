@@ -1,0 +1,261 @@
+PROCEDURE "sap.fsdm.procedures::PartnerClassHierarchyRelationDelete" (IN ROW "sap.fsdm.tabletypes::PartnerClassHierarchyRelationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PartnerClassHierarchy=' || TO_VARCHAR("PartnerClassHierarchy") || ' ' ||
+                'ASSOC_Child.PartnerClass=' || TO_VARCHAR("ASSOC_Child.PartnerClass") || ' ' ||
+                'ASSOC_Child.PartnerClassificationSystem=' || TO_VARCHAR("ASSOC_Child.PartnerClassificationSystem") || ' ' ||
+                'ASSOC_Parent.PartnerClass=' || TO_VARCHAR("ASSOC_Parent.PartnerClass") || ' ' ||
+                'ASSOC_Parent.PartnerClassificationSystem=' || TO_VARCHAR("ASSOC_Parent.PartnerClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PartnerClassHierarchy",
+                        "IN"."ASSOC_Child.PartnerClass",
+                        "IN"."ASSOC_Child.PartnerClassificationSystem",
+                        "IN"."ASSOC_Parent.PartnerClass",
+                        "IN"."ASSOC_Parent.PartnerClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PartnerClassHierarchy",
+                        "IN"."ASSOC_Child.PartnerClass",
+                        "IN"."ASSOC_Child.PartnerClassificationSystem",
+                        "IN"."ASSOC_Parent.PartnerClass",
+                        "IN"."ASSOC_Parent.PartnerClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PartnerClassHierarchy",
+                        "ASSOC_Child.PartnerClass",
+                        "ASSOC_Child.PartnerClassificationSystem",
+                        "ASSOC_Parent.PartnerClass",
+                        "ASSOC_Parent.PartnerClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PartnerClassHierarchy",
+                                    "IN"."ASSOC_Child.PartnerClass",
+                                    "IN"."ASSOC_Child.PartnerClassificationSystem",
+                                    "IN"."ASSOC_Parent.PartnerClass",
+                                    "IN"."ASSOC_Parent.PartnerClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PartnerClassHierarchy",
+                                    "IN"."ASSOC_Child.PartnerClass",
+                                    "IN"."ASSOC_Child.PartnerClassificationSystem",
+                                    "IN"."ASSOC_Parent.PartnerClass",
+                                    "IN"."ASSOC_Parent.PartnerClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::PartnerClassHierarchyRelation" (
+        "PartnerClassHierarchy",
+        "ASSOC_Child.PartnerClass",
+        "ASSOC_Child.PartnerClassificationSystem",
+        "ASSOC_Parent.PartnerClass",
+        "ASSOC_Parent.PartnerClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PartnerClassHierarchyName",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PartnerClassHierarchy" as "PartnerClassHierarchy" ,
+            "OLD_ASSOC_Child.PartnerClass" as "ASSOC_Child.PartnerClass" ,
+            "OLD_ASSOC_Child.PartnerClassificationSystem" as "ASSOC_Child.PartnerClassificationSystem" ,
+            "OLD_ASSOC_Parent.PartnerClass" as "ASSOC_Parent.PartnerClass" ,
+            "OLD_ASSOC_Parent.PartnerClassificationSystem" as "ASSOC_Parent.PartnerClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_PartnerClassHierarchyName" as "PartnerClassHierarchyName" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."PartnerClassHierarchy",
+                        "OLD"."ASSOC_Child.PartnerClass",
+                        "OLD"."ASSOC_Child.PartnerClassificationSystem",
+                        "OLD"."ASSOC_Parent.PartnerClass",
+                        "OLD"."ASSOC_Parent.PartnerClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."PartnerClassHierarchy" as "OLD_PartnerClassHierarchy",
+                "OLD"."ASSOC_Child.PartnerClass" as "OLD_ASSOC_Child.PartnerClass",
+                "OLD"."ASSOC_Child.PartnerClassificationSystem" as "OLD_ASSOC_Child.PartnerClassificationSystem",
+                "OLD"."ASSOC_Parent.PartnerClass" as "OLD_ASSOC_Parent.PartnerClass",
+                "OLD"."ASSOC_Parent.PartnerClassificationSystem" as "OLD_ASSOC_Parent.PartnerClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."PartnerClassHierarchyName" as "OLD_PartnerClassHierarchyName",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PartnerClassHierarchyRelation" as "OLD"
+            on
+                      ( "IN"."PartnerClassHierarchy" = "OLD"."PartnerClassHierarchy" or "IN"."PartnerClassHierarchy" is null ) and
+                      ( "IN"."ASSOC_Child.PartnerClass" = "OLD"."ASSOC_Child.PartnerClass" or "IN"."ASSOC_Child.PartnerClass" is null ) and
+                      ( "IN"."ASSOC_Child.PartnerClassificationSystem" = "OLD"."ASSOC_Child.PartnerClassificationSystem" or "IN"."ASSOC_Child.PartnerClassificationSystem" is null ) and
+                      ( "IN"."ASSOC_Parent.PartnerClass" = "OLD"."ASSOC_Parent.PartnerClass" or "IN"."ASSOC_Parent.PartnerClass" is null ) and
+                      ( "IN"."ASSOC_Parent.PartnerClassificationSystem" = "OLD"."ASSOC_Parent.PartnerClassificationSystem" or "IN"."ASSOC_Parent.PartnerClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::PartnerClassHierarchyRelation" (
+        "PartnerClassHierarchy",
+        "ASSOC_Child.PartnerClass",
+        "ASSOC_Child.PartnerClassificationSystem",
+        "ASSOC_Parent.PartnerClass",
+        "ASSOC_Parent.PartnerClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PartnerClassHierarchyName",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PartnerClassHierarchy" as "PartnerClassHierarchy",
+            "OLD_ASSOC_Child.PartnerClass" as "ASSOC_Child.PartnerClass",
+            "OLD_ASSOC_Child.PartnerClassificationSystem" as "ASSOC_Child.PartnerClassificationSystem",
+            "OLD_ASSOC_Parent.PartnerClass" as "ASSOC_Parent.PartnerClass",
+            "OLD_ASSOC_Parent.PartnerClassificationSystem" as "ASSOC_Parent.PartnerClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_PartnerClassHierarchyName" as "PartnerClassHierarchyName",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."PartnerClassHierarchy",
+                        "OLD"."ASSOC_Child.PartnerClass",
+                        "OLD"."ASSOC_Child.PartnerClassificationSystem",
+                        "OLD"."ASSOC_Parent.PartnerClass",
+                        "OLD"."ASSOC_Parent.PartnerClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."PartnerClassHierarchy" as "OLD_PartnerClassHierarchy",
+                "OLD"."ASSOC_Child.PartnerClass" as "OLD_ASSOC_Child.PartnerClass",
+                "OLD"."ASSOC_Child.PartnerClassificationSystem" as "OLD_ASSOC_Child.PartnerClassificationSystem",
+                "OLD"."ASSOC_Parent.PartnerClass" as "OLD_ASSOC_Parent.PartnerClass",
+                "OLD"."ASSOC_Parent.PartnerClassificationSystem" as "OLD_ASSOC_Parent.PartnerClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."PartnerClassHierarchyName" as "OLD_PartnerClassHierarchyName",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PartnerClassHierarchyRelation" as "OLD"
+            on
+                                                ( "IN"."PartnerClassHierarchy" = "OLD"."PartnerClassHierarchy" or "IN"."PartnerClassHierarchy" is null ) and
+                                                ( "IN"."ASSOC_Child.PartnerClass" = "OLD"."ASSOC_Child.PartnerClass" or "IN"."ASSOC_Child.PartnerClass" is null ) and
+                                                ( "IN"."ASSOC_Child.PartnerClassificationSystem" = "OLD"."ASSOC_Child.PartnerClassificationSystem" or "IN"."ASSOC_Child.PartnerClassificationSystem" is null ) and
+                                                ( "IN"."ASSOC_Parent.PartnerClass" = "OLD"."ASSOC_Parent.PartnerClass" or "IN"."ASSOC_Parent.PartnerClass" is null ) and
+                                                ( "IN"."ASSOC_Parent.PartnerClassificationSystem" = "OLD"."ASSOC_Parent.PartnerClassificationSystem" or "IN"."ASSOC_Parent.PartnerClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::PartnerClassHierarchyRelation"
+    where (
+        "PartnerClassHierarchy",
+        "ASSOC_Child.PartnerClass",
+        "ASSOC_Child.PartnerClassificationSystem",
+        "ASSOC_Parent.PartnerClass",
+        "ASSOC_Parent.PartnerClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."PartnerClassHierarchy",
+            "OLD"."ASSOC_Child.PartnerClass",
+            "OLD"."ASSOC_Child.PartnerClassificationSystem",
+            "OLD"."ASSOC_Parent.PartnerClass",
+            "OLD"."ASSOC_Parent.PartnerClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::PartnerClassHierarchyRelation" as "OLD"
+        on
+                                       ( "IN"."PartnerClassHierarchy" = "OLD"."PartnerClassHierarchy" or "IN"."PartnerClassHierarchy" is null ) and
+                                       ( "IN"."ASSOC_Child.PartnerClass" = "OLD"."ASSOC_Child.PartnerClass" or "IN"."ASSOC_Child.PartnerClass" is null ) and
+                                       ( "IN"."ASSOC_Child.PartnerClassificationSystem" = "OLD"."ASSOC_Child.PartnerClassificationSystem" or "IN"."ASSOC_Child.PartnerClassificationSystem" is null ) and
+                                       ( "IN"."ASSOC_Parent.PartnerClass" = "OLD"."ASSOC_Parent.PartnerClass" or "IN"."ASSOC_Parent.PartnerClass" is null ) and
+                                       ( "IN"."ASSOC_Parent.PartnerClassificationSystem" = "OLD"."ASSOC_Parent.PartnerClassificationSystem" or "IN"."ASSOC_Parent.PartnerClassificationSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

@@ -1,0 +1,48 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Exchange";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "InstrumentsAtExchange" {
+    key "_Exchange"                     : association to Exchange { MarketIdentifierCode }             not null;
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "ListingStatus"                 : String(100);
+        "TickSize"                      : Decimal(34, 6);
+        "TickSizeCurrency"              : String(3);
+        "TradingStatus"                 : String(100);
+        "Unit"                          : String(10);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InstrumentsAtExchange_Historical" {
+    "_Exchange"                     : association to Exchange { MarketIdentifierCode }             not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"             : UTCTimestamp                                                 not null;
+    "BusinessValidTo"               : UTCTimestamp                                                 not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "ListingStatus"                 : String(100);
+    "TickSize"                      : Decimal(34, 6);
+    "TickSizeCurrency"              : String(3);
+    "TradingStatus"                 : String(100);
+    "Unit"                          : String(10);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

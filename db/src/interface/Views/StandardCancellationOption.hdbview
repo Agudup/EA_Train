@@ -1,0 +1,32 @@
+view "sap.fsdm.Views::StandardCancellationOption_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardProduct_FinancialStandardProductID",
+      "ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardProduct_IDSystem",
+      "ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardProduct_PricingScheme",
+      "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardProduct_ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "BusinessCalendar" as "BusinessCalendar",
+      "BusinessDayConvention" as "BusinessDayConvention",
+      "CancellationOptionType" as "CancellationOptionType",
+      "NoticePeriodLength" as "NoticePeriodLength",
+      "NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+      "OpportunityCostCompensation" as "OpportunityCostCompensation",
+      "OptionHolder" as "OptionHolder",
+      "PartialCancellationAllowed" as "PartialCancellationAllowed",
+      "PeriodUntilExercisePeriodEnd" as "PeriodUntilExercisePeriodEnd",
+      "PeriodUntilExercisePeriodStart" as "PeriodUntilExercisePeriodStart",
+      "StandardCancellationOptionCategory" as "StandardCancellationOptionCategory",
+      "TimeUnit" as "TimeUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::StandardCancellationOption"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

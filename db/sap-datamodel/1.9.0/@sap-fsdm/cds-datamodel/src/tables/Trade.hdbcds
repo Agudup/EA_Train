@@ -1,0 +1,262 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BankingChannel";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"YieldCurve";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"Commodity";
+using "sap"."fsdm"::"Exchange";
+
+entity "Trade" {
+    key "IDSystem"                             : String(40)   default '';
+    key "TradeID"                              : String(128)  default '';
+    key "BusinessValidFrom"                    : UTCTimestamp;
+    key "BusinessValidTo"                      : UTCTimestamp;
+        "SystemValidFrom"                      : UTCTimestamp not null;
+        "SystemValidTo"                        : UTCTimestamp not null;
+        "_BankingChannel"                      : association to BankingChannel { BankingChannelID };
+        "_BenchmarkInstrument"                 : association to FinancialInstrument { FinancialInstrumentID };
+        "_BenchmarkYieldCurve"                 : association to YieldCurve { YieldCurveID };
+        "_BusinessEventDataOwner"              : association to BusinessPartner { BusinessPartnerID };
+        "_ClientDerivativesAccount"            : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  };
+        "_Collection"                          : association to Collection {
+                                                                             CollectionID,
+                                                                             IDSystem
+                                                                           };
+        "_CollectionAtCounterparty"            : association to Collection {
+                                                                             CollectionID,
+                                                                             IDSystem
+                                                                           };
+        "_Commodity"                           : association to Commodity { CommodityID };
+        "_DerivativesAccountManagedByExchange" : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  };
+        "_Exchange"                            : association to Exchange { MarketIdentifierCode };
+        "_FinancialInstrument"                 : association to FinancialInstrument { FinancialInstrumentID };
+        "_FuturesContractSpecification"        : association to FinancialInstrument { FinancialInstrumentID };
+        "_OptionsContractSpecification"        : association to FinancialInstrument { FinancialInstrumentID };
+        "_SecuritiesAccount"                   : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  };
+        "_Security"                            : association to FinancialInstrument { FinancialInstrumentID };
+        "Accrual"                              : Decimal(34, 6);
+        "AgreedRate"                           : Decimal(38, 11);
+        "AmountInBaseCurrency"                 : Decimal(34, 6);
+        "AmountInTradedCurrency"               : Decimal(34, 6);
+        "BaseCurrency"                         : String(3);
+        "BenchmarkPrice"                       : Decimal(34, 6);
+        "BenchmarkPriceType"                   : String(40);
+        "BrokerIsLiable"                       : Boolean;
+        "BuyerAllowedToRetainCollateral"       : Boolean;
+        "ClearingMethod"                       : String(20);
+        "CloseOutIndicator"                    : Boolean;
+        "ContractSize"                         : Decimal(34, 6);
+        "ContractualCurrency"                  : String(3);
+        "DeliveryDate"                         : LocalDate;
+        "DenominationCurrency"                 : String(3);
+        "DivideByExchangeRate"                 : Boolean;
+        "ExchangeRateForSettlement"            : Decimal(38, 11);
+        "ExpirationDate"                       : LocalDate;
+        "FirstNoticeDate"                      : LocalDate;
+        "FuturesPrice"                         : Decimal(34, 6);
+        "FuturesPriceCurrency"                 : String(3);
+        "HedgePurpose"                         : String(30);
+        "IndividualAtCounterpartyResponsible"  : String(256);
+        "LastNoticeDate"                       : LocalDate;
+        "LastQuantityEffectOnPosition"         : Decimal(34, 6);
+        "LifecycleStatus"                      : String(100);
+        "ListedDerivativeSymbol"               : String(128);
+        "ListedDerivativeTradeCategory"        : String(40);
+        "LongPositionEffect"                   : Decimal(34, 6);
+        "ManufacturedPayments"                 : Boolean;
+        "MaturityDateForYieldCalculation"      : LocalDate;
+        "NettingSetID"                         : String(128);
+        "NominalAmount"                        : Decimal(34, 6);
+        "NominalAmountOfInstrumentsSold"       : Decimal(34, 6);
+        "NumberOfContracts"                    : Decimal(34, 6);
+        "OpenMaturity"                         : Boolean;
+        "OptionPremium"                        : Decimal(34, 6);
+        "OptionPremiumCurrency"                : String(3);
+        "Price"                                : Decimal(34, 6);
+        "PriceAsPercentOfPar"                  : Decimal(15, 11);
+        "PriceType"                            : String(40);
+        "PurchaseDate"                         : LocalDate;
+        "PurchasePricePerInstrument"           : Decimal(34, 6);
+        "PutOrCall"                            : String(4);
+        "Quantity"                             : Decimal(34, 6);
+        "QuantitySold"                         : Decimal(34, 6);
+        "RedemptionPriceForYield"              : Decimal(34, 6);
+        "RedemptionPriceForYieldType"          : String(40);
+        "RepoInterestAmount"                   : Decimal(34, 6);
+        "RepoToMaturity"                       : Boolean;
+        "RepurchaseDate"                       : LocalDate;
+        "RepurchasePricePerInstrument"         : Decimal(34, 6);
+        "ResaleAllowed"                        : Boolean;
+        "SecurityTradeCategory"                : String(40);
+        "SettlementAmount"                     : Decimal(34, 6);
+        "SettlementCurrency"                   : String(3);
+        "SettlementDate"                       : LocalDate;
+        "SettlementMethod"                     : String(20);
+        "ShortPositionEffect"                  : Decimal(34, 6);
+        "Side"                                 : String(20);
+        "Spread"                               : Decimal(15, 11);
+        "StatusChangeReason"                   : String(20);
+        "StrikePrice"                          : Decimal(34, 6);
+        "StrikePriceCurrency"                  : String(3);
+        "TotalPurchasePrice"                   : Decimal(34, 6);
+        "TotalRepurchasePrice"                 : Decimal(34, 6);
+        "TradeCategory"                        : String(40);
+        "TradeCurrency"                        : String(3);
+        "TradeGroup"                           : String(128);
+        "TradeMessageID"                       : String(128);
+        "TradeSequenceNumber"                  : Integer;
+        "TradeTimestamp"                       : UTCTimestamp;
+        "TradeType"                            : String(40);
+        "TradedCurrency"                       : String(3);
+        "UnderlyingFuturesExpirationDate"      : LocalDate;
+        "Unit"                                 : String(10);
+        "Yield"                                : Decimal(15, 11);
+        "YieldCalculationDate"                 : LocalDate;
+        "YieldType"                            : String(40);
+        "SourceSystemID"                       : String(128);
+        "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+        "ChangingUserInSourceSystem"           : String(128);
+        "ChangingProcessType"                  : String(40);
+        "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Trade_Historical" {
+    "IDSystem"                             : String(40)   default '' not null;
+    "TradeID"                              : String(128)  default '' not null;
+    "BusinessValidFrom"                    : UTCTimestamp not null;
+    "BusinessValidTo"                      : UTCTimestamp not null;
+    "SystemValidFrom"                      : UTCTimestamp not null;
+    "SystemValidTo"                        : UTCTimestamp not null;
+    "_BankingChannel"                      : association to BankingChannel { BankingChannelID };
+    "_BenchmarkInstrument"                 : association to FinancialInstrument { FinancialInstrumentID };
+    "_BenchmarkYieldCurve"                 : association to YieldCurve { YieldCurveID };
+    "_BusinessEventDataOwner"              : association to BusinessPartner { BusinessPartnerID };
+    "_ClientDerivativesAccount"            : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              };
+    "_Collection"                          : association to Collection {
+                                                                         CollectionID,
+                                                                         IDSystem
+                                                                       };
+    "_CollectionAtCounterparty"            : association to Collection {
+                                                                         CollectionID,
+                                                                         IDSystem
+                                                                       };
+    "_Commodity"                           : association to Commodity { CommodityID };
+    "_DerivativesAccountManagedByExchange" : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              };
+    "_Exchange"                            : association to Exchange { MarketIdentifierCode };
+    "_FinancialInstrument"                 : association to FinancialInstrument { FinancialInstrumentID };
+    "_FuturesContractSpecification"        : association to FinancialInstrument { FinancialInstrumentID };
+    "_OptionsContractSpecification"        : association to FinancialInstrument { FinancialInstrumentID };
+    "_SecuritiesAccount"                   : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              };
+    "_Security"                            : association to FinancialInstrument { FinancialInstrumentID };
+    "Accrual"                              : Decimal(34, 6);
+    "AgreedRate"                           : Decimal(38, 11);
+    "AmountInBaseCurrency"                 : Decimal(34, 6);
+    "AmountInTradedCurrency"               : Decimal(34, 6);
+    "BaseCurrency"                         : String(3);
+    "BenchmarkPrice"                       : Decimal(34, 6);
+    "BenchmarkPriceType"                   : String(40);
+    "BrokerIsLiable"                       : Boolean;
+    "BuyerAllowedToRetainCollateral"       : Boolean;
+    "ClearingMethod"                       : String(20);
+    "CloseOutIndicator"                    : Boolean;
+    "ContractSize"                         : Decimal(34, 6);
+    "ContractualCurrency"                  : String(3);
+    "DeliveryDate"                         : LocalDate;
+    "DenominationCurrency"                 : String(3);
+    "DivideByExchangeRate"                 : Boolean;
+    "ExchangeRateForSettlement"            : Decimal(38, 11);
+    "ExpirationDate"                       : LocalDate;
+    "FirstNoticeDate"                      : LocalDate;
+    "FuturesPrice"                         : Decimal(34, 6);
+    "FuturesPriceCurrency"                 : String(3);
+    "HedgePurpose"                         : String(30);
+    "IndividualAtCounterpartyResponsible"  : String(256);
+    "LastNoticeDate"                       : LocalDate;
+    "LastQuantityEffectOnPosition"         : Decimal(34, 6);
+    "LifecycleStatus"                      : String(100);
+    "ListedDerivativeSymbol"               : String(128);
+    "ListedDerivativeTradeCategory"        : String(40);
+    "LongPositionEffect"                   : Decimal(34, 6);
+    "ManufacturedPayments"                 : Boolean;
+    "MaturityDateForYieldCalculation"      : LocalDate;
+    "NettingSetID"                         : String(128);
+    "NominalAmount"                        : Decimal(34, 6);
+    "NominalAmountOfInstrumentsSold"       : Decimal(34, 6);
+    "NumberOfContracts"                    : Decimal(34, 6);
+    "OpenMaturity"                         : Boolean;
+    "OptionPremium"                        : Decimal(34, 6);
+    "OptionPremiumCurrency"                : String(3);
+    "Price"                                : Decimal(34, 6);
+    "PriceAsPercentOfPar"                  : Decimal(15, 11);
+    "PriceType"                            : String(40);
+    "PurchaseDate"                         : LocalDate;
+    "PurchasePricePerInstrument"           : Decimal(34, 6);
+    "PutOrCall"                            : String(4);
+    "Quantity"                             : Decimal(34, 6);
+    "QuantitySold"                         : Decimal(34, 6);
+    "RedemptionPriceForYield"              : Decimal(34, 6);
+    "RedemptionPriceForYieldType"          : String(40);
+    "RepoInterestAmount"                   : Decimal(34, 6);
+    "RepoToMaturity"                       : Boolean;
+    "RepurchaseDate"                       : LocalDate;
+    "RepurchasePricePerInstrument"         : Decimal(34, 6);
+    "ResaleAllowed"                        : Boolean;
+    "SecurityTradeCategory"                : String(40);
+    "SettlementAmount"                     : Decimal(34, 6);
+    "SettlementCurrency"                   : String(3);
+    "SettlementDate"                       : LocalDate;
+    "SettlementMethod"                     : String(20);
+    "ShortPositionEffect"                  : Decimal(34, 6);
+    "Side"                                 : String(20);
+    "Spread"                               : Decimal(15, 11);
+    "StatusChangeReason"                   : String(20);
+    "StrikePrice"                          : Decimal(34, 6);
+    "StrikePriceCurrency"                  : String(3);
+    "TotalPurchasePrice"                   : Decimal(34, 6);
+    "TotalRepurchasePrice"                 : Decimal(34, 6);
+    "TradeCategory"                        : String(40);
+    "TradeCurrency"                        : String(3);
+    "TradeGroup"                           : String(128);
+    "TradeMessageID"                       : String(128);
+    "TradeSequenceNumber"                  : Integer;
+    "TradeTimestamp"                       : UTCTimestamp;
+    "TradeType"                            : String(40);
+    "TradedCurrency"                       : String(3);
+    "UnderlyingFuturesExpirationDate"      : LocalDate;
+    "Unit"                                 : String(10);
+    "Yield"                                : Decimal(15, 11);
+    "YieldCalculationDate"                 : LocalDate;
+    "YieldType"                            : String(40);
+    "SourceSystemID"                       : String(128);
+    "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+    "ChangingUserInSourceSystem"           : String(128);
+    "ChangingProcessType"                  : String(40);
+    "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};

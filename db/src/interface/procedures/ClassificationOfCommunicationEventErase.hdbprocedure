@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::ClassificationOfCommunicationEventErase" (IN ROW "sap.fsdm.tabletypes::ClassificationOfCommunicationEventTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_CommunicationEvent.CommunicationEventID" is null and
+                         "ASSOC_CommunicationEvent.IDSystem" is null and
+                         "ASSOC_CommunicationEventClass.CommunicationEventClass" is null and
+                         "ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ClassificationOfCommunicationEvent" WHERE
+("ASSOC_CommunicationEvent.CommunicationEventID" ,
+"ASSOC_CommunicationEvent.IDSystem" ,
+"ASSOC_CommunicationEventClass.CommunicationEventClass" ,
+"ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" 
+)in ( select "OLD"."ASSOC_CommunicationEvent.CommunicationEventID" ,
+"OLD"."ASSOC_CommunicationEvent.IDSystem" ,
+"OLD"."ASSOC_CommunicationEventClass.CommunicationEventClass" ,
+"OLD"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::ClassificationOfCommunicationEvent" "OLD"
+on
+  ( "IN"."ASSOC_CommunicationEvent.CommunicationEventID" = "OLD"."ASSOC_CommunicationEvent.CommunicationEventID" or "IN"."ASSOC_CommunicationEvent.CommunicationEventID" is null ) and
+  ( "IN"."ASSOC_CommunicationEvent.IDSystem" = "OLD"."ASSOC_CommunicationEvent.IDSystem" or "IN"."ASSOC_CommunicationEvent.IDSystem" is null ) and
+  ( "IN"."ASSOC_CommunicationEventClass.CommunicationEventClass" = "OLD"."ASSOC_CommunicationEventClass.CommunicationEventClass" or "IN"."ASSOC_CommunicationEventClass.CommunicationEventClass" is null ) and
+  ( "IN"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" = "OLD"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" or "IN"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ClassificationOfCommunicationEvent_Historical" WHERE
+("ASSOC_CommunicationEvent.CommunicationEventID" ,
+"ASSOC_CommunicationEvent.IDSystem" ,
+"ASSOC_CommunicationEventClass.CommunicationEventClass" ,
+"ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" 
+)in ( select "OLD"."ASSOC_CommunicationEvent.CommunicationEventID" ,
+"OLD"."ASSOC_CommunicationEvent.IDSystem" ,
+"OLD"."ASSOC_CommunicationEventClass.CommunicationEventClass" ,
+"OLD"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::ClassificationOfCommunicationEvent_Historical" "OLD"
+on
+  ( "IN"."ASSOC_CommunicationEvent.CommunicationEventID" = "OLD"."ASSOC_CommunicationEvent.CommunicationEventID" or "IN"."ASSOC_CommunicationEvent.CommunicationEventID" is null ) and
+  ( "IN"."ASSOC_CommunicationEvent.IDSystem" = "OLD"."ASSOC_CommunicationEvent.IDSystem" or "IN"."ASSOC_CommunicationEvent.IDSystem" is null ) and
+  ( "IN"."ASSOC_CommunicationEventClass.CommunicationEventClass" = "OLD"."ASSOC_CommunicationEventClass.CommunicationEventClass" or "IN"."ASSOC_CommunicationEventClass.CommunicationEventClass" is null ) and
+  ( "IN"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" = "OLD"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" or "IN"."ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" is null ) 
+);
+
+END

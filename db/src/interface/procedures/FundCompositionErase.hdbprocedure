@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::FundCompositionErase" (IN ROW "sap.fsdm.tabletypes::FundCompositionTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "AssetClass" is null and
+                         "_Fund.FundID" is null and
+                         "_Fund._InvestmentCorporation.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::FundComposition" WHERE
+("AssetClass" ,
+"_Fund.FundID" ,
+"_Fund._InvestmentCorporation.BusinessPartnerID" 
+)in ( select "OLD"."AssetClass" ,
+"OLD"."_Fund.FundID" ,
+"OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::FundComposition" "OLD"
+on
+  ( "IN"."AssetClass" = "OLD"."AssetClass" or "IN"."AssetClass" is null ) and
+  ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+  ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::FundComposition_Historical" WHERE
+("AssetClass" ,
+"_Fund.FundID" ,
+"_Fund._InvestmentCorporation.BusinessPartnerID" 
+)in ( select "OLD"."AssetClass" ,
+"OLD"."_Fund.FundID" ,
+"OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::FundComposition_Historical" "OLD"
+on
+  ( "IN"."AssetClass" = "OLD"."AssetClass" or "IN"."AssetClass" is null ) and
+  ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+  ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) 
+);
+
+END

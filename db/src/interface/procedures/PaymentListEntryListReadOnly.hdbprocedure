@@ -1,0 +1,416 @@
+PROCEDURE "sap.fsdm.procedures::PaymentListEntryListReadOnly" (IN ROW "sap.fsdm.tabletypes::PaymentListEntryTT", OUT CURR_DEL "sap.fsdm.tabletypes::PaymentListEntryTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::PaymentListEntryTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PaymentDate=' || TO_VARCHAR("PaymentDate") || ' ' ||
+                'ASSOC_PaymentList.SequenceNumber=' || TO_VARCHAR("ASSOC_PaymentList.SequenceNumber") || ' ' ||
+                'ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PaymentList.ASSOC_Receivable.ReceivableID=' || TO_VARCHAR("ASSOC_PaymentList.ASSOC_Receivable.ReceivableID") || ' ' ||
+                'ASSOC_PaymentList._CreditCardLoan.ID=' || TO_VARCHAR("ASSOC_PaymentList._CreditCardLoan.ID") || ' ' ||
+                'ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem=' || TO_VARCHAR("ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem") || ' ' ||
+                'ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID=' || TO_VARCHAR("ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID") || ' ' ||
+                'ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber=' || TO_VARCHAR("ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber") || ' ' ||
+                'ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID=' || TO_VARCHAR("ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID") || ' ' ||
+                'ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem=' || TO_VARCHAR("ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PaymentDate",
+                        "IN"."ASSOC_PaymentList.SequenceNumber",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan.ID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PaymentDate",
+                        "IN"."ASSOC_PaymentList.SequenceNumber",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan.ID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PaymentDate",
+                        "ASSOC_PaymentList.SequenceNumber",
+                        "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                        "ASSOC_PaymentList._CreditCardLoan.ID",
+                        "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                        "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                        "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PaymentDate",
+                                    "IN"."ASSOC_PaymentList.SequenceNumber",
+                                    "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                                    "IN"."ASSOC_PaymentList._CreditCardLoan.ID",
+                                    "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                                    "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                                    "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                                    "IN"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                                    "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PaymentDate",
+                                    "IN"."ASSOC_PaymentList.SequenceNumber",
+                                    "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                                    "IN"."ASSOC_PaymentList._CreditCardLoan.ID",
+                                    "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                                    "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                                    "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                                    "IN"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                                    "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "PaymentDate",
+        "ASSOC_PaymentList.SequenceNumber",
+        "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+        "ASSOC_PaymentList._CreditCardLoan.ID",
+        "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+        "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+        "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+        "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+        "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::PaymentListEntry" WHERE
+        (            "PaymentDate" ,
+            "ASSOC_PaymentList.SequenceNumber" ,
+            "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" ,
+            "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" ,
+            "ASSOC_PaymentList._CreditCardLoan.ID" ,
+            "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+            "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+            "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" ,
+            "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" ,
+            "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+            "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."PaymentDate",
+            "OLD"."ASSOC_PaymentList.SequenceNumber",
+            "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+            "OLD"."ASSOC_PaymentList._CreditCardLoan.ID",
+            "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+            "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+            "OLD"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+            "OLD"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+            "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+            "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::PaymentListEntry" as "OLD"
+            on
+               ( case when "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" end ) = "OLD"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" and
+               ( case when "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" and
+               ( case when "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" and
+               ( case when "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" end ) = "OLD"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" and
+               ( case when "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" and
+               ( case when "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" and
+               ( case when "IN"."ASSOC_PaymentList._CreditCardLoan.ID" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan.ID" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan.ID" and
+               ( case when "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" and
+               ( case when "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" and
+               ( case when "IN"."PaymentDate" is null then '0001-01-01' else "IN"."PaymentDate" end ) = "OLD"."PaymentDate" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "PaymentDate",
+        "ASSOC_PaymentList.SequenceNumber",
+        "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+        "ASSOC_PaymentList._CreditCardLoan.ID",
+        "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+        "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+        "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+        "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+        "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PaymentAmount",
+        "PaymentCurrency",
+        "PaymentPercentage",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "PaymentDate" is null then '0001-01-01' else "PaymentDate" end ) as "PaymentDate",
+                    ( case when "ASSOC_PaymentList.SequenceNumber" is null then -1 else "ASSOC_PaymentList.SequenceNumber" end ) as "ASSOC_PaymentList.SequenceNumber",
+                    ( case when "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                    ( case when "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                    ( case when "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" is null then '' else "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" end ) as "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                    ( case when "ASSOC_PaymentList._CreditCardLoan.ID" is null then '' else "ASSOC_PaymentList._CreditCardLoan.ID" end ) as "ASSOC_PaymentList._CreditCardLoan.ID",
+                    ( case when "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) as "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                    ( case when "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" end ) as "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                    ( case when "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" end ) as "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                    ( case when "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" is null then -1 else "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" end ) as "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                    ( case when "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) as "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                    ( case when "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" end ) as "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "PaymentAmount"  ,
+                    "PaymentCurrency"  ,
+                    "PaymentPercentage"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_PaymentDate" as "PaymentDate" ,
+                    "OLD_ASSOC_PaymentList.SequenceNumber" as "ASSOC_PaymentList.SequenceNumber" ,
+                    "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+                    "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" as "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" ,
+                    "OLD_ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" as "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" ,
+                    "OLD_ASSOC_PaymentList._CreditCardLoan.ID" as "ASSOC_PaymentList._CreditCardLoan.ID" ,
+                    "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" as "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+                    "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" as "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+                    "OLD_ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" as "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" ,
+                    "OLD_ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" as "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" ,
+                    "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+                    "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" as "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_PaymentAmount" as "PaymentAmount" ,
+                    "OLD_PaymentCurrency" as "PaymentCurrency" ,
+                    "OLD_PaymentPercentage" as "PaymentPercentage" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan.ID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "IN"."PaymentDate",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."PaymentDate" as "OLD_PaymentDate",
+                                "OLD"."ASSOC_PaymentList.SequenceNumber" as "OLD_ASSOC_PaymentList.SequenceNumber",
+                                "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" as "OLD_ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                                "OLD"."ASSOC_PaymentList._CreditCardLoan.ID" as "OLD_ASSOC_PaymentList._CreditCardLoan.ID",
+                                "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" as "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                                "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" as "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                                "OLD"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                                "OLD"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" as "OLD_ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                                "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                                "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" as "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."PaymentAmount" as "OLD_PaymentAmount",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PaymentPercentage" as "OLD_PaymentPercentage",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PaymentListEntry" as "OLD"
+            on
+                ( case when "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" end ) = "OLD"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" and
+                ( case when "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" end ) = "OLD"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" and
+                ( case when "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" and
+                ( case when "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."ASSOC_PaymentList._CreditCardLoan.ID" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan.ID" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan.ID" and
+                ( case when "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" and
+                ( case when "IN"."PaymentDate" is null then '0001-01-01' else "IN"."PaymentDate" end ) = "OLD"."PaymentDate" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_PaymentDate" as "PaymentDate",
+            "OLD_ASSOC_PaymentList.SequenceNumber" as "ASSOC_PaymentList.SequenceNumber",
+            "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" as "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" as "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+            "OLD_ASSOC_PaymentList._CreditCardLoan.ID" as "ASSOC_PaymentList._CreditCardLoan.ID",
+            "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" as "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+            "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" as "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+            "OLD_ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" as "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+            "OLD_ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" as "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+            "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+            "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" as "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_PaymentAmount" as "PaymentAmount",
+            "OLD_PaymentCurrency" as "PaymentCurrency",
+            "OLD_PaymentPercentage" as "PaymentPercentage",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan.ID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "IN"."PaymentDate",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."PaymentDate" as "OLD_PaymentDate",
+                        "OLD"."ASSOC_PaymentList.SequenceNumber" as "OLD_ASSOC_PaymentList.SequenceNumber",
+                        "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" as "OLD_ASSOC_PaymentList.ASSOC_Receivable.ReceivableID",
+                        "OLD"."ASSOC_PaymentList._CreditCardLoan.ID" as "OLD_ASSOC_PaymentList._CreditCardLoan.ID",
+                        "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" as "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" as "OLD_ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "OLD"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID",
+                        "OLD"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" as "OLD_ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber",
+                        "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" as "OLD_ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."PaymentAmount" as "OLD_PaymentAmount",
+                        "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                        "OLD"."PaymentPercentage" as "OLD_PaymentPercentage",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PaymentListEntry" as "OLD"
+            on
+                ( case when "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" end ) = "OLD"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" and
+                ( case when "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" end ) = "OLD"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" and
+                ( case when "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" and
+                ( case when "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."ASSOC_PaymentList._CreditCardLoan.ID" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan.ID" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan.ID" and
+                ( case when "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "IN"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" end ) = "OLD"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" and
+                ( case when "IN"."PaymentDate" is null then '0001-01-01' else "IN"."PaymentDate" end ) = "OLD"."PaymentDate" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,37 @@
+view "sap.fsdm.Views::CardIssue_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CardIssueID" as "CardIssueID",
+      "ASSOC_CardAgreement.FinancialContractID" as "ASSOC_CardAgreement_FinancialContractID",
+      "ASSOC_CardAgreement.IDSystem" as "ASSOC_CardAgreement_IDSystem",
+      "_BankAccount.FinancialContractID" as "_BankAccount_FinancialContractID",
+      "_BankAccount.IDSystem" as "_BankAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_CardHolder.BusinessPartnerID" as "ASSOC_CardHolder_BusinessPartnerID",
+      "ApplicationDate" as "ApplicationDate",
+      "ApprovalDate" as "ApprovalDate",
+      "BusinessNameOnCard" as "BusinessNameOnCard",
+      "CardBIN" as "CardBIN",
+      "CardStatus" as "CardStatus",
+      "CommonDesignID" as "CommonDesignID",
+      "EmbossedName" as "EmbossedName",
+      "HasChip" as "HasChip",
+      "HasMagneticStrip" as "HasMagneticStrip",
+      "HasPIN" as "HasPIN",
+      "HasPhoto" as "HasPhoto",
+      "IndividualDesignID" as "IndividualDesignID",
+      "IsMainCard" as "IsMainCard",
+      "IsNFCenabled" as "IsNFCenabled",
+      "IssueDate" as "IssueDate",
+      "PhotoReferenceID" as "PhotoReferenceID",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CardIssue"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

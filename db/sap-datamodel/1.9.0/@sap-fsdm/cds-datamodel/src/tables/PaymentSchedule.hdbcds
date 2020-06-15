@@ -1,0 +1,115 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"Receivable";
+using "sap"."fsdm"::"CreditCardLoan";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"InterestRateOptionComponent";
+
+entity "PaymentSchedule" {
+    key "SequenceNumber"                             : Integer                                                      default -1;
+    key "ASSOC_FinancialContract"                    : association to FinancialContract {
+                                                                                          FinancialContractID,
+                                                                                          IDSystem
+                                                                                        }                           not null;
+    key "ASSOC_Receivable"                           : association to Receivable { ReceivableID }                   not null;
+    key "_CreditCardLoan"                            : association to CreditCardLoan {
+                                                                                       ID,
+                                                                                       _CreditCardAgreement
+                                                                                     }                              not null;
+    key "_DebtInstrument"                            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_InterestRateOptionComponent"               : association to InterestRateOptionComponent {
+                                                                                                    ComponentNumber,
+                                                                                                    _InterestRateOption
+                                                                                                  }                 not null;
+    key "BusinessValidFrom"                          : LocalDate;
+    key "BusinessValidTo"                            : LocalDate;
+        "SystemValidFrom"                            : UTCTimestamp                                                 not null;
+        "SystemValidTo"                              : UTCTimestamp                                                 not null;
+        "BulletPaymentAmount"                        : Decimal(34, 6);
+        "BulletPaymentCurrency"                      : String(3);
+        "BulletPaymentDate"                          : LocalDate;
+        "BusinessCalendar"                           : String(10);
+        "BusinessDayConvention"                      : String(40);
+        "DayOfMonthOfPayment"                        : Integer;
+        "FirstPaymentDate"                           : LocalDate;
+        "InstallmentAmount"                          : Decimal(34, 6);
+        "InstallmentCurrency"                        : String(3);
+        "InstallmentLagPeriodLength"                 : Decimal(34, 6);
+        "InstallmentLagTimeUnit"                     : String(12);
+        "InstallmentPeriodLength"                    : Decimal(34, 6);
+        "InstallmentPeriodTimeUnit"                  : String(12);
+        "InstallmentsRelativeToInterestPaymentDates" : Boolean;
+        "LastPaymentDate"                            : LocalDate;
+        "PartialPaymentRequestsPermitted"            : Boolean;
+        "PaymentScheduleCategory"                    : String(40);
+        "PaymentScheduleRole"                        : String(50);
+        "PaymentScheduleStartDate"                   : LocalDate;
+        "PaymentScheduleType"                        : String(40);
+        "PaymentToBeRequested"                       : Boolean;
+        "ProRataSinking"                             : Boolean;
+        "RepaymentBySinking"                         : Boolean;
+        "RoleOfPayer"                                : String(50);
+        "SourceSystemID"                             : String(128);
+        "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+        "ChangingUserInSourceSystem"                 : String(128);
+        "ChangingProcessType"                        : String(40);
+        "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PaymentSchedule_Historical" {
+    "SequenceNumber"                             : Integer                                                      default -1 not null;
+    "ASSOC_FinancialContract"                    : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    }                           not null;
+    "ASSOC_Receivable"                           : association to Receivable { ReceivableID }                   not null;
+    "_CreditCardLoan"                            : association to CreditCardLoan {
+                                                                                   ID,
+                                                                                   _CreditCardAgreement
+                                                                                 }                              not null;
+    "_DebtInstrument"                            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_InterestRateOptionComponent"               : association to InterestRateOptionComponent {
+                                                                                                ComponentNumber,
+                                                                                                _InterestRateOption
+                                                                                              }                 not null;
+    "BusinessValidFrom"                          : LocalDate                                                    not null;
+    "BusinessValidTo"                            : LocalDate                                                    not null;
+    "SystemValidFrom"                            : UTCTimestamp                                                 not null;
+    "SystemValidTo"                              : UTCTimestamp                                                 not null;
+    "BulletPaymentAmount"                        : Decimal(34, 6);
+    "BulletPaymentCurrency"                      : String(3);
+    "BulletPaymentDate"                          : LocalDate;
+    "BusinessCalendar"                           : String(10);
+    "BusinessDayConvention"                      : String(40);
+    "DayOfMonthOfPayment"                        : Integer;
+    "FirstPaymentDate"                           : LocalDate;
+    "InstallmentAmount"                          : Decimal(34, 6);
+    "InstallmentCurrency"                        : String(3);
+    "InstallmentLagPeriodLength"                 : Decimal(34, 6);
+    "InstallmentLagTimeUnit"                     : String(12);
+    "InstallmentPeriodLength"                    : Decimal(34, 6);
+    "InstallmentPeriodTimeUnit"                  : String(12);
+    "InstallmentsRelativeToInterestPaymentDates" : Boolean;
+    "LastPaymentDate"                            : LocalDate;
+    "PartialPaymentRequestsPermitted"            : Boolean;
+    "PaymentScheduleCategory"                    : String(40);
+    "PaymentScheduleRole"                        : String(50);
+    "PaymentScheduleStartDate"                   : LocalDate;
+    "PaymentScheduleType"                        : String(40);
+    "PaymentToBeRequested"                       : Boolean;
+    "ProRataSinking"                             : Boolean;
+    "RepaymentBySinking"                         : Boolean;
+    "RoleOfPayer"                                : String(50);
+    "SourceSystemID"                             : String(128);
+    "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+    "ChangingUserInSourceSystem"                 : String(128);
+    "ChangingProcessType"                        : String(40);
+    "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};

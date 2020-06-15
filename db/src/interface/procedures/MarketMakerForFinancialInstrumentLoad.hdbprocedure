@@ -1,0 +1,264 @@
+PROCEDURE "sap.fsdm.procedures::MarketMakerForFinancialInstrumentLoad" (IN ROW "sap.fsdm.tabletypes::MarketMakerForFinancialInstrumentTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_Instrument.FinancialInstrumentID=' || TO_VARCHAR("_Instrument.FinancialInstrumentID") || ' ' ||
+                '_MarketMaker.MarketAdmissionLevel=' || TO_VARCHAR("_MarketMaker.MarketAdmissionLevel") || ' ' ||
+                '_MarketMaker._BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("_MarketMaker._BusinessPartner.BusinessPartnerID") || ' ' ||
+                '_MarketMaker._Exchange.MarketIdentifierCode=' || TO_VARCHAR("_MarketMaker._Exchange.MarketIdentifierCode") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_Instrument.FinancialInstrumentID",
+                        "IN"."_MarketMaker.MarketAdmissionLevel",
+                        "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+                        "IN"."_MarketMaker._Exchange.MarketIdentifierCode"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_Instrument.FinancialInstrumentID",
+                        "IN"."_MarketMaker.MarketAdmissionLevel",
+                        "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+                        "IN"."_MarketMaker._Exchange.MarketIdentifierCode"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_Instrument.FinancialInstrumentID",
+                        "_MarketMaker.MarketAdmissionLevel",
+                        "_MarketMaker._BusinessPartner.BusinessPartnerID",
+                        "_MarketMaker._Exchange.MarketIdentifierCode"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_Instrument.FinancialInstrumentID",
+                                    "IN"."_MarketMaker.MarketAdmissionLevel",
+                                    "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+                                    "IN"."_MarketMaker._Exchange.MarketIdentifierCode"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_Instrument.FinancialInstrumentID",
+                                    "IN"."_MarketMaker.MarketAdmissionLevel",
+                                    "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+                                    "IN"."_MarketMaker._Exchange.MarketIdentifierCode"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::MarketMakerForFinancialInstrument" (
+        "_Instrument.FinancialInstrumentID",
+        "_MarketMaker.MarketAdmissionLevel",
+        "_MarketMaker._BusinessPartner.BusinessPartnerID",
+        "_MarketMaker._Exchange.MarketIdentifierCode",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Instrument.FinancialInstrumentID" as "_Instrument.FinancialInstrumentID" ,
+            "OLD__MarketMaker.MarketAdmissionLevel" as "_MarketMaker.MarketAdmissionLevel" ,
+            "OLD__MarketMaker._BusinessPartner.BusinessPartnerID" as "_MarketMaker._BusinessPartner.BusinessPartnerID" ,
+            "OLD__MarketMaker._Exchange.MarketIdentifierCode" as "_MarketMaker._Exchange.MarketIdentifierCode" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_Instrument.FinancialInstrumentID",
+                        "IN"."_MarketMaker.MarketAdmissionLevel",
+                        "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+                        "IN"."_MarketMaker._Exchange.MarketIdentifierCode",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_Instrument.FinancialInstrumentID" as "OLD__Instrument.FinancialInstrumentID",
+                                "OLD"."_MarketMaker.MarketAdmissionLevel" as "OLD__MarketMaker.MarketAdmissionLevel",
+                                "OLD"."_MarketMaker._BusinessPartner.BusinessPartnerID" as "OLD__MarketMaker._BusinessPartner.BusinessPartnerID",
+                                "OLD"."_MarketMaker._Exchange.MarketIdentifierCode" as "OLD__MarketMaker._Exchange.MarketIdentifierCode",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::MarketMakerForFinancialInstrument" as "OLD"
+            on
+                ( case when "IN"."_Instrument.FinancialInstrumentID" is null then '' else "IN"."_Instrument.FinancialInstrumentID" end ) = "OLD"."_Instrument.FinancialInstrumentID" and
+                ( case when "IN"."_MarketMaker.MarketAdmissionLevel" is null then '' else "IN"."_MarketMaker.MarketAdmissionLevel" end ) = "OLD"."_MarketMaker.MarketAdmissionLevel" and
+                ( case when "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_MarketMaker._BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."_MarketMaker._Exchange.MarketIdentifierCode" is null then '' else "IN"."_MarketMaker._Exchange.MarketIdentifierCode" end ) = "OLD"."_MarketMaker._Exchange.MarketIdentifierCode" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::MarketMakerForFinancialInstrument" (
+        "_Instrument.FinancialInstrumentID",
+        "_MarketMaker.MarketAdmissionLevel",
+        "_MarketMaker._BusinessPartner.BusinessPartnerID",
+        "_MarketMaker._Exchange.MarketIdentifierCode",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Instrument.FinancialInstrumentID" as "_Instrument.FinancialInstrumentID",
+            "OLD__MarketMaker.MarketAdmissionLevel" as "_MarketMaker.MarketAdmissionLevel",
+            "OLD__MarketMaker._BusinessPartner.BusinessPartnerID" as "_MarketMaker._BusinessPartner.BusinessPartnerID",
+            "OLD__MarketMaker._Exchange.MarketIdentifierCode" as "_MarketMaker._Exchange.MarketIdentifierCode",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_Instrument.FinancialInstrumentID",
+                        "IN"."_MarketMaker.MarketAdmissionLevel",
+                        "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+                        "IN"."_MarketMaker._Exchange.MarketIdentifierCode",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_Instrument.FinancialInstrumentID" as "OLD__Instrument.FinancialInstrumentID",
+                        "OLD"."_MarketMaker.MarketAdmissionLevel" as "OLD__MarketMaker.MarketAdmissionLevel",
+                        "OLD"."_MarketMaker._BusinessPartner.BusinessPartnerID" as "OLD__MarketMaker._BusinessPartner.BusinessPartnerID",
+                        "OLD"."_MarketMaker._Exchange.MarketIdentifierCode" as "OLD__MarketMaker._Exchange.MarketIdentifierCode",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::MarketMakerForFinancialInstrument" as "OLD"
+            on
+                ( case when "IN"."_Instrument.FinancialInstrumentID" is null then '' else "IN"."_Instrument.FinancialInstrumentID" end ) = "OLD"."_Instrument.FinancialInstrumentID" and
+                ( case when "IN"."_MarketMaker.MarketAdmissionLevel" is null then '' else "IN"."_MarketMaker.MarketAdmissionLevel" end ) = "OLD"."_MarketMaker.MarketAdmissionLevel" and
+                ( case when "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_MarketMaker._BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."_MarketMaker._Exchange.MarketIdentifierCode" is null then '' else "IN"."_MarketMaker._Exchange.MarketIdentifierCode" end ) = "OLD"."_MarketMaker._Exchange.MarketIdentifierCode" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::MarketMakerForFinancialInstrument"
+    where (
+        "_Instrument.FinancialInstrumentID",
+        "_MarketMaker.MarketAdmissionLevel",
+        "_MarketMaker._BusinessPartner.BusinessPartnerID",
+        "_MarketMaker._Exchange.MarketIdentifierCode",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_Instrument.FinancialInstrumentID",
+            "OLD"."_MarketMaker.MarketAdmissionLevel",
+            "OLD"."_MarketMaker._BusinessPartner.BusinessPartnerID",
+            "OLD"."_MarketMaker._Exchange.MarketIdentifierCode",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::MarketMakerForFinancialInstrument" as "OLD"
+        on
+           ( case when "IN"."_Instrument.FinancialInstrumentID" is null then '' else "IN"."_Instrument.FinancialInstrumentID" end ) = "OLD"."_Instrument.FinancialInstrumentID" and
+           ( case when "IN"."_MarketMaker.MarketAdmissionLevel" is null then '' else "IN"."_MarketMaker.MarketAdmissionLevel" end ) = "OLD"."_MarketMaker.MarketAdmissionLevel" and
+           ( case when "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_MarketMaker._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_MarketMaker._BusinessPartner.BusinessPartnerID" and
+           ( case when "IN"."_MarketMaker._Exchange.MarketIdentifierCode" is null then '' else "IN"."_MarketMaker._Exchange.MarketIdentifierCode" end ) = "OLD"."_MarketMaker._Exchange.MarketIdentifierCode" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::MarketMakerForFinancialInstrument" (
+        "_Instrument.FinancialInstrumentID",
+        "_MarketMaker.MarketAdmissionLevel",
+        "_MarketMaker._BusinessPartner.BusinessPartnerID",
+        "_MarketMaker._Exchange.MarketIdentifierCode",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "_Instrument.FinancialInstrumentID" is null then '' else "_Instrument.FinancialInstrumentID" end ) as "_Instrument.FinancialInstrumentID",
+            ( case when "_MarketMaker.MarketAdmissionLevel" is null then '' else "_MarketMaker.MarketAdmissionLevel" end ) as "_MarketMaker.MarketAdmissionLevel",
+            ( case when "_MarketMaker._BusinessPartner.BusinessPartnerID" is null then '' else "_MarketMaker._BusinessPartner.BusinessPartnerID" end ) as "_MarketMaker._BusinessPartner.BusinessPartnerID",
+            ( case when "_MarketMaker._Exchange.MarketIdentifierCode" is null then '' else "_MarketMaker._Exchange.MarketIdentifierCode" end ) as "_MarketMaker._Exchange.MarketIdentifierCode",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

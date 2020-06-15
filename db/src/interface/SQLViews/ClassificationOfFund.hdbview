@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::ClassificationOfFund_View" 
+as select
+      "_Fund.FundID" ,
+      "_Fund._InvestmentCorporation.BusinessPartnerID" ,
+      "_FundClass.FundClass" ,
+      "_FundClass.FundClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ClassificationOfFund"
+with associations
+(
+	join "sap.fsdm.SQLViews::Fund_View" as "_Fund"
+	  on "_Fund"."FundID" = "_Fund.FundID" AND 
+	     "_Fund"."_InvestmentCorporation.BusinessPartnerID" = "_Fund._InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FundClass_View" as "_FundClass"
+	  on "_FundClass"."FundClass" = "_FundClass.FundClass" AND 
+	     "_FundClass"."FundClassificationSystem" = "_FundClass.FundClassificationSystem"
+	     
+);

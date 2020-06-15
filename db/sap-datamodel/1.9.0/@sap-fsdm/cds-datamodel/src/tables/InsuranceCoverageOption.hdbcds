@@ -1,0 +1,61 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"InsuranceCoverage";
+
+entity "InsuranceCoverageOption" {
+    key "Type"                          : String(40)                         default '';
+    key "_InsuranceCoverage"            : association to InsuranceCoverage {
+                                                                             ID,
+                                                                             _InsuranceContract,
+                                                                             _InsuredObject
+                                                                           } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                       not null;
+        "SystemValidTo"                 : UTCTimestamp                       not null;
+        "Category"                      : String(40);
+        "DeathBenefitAmount"            : Decimal(34, 6);
+        "EndowmentBenefitAmount"        : Decimal(34, 6);
+        "PremiumGrossAnnualAmount"      : Decimal(34, 6);
+        "PremiumGrossPeriodAmount"      : Decimal(34, 6);
+        "StartDate"                     : LocalDate;
+        "TariffAnnualAmount"            : Decimal(34, 6);
+        "TariffPeriodAmount"            : Decimal(34, 6);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InsuranceCoverageOption_Historical" {
+    "Type"                          : String(40)                         default '' not null;
+    "_InsuranceCoverage"            : association to InsuranceCoverage {
+                                                                         ID,
+                                                                         _InsuranceContract,
+                                                                         _InsuredObject
+                                                                       } not null;
+    "BusinessValidFrom"             : LocalDate                          not null;
+    "BusinessValidTo"               : LocalDate                          not null;
+    "SystemValidFrom"               : UTCTimestamp                       not null;
+    "SystemValidTo"                 : UTCTimestamp                       not null;
+    "Category"                      : String(40);
+    "DeathBenefitAmount"            : Decimal(34, 6);
+    "EndowmentBenefitAmount"        : Decimal(34, 6);
+    "PremiumGrossAnnualAmount"      : Decimal(34, 6);
+    "PremiumGrossPeriodAmount"      : Decimal(34, 6);
+    "StartDate"                     : LocalDate;
+    "TariffAnnualAmount"            : Decimal(34, 6);
+    "TariffPeriodAmount"            : Decimal(34, 6);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

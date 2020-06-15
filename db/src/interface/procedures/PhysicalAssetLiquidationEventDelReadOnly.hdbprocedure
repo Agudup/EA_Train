@@ -1,0 +1,49 @@
+PROCEDURE "sap.fsdm.procedures::PhysicalAssetLiquidationEventDelReadOnly" (IN ROW "sap.fsdm.tabletypes::PhysicalAssetLiquidationEventTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::PhysicalAssetLiquidationEventTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "LiquidationEventDate" is null and
+                         "LiquidationEventType" is null and
+                         "ASSOC_PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning--Delete entries for update from current table
+CURR_DEL = select 
+"LiquidationEventDate",
+"LiquidationEventType",
+"ASSOC_PhysicalAsset.PhysicalAssetID"
+from "sap.fsdm::PhysicalAssetLiquidationEvent" WHERE("LiquidationEventDate" ,
+"LiquidationEventType" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select 
+"OLD"."LiquidationEventDate"  as "LiquidationEventDate" ,
+"OLD"."LiquidationEventType"  as "LiquidationEventType" ,
+"OLD"."ASSOC_PhysicalAsset.PhysicalAssetID"  as "ASSOC_PhysicalAsset.PhysicalAssetID" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::PhysicalAssetLiquidationEvent" AS "OLD"
+  ON
+  ( "IN"."LiquidationEventDate" = "OLD"."LiquidationEventDate" or "IN"."LiquidationEventDate" is null ) and
+  ( "IN"."LiquidationEventType" = "OLD"."LiquidationEventType" or "IN"."LiquidationEventType" is null ) and
+  ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

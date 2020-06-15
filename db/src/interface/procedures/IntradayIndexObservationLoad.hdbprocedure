@@ -1,0 +1,44 @@
+PROCEDURE "sap.fsdm.procedures::IntradayIndexObservationLoad" (IN ROW "sap.fsdm.tabletypes::IntradayIndexObservationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::IntradayIndexObservation" WHERE("Timestamp" ,
+"_Index.IndexID" 
+)in ( select "Timestamp" ,
+"_Index.IndexID" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::IntradayIndexObservation" (
+"Timestamp",
+"_Index.IndexID",
+"IndexLevel",
+"IndexStreamProvider",
+"Unit",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "Timestamp"  ,
+  "_Index.IndexID"  ,
+  "IndexLevel"  ,
+  "IndexStreamProvider"  ,
+  "Unit"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

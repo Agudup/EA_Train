@@ -1,0 +1,21 @@
+view "sap.fsdm.SQLViews::InstrumentsOutstanding_View" 
+as select
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "NumberOIfnstrumentsOutstanding" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentsOutstanding"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

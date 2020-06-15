@@ -1,0 +1,26 @@
+view "sap.fsdm.Views::StandardPermittedEffectiveCancellationDates_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_StandardTerminationOption.SequenceNumber" as "ASSOC_StandardTerminationOption_SequenceNumber",
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardTerminationOption_ASSOC_StandardProduct_FinancialStandardProductID",
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardTerminationOption_ASSOC_StandardProduct_IDSystem",
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardTerminationOption_ASSOC_StandardProduct_PricingScheme",
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardTerminationOption_ASSOC_StandardProduct_ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "EndDay" as "EndDay",
+      "EndMonth" as "EndMonth",
+      "EndYear" as "EndYear",
+      "RepetitionPeriodLength" as "RepetitionPeriodLength",
+      "RepetitionPeriodTimeUnit" as "RepetitionPeriodTimeUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::StandardPermittedEffectiveCancellationDates"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

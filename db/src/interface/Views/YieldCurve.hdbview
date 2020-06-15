@@ -1,0 +1,32 @@
+view "sap.fsdm.Views::YieldCurve_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "YieldCurveID" as "YieldCurveID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_ReferenceRate.ReferenceRateID" as "ASSOC_ReferenceRate_ReferenceRateID",
+      "CurveCurrency" as "CurveCurrency",
+      "Description" as "Description",
+      "IsForwardStarting" as "IsForwardStarting",
+      "IsSpreadCurve" as "IsSpreadCurve",
+      "Name" as "Name",
+      "PeriodUntilForwardStartingDate" as "PeriodUntilForwardStartingDate",
+      "PeriodUntilTimeUnit" as "PeriodUntilTimeUnit",
+      "Rating" as "Rating",
+      "RatingAgency" as "RatingAgency",
+      "RatingMethod" as "RatingMethod",
+      "ShortMidLongTerm" as "ShortMidLongTerm",
+      "TimeToMaturityUnit" as "TimeToMaturityUnit",
+      "YieldCurveCalculationMethod" as "YieldCurveCalculationMethod",
+      "YieldCurveCategory" as "YieldCurveCategory",
+      "YieldCurveType" as "YieldCurveType",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::YieldCurve"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

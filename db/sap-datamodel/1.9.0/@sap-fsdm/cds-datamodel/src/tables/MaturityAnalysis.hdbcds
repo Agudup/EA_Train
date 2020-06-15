@@ -1,0 +1,85 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "MaturityAnalysis" {
+    key "Bucket"                           : Decimal(3, 0);
+    key "MaturityBand"                     : String(20);
+    key "MaturityPeriodStartDate"          : LocalDate;
+    key "_AccountingSystem"                : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialContract"               : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                           not null;
+    key "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_InvestmentAccount"               : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                           not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+        "SystemValidTo"                    : UTCTimestamp                                                 not null;
+        "FunctionalCurrency"               : String(3);
+        "GroupCurrency"                    : String(3);
+        "HardCurrency"                     : String(3);
+        "IndexCurrency"                    : String(3);
+        "LocalCurrency"                    : String(3);
+        "MaturityDeterminationMethod"      : String(20);
+        "MaturityPeriodEndDate"            : LocalDate;
+        "PeriodAmountInFunctionalCurrency" : Decimal(34, 6);
+        "PeriodAmountInGroupCurrency"      : Decimal(34, 6);
+        "PeriodAmountInHardCurrency"       : Decimal(34, 6);
+        "PeriodAmountInIndexCurrency"      : Decimal(34, 6);
+        "PeriodAmountInLocalCurrency"      : Decimal(34, 6);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "MaturityAnalysis_Historical" {
+    "Bucket"                           : Decimal(3, 0)                                                not null;
+    "MaturityBand"                     : String(20)                                                   not null;
+    "MaturityPeriodStartDate"          : LocalDate                                                    not null;
+    "_AccountingSystem"                : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialContract"               : association to FinancialContract {
+                                                                            FinancialContractID,
+                                                                            IDSystem
+                                                                          }                           not null;
+    "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_InvestmentAccount"               : association to FinancialContract {
+                                                                            FinancialContractID,
+                                                                            IDSystem
+                                                                          }                           not null;
+    "BusinessValidFrom"                : LocalDate                                                    not null;
+    "BusinessValidTo"                  : LocalDate                                                    not null;
+    "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+    "SystemValidTo"                    : UTCTimestamp                                                 not null;
+    "FunctionalCurrency"               : String(3);
+    "GroupCurrency"                    : String(3);
+    "HardCurrency"                     : String(3);
+    "IndexCurrency"                    : String(3);
+    "LocalCurrency"                    : String(3);
+    "MaturityDeterminationMethod"      : String(20);
+    "MaturityPeriodEndDate"            : LocalDate;
+    "PeriodAmountInFunctionalCurrency" : Decimal(34, 6);
+    "PeriodAmountInGroupCurrency"      : Decimal(34, 6);
+    "PeriodAmountInHardCurrency"       : Decimal(34, 6);
+    "PeriodAmountInIndexCurrency"      : Decimal(34, 6);
+    "PeriodAmountInLocalCurrency"      : Decimal(34, 6);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

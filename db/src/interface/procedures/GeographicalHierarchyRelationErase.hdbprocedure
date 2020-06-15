@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::GeographicalHierarchyRelationErase" (IN ROW "sap.fsdm.tabletypes::GeographicalHierarchyRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "GeographicalHierarchyID" is null and
+                         "ASSOC_Child.GeographicalStructureID" is null and
+                         "ASSOC_Child.GeographicalUnitID" is null and
+                         "ASSOC_Parent.GeographicalStructureID" is null and
+                         "ASSOC_Parent.GeographicalUnitID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::GeographicalHierarchyRelation" WHERE
+("GeographicalHierarchyID" ,
+"ASSOC_Child.GeographicalStructureID" ,
+"ASSOC_Child.GeographicalUnitID" ,
+"ASSOC_Parent.GeographicalStructureID" ,
+"ASSOC_Parent.GeographicalUnitID" 
+)in ( select "OLD"."GeographicalHierarchyID" ,
+"OLD"."ASSOC_Child.GeographicalStructureID" ,
+"OLD"."ASSOC_Child.GeographicalUnitID" ,
+"OLD"."ASSOC_Parent.GeographicalStructureID" ,
+"OLD"."ASSOC_Parent.GeographicalUnitID" 
+from :ROW "IN"
+inner join "sap.fsdm::GeographicalHierarchyRelation" "OLD"
+on
+  ( "IN"."GeographicalHierarchyID" = "OLD"."GeographicalHierarchyID" or "IN"."GeographicalHierarchyID" is null ) and
+  ( "IN"."ASSOC_Child.GeographicalStructureID" = "OLD"."ASSOC_Child.GeographicalStructureID" or "IN"."ASSOC_Child.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_Child.GeographicalUnitID" = "OLD"."ASSOC_Child.GeographicalUnitID" or "IN"."ASSOC_Child.GeographicalUnitID" is null ) and
+  ( "IN"."ASSOC_Parent.GeographicalStructureID" = "OLD"."ASSOC_Parent.GeographicalStructureID" or "IN"."ASSOC_Parent.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_Parent.GeographicalUnitID" = "OLD"."ASSOC_Parent.GeographicalUnitID" or "IN"."ASSOC_Parent.GeographicalUnitID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::GeographicalHierarchyRelation_Historical" WHERE
+("GeographicalHierarchyID" ,
+"ASSOC_Child.GeographicalStructureID" ,
+"ASSOC_Child.GeographicalUnitID" ,
+"ASSOC_Parent.GeographicalStructureID" ,
+"ASSOC_Parent.GeographicalUnitID" 
+)in ( select "OLD"."GeographicalHierarchyID" ,
+"OLD"."ASSOC_Child.GeographicalStructureID" ,
+"OLD"."ASSOC_Child.GeographicalUnitID" ,
+"OLD"."ASSOC_Parent.GeographicalStructureID" ,
+"OLD"."ASSOC_Parent.GeographicalUnitID" 
+from :ROW "IN"
+inner join "sap.fsdm::GeographicalHierarchyRelation_Historical" "OLD"
+on
+  ( "IN"."GeographicalHierarchyID" = "OLD"."GeographicalHierarchyID" or "IN"."GeographicalHierarchyID" is null ) and
+  ( "IN"."ASSOC_Child.GeographicalStructureID" = "OLD"."ASSOC_Child.GeographicalStructureID" or "IN"."ASSOC_Child.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_Child.GeographicalUnitID" = "OLD"."ASSOC_Child.GeographicalUnitID" or "IN"."ASSOC_Child.GeographicalUnitID" is null ) and
+  ( "IN"."ASSOC_Parent.GeographicalStructureID" = "OLD"."ASSOC_Parent.GeographicalStructureID" or "IN"."ASSOC_Parent.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_Parent.GeographicalUnitID" = "OLD"."ASSOC_Parent.GeographicalUnitID" or "IN"."ASSOC_Parent.GeographicalUnitID" is null ) 
+);
+
+END

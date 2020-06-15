@@ -1,0 +1,35 @@
+view "sap.fsdm.Views::MortgageRegisterEntry_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "Beneficiary" as "Beneficiary",
+      "MortgageRegister" as "MortgageRegister",
+      "Rank" as "Rank",
+      "Section" as "Section",
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_LandChargeArrangement.FinancialContractID" as "ASSOC_LandChargeArrangement_FinancialContractID",
+      "ASSOC_LandChargeArrangement.IDSystem" as "ASSOC_LandChargeArrangement_IDSystem",
+      "_MovablesMortgageArrangement.FinancialContractID" as "_MovablesMortgageArrangement_FinancialContractID",
+      "_MovablesMortgageArrangement.IDSystem" as "_MovablesMortgageArrangement_IDSystem",
+      "ActualUsableProtectionAmount" as "ActualUsableProtectionAmount",
+      "ActualUsableProtectionAmountCurrency" as "ActualUsableProtectionAmountCurrency",
+      "AdministrativeArea" as "AdministrativeArea",
+      "AdministrativeSection" as "AdministrativeSection",
+      "MortgageRegisterType" as "MortgageRegisterType",
+      "ThirdPartyRights" as "ThirdPartyRights",
+      "TitleID" as "TitleID",
+      "UnitID" as "UnitID",
+      "UsableProtectionAmount" as "UsableProtectionAmount",
+      "UsableProtectionAmountCurrency" as "UsableProtectionAmountCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::MortgageRegisterEntry"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

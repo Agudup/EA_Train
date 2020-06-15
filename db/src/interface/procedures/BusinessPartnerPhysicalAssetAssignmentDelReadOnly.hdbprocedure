@@ -1,0 +1,277 @@
+PROCEDURE "sap.fsdm.procedures::BusinessPartnerPhysicalAssetAssignmentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::BusinessPartnerPhysicalAssetAssignmentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::BusinessPartnerPhysicalAssetAssignmentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::BusinessPartnerPhysicalAssetAssignmentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'BusinessPartnerRole=' || TO_VARCHAR("BusinessPartnerRole") || ' ' ||
+                'RentedPropertyType=' || TO_VARCHAR("RentedPropertyType") || ' ' ||
+                'ASSOC_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessPartner.BusinessPartnerID") || ' ' ||
+                'ASSOC_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("ASSOC_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."BusinessPartnerRole",
+                        "IN"."RentedPropertyType",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."BusinessPartnerRole",
+                        "IN"."RentedPropertyType",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "BusinessPartnerRole",
+                        "RentedPropertyType",
+                        "ASSOC_BusinessPartner.BusinessPartnerID",
+                        "ASSOC_PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."BusinessPartnerRole",
+                                    "IN"."RentedPropertyType",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."BusinessPartnerRole",
+                                    "IN"."RentedPropertyType",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "BusinessPartnerRole",
+            "RentedPropertyType",
+            "ASSOC_BusinessPartner.BusinessPartnerID",
+            "ASSOC_PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::BusinessPartnerPhysicalAssetAssignment" WHERE
+            (
+            "BusinessPartnerRole" ,
+            "RentedPropertyType" ,
+            "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."BusinessPartnerRole",
+            "OLD"."RentedPropertyType",
+            "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::BusinessPartnerPhysicalAssetAssignment" as "OLD"
+        on
+                              ( "IN"."BusinessPartnerRole" = "OLD"."BusinessPartnerRole" or "IN"."BusinessPartnerRole" is null ) and
+                              ( "IN"."RentedPropertyType" = "OLD"."RentedPropertyType" or "IN"."RentedPropertyType" is null ) and
+                              ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                              ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "BusinessPartnerRole",
+        "RentedPropertyType",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AcquisitionDate",
+        "BusinessPartnerPhysicalAssetAssignmentCategory",
+        "NetRentIncome",
+        "NetRentIncomeCurrency",
+        "PartialOwnership",
+        "RentalIncomePeriodLength",
+        "RentalIncomePeriodTimeUnit",
+        "RentedPropertyQuantity",
+        "RentedPropertyUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_BusinessPartnerRole" as "BusinessPartnerRole" ,
+            "OLD_RentedPropertyType" as "RentedPropertyType" ,
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AcquisitionDate" as "AcquisitionDate" ,
+            "OLD_BusinessPartnerPhysicalAssetAssignmentCategory" as "BusinessPartnerPhysicalAssetAssignmentCategory" ,
+            "OLD_NetRentIncome" as "NetRentIncome" ,
+            "OLD_NetRentIncomeCurrency" as "NetRentIncomeCurrency" ,
+            "OLD_PartialOwnership" as "PartialOwnership" ,
+            "OLD_RentalIncomePeriodLength" as "RentalIncomePeriodLength" ,
+            "OLD_RentalIncomePeriodTimeUnit" as "RentalIncomePeriodTimeUnit" ,
+            "OLD_RentedPropertyQuantity" as "RentedPropertyQuantity" ,
+            "OLD_RentedPropertyUnit" as "RentedPropertyUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."BusinessPartnerRole",
+                        "OLD"."RentedPropertyType",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."BusinessPartnerRole" as "OLD_BusinessPartnerRole",
+                                "OLD"."RentedPropertyType" as "OLD_RentedPropertyType",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AcquisitionDate" as "OLD_AcquisitionDate",
+                                "OLD"."BusinessPartnerPhysicalAssetAssignmentCategory" as "OLD_BusinessPartnerPhysicalAssetAssignmentCategory",
+                                "OLD"."NetRentIncome" as "OLD_NetRentIncome",
+                                "OLD"."NetRentIncomeCurrency" as "OLD_NetRentIncomeCurrency",
+                                "OLD"."PartialOwnership" as "OLD_PartialOwnership",
+                                "OLD"."RentalIncomePeriodLength" as "OLD_RentalIncomePeriodLength",
+                                "OLD"."RentalIncomePeriodTimeUnit" as "OLD_RentalIncomePeriodTimeUnit",
+                                "OLD"."RentedPropertyQuantity" as "OLD_RentedPropertyQuantity",
+                                "OLD"."RentedPropertyUnit" as "OLD_RentedPropertyUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BusinessPartnerPhysicalAssetAssignment" as "OLD"
+            on
+                                      ( "IN"."BusinessPartnerRole" = "OLD"."BusinessPartnerRole" or "IN"."BusinessPartnerRole" is null ) and
+                                      ( "IN"."RentedPropertyType" = "OLD"."RentedPropertyType" or "IN"."RentedPropertyType" is null ) and
+                                      ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                                      ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_BusinessPartnerRole" as "BusinessPartnerRole",
+            "OLD_RentedPropertyType" as "RentedPropertyType",
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AcquisitionDate" as "AcquisitionDate",
+            "OLD_BusinessPartnerPhysicalAssetAssignmentCategory" as "BusinessPartnerPhysicalAssetAssignmentCategory",
+            "OLD_NetRentIncome" as "NetRentIncome",
+            "OLD_NetRentIncomeCurrency" as "NetRentIncomeCurrency",
+            "OLD_PartialOwnership" as "PartialOwnership",
+            "OLD_RentalIncomePeriodLength" as "RentalIncomePeriodLength",
+            "OLD_RentalIncomePeriodTimeUnit" as "RentalIncomePeriodTimeUnit",
+            "OLD_RentedPropertyQuantity" as "RentedPropertyQuantity",
+            "OLD_RentedPropertyUnit" as "RentedPropertyUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."BusinessPartnerRole",
+                        "OLD"."RentedPropertyType",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."BusinessPartnerRole" as "OLD_BusinessPartnerRole",
+                                "OLD"."RentedPropertyType" as "OLD_RentedPropertyType",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AcquisitionDate" as "OLD_AcquisitionDate",
+                                "OLD"."BusinessPartnerPhysicalAssetAssignmentCategory" as "OLD_BusinessPartnerPhysicalAssetAssignmentCategory",
+                                "OLD"."NetRentIncome" as "OLD_NetRentIncome",
+                                "OLD"."NetRentIncomeCurrency" as "OLD_NetRentIncomeCurrency",
+                                "OLD"."PartialOwnership" as "OLD_PartialOwnership",
+                                "OLD"."RentalIncomePeriodLength" as "OLD_RentalIncomePeriodLength",
+                                "OLD"."RentalIncomePeriodTimeUnit" as "OLD_RentalIncomePeriodTimeUnit",
+                                "OLD"."RentedPropertyQuantity" as "OLD_RentedPropertyQuantity",
+                                "OLD"."RentedPropertyUnit" as "OLD_RentedPropertyUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BusinessPartnerPhysicalAssetAssignment" as "OLD"
+            on
+               ( "IN"."BusinessPartnerRole" = "OLD"."BusinessPartnerRole" or "IN"."BusinessPartnerRole" is null ) and
+               ( "IN"."RentedPropertyType" = "OLD"."RentedPropertyType" or "IN"."RentedPropertyType" is null ) and
+               ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+               ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

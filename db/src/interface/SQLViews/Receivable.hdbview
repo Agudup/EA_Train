@@ -1,0 +1,70 @@
+view "sap.fsdm.SQLViews::Receivable_View" 
+as select
+      "ReceivableID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_GuaranteeProvidingEntitlement.FinancialContractID" ,
+      "ASSOC_GuaranteeProvidingEntitlement.IDSystem" ,
+      "ASSOC_OrganizationUnit.OrganizationalUnitID" ,
+      "ASSOC_OrganizationUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ApplicableLaw" ,
+      "LastDueDate" ,
+      "OriginalReceivableAmount" ,
+      "OriginalReceivableAmountCurrency" ,
+      "OutstandingReceivableAmount" ,
+      "OutstandingReceivableAmountCurrency" ,
+      "PlaceOfJurisdiction" ,
+      "ReceivableType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Receivable"
+with associations
+(
+	join "sap.fsdm.SQLViews::AssignedRightAsCollateral_View" as "_AssignedRightAsCollateral_ASSOC_AssignedReceivable"
+	  on "ReceivableID" = "_AssignedRightAsCollateral_ASSOC_AssignedReceivable"."ASSOC_AssignedReceivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::AssignedRightAsCollateral_View" as "_AssignedRightAsCollateral_ASSOC_ReceivableRepresentingAssignedBankAccount"
+	  on "ReceivableID" = "_AssignedRightAsCollateral_ASSOC_ReceivableRepresentingAssignedBankAccount"."ASSOC_ReceivableRepresentingAssignedBankAccount.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralDistributionResult_View" as "_CollateralDistributionResult__ReceivableUsedAsCollateral"
+	  on "ReceivableID" = "_CollateralDistributionResult__ReceivableUsedAsCollateral"."_ReceivableUsedAsCollateral.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExposure_View" as "_CreditRiskExposure__ReceivableUsedAsCollateral"
+	  on "ReceivableID" = "_CreditRiskExposure__ReceivableUsedAsCollateral"."_ReceivableUsedAsCollateral.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskLossGivenDefault_View" as "_CreditRiskLossGivenDefault__ReceivableUsedAsCollateral"
+	  on "ReceivableID" = "_CreditRiskLossGivenDefault__ReceivableUsedAsCollateral"."_ReceivableUsedAsCollateral.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::PaymentSchedule_View" as "_PaymentSchedule_ASSOC_Receivable"
+	  on "ReceivableID" = "_PaymentSchedule_ASSOC_Receivable"."ASSOC_Receivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::PledgedObject_View" as "_PledgedObject_ASSOC_PledgedReceivable"
+	  on "ReceivableID" = "_PledgedObject_ASSOC_PledgedReceivable"."ASSOC_PledgedReceivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::PledgedObject_View" as "_PledgedObject_ASSOC_ReceivableRepresentingPledgedAccount"
+	  on "ReceivableID" = "_PledgedObject_ASSOC_ReceivableRepresentingPledgedAccount"."ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::PurchasedReceivable_View" as "_PurchasedReceivable__Receivable"
+	  on "ReceivableID" = "_PurchasedReceivable__Receivable"."_Receivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_GuaranteeProvidingEntitlement"
+	  on "ASSOC_GuaranteeProvidingEntitlement"."FinancialContractID" = "ASSOC_GuaranteeProvidingEntitlement.FinancialContractID" AND 
+	     "ASSOC_GuaranteeProvidingEntitlement"."IDSystem" = "ASSOC_GuaranteeProvidingEntitlement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrganizationUnit"
+	  on "ASSOC_OrganizationUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrganizationUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationUnit"."OrganizationalUnitID" = "ASSOC_OrganizationUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::ReceivableBusinessPatnerAssignment_View" as "_ReceivableBusinessPatnerAssignment_ASSOC_Receivable"
+	  on "ReceivableID" = "_ReceivableBusinessPatnerAssignment_ASSOC_Receivable"."ASSOC_Receivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_Receivable"
+	  on "ReceivableID" = "_Valuation_ASSOC_Receivable"."ASSOC_Receivable.ReceivableID"
+	     
+);

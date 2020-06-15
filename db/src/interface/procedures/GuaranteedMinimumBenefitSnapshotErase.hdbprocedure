@@ -1,0 +1,86 @@
+PROCEDURE "sap.fsdm.procedures::GuaranteedMinimumBenefitSnapshotErase" (IN ROW "sap.fsdm.tabletypes::GuaranteedMinimumBenefitSnapshotTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "Type" is null and
+                         "_MainAnnuityCoverage.ID" is null and
+                         "_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null and
+                         "_MainAnnuityCoverage._InsuranceContract.IDSystem" is null and
+                         "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::GuaranteedMinimumBenefitSnapshot" WHERE
+("Type" ,
+"_MainAnnuityCoverage.ID" ,
+"_MainAnnuityCoverage._InsuranceContract.FinancialContractID" ,
+"_MainAnnuityCoverage._InsuranceContract.IDSystem" ,
+"_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."Type" ,
+"OLD"."_MainAnnuityCoverage.ID" ,
+"OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::GuaranteedMinimumBenefitSnapshot" "OLD"
+on
+  ( "IN"."Type" = "OLD"."Type" or "IN"."Type" is null ) and
+  ( "IN"."_MainAnnuityCoverage.ID" = "OLD"."_MainAnnuityCoverage.ID" or "IN"."_MainAnnuityCoverage.ID" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" = "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" or "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" = "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" or "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::GuaranteedMinimumBenefitSnapshot_Historical" WHERE
+("Type" ,
+"_MainAnnuityCoverage.ID" ,
+"_MainAnnuityCoverage._InsuranceContract.FinancialContractID" ,
+"_MainAnnuityCoverage._InsuranceContract.IDSystem" ,
+"_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."Type" ,
+"OLD"."_MainAnnuityCoverage.ID" ,
+"OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::GuaranteedMinimumBenefitSnapshot_Historical" "OLD"
+on
+  ( "IN"."Type" = "OLD"."Type" or "IN"."Type" is null ) and
+  ( "IN"."_MainAnnuityCoverage.ID" = "OLD"."_MainAnnuityCoverage.ID" or "IN"."_MainAnnuityCoverage.ID" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" = "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" or "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" = "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" or "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

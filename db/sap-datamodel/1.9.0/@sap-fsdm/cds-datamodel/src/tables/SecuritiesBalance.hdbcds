@@ -1,0 +1,71 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "SecuritiesBalance" {
+    key "LotID"                                   : String(128)                                                  default '';
+    key "_Account"                                : association to FinancialContract {
+                                                                                       FinancialContractID,
+                                                                                       IDSystem
+                                                                                     }                           not null;
+    key "_AccountingSystemOfSecuritiesLotBalance" : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialInstrument"                    : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                       : LocalDate;
+    key "BusinessValidTo"                         : LocalDate;
+        "SystemValidFrom"                         : UTCTimestamp                                                 not null;
+        "SystemValidTo"                           : UTCTimestamp                                                 not null;
+        "LendingValue"                            : Decimal(34, 6);
+        "LendingValueCurrency"                    : String(3);
+        "MarketValue"                             : Decimal(34, 6);
+        "MarketValueCurrency"                     : String(3);
+        "NominalAmount"                           : Decimal(34, 6);
+        "NominalAmountCurrency"                   : String(3);
+        "PurchasePrice"                           : Decimal(34, 6);
+        "PurchasePriceCurrency"                   : String(3);
+        "Quantity"                                : Decimal(34, 6);
+        "SecuritiesAccountBalanceCategory"        : String(100);
+        "Unit"                                    : String(10);
+        "SourceSystemID"                          : String(128);
+        "ChangeTimestampInSourceSystem"           : UTCTimestamp;
+        "ChangingUserInSourceSystem"              : String(128);
+        "ChangingProcessType"                     : String(40);
+        "ChangingProcessID"                       : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "SecuritiesBalance_Historical" {
+    "LotID"                                   : String(128)                                                  default '' not null;
+    "_Account"                                : association to FinancialContract {
+                                                                                   FinancialContractID,
+                                                                                   IDSystem
+                                                                                 }                           not null;
+    "_AccountingSystemOfSecuritiesLotBalance" : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialInstrument"                    : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                       : LocalDate                                                    not null;
+    "BusinessValidTo"                         : LocalDate                                                    not null;
+    "SystemValidFrom"                         : UTCTimestamp                                                 not null;
+    "SystemValidTo"                           : UTCTimestamp                                                 not null;
+    "LendingValue"                            : Decimal(34, 6);
+    "LendingValueCurrency"                    : String(3);
+    "MarketValue"                             : Decimal(34, 6);
+    "MarketValueCurrency"                     : String(3);
+    "NominalAmount"                           : Decimal(34, 6);
+    "NominalAmountCurrency"                   : String(3);
+    "PurchasePrice"                           : Decimal(34, 6);
+    "PurchasePriceCurrency"                   : String(3);
+    "Quantity"                                : Decimal(34, 6);
+    "SecuritiesAccountBalanceCategory"        : String(100);
+    "Unit"                                    : String(10);
+    "SourceSystemID"                          : String(128);
+    "ChangeTimestampInSourceSystem"           : UTCTimestamp;
+    "ChangingUserInSourceSystem"              : String(128);
+    "ChangingProcessType"                     : String(40);
+    "ChangingProcessID"                       : String(128);
+}
+technical configuration {
+    column store;
+};

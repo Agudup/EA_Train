@@ -1,0 +1,48 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"IndustryClass";
+
+entity "IndustryClassAssignment" {
+    key "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID } not null;
+    key "ASSOC_IndustryClass"           : association to IndustryClass {
+                                                                         Industry,
+                                                                         IndustryClassificationSystem
+                                                                       }                       not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "BusinessVolumePercentage"      : Decimal(15, 11);
+        "MainIndustry"                  : Boolean;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "IndustryClassAssignment_Historical" {
+    "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID } not null;
+    "ASSOC_IndustryClass"           : association to IndustryClass {
+                                                                     Industry,
+                                                                     IndustryClassificationSystem
+                                                                   }                       not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "BusinessVolumePercentage"      : Decimal(15, 11);
+    "MainIndustry"                  : Boolean;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

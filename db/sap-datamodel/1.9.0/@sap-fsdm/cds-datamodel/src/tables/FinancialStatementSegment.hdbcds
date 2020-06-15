@@ -1,0 +1,53 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialStatementStructure";
+using "sap"."fsdm"::"GLAccount";
+using "sap"."fsdm"::"SubledgerAccount";
+
+entity "FinancialStatementSegment" {
+    key "FinancialStatementSegmentID"          : String(100);
+    key "_FinancialStatementStructure"         : association to FinancialStatementStructure { FinancialStatementStructureID } not null;
+    key "BusinessValidFrom"                    : LocalDate;
+    key "BusinessValidTo"                      : LocalDate;
+        "SystemValidFrom"                      : UTCTimestamp                                                                 not null;
+        "SystemValidTo"                        : UTCTimestamp                                                                 not null;
+        "_GLAccount"                           : association to GLAccount {
+                                                                            GLAccount,
+                                                                            _ChartOfAccounts
+                                                                          };
+        "_SubledgerAccount"                    : association to SubledgerAccount { SubledgerAccount };
+        "AssetLiabilityAssignment"             : String(100);
+        "FinancialStatementSegmentDescription" : String(100);
+        "SourceSystemID"                       : String(128);
+        "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+        "ChangingUserInSourceSystem"           : String(128);
+        "ChangingProcessType"                  : String(40);
+        "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FinancialStatementSegment_Historical" {
+    "FinancialStatementSegmentID"          : String(100)                                                                  not null;
+    "_FinancialStatementStructure"         : association to FinancialStatementStructure { FinancialStatementStructureID } not null;
+    "BusinessValidFrom"                    : LocalDate                                                                    not null;
+    "BusinessValidTo"                      : LocalDate                                                                    not null;
+    "SystemValidFrom"                      : UTCTimestamp                                                                 not null;
+    "SystemValidTo"                        : UTCTimestamp                                                                 not null;
+    "_GLAccount"                           : association to GLAccount {
+                                                                        GLAccount,
+                                                                        _ChartOfAccounts
+                                                                      };
+    "_SubledgerAccount"                    : association to SubledgerAccount { SubledgerAccount };
+    "AssetLiabilityAssignment"             : String(100);
+    "FinancialStatementSegmentDescription" : String(100);
+    "SourceSystemID"                       : String(128);
+    "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+    "ChangingUserInSourceSystem"           : String(128);
+    "ChangingProcessType"                  : String(40);
+    "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};

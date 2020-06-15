@@ -1,0 +1,368 @@
+PROCEDURE "sap.fsdm.procedures::CancellationOptionListLoad" (IN ROW "sap.fsdm.tabletypes::CancellationOptionTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::CancellationOption" (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BeginOfExercisePeriod",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "CancellationOptionCategory",
+        "CancellationOptionHolder",
+        "CancellationOptionType",
+        "EndOfExercisePeriod",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "OpportunityCostCompensation",
+        "PartialTerminationAllowed",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BeginOfExercisePeriod" as "BeginOfExercisePeriod" ,
+            "OLD_BusinessCalendar" as "BusinessCalendar" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_CancellationOptionCategory" as "CancellationOptionCategory" ,
+            "OLD_CancellationOptionHolder" as "CancellationOptionHolder" ,
+            "OLD_CancellationOptionType" as "CancellationOptionType" ,
+            "OLD_EndOfExercisePeriod" as "EndOfExercisePeriod" ,
+            "OLD_NoticePeriodLength" as "NoticePeriodLength" ,
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit" ,
+            "OLD_OpportunityCostCompensation" as "OpportunityCostCompensation" ,
+            "OLD_PartialTerminationAllowed" as "PartialTerminationAllowed" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "IN"."_Trade.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BeginOfExercisePeriod" as "OLD_BeginOfExercisePeriod",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."CancellationOptionCategory" as "OLD_CancellationOptionCategory",
+                                "OLD"."CancellationOptionHolder" as "OLD_CancellationOptionHolder",
+                                "OLD"."CancellationOptionType" as "OLD_CancellationOptionType",
+                                "OLD"."EndOfExercisePeriod" as "OLD_EndOfExercisePeriod",
+                                "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                                "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                                "OLD"."OpportunityCostCompensation" as "OLD_OpportunityCostCompensation",
+                                "OLD"."PartialTerminationAllowed" as "OLD_PartialTerminationAllowed",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CancellationOption" as "OLD"
+            on
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" and
+                ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::CancellationOption" (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BeginOfExercisePeriod",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "CancellationOptionCategory",
+        "CancellationOptionHolder",
+        "CancellationOptionType",
+        "EndOfExercisePeriod",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "OpportunityCostCompensation",
+        "PartialTerminationAllowed",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BeginOfExercisePeriod" as "BeginOfExercisePeriod",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_CancellationOptionCategory" as "CancellationOptionCategory",
+            "OLD_CancellationOptionHolder" as "CancellationOptionHolder",
+            "OLD_CancellationOptionType" as "CancellationOptionType",
+            "OLD_EndOfExercisePeriod" as "EndOfExercisePeriod",
+            "OLD_NoticePeriodLength" as "NoticePeriodLength",
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+            "OLD_OpportunityCostCompensation" as "OpportunityCostCompensation",
+            "OLD_PartialTerminationAllowed" as "PartialTerminationAllowed",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "IN"."_Trade.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                        "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."BeginOfExercisePeriod" as "OLD_BeginOfExercisePeriod",
+                        "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                        "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                        "OLD"."CancellationOptionCategory" as "OLD_CancellationOptionCategory",
+                        "OLD"."CancellationOptionHolder" as "OLD_CancellationOptionHolder",
+                        "OLD"."CancellationOptionType" as "OLD_CancellationOptionType",
+                        "OLD"."EndOfExercisePeriod" as "OLD_EndOfExercisePeriod",
+                        "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                        "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                        "OLD"."OpportunityCostCompensation" as "OLD_OpportunityCostCompensation",
+                        "OLD"."PartialTerminationAllowed" as "OLD_PartialTerminationAllowed",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CancellationOption" as "OLD"
+            on
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" and
+                ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::CancellationOption"
+    where (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CancellationOption" as "OLD"
+        on
+           ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+           ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+           ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" and
+           ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::CancellationOption" (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BeginOfExercisePeriod",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "CancellationOptionCategory",
+        "CancellationOptionHolder",
+        "CancellationOptionType",
+        "EndOfExercisePeriod",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "OpportunityCostCompensation",
+        "PartialTerminationAllowed",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_FinancialContract.FinancialContractID",
+            ( case when "ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_FinancialContract.IDSystem",
+            ( case when "_Trade.IDSystem" is null then '' else "_Trade.IDSystem" end ) as "_Trade.IDSystem",
+            ( case when "_Trade.TradeID" is null then '' else "_Trade.TradeID" end ) as "_Trade.TradeID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "BeginOfExercisePeriod"  ,
+            "BusinessCalendar"  ,
+            "BusinessDayConvention"  ,
+            "CancellationOptionCategory"  ,
+            "CancellationOptionHolder"  ,
+            "CancellationOptionType"  ,
+            "EndOfExercisePeriod"  ,
+            "NoticePeriodLength"  ,
+            "NoticePeriodTimeUnit"  ,
+            "OpportunityCostCompensation"  ,
+            "PartialTerminationAllowed"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

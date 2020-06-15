@@ -1,0 +1,467 @@
+PROCEDURE "sap.fsdm.procedures::SectionCoverageDelReadOnly" (IN ROW "sap.fsdm.tabletypes::SectionCoverageTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::SectionCoverageTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::SectionCoverageTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CoverageID=' || TO_VARCHAR("CoverageID") || ' ' ||
+                'SectionID=' || TO_VARCHAR("SectionID") || ' ' ||
+                '_ReinsuranceContract.FinancialContractID=' || TO_VARCHAR("_ReinsuranceContract.FinancialContractID") || ' ' ||
+                '_ReinsuranceContract.IDSystem=' || TO_VARCHAR("_ReinsuranceContract.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CoverageID",
+                        "IN"."SectionID",
+                        "IN"."_ReinsuranceContract.FinancialContractID",
+                        "IN"."_ReinsuranceContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CoverageID",
+                        "IN"."SectionID",
+                        "IN"."_ReinsuranceContract.FinancialContractID",
+                        "IN"."_ReinsuranceContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CoverageID",
+                        "SectionID",
+                        "_ReinsuranceContract.FinancialContractID",
+                        "_ReinsuranceContract.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CoverageID",
+                                    "IN"."SectionID",
+                                    "IN"."_ReinsuranceContract.FinancialContractID",
+                                    "IN"."_ReinsuranceContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CoverageID",
+                                    "IN"."SectionID",
+                                    "IN"."_ReinsuranceContract.FinancialContractID",
+                                    "IN"."_ReinsuranceContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "CoverageID",
+            "SectionID",
+            "_ReinsuranceContract.FinancialContractID",
+            "_ReinsuranceContract.IDSystem",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::SectionCoverage" WHERE
+            (
+            "CoverageID" ,
+            "SectionID" ,
+            "_ReinsuranceContract.FinancialContractID" ,
+            "_ReinsuranceContract.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."CoverageID",
+            "OLD"."SectionID",
+            "OLD"."_ReinsuranceContract.FinancialContractID",
+            "OLD"."_ReinsuranceContract.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::SectionCoverage" as "OLD"
+        on
+                              ( "IN"."CoverageID" = "OLD"."CoverageID" or "IN"."CoverageID" is null ) and
+                              ( "IN"."SectionID" = "OLD"."SectionID" or "IN"."SectionID" is null ) and
+                              ( "IN"."_ReinsuranceContract.FinancialContractID" = "OLD"."_ReinsuranceContract.FinancialContractID" or "IN"."_ReinsuranceContract.FinancialContractID" is null ) and
+                              ( "IN"."_ReinsuranceContract.IDSystem" = "OLD"."_ReinsuranceContract.IDSystem" or "IN"."_ReinsuranceContract.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "CoverageID",
+        "SectionID",
+        "_ReinsuranceContract.FinancialContractID",
+        "_ReinsuranceContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccountingBasis",
+        "AnnualAggregateDeductibleAmount",
+        "AnnualAggregateLimitAmount",
+        "BoundDate",
+        "BusinessType",
+        "CapacityAmount",
+        "CapacityLossRatioPercent",
+        "CedentClassOfInsuranceIndicator",
+        "CessionBasis",
+        "ClaimMadeType",
+        "CleanCutIndicator",
+        "CoverageBoundDate",
+        "CoverageDescription",
+        "CoverageEndDate",
+        "CoverageStartDate",
+        "Currency",
+        "DeductibleAmount",
+        "DeductibleLossRatioPercent",
+        "Description",
+        "DiscountingType",
+        "EndDate",
+        "ExtraContractualObligationAmount",
+        "GroupInsurancePolicyIndicator",
+        "InsurancePolicyDistributionChannel",
+        "IsNonProportionalSection",
+        "IsProportionalSection",
+        "LifecycleStatus",
+        "LimitAmount",
+        "LimitCurrency",
+        "MaximumAmount",
+        "MaximumCurrency",
+        "MaximumLiabilityAmount",
+        "NumberOfMaxima",
+        "PaymentCurrency",
+        "QuotaSharePercent",
+        "RankOrdinalNumber",
+        "ReferenceBasis",
+        "ReinsuranceCalculationMethod",
+        "ReinsuranceTechnicalType",
+        "StartDate",
+        "Sunrise",
+        "Sunset",
+        "UnderwritingConfederation",
+        "UnderwritingCountry",
+        "UnderwritingEventLimitAmount",
+        "UnderwritingLimitAmount",
+        "WithProfitIndicator",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_CoverageID" as "CoverageID" ,
+            "OLD_SectionID" as "SectionID" ,
+            "OLD__ReinsuranceContract.FinancialContractID" as "_ReinsuranceContract.FinancialContractID" ,
+            "OLD__ReinsuranceContract.IDSystem" as "_ReinsuranceContract.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AccountingBasis" as "AccountingBasis" ,
+            "OLD_AnnualAggregateDeductibleAmount" as "AnnualAggregateDeductibleAmount" ,
+            "OLD_AnnualAggregateLimitAmount" as "AnnualAggregateLimitAmount" ,
+            "OLD_BoundDate" as "BoundDate" ,
+            "OLD_BusinessType" as "BusinessType" ,
+            "OLD_CapacityAmount" as "CapacityAmount" ,
+            "OLD_CapacityLossRatioPercent" as "CapacityLossRatioPercent" ,
+            "OLD_CedentClassOfInsuranceIndicator" as "CedentClassOfInsuranceIndicator" ,
+            "OLD_CessionBasis" as "CessionBasis" ,
+            "OLD_ClaimMadeType" as "ClaimMadeType" ,
+            "OLD_CleanCutIndicator" as "CleanCutIndicator" ,
+            "OLD_CoverageBoundDate" as "CoverageBoundDate" ,
+            "OLD_CoverageDescription" as "CoverageDescription" ,
+            "OLD_CoverageEndDate" as "CoverageEndDate" ,
+            "OLD_CoverageStartDate" as "CoverageStartDate" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_DeductibleAmount" as "DeductibleAmount" ,
+            "OLD_DeductibleLossRatioPercent" as "DeductibleLossRatioPercent" ,
+            "OLD_Description" as "Description" ,
+            "OLD_DiscountingType" as "DiscountingType" ,
+            "OLD_EndDate" as "EndDate" ,
+            "OLD_ExtraContractualObligationAmount" as "ExtraContractualObligationAmount" ,
+            "OLD_GroupInsurancePolicyIndicator" as "GroupInsurancePolicyIndicator" ,
+            "OLD_InsurancePolicyDistributionChannel" as "InsurancePolicyDistributionChannel" ,
+            "OLD_IsNonProportionalSection" as "IsNonProportionalSection" ,
+            "OLD_IsProportionalSection" as "IsProportionalSection" ,
+            "OLD_LifecycleStatus" as "LifecycleStatus" ,
+            "OLD_LimitAmount" as "LimitAmount" ,
+            "OLD_LimitCurrency" as "LimitCurrency" ,
+            "OLD_MaximumAmount" as "MaximumAmount" ,
+            "OLD_MaximumCurrency" as "MaximumCurrency" ,
+            "OLD_MaximumLiabilityAmount" as "MaximumLiabilityAmount" ,
+            "OLD_NumberOfMaxima" as "NumberOfMaxima" ,
+            "OLD_PaymentCurrency" as "PaymentCurrency" ,
+            "OLD_QuotaSharePercent" as "QuotaSharePercent" ,
+            "OLD_RankOrdinalNumber" as "RankOrdinalNumber" ,
+            "OLD_ReferenceBasis" as "ReferenceBasis" ,
+            "OLD_ReinsuranceCalculationMethod" as "ReinsuranceCalculationMethod" ,
+            "OLD_ReinsuranceTechnicalType" as "ReinsuranceTechnicalType" ,
+            "OLD_StartDate" as "StartDate" ,
+            "OLD_Sunrise" as "Sunrise" ,
+            "OLD_Sunset" as "Sunset" ,
+            "OLD_UnderwritingConfederation" as "UnderwritingConfederation" ,
+            "OLD_UnderwritingCountry" as "UnderwritingCountry" ,
+            "OLD_UnderwritingEventLimitAmount" as "UnderwritingEventLimitAmount" ,
+            "OLD_UnderwritingLimitAmount" as "UnderwritingLimitAmount" ,
+            "OLD_WithProfitIndicator" as "WithProfitIndicator" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."CoverageID",
+                        "OLD"."SectionID",
+                        "OLD"."_ReinsuranceContract.FinancialContractID",
+                        "OLD"."_ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."CoverageID" as "OLD_CoverageID",
+                                "OLD"."SectionID" as "OLD_SectionID",
+                                "OLD"."_ReinsuranceContract.FinancialContractID" as "OLD__ReinsuranceContract.FinancialContractID",
+                                "OLD"."_ReinsuranceContract.IDSystem" as "OLD__ReinsuranceContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AccountingBasis" as "OLD_AccountingBasis",
+                                "OLD"."AnnualAggregateDeductibleAmount" as "OLD_AnnualAggregateDeductibleAmount",
+                                "OLD"."AnnualAggregateLimitAmount" as "OLD_AnnualAggregateLimitAmount",
+                                "OLD"."BoundDate" as "OLD_BoundDate",
+                                "OLD"."BusinessType" as "OLD_BusinessType",
+                                "OLD"."CapacityAmount" as "OLD_CapacityAmount",
+                                "OLD"."CapacityLossRatioPercent" as "OLD_CapacityLossRatioPercent",
+                                "OLD"."CedentClassOfInsuranceIndicator" as "OLD_CedentClassOfInsuranceIndicator",
+                                "OLD"."CessionBasis" as "OLD_CessionBasis",
+                                "OLD"."ClaimMadeType" as "OLD_ClaimMadeType",
+                                "OLD"."CleanCutIndicator" as "OLD_CleanCutIndicator",
+                                "OLD"."CoverageBoundDate" as "OLD_CoverageBoundDate",
+                                "OLD"."CoverageDescription" as "OLD_CoverageDescription",
+                                "OLD"."CoverageEndDate" as "OLD_CoverageEndDate",
+                                "OLD"."CoverageStartDate" as "OLD_CoverageStartDate",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."DeductibleAmount" as "OLD_DeductibleAmount",
+                                "OLD"."DeductibleLossRatioPercent" as "OLD_DeductibleLossRatioPercent",
+                                "OLD"."Description" as "OLD_Description",
+                                "OLD"."DiscountingType" as "OLD_DiscountingType",
+                                "OLD"."EndDate" as "OLD_EndDate",
+                                "OLD"."ExtraContractualObligationAmount" as "OLD_ExtraContractualObligationAmount",
+                                "OLD"."GroupInsurancePolicyIndicator" as "OLD_GroupInsurancePolicyIndicator",
+                                "OLD"."InsurancePolicyDistributionChannel" as "OLD_InsurancePolicyDistributionChannel",
+                                "OLD"."IsNonProportionalSection" as "OLD_IsNonProportionalSection",
+                                "OLD"."IsProportionalSection" as "OLD_IsProportionalSection",
+                                "OLD"."LifecycleStatus" as "OLD_LifecycleStatus",
+                                "OLD"."LimitAmount" as "OLD_LimitAmount",
+                                "OLD"."LimitCurrency" as "OLD_LimitCurrency",
+                                "OLD"."MaximumAmount" as "OLD_MaximumAmount",
+                                "OLD"."MaximumCurrency" as "OLD_MaximumCurrency",
+                                "OLD"."MaximumLiabilityAmount" as "OLD_MaximumLiabilityAmount",
+                                "OLD"."NumberOfMaxima" as "OLD_NumberOfMaxima",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."QuotaSharePercent" as "OLD_QuotaSharePercent",
+                                "OLD"."RankOrdinalNumber" as "OLD_RankOrdinalNumber",
+                                "OLD"."ReferenceBasis" as "OLD_ReferenceBasis",
+                                "OLD"."ReinsuranceCalculationMethod" as "OLD_ReinsuranceCalculationMethod",
+                                "OLD"."ReinsuranceTechnicalType" as "OLD_ReinsuranceTechnicalType",
+                                "OLD"."StartDate" as "OLD_StartDate",
+                                "OLD"."Sunrise" as "OLD_Sunrise",
+                                "OLD"."Sunset" as "OLD_Sunset",
+                                "OLD"."UnderwritingConfederation" as "OLD_UnderwritingConfederation",
+                                "OLD"."UnderwritingCountry" as "OLD_UnderwritingCountry",
+                                "OLD"."UnderwritingEventLimitAmount" as "OLD_UnderwritingEventLimitAmount",
+                                "OLD"."UnderwritingLimitAmount" as "OLD_UnderwritingLimitAmount",
+                                "OLD"."WithProfitIndicator" as "OLD_WithProfitIndicator",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::SectionCoverage" as "OLD"
+            on
+                                      ( "IN"."CoverageID" = "OLD"."CoverageID" or "IN"."CoverageID" is null ) and
+                                      ( "IN"."SectionID" = "OLD"."SectionID" or "IN"."SectionID" is null ) and
+                                      ( "IN"."_ReinsuranceContract.FinancialContractID" = "OLD"."_ReinsuranceContract.FinancialContractID" or "IN"."_ReinsuranceContract.FinancialContractID" is null ) and
+                                      ( "IN"."_ReinsuranceContract.IDSystem" = "OLD"."_ReinsuranceContract.IDSystem" or "IN"."_ReinsuranceContract.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_CoverageID" as "CoverageID",
+            "OLD_SectionID" as "SectionID",
+            "OLD__ReinsuranceContract.FinancialContractID" as "_ReinsuranceContract.FinancialContractID",
+            "OLD__ReinsuranceContract.IDSystem" as "_ReinsuranceContract.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AccountingBasis" as "AccountingBasis",
+            "OLD_AnnualAggregateDeductibleAmount" as "AnnualAggregateDeductibleAmount",
+            "OLD_AnnualAggregateLimitAmount" as "AnnualAggregateLimitAmount",
+            "OLD_BoundDate" as "BoundDate",
+            "OLD_BusinessType" as "BusinessType",
+            "OLD_CapacityAmount" as "CapacityAmount",
+            "OLD_CapacityLossRatioPercent" as "CapacityLossRatioPercent",
+            "OLD_CedentClassOfInsuranceIndicator" as "CedentClassOfInsuranceIndicator",
+            "OLD_CessionBasis" as "CessionBasis",
+            "OLD_ClaimMadeType" as "ClaimMadeType",
+            "OLD_CleanCutIndicator" as "CleanCutIndicator",
+            "OLD_CoverageBoundDate" as "CoverageBoundDate",
+            "OLD_CoverageDescription" as "CoverageDescription",
+            "OLD_CoverageEndDate" as "CoverageEndDate",
+            "OLD_CoverageStartDate" as "CoverageStartDate",
+            "OLD_Currency" as "Currency",
+            "OLD_DeductibleAmount" as "DeductibleAmount",
+            "OLD_DeductibleLossRatioPercent" as "DeductibleLossRatioPercent",
+            "OLD_Description" as "Description",
+            "OLD_DiscountingType" as "DiscountingType",
+            "OLD_EndDate" as "EndDate",
+            "OLD_ExtraContractualObligationAmount" as "ExtraContractualObligationAmount",
+            "OLD_GroupInsurancePolicyIndicator" as "GroupInsurancePolicyIndicator",
+            "OLD_InsurancePolicyDistributionChannel" as "InsurancePolicyDistributionChannel",
+            "OLD_IsNonProportionalSection" as "IsNonProportionalSection",
+            "OLD_IsProportionalSection" as "IsProportionalSection",
+            "OLD_LifecycleStatus" as "LifecycleStatus",
+            "OLD_LimitAmount" as "LimitAmount",
+            "OLD_LimitCurrency" as "LimitCurrency",
+            "OLD_MaximumAmount" as "MaximumAmount",
+            "OLD_MaximumCurrency" as "MaximumCurrency",
+            "OLD_MaximumLiabilityAmount" as "MaximumLiabilityAmount",
+            "OLD_NumberOfMaxima" as "NumberOfMaxima",
+            "OLD_PaymentCurrency" as "PaymentCurrency",
+            "OLD_QuotaSharePercent" as "QuotaSharePercent",
+            "OLD_RankOrdinalNumber" as "RankOrdinalNumber",
+            "OLD_ReferenceBasis" as "ReferenceBasis",
+            "OLD_ReinsuranceCalculationMethod" as "ReinsuranceCalculationMethod",
+            "OLD_ReinsuranceTechnicalType" as "ReinsuranceTechnicalType",
+            "OLD_StartDate" as "StartDate",
+            "OLD_Sunrise" as "Sunrise",
+            "OLD_Sunset" as "Sunset",
+            "OLD_UnderwritingConfederation" as "UnderwritingConfederation",
+            "OLD_UnderwritingCountry" as "UnderwritingCountry",
+            "OLD_UnderwritingEventLimitAmount" as "UnderwritingEventLimitAmount",
+            "OLD_UnderwritingLimitAmount" as "UnderwritingLimitAmount",
+            "OLD_WithProfitIndicator" as "WithProfitIndicator",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."CoverageID",
+                        "OLD"."SectionID",
+                        "OLD"."_ReinsuranceContract.FinancialContractID",
+                        "OLD"."_ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."CoverageID" as "OLD_CoverageID",
+                                "OLD"."SectionID" as "OLD_SectionID",
+                                "OLD"."_ReinsuranceContract.FinancialContractID" as "OLD__ReinsuranceContract.FinancialContractID",
+                                "OLD"."_ReinsuranceContract.IDSystem" as "OLD__ReinsuranceContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AccountingBasis" as "OLD_AccountingBasis",
+                                "OLD"."AnnualAggregateDeductibleAmount" as "OLD_AnnualAggregateDeductibleAmount",
+                                "OLD"."AnnualAggregateLimitAmount" as "OLD_AnnualAggregateLimitAmount",
+                                "OLD"."BoundDate" as "OLD_BoundDate",
+                                "OLD"."BusinessType" as "OLD_BusinessType",
+                                "OLD"."CapacityAmount" as "OLD_CapacityAmount",
+                                "OLD"."CapacityLossRatioPercent" as "OLD_CapacityLossRatioPercent",
+                                "OLD"."CedentClassOfInsuranceIndicator" as "OLD_CedentClassOfInsuranceIndicator",
+                                "OLD"."CessionBasis" as "OLD_CessionBasis",
+                                "OLD"."ClaimMadeType" as "OLD_ClaimMadeType",
+                                "OLD"."CleanCutIndicator" as "OLD_CleanCutIndicator",
+                                "OLD"."CoverageBoundDate" as "OLD_CoverageBoundDate",
+                                "OLD"."CoverageDescription" as "OLD_CoverageDescription",
+                                "OLD"."CoverageEndDate" as "OLD_CoverageEndDate",
+                                "OLD"."CoverageStartDate" as "OLD_CoverageStartDate",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."DeductibleAmount" as "OLD_DeductibleAmount",
+                                "OLD"."DeductibleLossRatioPercent" as "OLD_DeductibleLossRatioPercent",
+                                "OLD"."Description" as "OLD_Description",
+                                "OLD"."DiscountingType" as "OLD_DiscountingType",
+                                "OLD"."EndDate" as "OLD_EndDate",
+                                "OLD"."ExtraContractualObligationAmount" as "OLD_ExtraContractualObligationAmount",
+                                "OLD"."GroupInsurancePolicyIndicator" as "OLD_GroupInsurancePolicyIndicator",
+                                "OLD"."InsurancePolicyDistributionChannel" as "OLD_InsurancePolicyDistributionChannel",
+                                "OLD"."IsNonProportionalSection" as "OLD_IsNonProportionalSection",
+                                "OLD"."IsProportionalSection" as "OLD_IsProportionalSection",
+                                "OLD"."LifecycleStatus" as "OLD_LifecycleStatus",
+                                "OLD"."LimitAmount" as "OLD_LimitAmount",
+                                "OLD"."LimitCurrency" as "OLD_LimitCurrency",
+                                "OLD"."MaximumAmount" as "OLD_MaximumAmount",
+                                "OLD"."MaximumCurrency" as "OLD_MaximumCurrency",
+                                "OLD"."MaximumLiabilityAmount" as "OLD_MaximumLiabilityAmount",
+                                "OLD"."NumberOfMaxima" as "OLD_NumberOfMaxima",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."QuotaSharePercent" as "OLD_QuotaSharePercent",
+                                "OLD"."RankOrdinalNumber" as "OLD_RankOrdinalNumber",
+                                "OLD"."ReferenceBasis" as "OLD_ReferenceBasis",
+                                "OLD"."ReinsuranceCalculationMethod" as "OLD_ReinsuranceCalculationMethod",
+                                "OLD"."ReinsuranceTechnicalType" as "OLD_ReinsuranceTechnicalType",
+                                "OLD"."StartDate" as "OLD_StartDate",
+                                "OLD"."Sunrise" as "OLD_Sunrise",
+                                "OLD"."Sunset" as "OLD_Sunset",
+                                "OLD"."UnderwritingConfederation" as "OLD_UnderwritingConfederation",
+                                "OLD"."UnderwritingCountry" as "OLD_UnderwritingCountry",
+                                "OLD"."UnderwritingEventLimitAmount" as "OLD_UnderwritingEventLimitAmount",
+                                "OLD"."UnderwritingLimitAmount" as "OLD_UnderwritingLimitAmount",
+                                "OLD"."WithProfitIndicator" as "OLD_WithProfitIndicator",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::SectionCoverage" as "OLD"
+            on
+               ( "IN"."CoverageID" = "OLD"."CoverageID" or "IN"."CoverageID" is null ) and
+               ( "IN"."SectionID" = "OLD"."SectionID" or "IN"."SectionID" is null ) and
+               ( "IN"."_ReinsuranceContract.FinancialContractID" = "OLD"."_ReinsuranceContract.FinancialContractID" or "IN"."_ReinsuranceContract.FinancialContractID" is null ) and
+               ( "IN"."_ReinsuranceContract.IDSystem" = "OLD"."_ReinsuranceContract.IDSystem" or "IN"."_ReinsuranceContract.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

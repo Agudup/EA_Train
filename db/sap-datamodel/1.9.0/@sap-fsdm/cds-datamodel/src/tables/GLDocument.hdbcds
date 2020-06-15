@@ -1,0 +1,70 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"GLAccount";
+using "sap"."fsdm"::"OrganizationalUnit";
+
+entity "GLDocument" {
+    key "DocumentNumber"                     : String(60)                                             default '';
+    key "FiscalYear"                         : String(10)                                             default '';
+    key "ItemNumber"                         : Integer64                                              default -1;
+    key "Ledger"                             : String(10)                                             default '';
+    key "PostingDate"                        : LocalDate                                              default '0001-01-01';
+    key "_AccountingSystem"                  : association to AccountingSystem { AccountingSystemID } not null;
+    key "_CompanyCode"                       : association to BusinessPartner { BusinessPartnerID }   not null;
+        "_CounterpartyCompanyCode"           : association to BusinessPartner { BusinessPartnerID };
+        "_GLAccount"                         : association to GLAccount {
+                                                                          GLAccount,
+                                                                          _ChartOfAccounts
+                                                                        };
+        "_ProfitCenter"                      : association to OrganizationalUnit {
+                                                                                   OrganizationalUnitID,
+                                                                                   ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                 };
+        "_ProfitCenterAtCounterparty"        : association to OrganizationalUnit {
+                                                                                   OrganizationalUnitID,
+                                                                                   ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                 };
+        "AmountInFunctionalCurrency"         : Decimal(34, 6);
+        "AmountInGroupCurrency"              : Decimal(34, 6);
+        "AmountInHardCurrency"               : String(3);
+        "AmountInIndexCurrency"              : Decimal(34, 6);
+        "AmountInLocalCurrency"              : Decimal(34, 6);
+        "AmountInTransactionCurrency"        : Decimal(34, 6);
+        "BusinessSegment"                    : String(20);
+        "BusinessSegmentAtCounterparty"      : String(20);
+        "CreationTimestamp"                  : UTCTimestamp;
+        "DocumentDate"                       : LocalDate;
+        "FiscalPeriod"                       : String(10);
+        "FunctionalCurrency"                 : String(3);
+        "GroupCurrency"                      : String(3);
+        "HardCurrency"                       : String(3);
+        "IndexCurrency"                      : String(3);
+        "InversedFlag"                       : Boolean;
+        "InvertedFlag"                       : Boolean;
+        "LocalCurrency"                      : String(3);
+        "MovementType"                       : String(100);
+        "PostingDirection"                   : String(6);
+        "RecordType"                         : String(40);
+        "RefDocumentNumber"                  : String(60);
+        "RefFiscalYear"                      : String(10);
+        "ReferenceTaxCode"                   : String(40);
+        "ResetedFlag"                        : Boolean;
+        "TaxBaseAmountInFunctionalCurrency"  : Decimal(34, 6);
+        "TaxBaseAmountInTransactionCurrency" : Decimal(34, 6);
+        "TaxCode"                            : String(10);
+        "TaxCountry"                         : String(2);
+        "TransactionCurrency"                : String(3);
+        "TransactionReference"               : String(40);
+        "TransactionType"                    : String(40);
+        "ValueDate"                          : LocalDate;
+        "SourceSystemID"                     : String(128);
+        "ChangeTimestampInSourceSystem"      : UTCTimestamp;
+        "ChangingUserInSourceSystem"         : String(128);
+        "ChangingProcessType"                : String(40);
+        "ChangingProcessID"                  : String(128);
+}
+technical configuration {
+    column store;
+};

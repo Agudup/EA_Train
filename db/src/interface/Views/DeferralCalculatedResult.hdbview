@@ -1,0 +1,33 @@
+view "sap.fsdm.Views::DeferralCalculatedResult_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "DeferralCalculationMethod" as "DeferralCalculationMethod",
+      "_AccountingSystem.AccountingSystemID" as "_AccountingSystem_AccountingSystemID",
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_InvestmentAccount.FinancialContractID" as "_InvestmentAccount_FinancialContractID",
+      "_InvestmentAccount.IDSystem" as "_InvestmentAccount_IDSystem",
+      "_SettlementItem.IDSystem" as "_SettlementItem_IDSystem",
+      "_SettlementItem.ItemNumber" as "_SettlementItem_ItemNumber",
+      "_SettlementItem.SettlementID" as "_SettlementItem_SettlementID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "Deferral1TimeInPaymentCurrency" as "Deferral1TimeInPaymentCurrency",
+      "Deferral1TimeInPositionCurrency" as "Deferral1TimeInPositionCurrency",
+      "Deferral1TimePaymentCurrency" as "Deferral1TimePaymentCurrency",
+      "Deferral1TimePositionCurrency" as "Deferral1TimePositionCurrency",
+      "DeferralInPaymentCurrency" as "DeferralInPaymentCurrency",
+      "DeferralInPositionCurrency" as "DeferralInPositionCurrency",
+      "DeferralPaymentCurrency" as "DeferralPaymentCurrency",
+      "DeferralPositionCurrency" as "DeferralPositionCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::DeferralCalculatedResult"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

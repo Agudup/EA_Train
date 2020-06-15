@@ -1,0 +1,54 @@
+PROCEDURE "sap.fsdm.procedures::CardProgramTransactionDetailsDelReadOnly" (IN ROW "sap.fsdm.tabletypes::CardProgramTransactionDetailsTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::CardProgramTransactionDetailsTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "CardProgramID" is null and
+                         "ASSOC_BusinessTransactionItem.IDSystem" is null and
+                         "ASSOC_BusinessTransactionItem.ItemNumber" is null and
+                         "ASSOC_BusinessTransactionItem.SettlementID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning--Delete entries for update from current table
+CURR_DEL = select 
+"CardProgramID",
+"ASSOC_BusinessTransactionItem.IDSystem",
+"ASSOC_BusinessTransactionItem.ItemNumber",
+"ASSOC_BusinessTransactionItem.SettlementID"
+from "sap.fsdm::CardProgramTransactionDetails" WHERE("CardProgramID" ,
+"ASSOC_BusinessTransactionItem.IDSystem" ,
+"ASSOC_BusinessTransactionItem.ItemNumber" ,
+"ASSOC_BusinessTransactionItem.SettlementID" 
+)in ( select 
+"OLD"."CardProgramID"  as "CardProgramID" ,
+"OLD"."ASSOC_BusinessTransactionItem.IDSystem"  as "ASSOC_BusinessTransactionItem.IDSystem" ,
+"OLD"."ASSOC_BusinessTransactionItem.ItemNumber"  as "ASSOC_BusinessTransactionItem.ItemNumber" ,
+"OLD"."ASSOC_BusinessTransactionItem.SettlementID"  as "ASSOC_BusinessTransactionItem.SettlementID" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::CardProgramTransactionDetails" AS "OLD"
+  ON
+  ( "IN"."CardProgramID" = "OLD"."CardProgramID" or "IN"."CardProgramID" is null ) and
+  ( "IN"."ASSOC_BusinessTransactionItem.IDSystem" = "OLD"."ASSOC_BusinessTransactionItem.IDSystem" or "IN"."ASSOC_BusinessTransactionItem.IDSystem" is null ) and
+  ( "IN"."ASSOC_BusinessTransactionItem.ItemNumber" = "OLD"."ASSOC_BusinessTransactionItem.ItemNumber" or "IN"."ASSOC_BusinessTransactionItem.ItemNumber" is null ) and
+  ( "IN"."ASSOC_BusinessTransactionItem.SettlementID" = "OLD"."ASSOC_BusinessTransactionItem.SettlementID" or "IN"."ASSOC_BusinessTransactionItem.SettlementID" is null ) 
+);
+
+END

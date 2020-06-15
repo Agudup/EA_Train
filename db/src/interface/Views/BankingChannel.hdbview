@@ -1,0 +1,26 @@
+view "sap.fsdm.Views::BankingChannel_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "BankingChannelID" as "BankingChannelID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_BranchOfTerminal.BankingChannelID" as "ASSOC_BranchOfTerminal_BankingChannelID",
+      "ASSOC_CashInventory.CashAccountID" as "ASSOC_CashInventory_CashAccountID",
+      "ASSOC_CashInventory.IDSystem" as "ASSOC_CashInventory_IDSystem",
+      "ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" as "ASSOC_OrgUnitManagingChannel_OrganizationalUnitID",
+      "ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrgUnitManagingChannel_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+      "AuthenticationMethod" as "AuthenticationMethod",
+      "BankingChannelCategory" as "BankingChannelCategory",
+      "Description" as "Description",
+      "TerminalType" as "TerminalType",
+      "URL" as "URL",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::BankingChannel"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

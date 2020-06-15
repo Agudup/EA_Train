@@ -1,0 +1,306 @@
+PROCEDURE "sap.fsdm.procedures::AppointmentBasedOnLicenseLoad" (IN ROW "sap.fsdm.tabletypes::AppointmentBasedOnLicenseTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_Appointment.SequenceNumber=' || TO_VARCHAR("_Appointment.SequenceNumber") || ' ' ||
+                '_Appointment._IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("_Appointment._IndividualPerson.BusinessPartnerID") || ' ' ||
+                '_License.Authority=' || TO_VARCHAR("_License.Authority") || ' ' ||
+                '_License.IDSystem=' || TO_VARCHAR("_License.IDSystem") || ' ' ||
+                '_License.SubjectOfLicenseIdentifier=' || TO_VARCHAR("_License.SubjectOfLicenseIdentifier") || ' ' ||
+                '_License._BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("_License._BusinessPartner.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_License.Authority",
+                        "IN"."_License.IDSystem",
+                        "IN"."_License.SubjectOfLicenseIdentifier",
+                        "IN"."_License._BusinessPartner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_License.Authority",
+                        "IN"."_License.IDSystem",
+                        "IN"."_License.SubjectOfLicenseIdentifier",
+                        "IN"."_License._BusinessPartner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_Appointment.SequenceNumber",
+                        "_Appointment._IndividualPerson.BusinessPartnerID",
+                        "_License.Authority",
+                        "_License.IDSystem",
+                        "_License.SubjectOfLicenseIdentifier",
+                        "_License._BusinessPartner.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_Appointment.SequenceNumber",
+                                    "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                                    "IN"."_License.Authority",
+                                    "IN"."_License.IDSystem",
+                                    "IN"."_License.SubjectOfLicenseIdentifier",
+                                    "IN"."_License._BusinessPartner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_Appointment.SequenceNumber",
+                                    "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                                    "IN"."_License.Authority",
+                                    "IN"."_License.IDSystem",
+                                    "IN"."_License.SubjectOfLicenseIdentifier",
+                                    "IN"."_License._BusinessPartner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::AppointmentBasedOnLicense" (
+        "_Appointment.SequenceNumber",
+        "_Appointment._IndividualPerson.BusinessPartnerID",
+        "_License.Authority",
+        "_License.IDSystem",
+        "_License.SubjectOfLicenseIdentifier",
+        "_License._BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Appointment.SequenceNumber" as "_Appointment.SequenceNumber" ,
+            "OLD__Appointment._IndividualPerson.BusinessPartnerID" as "_Appointment._IndividualPerson.BusinessPartnerID" ,
+            "OLD__License.Authority" as "_License.Authority" ,
+            "OLD__License.IDSystem" as "_License.IDSystem" ,
+            "OLD__License.SubjectOfLicenseIdentifier" as "_License.SubjectOfLicenseIdentifier" ,
+            "OLD__License._BusinessPartner.BusinessPartnerID" as "_License._BusinessPartner.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_License.Authority",
+                        "IN"."_License.IDSystem",
+                        "IN"."_License.SubjectOfLicenseIdentifier",
+                        "IN"."_License._BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_Appointment.SequenceNumber" as "OLD__Appointment.SequenceNumber",
+                                "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" as "OLD__Appointment._IndividualPerson.BusinessPartnerID",
+                                "OLD"."_License.Authority" as "OLD__License.Authority",
+                                "OLD"."_License.IDSystem" as "OLD__License.IDSystem",
+                                "OLD"."_License.SubjectOfLicenseIdentifier" as "OLD__License.SubjectOfLicenseIdentifier",
+                                "OLD"."_License._BusinessPartner.BusinessPartnerID" as "OLD__License._BusinessPartner.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AppointmentBasedOnLicense" as "OLD"
+            on
+                ( case when "IN"."_Appointment.SequenceNumber" is null then -1 else "IN"."_Appointment.SequenceNumber" end ) = "OLD"."_Appointment.SequenceNumber" and
+                ( case when "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_Appointment._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" and
+                ( case when "IN"."_License.Authority" is null then '' else "IN"."_License.Authority" end ) = "OLD"."_License.Authority" and
+                ( case when "IN"."_License.IDSystem" is null then '' else "IN"."_License.IDSystem" end ) = "OLD"."_License.IDSystem" and
+                ( case when "IN"."_License.SubjectOfLicenseIdentifier" is null then '' else "IN"."_License.SubjectOfLicenseIdentifier" end ) = "OLD"."_License.SubjectOfLicenseIdentifier" and
+                ( case when "IN"."_License._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_License._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_License._BusinessPartner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::AppointmentBasedOnLicense" (
+        "_Appointment.SequenceNumber",
+        "_Appointment._IndividualPerson.BusinessPartnerID",
+        "_License.Authority",
+        "_License.IDSystem",
+        "_License.SubjectOfLicenseIdentifier",
+        "_License._BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Appointment.SequenceNumber" as "_Appointment.SequenceNumber",
+            "OLD__Appointment._IndividualPerson.BusinessPartnerID" as "_Appointment._IndividualPerson.BusinessPartnerID",
+            "OLD__License.Authority" as "_License.Authority",
+            "OLD__License.IDSystem" as "_License.IDSystem",
+            "OLD__License.SubjectOfLicenseIdentifier" as "_License.SubjectOfLicenseIdentifier",
+            "OLD__License._BusinessPartner.BusinessPartnerID" as "_License._BusinessPartner.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_Appointment.SequenceNumber",
+                        "IN"."_Appointment._IndividualPerson.BusinessPartnerID",
+                        "IN"."_License.Authority",
+                        "IN"."_License.IDSystem",
+                        "IN"."_License.SubjectOfLicenseIdentifier",
+                        "IN"."_License._BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_Appointment.SequenceNumber" as "OLD__Appointment.SequenceNumber",
+                        "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" as "OLD__Appointment._IndividualPerson.BusinessPartnerID",
+                        "OLD"."_License.Authority" as "OLD__License.Authority",
+                        "OLD"."_License.IDSystem" as "OLD__License.IDSystem",
+                        "OLD"."_License.SubjectOfLicenseIdentifier" as "OLD__License.SubjectOfLicenseIdentifier",
+                        "OLD"."_License._BusinessPartner.BusinessPartnerID" as "OLD__License._BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AppointmentBasedOnLicense" as "OLD"
+            on
+                ( case when "IN"."_Appointment.SequenceNumber" is null then -1 else "IN"."_Appointment.SequenceNumber" end ) = "OLD"."_Appointment.SequenceNumber" and
+                ( case when "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_Appointment._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" and
+                ( case when "IN"."_License.Authority" is null then '' else "IN"."_License.Authority" end ) = "OLD"."_License.Authority" and
+                ( case when "IN"."_License.IDSystem" is null then '' else "IN"."_License.IDSystem" end ) = "OLD"."_License.IDSystem" and
+                ( case when "IN"."_License.SubjectOfLicenseIdentifier" is null then '' else "IN"."_License.SubjectOfLicenseIdentifier" end ) = "OLD"."_License.SubjectOfLicenseIdentifier" and
+                ( case when "IN"."_License._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_License._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_License._BusinessPartner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::AppointmentBasedOnLicense"
+    where (
+        "_Appointment.SequenceNumber",
+        "_Appointment._IndividualPerson.BusinessPartnerID",
+        "_License.Authority",
+        "_License.IDSystem",
+        "_License.SubjectOfLicenseIdentifier",
+        "_License._BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_Appointment.SequenceNumber",
+            "OLD"."_Appointment._IndividualPerson.BusinessPartnerID",
+            "OLD"."_License.Authority",
+            "OLD"."_License.IDSystem",
+            "OLD"."_License.SubjectOfLicenseIdentifier",
+            "OLD"."_License._BusinessPartner.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::AppointmentBasedOnLicense" as "OLD"
+        on
+           ( case when "IN"."_Appointment.SequenceNumber" is null then -1 else "IN"."_Appointment.SequenceNumber" end ) = "OLD"."_Appointment.SequenceNumber" and
+           ( case when "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_Appointment._IndividualPerson.BusinessPartnerID" end ) = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" and
+           ( case when "IN"."_License.Authority" is null then '' else "IN"."_License.Authority" end ) = "OLD"."_License.Authority" and
+           ( case when "IN"."_License.IDSystem" is null then '' else "IN"."_License.IDSystem" end ) = "OLD"."_License.IDSystem" and
+           ( case when "IN"."_License.SubjectOfLicenseIdentifier" is null then '' else "IN"."_License.SubjectOfLicenseIdentifier" end ) = "OLD"."_License.SubjectOfLicenseIdentifier" and
+           ( case when "IN"."_License._BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_License._BusinessPartner.BusinessPartnerID" end ) = "OLD"."_License._BusinessPartner.BusinessPartnerID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::AppointmentBasedOnLicense" (
+        "_Appointment.SequenceNumber",
+        "_Appointment._IndividualPerson.BusinessPartnerID",
+        "_License.Authority",
+        "_License.IDSystem",
+        "_License.SubjectOfLicenseIdentifier",
+        "_License._BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "_Appointment.SequenceNumber" is null then -1 else "_Appointment.SequenceNumber" end ) as "_Appointment.SequenceNumber",
+            ( case when "_Appointment._IndividualPerson.BusinessPartnerID" is null then '' else "_Appointment._IndividualPerson.BusinessPartnerID" end ) as "_Appointment._IndividualPerson.BusinessPartnerID",
+            ( case when "_License.Authority" is null then '' else "_License.Authority" end ) as "_License.Authority",
+            ( case when "_License.IDSystem" is null then '' else "_License.IDSystem" end ) as "_License.IDSystem",
+            ( case when "_License.SubjectOfLicenseIdentifier" is null then '' else "_License.SubjectOfLicenseIdentifier" end ) as "_License.SubjectOfLicenseIdentifier",
+            ( case when "_License._BusinessPartner.BusinessPartnerID" is null then '' else "_License._BusinessPartner.BusinessPartnerID" end ) as "_License._BusinessPartner.BusinessPartnerID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

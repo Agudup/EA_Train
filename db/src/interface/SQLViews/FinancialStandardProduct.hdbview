@@ -1,0 +1,131 @@
+view "sap.fsdm.SQLViews::FinancialStandardProduct_View" 
+as select
+      "FinancialStandardProductID" ,
+      "IDSystem" ,
+      "PricingScheme" ,
+      "ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_OrgUnit.OrganizationalUnitID" ,
+      "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_InsuranceProduct.FinancialStandardProductID" ,
+      "_InsuranceProduct.IDSystem" ,
+      "_InsuranceProduct.PricingScheme" ,
+      "_InsuranceProduct.ASSOC_Company.BusinessPartnerID" ,
+      "_PensionPlan.ID" ,
+      "_PensionPlan._RetirementPlan.ID" ,
+      "_PensionPlan._RetirementPlan._BusinessPartner.BusinessPartnerID" ,
+      "AccountCurrency" ,
+      "ContractCurrency" ,
+      "DocumentationApproach" ,
+      "FinancialStandardProductCategory" ,
+      "GoverningLawCountry" ,
+      "NominalAmountCurrency" ,
+      "ProductName" ,
+      "SettlementCurrency" ,
+      "SettlementMethod" ,
+      "SettlementPeriodLength" ,
+      "SettlementPeriodTimeUnit" ,
+      "StandardBankAccountProduct" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FinancialStandardProduct"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract_ASSOC_FinancialStandardProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_FinancialContract_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_FinancialContract_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_FinancialContract_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "PricingScheme" = "_FinancialContract_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__InsuranceProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_FinancialContract__InsuranceProduct"."_InsuranceProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_FinancialContract__InsuranceProduct"."_InsuranceProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_FinancialContract__InsuranceProduct"."_InsuranceProduct.IDSystem" AND 
+	     "PricingScheme" = "_FinancialContract__InsuranceProduct"."_InsuranceProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Company"
+	  on "ASSOC_Company"."BusinessPartnerID" = "ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrgUnit"
+	  on "ASSOC_OrgUnit"."OrganizationalUnitID" = "ASSOC_OrgUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrgUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "_InsuranceProduct"
+	  on "_InsuranceProduct"."ASSOC_Company.BusinessPartnerID" = "_InsuranceProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "_InsuranceProduct"."FinancialStandardProductID" = "_InsuranceProduct.FinancialStandardProductID" AND 
+	     "_InsuranceProduct"."IDSystem" = "_InsuranceProduct.IDSystem" AND 
+	     "_InsuranceProduct"."PricingScheme" = "_InsuranceProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::PensionPlan_View" as "_PensionPlan"
+	  on "_PensionPlan"."ID" = "_PensionPlan.ID" AND 
+	     "_PensionPlan"."_RetirementPlan.ID" = "_PensionPlan._RetirementPlan.ID" AND 
+	     "_PensionPlan"."_RetirementPlan._BusinessPartner.BusinessPartnerID" = "_PensionPlan._RetirementPlan._BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_InsuranceCoverage__ElementaryInsuranceProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_InsuranceCoverage__ElementaryInsuranceProduct"."_ElementaryInsuranceProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_InsuranceCoverage__ElementaryInsuranceProduct"."_ElementaryInsuranceProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_InsuranceCoverage__ElementaryInsuranceProduct"."_ElementaryInsuranceProduct.IDSystem" AND 
+	     "PricingScheme" = "_InsuranceCoverage__ElementaryInsuranceProduct"."_ElementaryInsuranceProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCcyStandardProduct_View" as "_PositionCurrencyOfMultiCcyStandardProduct_ASSOC_StdMultiCcyAcct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_PositionCurrencyOfMultiCcyStandardProduct_ASSOC_StdMultiCcyAcct"."ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_PositionCurrencyOfMultiCcyStandardProduct_ASSOC_StdMultiCcyAcct"."ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_PositionCurrencyOfMultiCcyStandardProduct_ASSOC_StdMultiCcyAcct"."ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "PricingScheme" = "_PositionCurrencyOfMultiCcyStandardProduct_ASSOC_StdMultiCcyAcct"."ASSOC_StdMultiCcyAcct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogAssignment_View" as "_ProductCatalogAssignment__FinancialStandardProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_ProductCatalogAssignment__FinancialStandardProduct"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_ProductCatalogAssignment__FinancialStandardProduct"."_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_ProductCatalogAssignment__FinancialStandardProduct"."_FinancialStandardProduct.IDSystem" AND 
+	     "PricingScheme" = "_ProductCatalogAssignment__FinancialStandardProduct"."_FinancialStandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::StandardCancellationOption_View" as "_StandardCancellationOption_ASSOC_StandardProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_StandardCancellationOption_ASSOC_StandardProduct"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_StandardCancellationOption_ASSOC_StandardProduct"."ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_StandardCancellationOption_ASSOC_StandardProduct"."ASSOC_StandardProduct.IDSystem" AND 
+	     "PricingScheme" = "_StandardCancellationOption_ASSOC_StandardProduct"."ASSOC_StandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::StandardFee_View" as "_StandardFee_ASSOC_StandardProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_StandardFee_ASSOC_StandardProduct"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_StandardFee_ASSOC_StandardProduct"."ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_StandardFee_ASSOC_StandardProduct"."ASSOC_StandardProduct.IDSystem" AND 
+	     "PricingScheme" = "_StandardFee_ASSOC_StandardProduct"."ASSOC_StandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::StandardInterest_View" as "_StandardInterest_ASSOC_StandardProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_StandardInterest_ASSOC_StandardProduct"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_StandardInterest_ASSOC_StandardProduct"."ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_StandardInterest_ASSOC_StandardProduct"."ASSOC_StandardProduct.IDSystem" AND 
+	     "PricingScheme" = "_StandardInterest_ASSOC_StandardProduct"."ASSOC_StandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::StandardLimit_View" as "_StandardLimit_ASSOC_StandardProduct"
+	  on "PricingScheme" = "_StandardLimit_ASSOC_StandardProduct"."ASSOC_StandardProduct.PricingScheme" AND 
+	     "IDSystem" = "_StandardLimit_ASSOC_StandardProduct"."ASSOC_StandardProduct.IDSystem" AND 
+	     "FinancialStandardProductID" = "_StandardLimit_ASSOC_StandardProduct"."ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_Company.BusinessPartnerID" = "_StandardLimit_ASSOC_StandardProduct"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardPaymentSchedule_View" as "_StandardPaymentSchedule_ASSOC_FinancialStandardProduct"
+	  on "PricingScheme" = "_StandardPaymentSchedule_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.PricingScheme" AND 
+	     "IDSystem" = "_StandardPaymentSchedule_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "FinancialStandardProductID" = "_StandardPaymentSchedule_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_Company.BusinessPartnerID" = "_StandardPaymentSchedule_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardProductInProductBundle_View" as "_StandardProductInProductBundle_ASSOC_FinancialStandardProduct"
+	  on "ASSOC_Company.BusinessPartnerID" = "_StandardProductInProductBundle_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "FinancialStandardProductID" = "_StandardProductInProductBundle_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "IDSystem" = "_StandardProductInProductBundle_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "PricingScheme" = "_StandardProductInProductBundle_ASSOC_FinancialStandardProduct"."ASSOC_FinancialStandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::StandardProlongationOption_View" as "_StandardProlongationOption_ASSOC_StandardFixedTermDeposit"
+	  on "PricingScheme" = "_StandardProlongationOption_ASSOC_StandardFixedTermDeposit"."ASSOC_StandardFixedTermDeposit.PricingScheme" AND 
+	     "IDSystem" = "_StandardProlongationOption_ASSOC_StandardFixedTermDeposit"."ASSOC_StandardFixedTermDeposit.IDSystem" AND 
+	     "FinancialStandardProductID" = "_StandardProlongationOption_ASSOC_StandardFixedTermDeposit"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" AND 
+	     "ASSOC_Company.BusinessPartnerID" = "_StandardProlongationOption_ASSOC_StandardFixedTermDeposit"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+	     
+);

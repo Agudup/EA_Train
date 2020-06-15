@@ -1,0 +1,74 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"InsuranceCoverage";
+
+entity "ApplicableInterestRate" {
+    key "InterestType"                     : String(40)                                                   default '';
+    key "RoleOfPayer"                      : String(50)                                                   default '';
+    key "ASSOC_FinancialContract"          : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                           not null;
+    key "ASSOC_PositionCurrencyForAccount" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                      PositionCurrency,
+                                                                                                      ASSOC_MultiCcyAccnt
+                                                                                                    }     not null;
+    key "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_LifeAndAnnuityInsuranceCoverage" : association to InsuranceCoverage {
+                                                                                ID,
+                                                                                _InsuranceContract,
+                                                                                _InsuredObject
+                                                                              }                           not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+        "SystemValidTo"                    : UTCTimestamp                                                 not null;
+        "LastResetDate"                    : LocalDate;
+        "NextResetDate"                    : LocalDate;
+        "Rate"                             : Decimal(15, 11);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ApplicableInterestRate_Historical" {
+    "InterestType"                     : String(40)                                                   default '' not null;
+    "RoleOfPayer"                      : String(50)                                                   default '' not null;
+    "ASSOC_FinancialContract"          : association to FinancialContract {
+                                                                            FinancialContractID,
+                                                                            IDSystem
+                                                                          }                           not null;
+    "ASSOC_PositionCurrencyForAccount" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                  PositionCurrency,
+                                                                                                  ASSOC_MultiCcyAccnt
+                                                                                                }     not null;
+    "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_LifeAndAnnuityInsuranceCoverage" : association to InsuranceCoverage {
+                                                                            ID,
+                                                                            _InsuranceContract,
+                                                                            _InsuredObject
+                                                                          }                           not null;
+    "BusinessValidFrom"                : LocalDate                                                    not null;
+    "BusinessValidTo"                  : LocalDate                                                    not null;
+    "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+    "SystemValidTo"                    : UTCTimestamp                                                 not null;
+    "LastResetDate"                    : LocalDate;
+    "NextResetDate"                    : LocalDate;
+    "Rate"                             : Decimal(15, 11);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::InsuredDriver_View" 
+as select
+      "_IndividualPerson.BusinessPartnerID" ,
+      "_InsuredVehicle._FinancialContract.FinancialContractID" ,
+      "_InsuredVehicle._FinancialContract.IDSystem" ,
+      "_InsuredVehicle._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "MainIndicator" ,
+      "NoClaimsBonusIndicator" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InsuredDriver"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_IndividualPerson"
+	  on "_IndividualPerson"."BusinessPartnerID" = "_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredObject_View" as "_InsuredVehicle"
+	  on "_InsuredVehicle"."_FinancialContract.FinancialContractID" = "_InsuredVehicle._FinancialContract.FinancialContractID" AND 
+	     "_InsuredVehicle"."_FinancialContract.IDSystem" = "_InsuredVehicle._FinancialContract.IDSystem" AND 
+	     "_InsuredVehicle"."_PhysicalAsset.PhysicalAssetID" = "_InsuredVehicle._PhysicalAsset.PhysicalAssetID"
+	     
+);

@@ -1,0 +1,22 @@
+view "sap.fsdm.Views::PartnerRelationClassification_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PartnerRelationClass" as "PartnerRelationClass",
+      "PartnerRelationClassificationSystem" as "PartnerRelationClassificationSystem",
+      "ASSOC_BusinessPartnerRelation.BusinessPartnerRelationType" as "ASSOC_BusinessPartnerRelation_BusinessPartnerRelationType",
+      "ASSOC_BusinessPartnerRelation.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_BusinessPartnerRelation_ASSOC_SourceInBusinessPartnerRelation_BusinessPartnerID",
+      "ASSOC_BusinessPartnerRelation.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_BusinessPartnerRelation_ASSOC_TargetInBusinessPartnerRelation_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PartnerRelationClassDescription" as "PartnerRelationClassDescription",
+      "PartnerRelationClassificationSystemDescription" as "PartnerRelationClassificationSystemDescription",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PartnerRelationClassification"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

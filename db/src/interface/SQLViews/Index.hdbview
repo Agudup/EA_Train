@@ -1,0 +1,53 @@
+view "sap.fsdm.SQLViews::Index_View" 
+as select
+      "IndexID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "IndexAnnexDate" ,
+      "IndexAnnexSource" ,
+      "IndexAnnexVersion" ,
+      "IndexCategory" ,
+      "IndexDescription" ,
+      "IndexName" ,
+      "IndexPublisher" ,
+      "IndexREDCode" ,
+      "IndexSeries" ,
+      "IndexType" ,
+      "IsIndexSeriesOnTheRun" ,
+      "MainIndexAsPerCRR" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Index"
+with associations
+(
+	join "sap.fsdm.SQLViews::CreditDefaultSwapProtectionLeg_View" as "_CreditDefaultSwapProtectionLeg__CDSIndex"
+	  on "IndexID" = "_CreditDefaultSwapProtectionLeg__CDSIndex"."_CDSIndex.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::EndOfDayIndexObservation_View" as "_EndOfDayIndexObservation__Index"
+	  on "IndexID" = "_EndOfDayIndexObservation__Index"."_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__Index"
+	  on "IndexID" = "_FinancialInstrument__Index"."_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::IndexConstituent_View" as "_IndexConstituent__Index"
+	  on "IndexID" = "_IndexConstituent__Index"."_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::IndexOfferedToIndexedInsuranceContractByIndexRange_View" as "_IndexOfferedToIndexedInsuranceContractByIndexRange__Index"
+	  on "IndexID" = "_IndexOfferedToIndexedInsuranceContractByIndexRange__Index"."_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::IndexSpecification_View" as "_IndexSpecification__Index"
+	  on "IndexID" = "_IndexSpecification__Index"."_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::IntradayIndexObservation_View" as "_IntradayIndexObservation__Index"
+	  on "IndexID" = "_IntradayIndexObservation__Index"."_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::TotalReturnSwapReturnLeg_View" as "_TotalReturnSwapReturnLeg__UnderlyingIndex"
+	  on "IndexID" = "_TotalReturnSwapReturnLeg__UnderlyingIndex"."_UnderlyingIndex.IndexID"
+	     
+);

@@ -1,0 +1,466 @@
+PROCEDURE "sap.fsdm.procedures::RatingDelete" (IN ROW "sap.fsdm.tabletypes::RatingTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'IsFxRating=' || TO_VARCHAR("IsFxRating") || ' ' ||
+                'RatingAgency=' || TO_VARCHAR("RatingAgency") || ' ' ||
+                'RatingCategory=' || TO_VARCHAR("RatingCategory") || ' ' ||
+                'RatingMethod=' || TO_VARCHAR("RatingMethod") || ' ' ||
+                'RatingStatus=' || TO_VARCHAR("RatingStatus") || ' ' ||
+                'TimeHorizon=' || TO_VARCHAR("TimeHorizon") || ' ' ||
+                'ASSOC_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessPartner.BusinessPartnerID") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_GeographicalRegion.GeographicalStructureID=' || TO_VARCHAR("ASSOC_GeographicalRegion.GeographicalStructureID") || ' ' ||
+                'ASSOC_GeographicalRegion.GeographicalUnitID=' || TO_VARCHAR("ASSOC_GeographicalRegion.GeographicalUnitID") || ' ' ||
+                '_Security.FinancialInstrumentID=' || TO_VARCHAR("_Security.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."IsFxRating",
+                        "IN"."RatingAgency",
+                        "IN"."RatingCategory",
+                        "IN"."RatingMethod",
+                        "IN"."RatingStatus",
+                        "IN"."TimeHorizon",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_GeographicalRegion.GeographicalStructureID",
+                        "IN"."ASSOC_GeographicalRegion.GeographicalUnitID",
+                        "IN"."_Security.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."IsFxRating",
+                        "IN"."RatingAgency",
+                        "IN"."RatingCategory",
+                        "IN"."RatingMethod",
+                        "IN"."RatingStatus",
+                        "IN"."TimeHorizon",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_GeographicalRegion.GeographicalStructureID",
+                        "IN"."ASSOC_GeographicalRegion.GeographicalUnitID",
+                        "IN"."_Security.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "IsFxRating",
+                        "RatingAgency",
+                        "RatingCategory",
+                        "RatingMethod",
+                        "RatingStatus",
+                        "TimeHorizon",
+                        "ASSOC_BusinessPartner.BusinessPartnerID",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_GeographicalRegion.GeographicalStructureID",
+                        "ASSOC_GeographicalRegion.GeographicalUnitID",
+                        "_Security.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."IsFxRating",
+                                    "IN"."RatingAgency",
+                                    "IN"."RatingCategory",
+                                    "IN"."RatingMethod",
+                                    "IN"."RatingStatus",
+                                    "IN"."TimeHorizon",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_GeographicalRegion.GeographicalStructureID",
+                                    "IN"."ASSOC_GeographicalRegion.GeographicalUnitID",
+                                    "IN"."_Security.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."IsFxRating",
+                                    "IN"."RatingAgency",
+                                    "IN"."RatingCategory",
+                                    "IN"."RatingMethod",
+                                    "IN"."RatingStatus",
+                                    "IN"."TimeHorizon",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_GeographicalRegion.GeographicalStructureID",
+                                    "IN"."ASSOC_GeographicalRegion.GeographicalUnitID",
+                                    "IN"."_Security.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Rating" (
+        "IsFxRating",
+        "RatingAgency",
+        "RatingCategory",
+        "RatingMethod",
+        "RatingStatus",
+        "TimeHorizon",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_GeographicalRegion.GeographicalStructureID",
+        "ASSOC_GeographicalRegion.GeographicalUnitID",
+        "_Security.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_EmployeeResponsibleForRating.BusinessPartnerID",
+        "_EmployeeApprovingTheRating.BusinessPartnerID",
+        "ApprovalDate",
+        "Commissioned",
+        "CreationDate",
+        "Endorsed",
+        "PublicationDate",
+        "Rating",
+        "RatingComment",
+        "RatingDescription",
+        "RatingMethodVersion",
+        "RatingOutlook",
+        "RatingRank",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IsFxRating" as "IsFxRating" ,
+            "OLD_RatingAgency" as "RatingAgency" ,
+            "OLD_RatingCategory" as "RatingCategory" ,
+            "OLD_RatingMethod" as "RatingMethod" ,
+            "OLD_RatingStatus" as "RatingStatus" ,
+            "OLD_TimeHorizon" as "TimeHorizon" ,
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_GeographicalRegion.GeographicalStructureID" as "ASSOC_GeographicalRegion.GeographicalStructureID" ,
+            "OLD_ASSOC_GeographicalRegion.GeographicalUnitID" as "ASSOC_GeographicalRegion.GeographicalUnitID" ,
+            "OLD__Security.FinancialInstrumentID" as "_Security.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_EmployeeResponsibleForRating.BusinessPartnerID" as "ASSOC_EmployeeResponsibleForRating.BusinessPartnerID" ,
+            "OLD__EmployeeApprovingTheRating.BusinessPartnerID" as "_EmployeeApprovingTheRating.BusinessPartnerID" ,
+            "OLD_ApprovalDate" as "ApprovalDate" ,
+            "OLD_Commissioned" as "Commissioned" ,
+            "OLD_CreationDate" as "CreationDate" ,
+            "OLD_Endorsed" as "Endorsed" ,
+            "OLD_PublicationDate" as "PublicationDate" ,
+            "OLD_Rating" as "Rating" ,
+            "OLD_RatingComment" as "RatingComment" ,
+            "OLD_RatingDescription" as "RatingDescription" ,
+            "OLD_RatingMethodVersion" as "RatingMethodVersion" ,
+            "OLD_RatingOutlook" as "RatingOutlook" ,
+            "OLD_RatingRank" as "RatingRank" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."IsFxRating",
+                        "OLD"."RatingAgency",
+                        "OLD"."RatingCategory",
+                        "OLD"."RatingMethod",
+                        "OLD"."RatingStatus",
+                        "OLD"."TimeHorizon",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID",
+                        "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID",
+                        "OLD"."_Security.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."IsFxRating" as "OLD_IsFxRating",
+                "OLD"."RatingAgency" as "OLD_RatingAgency",
+                "OLD"."RatingCategory" as "OLD_RatingCategory",
+                "OLD"."RatingMethod" as "OLD_RatingMethod",
+                "OLD"."RatingStatus" as "OLD_RatingStatus",
+                "OLD"."TimeHorizon" as "OLD_TimeHorizon",
+                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID" as "OLD_ASSOC_GeographicalRegion.GeographicalStructureID",
+                "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID" as "OLD_ASSOC_GeographicalRegion.GeographicalUnitID",
+                "OLD"."_Security.FinancialInstrumentID" as "OLD__Security.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_EmployeeResponsibleForRating.BusinessPartnerID" as "OLD_ASSOC_EmployeeResponsibleForRating.BusinessPartnerID",
+                "OLD"."_EmployeeApprovingTheRating.BusinessPartnerID" as "OLD__EmployeeApprovingTheRating.BusinessPartnerID",
+                "OLD"."ApprovalDate" as "OLD_ApprovalDate",
+                "OLD"."Commissioned" as "OLD_Commissioned",
+                "OLD"."CreationDate" as "OLD_CreationDate",
+                "OLD"."Endorsed" as "OLD_Endorsed",
+                "OLD"."PublicationDate" as "OLD_PublicationDate",
+                "OLD"."Rating" as "OLD_Rating",
+                "OLD"."RatingComment" as "OLD_RatingComment",
+                "OLD"."RatingDescription" as "OLD_RatingDescription",
+                "OLD"."RatingMethodVersion" as "OLD_RatingMethodVersion",
+                "OLD"."RatingOutlook" as "OLD_RatingOutlook",
+                "OLD"."RatingRank" as "OLD_RatingRank",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Rating" as "OLD"
+            on
+                      ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+                      ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+                      ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+                      ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+                      ( "IN"."RatingStatus" = "OLD"."RatingStatus" or "IN"."RatingStatus" is null ) and
+                      ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) and
+                      ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_GeographicalRegion.GeographicalStructureID" = "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID" or "IN"."ASSOC_GeographicalRegion.GeographicalStructureID" is null ) and
+                      ( "IN"."ASSOC_GeographicalRegion.GeographicalUnitID" = "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID" or "IN"."ASSOC_GeographicalRegion.GeographicalUnitID" is null ) and
+                      ( "IN"."_Security.FinancialInstrumentID" = "OLD"."_Security.FinancialInstrumentID" or "IN"."_Security.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Rating" (
+        "IsFxRating",
+        "RatingAgency",
+        "RatingCategory",
+        "RatingMethod",
+        "RatingStatus",
+        "TimeHorizon",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_GeographicalRegion.GeographicalStructureID",
+        "ASSOC_GeographicalRegion.GeographicalUnitID",
+        "_Security.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_EmployeeResponsibleForRating.BusinessPartnerID",
+        "_EmployeeApprovingTheRating.BusinessPartnerID",
+        "ApprovalDate",
+        "Commissioned",
+        "CreationDate",
+        "Endorsed",
+        "PublicationDate",
+        "Rating",
+        "RatingComment",
+        "RatingDescription",
+        "RatingMethodVersion",
+        "RatingOutlook",
+        "RatingRank",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IsFxRating" as "IsFxRating",
+            "OLD_RatingAgency" as "RatingAgency",
+            "OLD_RatingCategory" as "RatingCategory",
+            "OLD_RatingMethod" as "RatingMethod",
+            "OLD_RatingStatus" as "RatingStatus",
+            "OLD_TimeHorizon" as "TimeHorizon",
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_GeographicalRegion.GeographicalStructureID" as "ASSOC_GeographicalRegion.GeographicalStructureID",
+            "OLD_ASSOC_GeographicalRegion.GeographicalUnitID" as "ASSOC_GeographicalRegion.GeographicalUnitID",
+            "OLD__Security.FinancialInstrumentID" as "_Security.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_EmployeeResponsibleForRating.BusinessPartnerID" as "ASSOC_EmployeeResponsibleForRating.BusinessPartnerID",
+            "OLD__EmployeeApprovingTheRating.BusinessPartnerID" as "_EmployeeApprovingTheRating.BusinessPartnerID",
+            "OLD_ApprovalDate" as "ApprovalDate",
+            "OLD_Commissioned" as "Commissioned",
+            "OLD_CreationDate" as "CreationDate",
+            "OLD_Endorsed" as "Endorsed",
+            "OLD_PublicationDate" as "PublicationDate",
+            "OLD_Rating" as "Rating",
+            "OLD_RatingComment" as "RatingComment",
+            "OLD_RatingDescription" as "RatingDescription",
+            "OLD_RatingMethodVersion" as "RatingMethodVersion",
+            "OLD_RatingOutlook" as "RatingOutlook",
+            "OLD_RatingRank" as "RatingRank",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."IsFxRating",
+                        "OLD"."RatingAgency",
+                        "OLD"."RatingCategory",
+                        "OLD"."RatingMethod",
+                        "OLD"."RatingStatus",
+                        "OLD"."TimeHorizon",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID",
+                        "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID",
+                        "OLD"."_Security.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."IsFxRating" as "OLD_IsFxRating",
+                "OLD"."RatingAgency" as "OLD_RatingAgency",
+                "OLD"."RatingCategory" as "OLD_RatingCategory",
+                "OLD"."RatingMethod" as "OLD_RatingMethod",
+                "OLD"."RatingStatus" as "OLD_RatingStatus",
+                "OLD"."TimeHorizon" as "OLD_TimeHorizon",
+                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID" as "OLD_ASSOC_GeographicalRegion.GeographicalStructureID",
+                "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID" as "OLD_ASSOC_GeographicalRegion.GeographicalUnitID",
+                "OLD"."_Security.FinancialInstrumentID" as "OLD__Security.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_EmployeeResponsibleForRating.BusinessPartnerID" as "OLD_ASSOC_EmployeeResponsibleForRating.BusinessPartnerID",
+                "OLD"."_EmployeeApprovingTheRating.BusinessPartnerID" as "OLD__EmployeeApprovingTheRating.BusinessPartnerID",
+                "OLD"."ApprovalDate" as "OLD_ApprovalDate",
+                "OLD"."Commissioned" as "OLD_Commissioned",
+                "OLD"."CreationDate" as "OLD_CreationDate",
+                "OLD"."Endorsed" as "OLD_Endorsed",
+                "OLD"."PublicationDate" as "OLD_PublicationDate",
+                "OLD"."Rating" as "OLD_Rating",
+                "OLD"."RatingComment" as "OLD_RatingComment",
+                "OLD"."RatingDescription" as "OLD_RatingDescription",
+                "OLD"."RatingMethodVersion" as "OLD_RatingMethodVersion",
+                "OLD"."RatingOutlook" as "OLD_RatingOutlook",
+                "OLD"."RatingRank" as "OLD_RatingRank",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Rating" as "OLD"
+            on
+                                                ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+                                                ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+                                                ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+                                                ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+                                                ( "IN"."RatingStatus" = "OLD"."RatingStatus" or "IN"."RatingStatus" is null ) and
+                                                ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) and
+                                                ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_GeographicalRegion.GeographicalStructureID" = "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID" or "IN"."ASSOC_GeographicalRegion.GeographicalStructureID" is null ) and
+                                                ( "IN"."ASSOC_GeographicalRegion.GeographicalUnitID" = "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID" or "IN"."ASSOC_GeographicalRegion.GeographicalUnitID" is null ) and
+                                                ( "IN"."_Security.FinancialInstrumentID" = "OLD"."_Security.FinancialInstrumentID" or "IN"."_Security.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Rating"
+    where (
+        "IsFxRating",
+        "RatingAgency",
+        "RatingCategory",
+        "RatingMethod",
+        "RatingStatus",
+        "TimeHorizon",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_GeographicalRegion.GeographicalStructureID",
+        "ASSOC_GeographicalRegion.GeographicalUnitID",
+        "_Security.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."IsFxRating",
+            "OLD"."RatingAgency",
+            "OLD"."RatingCategory",
+            "OLD"."RatingMethod",
+            "OLD"."RatingStatus",
+            "OLD"."TimeHorizon",
+            "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID",
+            "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID",
+            "OLD"."_Security.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Rating" as "OLD"
+        on
+                                       ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+                                       ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+                                       ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+                                       ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+                                       ( "IN"."RatingStatus" = "OLD"."RatingStatus" or "IN"."RatingStatus" is null ) and
+                                       ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) and
+                                       ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_GeographicalRegion.GeographicalStructureID" = "OLD"."ASSOC_GeographicalRegion.GeographicalStructureID" or "IN"."ASSOC_GeographicalRegion.GeographicalStructureID" is null ) and
+                                       ( "IN"."ASSOC_GeographicalRegion.GeographicalUnitID" = "OLD"."ASSOC_GeographicalRegion.GeographicalUnitID" or "IN"."ASSOC_GeographicalRegion.GeographicalUnitID" is null ) and
+                                       ( "IN"."_Security.FinancialInstrumentID" = "OLD"."_Security.FinancialInstrumentID" or "IN"."_Security.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

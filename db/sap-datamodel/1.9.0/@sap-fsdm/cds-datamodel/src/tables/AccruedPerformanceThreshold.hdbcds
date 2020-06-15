@@ -1,0 +1,47 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"IndexSpecification";
+
+entity "AccruedPerformanceThreshold" {
+    key "_IndexSpecification"           : association to IndexSpecification {
+                                                                              _Index,
+                                                                              _LifeAndAnnuityInsuranceCoverage
+                                                                            } not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                        not null;
+        "SystemValidTo"                 : UTCTimestamp                        not null;
+        "AccruedCapRate"                : Decimal(15, 11);
+        "AccruedShieldRate"             : Decimal(15, 11);
+        "AccruedStepRate"               : Decimal(15, 11);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "AccruedPerformanceThreshold_Historical" {
+    "_IndexSpecification"           : association to IndexSpecification {
+                                                                          _Index,
+                                                                          _LifeAndAnnuityInsuranceCoverage
+                                                                        } not null;
+    "BusinessValidFrom"             : UTCTimestamp                        not null;
+    "BusinessValidTo"               : UTCTimestamp                        not null;
+    "SystemValidFrom"               : UTCTimestamp                        not null;
+    "SystemValidTo"                 : UTCTimestamp                        not null;
+    "AccruedCapRate"                : Decimal(15, 11);
+    "AccruedShieldRate"             : Decimal(15, 11);
+    "AccruedStepRate"               : Decimal(15, 11);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

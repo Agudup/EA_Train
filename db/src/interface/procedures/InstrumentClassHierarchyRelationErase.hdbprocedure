@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentClassHierarchyRelationErase" (IN ROW "sap.fsdm.tabletypes::InstrumentClassHierarchyRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "InstrumentHierarchy" is null and
+                         "_Child.InstrumentClass" is null and
+                         "_Child.InstrumentClassificationSystem" is null and
+                         "_Parent.InstrumentClass" is null and
+                         "_Parent.InstrumentClassificationSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::InstrumentClassHierarchyRelation" WHERE
+("InstrumentHierarchy" ,
+"_Child.InstrumentClass" ,
+"_Child.InstrumentClassificationSystem" ,
+"_Parent.InstrumentClass" ,
+"_Parent.InstrumentClassificationSystem" 
+)in ( select "OLD"."InstrumentHierarchy" ,
+"OLD"."_Child.InstrumentClass" ,
+"OLD"."_Child.InstrumentClassificationSystem" ,
+"OLD"."_Parent.InstrumentClass" ,
+"OLD"."_Parent.InstrumentClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::InstrumentClassHierarchyRelation" "OLD"
+on
+  ( "IN"."InstrumentHierarchy" = "OLD"."InstrumentHierarchy" or "IN"."InstrumentHierarchy" is null ) and
+  ( "IN"."_Child.InstrumentClass" = "OLD"."_Child.InstrumentClass" or "IN"."_Child.InstrumentClass" is null ) and
+  ( "IN"."_Child.InstrumentClassificationSystem" = "OLD"."_Child.InstrumentClassificationSystem" or "IN"."_Child.InstrumentClassificationSystem" is null ) and
+  ( "IN"."_Parent.InstrumentClass" = "OLD"."_Parent.InstrumentClass" or "IN"."_Parent.InstrumentClass" is null ) and
+  ( "IN"."_Parent.InstrumentClassificationSystem" = "OLD"."_Parent.InstrumentClassificationSystem" or "IN"."_Parent.InstrumentClassificationSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::InstrumentClassHierarchyRelation_Historical" WHERE
+("InstrumentHierarchy" ,
+"_Child.InstrumentClass" ,
+"_Child.InstrumentClassificationSystem" ,
+"_Parent.InstrumentClass" ,
+"_Parent.InstrumentClassificationSystem" 
+)in ( select "OLD"."InstrumentHierarchy" ,
+"OLD"."_Child.InstrumentClass" ,
+"OLD"."_Child.InstrumentClassificationSystem" ,
+"OLD"."_Parent.InstrumentClass" ,
+"OLD"."_Parent.InstrumentClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::InstrumentClassHierarchyRelation_Historical" "OLD"
+on
+  ( "IN"."InstrumentHierarchy" = "OLD"."InstrumentHierarchy" or "IN"."InstrumentHierarchy" is null ) and
+  ( "IN"."_Child.InstrumentClass" = "OLD"."_Child.InstrumentClass" or "IN"."_Child.InstrumentClass" is null ) and
+  ( "IN"."_Child.InstrumentClassificationSystem" = "OLD"."_Child.InstrumentClassificationSystem" or "IN"."_Child.InstrumentClassificationSystem" is null ) and
+  ( "IN"."_Parent.InstrumentClass" = "OLD"."_Parent.InstrumentClass" or "IN"."_Parent.InstrumentClass" is null ) and
+  ( "IN"."_Parent.InstrumentClassificationSystem" = "OLD"."_Parent.InstrumentClassificationSystem" or "IN"."_Parent.InstrumentClassificationSystem" is null ) 
+);
+
+END

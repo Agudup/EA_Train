@@ -1,0 +1,55 @@
+view "sap.fsdm.SQLViews::FundsTransferPricingRate_View" 
+as select
+      "SplittingTranche" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "_Collection.CollectionID" ,
+      "_Collection.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_YieldCurve.YieldCurveID" ,
+      "AssetOrLiabilityStatus" ,
+      "BusinessDayCalendar" ,
+      "Currency" ,
+      "DayCountConvention" ,
+      "DisturbanceDate" ,
+      "FTPRate" ,
+      "FTPRateBeforeOverride" ,
+      "MaturityPeriodLength" ,
+      "MaturityPeriodTimeUnit" ,
+      "RecalculatedDueToDisturbance" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FundsTransferPricingRate"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract"."PositionCurrency" = "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::YieldCurve_View" as "ASSOC_YieldCurve"
+	  on "ASSOC_YieldCurve"."YieldCurveID" = "ASSOC_YieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_Collection"
+	  on "_Collection"."CollectionID" = "_Collection.CollectionID" AND 
+	     "_Collection"."IDSystem" = "_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

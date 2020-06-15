@@ -1,0 +1,44 @@
+view "sap.fsdm.SQLViews::ListedDerivativeIntradayQuotation_View" 
+as select
+      "MaturityDate" ,
+      "PriceDataProvider" ,
+      "PriceSeriesType" ,
+      "PutOrCall" ,
+      "SequenceNumber" ,
+      "StrikePrice" ,
+      "Timestamp" ,
+      "_Exchange.MarketIdentifierCode" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_CommodityReferencePrice.ReferencePriceID" ,
+      "AskQuantity" ,
+      "BestAsk" ,
+      "BestBid" ,
+      "BidQuantity" ,
+      "Currency" ,
+      "ListedDerivativeIntradayQuotationCategory" ,
+      "ListedDerivativeSymbol" ,
+      "PriceNotationForm" ,
+      "StrikePriceCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ListedDerivativeIntradayQuotation"
+with associations
+(
+	join "sap.fsdm.SQLViews::CommodityReferencePrice_View" as "_CommodityReferencePrice"
+	  on "_CommodityReferencePrice"."ReferencePriceID" = "_CommodityReferencePrice.ReferencePriceID"
+	     ,
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

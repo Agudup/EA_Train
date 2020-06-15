@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::FinancialStatementHierarchy_View" 
+as select
+      "FinancialStatementHierarchyID" ,
+      "_Child.FinancialStatementSegmentID" ,
+      "_Child._FinancialStatementStructure.FinancialStatementStructureID" ,
+      "_Parent.FinancialStatementSegmentID" ,
+      "_Parent._FinancialStatementStructure.FinancialStatementStructureID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "FinancialStatementsHierarchyDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FinancialStatementHierarchy"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialStatementSegment_View" as "_Child"
+	  on "_Child"."FinancialStatementSegmentID" = "_Child.FinancialStatementSegmentID" AND 
+	     "_Child"."_FinancialStatementStructure.FinancialStatementStructureID" = "_Child._FinancialStatementStructure.FinancialStatementStructureID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStatementSegment_View" as "_Parent"
+	  on "_Parent"."FinancialStatementSegmentID" = "_Parent.FinancialStatementSegmentID" AND 
+	     "_Parent"."_FinancialStatementStructure.FinancialStatementStructureID" = "_Parent._FinancialStatementStructure.FinancialStatementStructureID"
+	     
+);

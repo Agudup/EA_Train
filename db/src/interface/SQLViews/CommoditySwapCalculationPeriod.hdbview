@@ -1,0 +1,36 @@
+view "sap.fsdm.SQLViews::CommoditySwapCalculationPeriod_View" 
+as select
+      "IntervalEndDate" ,
+      "IntervalStartDate" ,
+      "RoleOfPayer" ,
+      "_Swap.FinancialContractID" ,
+      "_Swap.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DeliveryDate" ,
+      "FixedPriceCurrency" ,
+      "FixedPricePerUnit" ,
+      "NotionalQuantity" ,
+      "NotionalQuantityUnit" ,
+      "PricingDate" ,
+      "Spread" ,
+      "SpreadAmount" ,
+      "SpreadAmountCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CommoditySwapCalculationPeriod"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_Swap"
+	  on "_Swap"."FinancialContractID" = "_Swap.FinancialContractID" AND 
+	     "_Swap"."IDSystem" = "_Swap.IDSystem"
+	     
+);

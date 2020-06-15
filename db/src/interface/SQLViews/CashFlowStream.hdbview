@@ -1,0 +1,124 @@
+view "sap.fsdm.SQLViews::CashFlowStream_View" 
+as select
+      "CashFlowEndDate" ,
+      "CashFlowScenario" ,
+      "CashFlowSource" ,
+      "CashFlowStartDate" ,
+      "CashFlowType" ,
+      "ItemNumber" ,
+      "ASSOC_Contract.FinancialContractID" ,
+      "ASSOC_Contract.IDSystem" ,
+      "ASSOC_InterestSpecification.SequenceNumber" ,
+      "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+      "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+      "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+      "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+      "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+      "ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+      "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+      "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+      "ASSOC_InterestSpecification._Trade.IDSystem" ,
+      "ASSOC_InterestSpecification._Trade.TradeID" ,
+      "ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" ,
+      "ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "_CollectionOfCashFlow.CollectionID" ,
+      "_CollectionOfCashFlow.IDSystem" ,
+      "_Instrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_ReferenceRate.ReferenceRateID" ,
+      "_FSSubLedgerDocumentItem.CompanyCode" ,
+      "_FSSubLedgerDocumentItem.DocumentNumber" ,
+      "_FSSubLedgerDocumentItem.FiscalYear" ,
+      "_FSSubLedgerDocumentItem.ItemNumber" ,
+      "_FSSubLedgerDocumentItem.PostingDate" ,
+      "_FSSubLedgerDocumentItem._AccountingSystem.AccountingSystemID" ,
+      "AmountInPositionCurrency" ,
+      "AmountInTransactionCurrency" ,
+      "ApplicableInterestRate" ,
+      "CashFlowCategory" ,
+      "CashFlowItemCategory" ,
+      "CashFlowItemType" ,
+      "CurrencyOfPrincipalAmount" ,
+      "DueDate" ,
+      "InterestFixingDate" ,
+      "InterestPeriodEndDate" ,
+      "InterestPeriodStartDate" ,
+      "InvestmentHoldingNominalAmount" ,
+      "InvestmentHoldingNominalAmountCurrency" ,
+      "InvestmentHoldingQuantity" ,
+      "InvestmentHoldingUnit" ,
+      "NumberOfBaseDaysUsedForInterestCalculation" ,
+      "NumberOfDaysUsedForInterestCalculation" ,
+      "PositionCurrency" ,
+      "PostingDirection" ,
+      "PrincipalAmount" ,
+      "SettledDate" ,
+      "SpreadIncludedInApplicableRate" ,
+      "TradeDate" ,
+      "TransactionCurrency" ,
+      "UnsignedAmountInPositionCurrency" ,
+      "UnsignedAmountInTransactionCurrency" ,
+      "UsedExchangeRate" ,
+      "ValueDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CashFlowStream"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_Contract"
+	  on "ASSOC_Contract"."IDSystem" = "ASSOC_Contract.IDSystem" AND 
+	     "ASSOC_Contract"."FinancialContractID" = "ASSOC_Contract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Interest_View" as "ASSOC_InterestSpecification"
+	  on "ASSOC_InterestSpecification"."_Trade.TradeID" = "ASSOC_InterestSpecification._Trade.TradeID" AND 
+	     "ASSOC_InterestSpecification"."_Trade.IDSystem" = "ASSOC_InterestSpecification._Trade.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfStrikeSpecification.ComponentNumber" = "ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfReferenceRateSpecification.ComponentNumber" = "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "ASSOC_InterestSpecification"."_DebtInstrument.FinancialInstrumentID" = "ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" AND 
+	     "ASSOC_InterestSpecification"."SequenceNumber" = "ASSOC_InterestSpecification.SequenceNumber" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_FinancialContract.IDSystem" = "ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_FinancialContract.FinancialContractID" = "ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCurrencyOfCashFlow"
+	  on "ASSOC_PositionCurrencyOfCashFlow"."PositionCurrency" = "ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" AND 
+	     "ASSOC_PositionCurrencyOfCashFlow"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCurrencyOfCashFlow"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::ReferenceRate_View" as "ASSOC_ReferenceRate"
+	  on "ASSOC_ReferenceRate"."ReferenceRateID" = "ASSOC_ReferenceRate.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_CollectionOfCashFlow"
+	  on "_CollectionOfCashFlow"."CollectionID" = "_CollectionOfCashFlow.CollectionID" AND 
+	     "_CollectionOfCashFlow"."IDSystem" = "_CollectionOfCashFlow.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubLedgerDocumentItem"
+	  on "_FSSubLedgerDocumentItem"."_AccountingSystem.AccountingSystemID" = "_FSSubLedgerDocumentItem._AccountingSystem.AccountingSystemID" AND 
+	     "_FSSubLedgerDocumentItem"."PostingDate" = "_FSSubLedgerDocumentItem.PostingDate" AND 
+	     "_FSSubLedgerDocumentItem"."ItemNumber" = "_FSSubLedgerDocumentItem.ItemNumber" AND 
+	     "_FSSubLedgerDocumentItem"."FiscalYear" = "_FSSubLedgerDocumentItem.FiscalYear" AND 
+	     "_FSSubLedgerDocumentItem"."DocumentNumber" = "_FSSubLedgerDocumentItem.DocumentNumber" AND 
+	     "_FSSubLedgerDocumentItem"."CompanyCode" = "_FSSubLedgerDocumentItem.CompanyCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Instrument"
+	  on "_Instrument"."FinancialInstrumentID" = "_Instrument.FinancialInstrumentID"
+	     
+);

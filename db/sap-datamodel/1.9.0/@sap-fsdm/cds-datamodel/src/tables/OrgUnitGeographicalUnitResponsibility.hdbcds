@@ -1,0 +1,50 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"GeographicalUnit";
+using "sap"."fsdm"::"OrganizationalUnit";
+
+entity "OrgUnitGeographicalUnitResponsibility" {
+    key "ASSOC_GeographicalUnit"        : association to GeographicalUnit {
+                                                                            GeographicalStructureID,
+                                                                            GeographicalUnitID
+                                                                          }   not null;
+    key "ASSOC_OrgUnit"                 : association to OrganizationalUnit {
+                                                                              OrganizationalUnitID,
+                                                                              ASSOC_OrganizationHostingOrganizationalUnit
+                                                                            } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                        not null;
+        "SystemValidTo"                 : UTCTimestamp                        not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "OrgUnitGeographicalUnitResponsibility_Historical" {
+    "ASSOC_GeographicalUnit"        : association to GeographicalUnit {
+                                                                        GeographicalStructureID,
+                                                                        GeographicalUnitID
+                                                                      }   not null;
+    "ASSOC_OrgUnit"                 : association to OrganizationalUnit {
+                                                                          OrganizationalUnitID,
+                                                                          ASSOC_OrganizationHostingOrganizationalUnit
+                                                                        } not null;
+    "BusinessValidFrom"             : LocalDate                           not null;
+    "BusinessValidTo"               : LocalDate                           not null;
+    "SystemValidFrom"               : UTCTimestamp                        not null;
+    "SystemValidTo"                 : UTCTimestamp                        not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

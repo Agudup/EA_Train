@@ -1,0 +1,26 @@
+PROCEDURE "sap.fsdm.procedures::LossObjectDelReadOnly" (IN ROW "sap.fsdm.tabletypes::LossObjectTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::LossObjectTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"LossObjectID",
+"_PropertyLoss.LossCategory",
+"_PropertyLoss._Claim.ID",
+"_PropertyLoss._Claim.IDSystem"
+from "sap.fsdm::LossObject" WHERE("LossObjectID" ,
+"_PropertyLoss.LossCategory" ,
+"_PropertyLoss._Claim.ID" ,
+"_PropertyLoss._Claim.IDSystem" 
+)in ( select "LossObjectID" ,
+"_PropertyLoss.LossCategory" ,
+"_PropertyLoss._Claim.ID" ,
+"_PropertyLoss._Claim.IDSystem" 
+from :ROW );
+
+
+END

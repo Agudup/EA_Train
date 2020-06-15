@@ -1,0 +1,102 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartnerRelation";
+using "sap"."fsdm"::"PhysicalAsset";
+using "sap"."fsdm"::"Receivable";
+
+entity "PledgedObject" {
+    key "SequenceNumber"                             : Integer                                           default -1;
+    key "ASSOC_Pledge"                               : association to FinancialContract {
+                                                                                          FinancialContractID,
+                                                                                          IDSystem
+                                                                                        }                not null;
+    key "BusinessValidFrom"                          : LocalDate;
+    key "BusinessValidTo"                            : LocalDate;
+        "SystemValidFrom"                            : UTCTimestamp                                      not null;
+        "SystemValidTo"                              : UTCTimestamp                                      not null;
+        "ASSOC_PledgedBusinessInterest"              : association to BusinessPartnerRelation {
+                                                                                                BusinessPartnerRelationType,
+                                                                                                ASSOC_SourceInBusinessPartnerRelation,
+                                                                                                ASSOC_TargetInBusinessPartnerRelation
+                                                                                              };
+        "ASSOC_PledgedFinancialContract"             : association to FinancialContract {
+                                                                                          FinancialContractID,
+                                                                                          IDSystem
+                                                                                        };
+        "ASSOC_PledgedPhysicalAsset"                 : association to PhysicalAsset { PhysicalAssetID };
+        "ASSOC_PledgedReceivable"                    : association to Receivable { ReceivableID };
+        "ASSOC_ReceivableRepresentingPledgedAccount" : association to Receivable { ReceivableID };
+        "InitialCollateralValue"                     : Decimal(34, 6);
+        "InitialCollateralValueCurrency"             : String(3);
+        "PledgeOfFinancialContractCategory"          : String(80);
+        "PledgedAmount"                              : Decimal(34, 6);
+        "PledgedAmountCurrency"                      : String(3);
+        "PledgedObjectCategory"                      : String(80);
+        "PledgedPercentage"                          : Decimal(15, 11);
+        "ThirdPartyAccountIdentificationSystem"      : String(128);
+        "ThirdPartyBankAccountCurrency"              : String(3);
+        "ThirdPartyBankAccountHolderName"            : String(256);
+        "ThirdPartyBankAccountID"                    : String(128);
+        "ThirdPartyBankID"                           : String(128);
+        "ThirdPartyBankIdentificationSystem"         : String(128);
+        "ThirdPartyBankName"                         : String(256);
+        "ThirdPartyIBAN"                             : String(128);
+        "ThirdPartySWIFT"                            : String(128);
+        "SourceSystemID"                             : String(128);
+        "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+        "ChangingUserInSourceSystem"                 : String(128);
+        "ChangingProcessType"                        : String(40);
+        "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PledgedObject_Historical" {
+    "SequenceNumber"                             : Integer                                           default -1 not null;
+    "ASSOC_Pledge"                               : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    }                not null;
+    "BusinessValidFrom"                          : LocalDate                                         not null;
+    "BusinessValidTo"                            : LocalDate                                         not null;
+    "SystemValidFrom"                            : UTCTimestamp                                      not null;
+    "SystemValidTo"                              : UTCTimestamp                                      not null;
+    "ASSOC_PledgedBusinessInterest"              : association to BusinessPartnerRelation {
+                                                                                            BusinessPartnerRelationType,
+                                                                                            ASSOC_SourceInBusinessPartnerRelation,
+                                                                                            ASSOC_TargetInBusinessPartnerRelation
+                                                                                          };
+    "ASSOC_PledgedFinancialContract"             : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    };
+    "ASSOC_PledgedPhysicalAsset"                 : association to PhysicalAsset { PhysicalAssetID };
+    "ASSOC_PledgedReceivable"                    : association to Receivable { ReceivableID };
+    "ASSOC_ReceivableRepresentingPledgedAccount" : association to Receivable { ReceivableID };
+    "InitialCollateralValue"                     : Decimal(34, 6);
+    "InitialCollateralValueCurrency"             : String(3);
+    "PledgeOfFinancialContractCategory"          : String(80);
+    "PledgedAmount"                              : Decimal(34, 6);
+    "PledgedAmountCurrency"                      : String(3);
+    "PledgedObjectCategory"                      : String(80);
+    "PledgedPercentage"                          : Decimal(15, 11);
+    "ThirdPartyAccountIdentificationSystem"      : String(128);
+    "ThirdPartyBankAccountCurrency"              : String(3);
+    "ThirdPartyBankAccountHolderName"            : String(256);
+    "ThirdPartyBankAccountID"                    : String(128);
+    "ThirdPartyBankID"                           : String(128);
+    "ThirdPartyBankIdentificationSystem"         : String(128);
+    "ThirdPartyBankName"                         : String(256);
+    "ThirdPartyIBAN"                             : String(128);
+    "ThirdPartySWIFT"                            : String(128);
+    "SourceSystemID"                             : String(128);
+    "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+    "ChangingUserInSourceSystem"                 : String(128);
+    "ChangingProcessType"                        : String(40);
+    "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};

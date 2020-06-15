@@ -1,0 +1,92 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"ElectronicFundsTransferMethod";
+
+entity "SettlementAccountAssignment" {
+    key "SettlementAccountRole"                         : String(50);
+    key "ASSOC_BaseContract"                            : association to FinancialContract {
+                                                                                             FinancialContractID,
+                                                                                             IDSystem
+                                                                                           }              not null;
+    key "BusinessValidFrom"                             : LocalDate;
+    key "BusinessValidTo"                               : LocalDate;
+        "SystemValidFrom"                               : UTCTimestamp                                    not null;
+        "SystemValidTo"                                 : UTCTimestamp                                    not null;
+        "ASSOC_SettlementAccount"                       : association to FinancialContract {
+                                                                                             FinancialContractID,
+                                                                                             IDSystem
+                                                                                           };
+        "_ElectronicFundsTransferMethod"                : association to ElectronicFundsTransferMethod {
+                                                                                                         ElectronicFundsTransferMethodName,
+                                                                                                         ElectronicFundsTransferMethodType,
+                                                                                                         _BusinessPartner
+                                                                                                       };
+        "DayOfMonthOfSettlement"                        : Integer;
+        "DirectSettlement"                              : Boolean;
+        "ExternalSettlementAccountIdentificationSystem" : String(128);
+        "ExternalSettlementBankAccountCurrency"         : String(3);
+        "ExternalSettlementBankAccountHolderName"       : String(256);
+        "ExternalSettlementBankAccountID"               : String(128);
+        "ExternalSettlementBankID"                      : String(128);
+        "ExternalSettlementBankIdentificationSystem"    : String(128);
+        "ExternalSettlementBankName"                    : String(256);
+        "ExternalSettlementIBAN"                        : String(128);
+        "ExternalSettlementSWIFT"                       : String(128);
+        "SettlementContractAssignmentCategory"          : String(150);
+        "SettlementMethod"                              : String(20);
+        "SettlementPeriodLength"                        : Decimal(34, 6);
+        "SettlementPeriodTimeUnit"                      : String(12);
+        "SourceSystemID"                                : String(128);
+        "ChangeTimestampInSourceSystem"                 : UTCTimestamp;
+        "ChangingUserInSourceSystem"                    : String(128);
+        "ChangingProcessType"                           : String(40);
+        "ChangingProcessID"                             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "SettlementAccountAssignment_Historical" {
+    "SettlementAccountRole"                         : String(50)                                      not null;
+    "ASSOC_BaseContract"                            : association to FinancialContract {
+                                                                                         FinancialContractID,
+                                                                                         IDSystem
+                                                                                       }              not null;
+    "BusinessValidFrom"                             : LocalDate                                       not null;
+    "BusinessValidTo"                               : LocalDate                                       not null;
+    "SystemValidFrom"                               : UTCTimestamp                                    not null;
+    "SystemValidTo"                                 : UTCTimestamp                                    not null;
+    "ASSOC_SettlementAccount"                       : association to FinancialContract {
+                                                                                         FinancialContractID,
+                                                                                         IDSystem
+                                                                                       };
+    "_ElectronicFundsTransferMethod"                : association to ElectronicFundsTransferMethod {
+                                                                                                     ElectronicFundsTransferMethodName,
+                                                                                                     ElectronicFundsTransferMethodType,
+                                                                                                     _BusinessPartner
+                                                                                                   };
+    "DayOfMonthOfSettlement"                        : Integer;
+    "DirectSettlement"                              : Boolean;
+    "ExternalSettlementAccountIdentificationSystem" : String(128);
+    "ExternalSettlementBankAccountCurrency"         : String(3);
+    "ExternalSettlementBankAccountHolderName"       : String(256);
+    "ExternalSettlementBankAccountID"               : String(128);
+    "ExternalSettlementBankID"                      : String(128);
+    "ExternalSettlementBankIdentificationSystem"    : String(128);
+    "ExternalSettlementBankName"                    : String(256);
+    "ExternalSettlementIBAN"                        : String(128);
+    "ExternalSettlementSWIFT"                       : String(128);
+    "SettlementContractAssignmentCategory"          : String(150);
+    "SettlementMethod"                              : String(20);
+    "SettlementPeriodLength"                        : Decimal(34, 6);
+    "SettlementPeriodTimeUnit"                      : String(12);
+    "SourceSystemID"                                : String(128);
+    "ChangeTimestampInSourceSystem"                 : UTCTimestamp;
+    "ChangingUserInSourceSystem"                    : String(128);
+    "ChangingProcessType"                           : String(40);
+    "ChangingProcessID"                             : String(128);
+}
+technical configuration {
+    column store;
+};

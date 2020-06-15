@@ -1,0 +1,45 @@
+view "sap.fsdm.SQLViews::TrancheInSyndication_View" 
+as select
+      "TrancheSequenceNumber" ,
+      "_SyndicationAgreement.FinancialContractID" ,
+      "_SyndicationAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "IsTrancheRevolving" ,
+      "Status" ,
+      "TrancheAmount" ,
+      "TrancheCurrency" ,
+      "TrancheEndDate" ,
+      "TrancheStartDate" ,
+      "TrancheType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TrancheInSyndication"
+with associations
+(
+	join "sap.fsdm.SQLViews::AgreedLimit_View" as "_AgreedLimit__TrancheInSyndication"
+	  on "TrancheSequenceNumber" = "_AgreedLimit__TrancheInSyndication"."_TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "_SyndicationAgreement.FinancialContractID" = "_AgreedLimit__TrancheInSyndication"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "_SyndicationAgreement.IDSystem" = "_AgreedLimit__TrancheInSyndication"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Fee_View" as "_Fee__TrancheInSyndication"
+	  on "TrancheSequenceNumber" = "_Fee__TrancheInSyndication"."_TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "_SyndicationAgreement.FinancialContractID" = "_Fee__TrancheInSyndication"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "_SyndicationAgreement.IDSystem" = "_Fee__TrancheInSyndication"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__TrancheInSyndication"
+	  on "TrancheSequenceNumber" = "_FinancialContract__TrancheInSyndication"."_TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "_SyndicationAgreement.FinancialContractID" = "_FinancialContract__TrancheInSyndication"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "_SyndicationAgreement.IDSystem" = "_FinancialContract__TrancheInSyndication"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SyndicationAgreement"
+	  on "_SyndicationAgreement"."FinancialContractID" = "_SyndicationAgreement.FinancialContractID" AND 
+	     "_SyndicationAgreement"."IDSystem" = "_SyndicationAgreement.IDSystem"
+	     
+);

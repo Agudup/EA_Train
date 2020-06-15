@@ -1,0 +1,41 @@
+view "sap.fsdm.SQLViews::ProfitAndLossParticipation_View" 
+as select
+      "SequenceNumber" ,
+      "_ParticipationCert.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Accumulation" ,
+      "AssessmentBase" ,
+      "AssessmentPeriodLength" ,
+      "AssessmentPeriodTimeUnit" ,
+      "DeterminationCurrency" ,
+      "DeterminationPerCertificate" ,
+      "Formula" ,
+      "LowerLimit" ,
+      "Percentage" ,
+      "PreconditionApplies" ,
+      "ScaleApplies" ,
+      "UpperLimit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProfitAndLossParticipation"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_ParticipationCert"
+	  on "_ParticipationCert"."FinancialInstrumentID" = "_ParticipationCert.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::ScaleInterval_View" as "_ScaleInterval__PnLParticipation"
+	  on "_ParticipationCert.FinancialInstrumentID" = "_ScaleInterval__PnLParticipation"."_PnLParticipation._ParticipationCert.FinancialInstrumentID" AND 
+	     "SequenceNumber" = "_ScaleInterval__PnLParticipation"."_PnLParticipation.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::SetOfPreconditions_View" as "_SetOfPreconditions__PandLParticipation"
+	  on "SequenceNumber" = "_SetOfPreconditions__PandLParticipation"."_PandLParticipation.SequenceNumber" AND 
+	     "_ParticipationCert.FinancialInstrumentID" = "_SetOfPreconditions__PandLParticipation"."_PandLParticipation._ParticipationCert.FinancialInstrumentID"
+	     
+);

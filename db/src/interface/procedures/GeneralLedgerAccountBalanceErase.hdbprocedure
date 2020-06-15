@@ -1,0 +1,102 @@
+PROCEDURE "sap.fsdm.procedures::GeneralLedgerAccountBalanceErase" (IN ROW "sap.fsdm.tabletypes::GeneralLedgerAccountBalanceTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "AccountingBalanceType" is null and
+                         "FiscalYear" is null and
+                         "PostingDate" is null and
+                         "_AccountingSystem.AccountingSystemID" is null and
+                         "_BusinessSegment.OrganizationalUnitID" is null and
+                         "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_BusinessSegmentAtCounterparty.OrganizationalUnitID" is null and
+                         "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_CompanyCode.CompanyCode" is null and
+                         "_CompanyCode.ASSOC_Company.BusinessPartnerID" is null and
+                         "_GLAccount.GLAccount" is null and
+                         "_GLAccount._ChartOfAccounts.ChartOfAccountId" is null and
+                         "_ProductClass.ProductClass" is null and
+                         "_ProductClass.ProductClassificationSystem" is null and
+                         "_ProfitCenter.OrganizationalUnitID" is null and
+                         "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_ProftCenterAtCouterparty.OrganizationalUnitID" is null and
+                         "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::GeneralLedgerAccountBalance" WHERE
+("AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+)in ( select "OLD"."AccountingBalanceType" ,
+"OLD"."FiscalYear" ,
+"OLD"."PostingDate" ,
+"OLD"."_AccountingSystem.AccountingSystemID" ,
+"OLD"."_BusinessSegment.OrganizationalUnitID" ,
+"OLD"."_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"OLD"."_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."_CompanyCode.CompanyCode" ,
+"OLD"."_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"OLD"."_GLAccount.GLAccount" ,
+"OLD"."_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"OLD"."_ProductClass.ProductClass" ,
+"OLD"."_ProductClass.ProductClassificationSystem" ,
+"OLD"."_ProfitCenter.OrganizationalUnitID" ,
+"OLD"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"OLD"."_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::GeneralLedgerAccountBalance" "OLD"
+on
+  ( "IN"."AccountingBalanceType" = "OLD"."AccountingBalanceType" or "IN"."AccountingBalanceType" is null ) and
+  ( "IN"."FiscalYear" = "OLD"."FiscalYear" or "IN"."FiscalYear" is null ) and
+  ( "IN"."PostingDate" = "OLD"."PostingDate" or "IN"."PostingDate" is null ) and
+  ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+  ( "IN"."_BusinessSegment.OrganizationalUnitID" = "OLD"."_BusinessSegment.OrganizationalUnitID" or "IN"."_BusinessSegment.OrganizationalUnitID" is null ) and
+  ( "IN"."_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."_BusinessSegmentAtCounterparty.OrganizationalUnitID" = "OLD"."_BusinessSegmentAtCounterparty.OrganizationalUnitID" or "IN"."_BusinessSegmentAtCounterparty.OrganizationalUnitID" is null ) and
+  ( "IN"."_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."_CompanyCode.CompanyCode" = "OLD"."_CompanyCode.CompanyCode" or "IN"."_CompanyCode.CompanyCode" is null ) and
+  ( "IN"."_CompanyCode.ASSOC_Company.BusinessPartnerID" = "OLD"."_CompanyCode.ASSOC_Company.BusinessPartnerID" or "IN"."_CompanyCode.ASSOC_Company.BusinessPartnerID" is null ) and
+  ( "IN"."_GLAccount.GLAccount" = "OLD"."_GLAccount.GLAccount" or "IN"."_GLAccount.GLAccount" is null ) and
+  ( "IN"."_GLAccount._ChartOfAccounts.ChartOfAccountId" = "OLD"."_GLAccount._ChartOfAccounts.ChartOfAccountId" or "IN"."_GLAccount._ChartOfAccounts.ChartOfAccountId" is null ) and
+  ( "IN"."_ProductClass.ProductClass" = "OLD"."_ProductClass.ProductClass" or "IN"."_ProductClass.ProductClass" is null ) and
+  ( "IN"."_ProductClass.ProductClassificationSystem" = "OLD"."_ProductClass.ProductClassificationSystem" or "IN"."_ProductClass.ProductClassificationSystem" is null ) and
+  ( "IN"."_ProfitCenter.OrganizationalUnitID" = "OLD"."_ProfitCenter.OrganizationalUnitID" or "IN"."_ProfitCenter.OrganizationalUnitID" is null ) and
+  ( "IN"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."_ProftCenterAtCouterparty.OrganizationalUnitID" = "OLD"."_ProftCenterAtCouterparty.OrganizationalUnitID" or "IN"."_ProftCenterAtCouterparty.OrganizationalUnitID" is null ) and
+  ( "IN"."_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+);
+
+END

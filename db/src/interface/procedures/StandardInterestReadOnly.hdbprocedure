@@ -1,0 +1,662 @@
+PROCEDURE "sap.fsdm.procedures::StandardInterestReadOnly" (IN ROW "sap.fsdm.tabletypes::StandardInterestTT", OUT CURR_DEL "sap.fsdm.tabletypes::StandardInterestTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::StandardInterestTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_PosCcyOfStdAcc.PositionCurrency=' || TO_VARCHAR("ASSOC_PosCcyOfStdAcc.PositionCurrency") || ' ' ||
+                'ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem=' || TO_VARCHAR("ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem") || ' ' ||
+                'ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme=' || TO_VARCHAR("ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme") || ' ' ||
+                'ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                'ASSOC_StandardProduct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_StandardProduct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_StandardProduct.IDSystem=' || TO_VARCHAR("ASSOC_StandardProduct.IDSystem") || ' ' ||
+                'ASSOC_StandardProduct.PricingScheme=' || TO_VARCHAR("ASSOC_StandardProduct.PricingScheme") || ' ' ||
+                'ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "ASSOC_StandardProduct.FinancialStandardProductID",
+                        "ASSOC_StandardProduct.IDSystem",
+                        "ASSOC_StandardProduct.PricingScheme",
+                        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                                    "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "SequenceNumber",
+        "ASSOC_PosCcyOfStdAcc.PositionCurrency",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardProduct.IDSystem",
+        "ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::StandardInterest" WHERE
+        (            "SequenceNumber" ,
+            "ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+            "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+            "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+            "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+            "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+            "ASSOC_StandardProduct.FinancialStandardProductID" ,
+            "ASSOC_StandardProduct.IDSystem" ,
+            "ASSOC_StandardProduct.PricingScheme" ,
+            "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+            "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+            "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+            "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+            "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD"."ASSOC_StandardProduct.IDSystem",
+            "OLD"."ASSOC_StandardProduct.PricingScheme",
+            "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardInterest" as "OLD"
+            on
+               ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+               ( case when "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.PositionCurrency" and
+               ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" and
+               ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" and
+               ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" and
+               ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" and
+               ( case when "IN"."ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardProduct.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" and
+               ( case when "IN"."ASSOC_StandardProduct.IDSystem" is null then '' else "IN"."ASSOC_StandardProduct.IDSystem" end ) = "OLD"."ASSOC_StandardProduct.IDSystem" and
+               ( case when "IN"."ASSOC_StandardProduct.PricingScheme" is null then '' else "IN"."ASSOC_StandardProduct.PricingScheme" end ) = "OLD"."ASSOC_StandardProduct.PricingScheme" and
+               ( case when "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "SequenceNumber",
+        "ASSOC_PosCcyOfStdAcc.PositionCurrency",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+        "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardProduct.IDSystem",
+        "ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_ReferenceRate.ReferenceRateID",
+        "BusinessDayConvention",
+        "CompoundingConvention",
+        "CutoffRelativeToDate",
+        "DayCountConvention",
+        "DayOfMonthOfReset",
+        "DueScheduleBusinessCalendar",
+        "DueScheduleBusinessDayConvention",
+        "DueSchedulePeriodLength",
+        "DueSchedulePeriodTimeUnit",
+        "FixedRate",
+        "InterestBusinessCalendar",
+        "InterestCurrency",
+        "InterestInAdvance",
+        "InterestIsCompounded",
+        "InterestPaymentPrecision",
+        "InterestPaymentRoundingMethod",
+        "InterestPeriodLength",
+        "InterestPeriodTimeUnit",
+        "PeriodEndDayOfMonth",
+        "PeriodEndDueDateLag",
+        "PeriodEndDueDateLagTimeUnit",
+        "PeriodUntilFirstDueDate",
+        "PeriodUntilFirstInterestPeriodStart",
+        "PeriodUntilLastInterestPeriodEnd",
+        "PeriodUntilTimeUnit",
+        "PreconditionApplies",
+        "ReferenceRateFactor",
+        "ReferenceRateFormula",
+        "RelativeToInterestPeriodStartOrEnd",
+        "ResetBusinessCalendar",
+        "ResetBusinessDayConvention",
+        "ResetCutoffLength",
+        "ResetCutoffTimeUnit",
+        "ResetInArrears",
+        "ResetLagLength",
+        "ResetLagTimeUnit",
+        "ResetPeriodLength",
+        "ResetPeriodTimeUnit",
+        "ResetPrecision",
+        "ResetRounding",
+        "RoleOfPayer",
+        "ScaleApplies",
+        "Spread",
+        "StandardFixingRateSpecificationCategory",
+        "StandardInterestSpecificationCategory",
+        "StandardInterestType",
+        "VariableRateMax",
+        "VariableRateMin",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+                    ( case when "ASSOC_PosCcyOfStdAcc.PositionCurrency" is null then '' else "ASSOC_PosCcyOfStdAcc.PositionCurrency" end ) as "ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                    ( case when "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null then '' else "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" end ) as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                    ( case when "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null then '' else "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" end ) as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                    ( case when "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null then '' else "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" end ) as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                    ( case when "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null then '' else "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" end ) as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                    ( case when "ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "ASSOC_StandardProduct.FinancialStandardProductID" end ) as "ASSOC_StandardProduct.FinancialStandardProductID",
+                    ( case when "ASSOC_StandardProduct.IDSystem" is null then '' else "ASSOC_StandardProduct.IDSystem" end ) as "ASSOC_StandardProduct.IDSystem",
+                    ( case when "ASSOC_StandardProduct.PricingScheme" is null then '' else "ASSOC_StandardProduct.PricingScheme" end ) as "ASSOC_StandardProduct.PricingScheme",
+                    ( case when "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) as "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "ASSOC_ReferenceRate.ReferenceRateID"  ,
+                    "BusinessDayConvention"  ,
+                    "CompoundingConvention"  ,
+                    "CutoffRelativeToDate"  ,
+                    "DayCountConvention"  ,
+                    "DayOfMonthOfReset"  ,
+                    "DueScheduleBusinessCalendar"  ,
+                    "DueScheduleBusinessDayConvention"  ,
+                    "DueSchedulePeriodLength"  ,
+                    "DueSchedulePeriodTimeUnit"  ,
+                    "FixedRate"  ,
+                    "InterestBusinessCalendar"  ,
+                    "InterestCurrency"  ,
+                    "InterestInAdvance"  ,
+                    "InterestIsCompounded"  ,
+                    "InterestPaymentPrecision"  ,
+                    "InterestPaymentRoundingMethod"  ,
+                    "InterestPeriodLength"  ,
+                    "InterestPeriodTimeUnit"  ,
+                    "PeriodEndDayOfMonth"  ,
+                    "PeriodEndDueDateLag"  ,
+                    "PeriodEndDueDateLagTimeUnit"  ,
+                    "PeriodUntilFirstDueDate"  ,
+                    "PeriodUntilFirstInterestPeriodStart"  ,
+                    "PeriodUntilLastInterestPeriodEnd"  ,
+                    "PeriodUntilTimeUnit"  ,
+                    "PreconditionApplies"  ,
+                    "ReferenceRateFactor"  ,
+                    "ReferenceRateFormula"  ,
+                    "RelativeToInterestPeriodStartOrEnd"  ,
+                    "ResetBusinessCalendar"  ,
+                    "ResetBusinessDayConvention"  ,
+                    "ResetCutoffLength"  ,
+                    "ResetCutoffTimeUnit"  ,
+                    "ResetInArrears"  ,
+                    "ResetLagLength"  ,
+                    "ResetLagTimeUnit"  ,
+                    "ResetPeriodLength"  ,
+                    "ResetPeriodTimeUnit"  ,
+                    "ResetPrecision"  ,
+                    "ResetRounding"  ,
+                    "RoleOfPayer"  ,
+                    "ScaleApplies"  ,
+                    "Spread"  ,
+                    "StandardFixingRateSpecificationCategory"  ,
+                    "StandardInterestSpecificationCategory"  ,
+                    "StandardInterestType"  ,
+                    "VariableRateMax"  ,
+                    "VariableRateMin"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_SequenceNumber" as "SequenceNumber" ,
+                    "OLD_ASSOC_PosCcyOfStdAcc.PositionCurrency" as "ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+                    "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+                    "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+                    "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+                    "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+                    "OLD_ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardProduct.FinancialStandardProductID" ,
+                    "OLD_ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardProduct.IDSystem" ,
+                    "OLD_ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardProduct.PricingScheme" ,
+                    "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_ASSOC_ReferenceRate.ReferenceRateID" as "ASSOC_ReferenceRate.ReferenceRateID" ,
+                    "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+                    "OLD_CompoundingConvention" as "CompoundingConvention" ,
+                    "OLD_CutoffRelativeToDate" as "CutoffRelativeToDate" ,
+                    "OLD_DayCountConvention" as "DayCountConvention" ,
+                    "OLD_DayOfMonthOfReset" as "DayOfMonthOfReset" ,
+                    "OLD_DueScheduleBusinessCalendar" as "DueScheduleBusinessCalendar" ,
+                    "OLD_DueScheduleBusinessDayConvention" as "DueScheduleBusinessDayConvention" ,
+                    "OLD_DueSchedulePeriodLength" as "DueSchedulePeriodLength" ,
+                    "OLD_DueSchedulePeriodTimeUnit" as "DueSchedulePeriodTimeUnit" ,
+                    "OLD_FixedRate" as "FixedRate" ,
+                    "OLD_InterestBusinessCalendar" as "InterestBusinessCalendar" ,
+                    "OLD_InterestCurrency" as "InterestCurrency" ,
+                    "OLD_InterestInAdvance" as "InterestInAdvance" ,
+                    "OLD_InterestIsCompounded" as "InterestIsCompounded" ,
+                    "OLD_InterestPaymentPrecision" as "InterestPaymentPrecision" ,
+                    "OLD_InterestPaymentRoundingMethod" as "InterestPaymentRoundingMethod" ,
+                    "OLD_InterestPeriodLength" as "InterestPeriodLength" ,
+                    "OLD_InterestPeriodTimeUnit" as "InterestPeriodTimeUnit" ,
+                    "OLD_PeriodEndDayOfMonth" as "PeriodEndDayOfMonth" ,
+                    "OLD_PeriodEndDueDateLag" as "PeriodEndDueDateLag" ,
+                    "OLD_PeriodEndDueDateLagTimeUnit" as "PeriodEndDueDateLagTimeUnit" ,
+                    "OLD_PeriodUntilFirstDueDate" as "PeriodUntilFirstDueDate" ,
+                    "OLD_PeriodUntilFirstInterestPeriodStart" as "PeriodUntilFirstInterestPeriodStart" ,
+                    "OLD_PeriodUntilLastInterestPeriodEnd" as "PeriodUntilLastInterestPeriodEnd" ,
+                    "OLD_PeriodUntilTimeUnit" as "PeriodUntilTimeUnit" ,
+                    "OLD_PreconditionApplies" as "PreconditionApplies" ,
+                    "OLD_ReferenceRateFactor" as "ReferenceRateFactor" ,
+                    "OLD_ReferenceRateFormula" as "ReferenceRateFormula" ,
+                    "OLD_RelativeToInterestPeriodStartOrEnd" as "RelativeToInterestPeriodStartOrEnd" ,
+                    "OLD_ResetBusinessCalendar" as "ResetBusinessCalendar" ,
+                    "OLD_ResetBusinessDayConvention" as "ResetBusinessDayConvention" ,
+                    "OLD_ResetCutoffLength" as "ResetCutoffLength" ,
+                    "OLD_ResetCutoffTimeUnit" as "ResetCutoffTimeUnit" ,
+                    "OLD_ResetInArrears" as "ResetInArrears" ,
+                    "OLD_ResetLagLength" as "ResetLagLength" ,
+                    "OLD_ResetLagTimeUnit" as "ResetLagTimeUnit" ,
+                    "OLD_ResetPeriodLength" as "ResetPeriodLength" ,
+                    "OLD_ResetPeriodTimeUnit" as "ResetPeriodTimeUnit" ,
+                    "OLD_ResetPrecision" as "ResetPrecision" ,
+                    "OLD_ResetRounding" as "ResetRounding" ,
+                    "OLD_RoleOfPayer" as "RoleOfPayer" ,
+                    "OLD_ScaleApplies" as "ScaleApplies" ,
+                    "OLD_Spread" as "Spread" ,
+                    "OLD_StandardFixingRateSpecificationCategory" as "StandardFixingRateSpecificationCategory" ,
+                    "OLD_StandardInterestSpecificationCategory" as "StandardInterestSpecificationCategory" ,
+                    "OLD_StandardInterestType" as "StandardInterestType" ,
+                    "OLD_VariableRateMax" as "VariableRateMax" ,
+                    "OLD_VariableRateMin" as "VariableRateMin" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_PosCcyOfStdAcc.PositionCurrency" as "OLD_ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                                "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                                "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                                "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                                "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                                "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_StandardProduct.FinancialStandardProductID",
+                                "OLD"."ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_StandardProduct.IDSystem",
+                                "OLD"."ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_StandardProduct.PricingScheme",
+                                "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_ReferenceRate.ReferenceRateID" as "OLD_ASSOC_ReferenceRate.ReferenceRateID",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."CompoundingConvention" as "OLD_CompoundingConvention",
+                                "OLD"."CutoffRelativeToDate" as "OLD_CutoffRelativeToDate",
+                                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                                "OLD"."DayOfMonthOfReset" as "OLD_DayOfMonthOfReset",
+                                "OLD"."DueScheduleBusinessCalendar" as "OLD_DueScheduleBusinessCalendar",
+                                "OLD"."DueScheduleBusinessDayConvention" as "OLD_DueScheduleBusinessDayConvention",
+                                "OLD"."DueSchedulePeriodLength" as "OLD_DueSchedulePeriodLength",
+                                "OLD"."DueSchedulePeriodTimeUnit" as "OLD_DueSchedulePeriodTimeUnit",
+                                "OLD"."FixedRate" as "OLD_FixedRate",
+                                "OLD"."InterestBusinessCalendar" as "OLD_InterestBusinessCalendar",
+                                "OLD"."InterestCurrency" as "OLD_InterestCurrency",
+                                "OLD"."InterestInAdvance" as "OLD_InterestInAdvance",
+                                "OLD"."InterestIsCompounded" as "OLD_InterestIsCompounded",
+                                "OLD"."InterestPaymentPrecision" as "OLD_InterestPaymentPrecision",
+                                "OLD"."InterestPaymentRoundingMethod" as "OLD_InterestPaymentRoundingMethod",
+                                "OLD"."InterestPeriodLength" as "OLD_InterestPeriodLength",
+                                "OLD"."InterestPeriodTimeUnit" as "OLD_InterestPeriodTimeUnit",
+                                "OLD"."PeriodEndDayOfMonth" as "OLD_PeriodEndDayOfMonth",
+                                "OLD"."PeriodEndDueDateLag" as "OLD_PeriodEndDueDateLag",
+                                "OLD"."PeriodEndDueDateLagTimeUnit" as "OLD_PeriodEndDueDateLagTimeUnit",
+                                "OLD"."PeriodUntilFirstDueDate" as "OLD_PeriodUntilFirstDueDate",
+                                "OLD"."PeriodUntilFirstInterestPeriodStart" as "OLD_PeriodUntilFirstInterestPeriodStart",
+                                "OLD"."PeriodUntilLastInterestPeriodEnd" as "OLD_PeriodUntilLastInterestPeriodEnd",
+                                "OLD"."PeriodUntilTimeUnit" as "OLD_PeriodUntilTimeUnit",
+                                "OLD"."PreconditionApplies" as "OLD_PreconditionApplies",
+                                "OLD"."ReferenceRateFactor" as "OLD_ReferenceRateFactor",
+                                "OLD"."ReferenceRateFormula" as "OLD_ReferenceRateFormula",
+                                "OLD"."RelativeToInterestPeriodStartOrEnd" as "OLD_RelativeToInterestPeriodStartOrEnd",
+                                "OLD"."ResetBusinessCalendar" as "OLD_ResetBusinessCalendar",
+                                "OLD"."ResetBusinessDayConvention" as "OLD_ResetBusinessDayConvention",
+                                "OLD"."ResetCutoffLength" as "OLD_ResetCutoffLength",
+                                "OLD"."ResetCutoffTimeUnit" as "OLD_ResetCutoffTimeUnit",
+                                "OLD"."ResetInArrears" as "OLD_ResetInArrears",
+                                "OLD"."ResetLagLength" as "OLD_ResetLagLength",
+                                "OLD"."ResetLagTimeUnit" as "OLD_ResetLagTimeUnit",
+                                "OLD"."ResetPeriodLength" as "OLD_ResetPeriodLength",
+                                "OLD"."ResetPeriodTimeUnit" as "OLD_ResetPeriodTimeUnit",
+                                "OLD"."ResetPrecision" as "OLD_ResetPrecision",
+                                "OLD"."ResetRounding" as "OLD_ResetRounding",
+                                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                                "OLD"."Spread" as "OLD_Spread",
+                                "OLD"."StandardFixingRateSpecificationCategory" as "OLD_StandardFixingRateSpecificationCategory",
+                                "OLD"."StandardInterestSpecificationCategory" as "OLD_StandardInterestSpecificationCategory",
+                                "OLD"."StandardInterestType" as "OLD_StandardInterestType",
+                                "OLD"."VariableRateMax" as "OLD_VariableRateMax",
+                                "OLD"."VariableRateMin" as "OLD_VariableRateMin",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardInterest" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.PositionCurrency" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardProduct.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_StandardProduct.IDSystem" is null then '' else "IN"."ASSOC_StandardProduct.IDSystem" end ) = "OLD"."ASSOC_StandardProduct.IDSystem" and
+                ( case when "IN"."ASSOC_StandardProduct.PricingScheme" is null then '' else "IN"."ASSOC_StandardProduct.PricingScheme" end ) = "OLD"."ASSOC_StandardProduct.PricingScheme" and
+                ( case when "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_PosCcyOfStdAcc.PositionCurrency" as "ASSOC_PosCcyOfStdAcc.PositionCurrency",
+            "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+            "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+            "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+            "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+            "OLD_ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD_ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardProduct.IDSystem",
+            "OLD_ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardProduct.PricingScheme",
+            "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_ReferenceRate.ReferenceRateID" as "ASSOC_ReferenceRate.ReferenceRateID",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_CompoundingConvention" as "CompoundingConvention",
+            "OLD_CutoffRelativeToDate" as "CutoffRelativeToDate",
+            "OLD_DayCountConvention" as "DayCountConvention",
+            "OLD_DayOfMonthOfReset" as "DayOfMonthOfReset",
+            "OLD_DueScheduleBusinessCalendar" as "DueScheduleBusinessCalendar",
+            "OLD_DueScheduleBusinessDayConvention" as "DueScheduleBusinessDayConvention",
+            "OLD_DueSchedulePeriodLength" as "DueSchedulePeriodLength",
+            "OLD_DueSchedulePeriodTimeUnit" as "DueSchedulePeriodTimeUnit",
+            "OLD_FixedRate" as "FixedRate",
+            "OLD_InterestBusinessCalendar" as "InterestBusinessCalendar",
+            "OLD_InterestCurrency" as "InterestCurrency",
+            "OLD_InterestInAdvance" as "InterestInAdvance",
+            "OLD_InterestIsCompounded" as "InterestIsCompounded",
+            "OLD_InterestPaymentPrecision" as "InterestPaymentPrecision",
+            "OLD_InterestPaymentRoundingMethod" as "InterestPaymentRoundingMethod",
+            "OLD_InterestPeriodLength" as "InterestPeriodLength",
+            "OLD_InterestPeriodTimeUnit" as "InterestPeriodTimeUnit",
+            "OLD_PeriodEndDayOfMonth" as "PeriodEndDayOfMonth",
+            "OLD_PeriodEndDueDateLag" as "PeriodEndDueDateLag",
+            "OLD_PeriodEndDueDateLagTimeUnit" as "PeriodEndDueDateLagTimeUnit",
+            "OLD_PeriodUntilFirstDueDate" as "PeriodUntilFirstDueDate",
+            "OLD_PeriodUntilFirstInterestPeriodStart" as "PeriodUntilFirstInterestPeriodStart",
+            "OLD_PeriodUntilLastInterestPeriodEnd" as "PeriodUntilLastInterestPeriodEnd",
+            "OLD_PeriodUntilTimeUnit" as "PeriodUntilTimeUnit",
+            "OLD_PreconditionApplies" as "PreconditionApplies",
+            "OLD_ReferenceRateFactor" as "ReferenceRateFactor",
+            "OLD_ReferenceRateFormula" as "ReferenceRateFormula",
+            "OLD_RelativeToInterestPeriodStartOrEnd" as "RelativeToInterestPeriodStartOrEnd",
+            "OLD_ResetBusinessCalendar" as "ResetBusinessCalendar",
+            "OLD_ResetBusinessDayConvention" as "ResetBusinessDayConvention",
+            "OLD_ResetCutoffLength" as "ResetCutoffLength",
+            "OLD_ResetCutoffTimeUnit" as "ResetCutoffTimeUnit",
+            "OLD_ResetInArrears" as "ResetInArrears",
+            "OLD_ResetLagLength" as "ResetLagLength",
+            "OLD_ResetLagTimeUnit" as "ResetLagTimeUnit",
+            "OLD_ResetPeriodLength" as "ResetPeriodLength",
+            "OLD_ResetPeriodTimeUnit" as "ResetPeriodTimeUnit",
+            "OLD_ResetPrecision" as "ResetPrecision",
+            "OLD_ResetRounding" as "ResetRounding",
+            "OLD_RoleOfPayer" as "RoleOfPayer",
+            "OLD_ScaleApplies" as "ScaleApplies",
+            "OLD_Spread" as "Spread",
+            "OLD_StandardFixingRateSpecificationCategory" as "StandardFixingRateSpecificationCategory",
+            "OLD_StandardInterestSpecificationCategory" as "StandardInterestSpecificationCategory",
+            "OLD_StandardInterestType" as "StandardInterestType",
+            "OLD_VariableRateMax" as "VariableRateMax",
+            "OLD_VariableRateMin" as "VariableRateMin",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_PosCcyOfStdAcc.PositionCurrency" as "OLD_ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ASSOC_ReferenceRate.ReferenceRateID" as "OLD_ASSOC_ReferenceRate.ReferenceRateID",
+                        "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                        "OLD"."CompoundingConvention" as "OLD_CompoundingConvention",
+                        "OLD"."CutoffRelativeToDate" as "OLD_CutoffRelativeToDate",
+                        "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                        "OLD"."DayOfMonthOfReset" as "OLD_DayOfMonthOfReset",
+                        "OLD"."DueScheduleBusinessCalendar" as "OLD_DueScheduleBusinessCalendar",
+                        "OLD"."DueScheduleBusinessDayConvention" as "OLD_DueScheduleBusinessDayConvention",
+                        "OLD"."DueSchedulePeriodLength" as "OLD_DueSchedulePeriodLength",
+                        "OLD"."DueSchedulePeriodTimeUnit" as "OLD_DueSchedulePeriodTimeUnit",
+                        "OLD"."FixedRate" as "OLD_FixedRate",
+                        "OLD"."InterestBusinessCalendar" as "OLD_InterestBusinessCalendar",
+                        "OLD"."InterestCurrency" as "OLD_InterestCurrency",
+                        "OLD"."InterestInAdvance" as "OLD_InterestInAdvance",
+                        "OLD"."InterestIsCompounded" as "OLD_InterestIsCompounded",
+                        "OLD"."InterestPaymentPrecision" as "OLD_InterestPaymentPrecision",
+                        "OLD"."InterestPaymentRoundingMethod" as "OLD_InterestPaymentRoundingMethod",
+                        "OLD"."InterestPeriodLength" as "OLD_InterestPeriodLength",
+                        "OLD"."InterestPeriodTimeUnit" as "OLD_InterestPeriodTimeUnit",
+                        "OLD"."PeriodEndDayOfMonth" as "OLD_PeriodEndDayOfMonth",
+                        "OLD"."PeriodEndDueDateLag" as "OLD_PeriodEndDueDateLag",
+                        "OLD"."PeriodEndDueDateLagTimeUnit" as "OLD_PeriodEndDueDateLagTimeUnit",
+                        "OLD"."PeriodUntilFirstDueDate" as "OLD_PeriodUntilFirstDueDate",
+                        "OLD"."PeriodUntilFirstInterestPeriodStart" as "OLD_PeriodUntilFirstInterestPeriodStart",
+                        "OLD"."PeriodUntilLastInterestPeriodEnd" as "OLD_PeriodUntilLastInterestPeriodEnd",
+                        "OLD"."PeriodUntilTimeUnit" as "OLD_PeriodUntilTimeUnit",
+                        "OLD"."PreconditionApplies" as "OLD_PreconditionApplies",
+                        "OLD"."ReferenceRateFactor" as "OLD_ReferenceRateFactor",
+                        "OLD"."ReferenceRateFormula" as "OLD_ReferenceRateFormula",
+                        "OLD"."RelativeToInterestPeriodStartOrEnd" as "OLD_RelativeToInterestPeriodStartOrEnd",
+                        "OLD"."ResetBusinessCalendar" as "OLD_ResetBusinessCalendar",
+                        "OLD"."ResetBusinessDayConvention" as "OLD_ResetBusinessDayConvention",
+                        "OLD"."ResetCutoffLength" as "OLD_ResetCutoffLength",
+                        "OLD"."ResetCutoffTimeUnit" as "OLD_ResetCutoffTimeUnit",
+                        "OLD"."ResetInArrears" as "OLD_ResetInArrears",
+                        "OLD"."ResetLagLength" as "OLD_ResetLagLength",
+                        "OLD"."ResetLagTimeUnit" as "OLD_ResetLagTimeUnit",
+                        "OLD"."ResetPeriodLength" as "OLD_ResetPeriodLength",
+                        "OLD"."ResetPeriodTimeUnit" as "OLD_ResetPeriodTimeUnit",
+                        "OLD"."ResetPrecision" as "OLD_ResetPrecision",
+                        "OLD"."ResetRounding" as "OLD_ResetRounding",
+                        "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                        "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                        "OLD"."Spread" as "OLD_Spread",
+                        "OLD"."StandardFixingRateSpecificationCategory" as "OLD_StandardFixingRateSpecificationCategory",
+                        "OLD"."StandardInterestSpecificationCategory" as "OLD_StandardInterestSpecificationCategory",
+                        "OLD"."StandardInterestType" as "OLD_StandardInterestType",
+                        "OLD"."VariableRateMax" as "OLD_VariableRateMax",
+                        "OLD"."VariableRateMin" as "OLD_VariableRateMin",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardInterest" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.PositionCurrency" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.PositionCurrency" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" and
+                ( case when "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardProduct.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_StandardProduct.IDSystem" is null then '' else "IN"."ASSOC_StandardProduct.IDSystem" end ) = "OLD"."ASSOC_StandardProduct.IDSystem" and
+                ( case when "IN"."ASSOC_StandardProduct.PricingScheme" is null then '' else "IN"."ASSOC_StandardProduct.PricingScheme" end ) = "OLD"."ASSOC_StandardProduct.PricingScheme" and
+                ( case when "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

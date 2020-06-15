@@ -1,0 +1,34 @@
+PROCEDURE "sap.fsdm.procedures::InvestmentFundShareProvidedToPolicyholderByFundRangeInsReadOnly" (IN ROW "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT", OUT CURR_INS "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+
+declare in_tt "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT" default select    ( case when "_FundRange.ID" is null then '' else "_FundRange.ID" end ) as "_FundRange.ID",
+    ( case when "_FundRange.IDSystem" is null then '' else "_FundRange.IDSystem" end ) as "_FundRange.IDSystem",
+    ( case when "_InvestmentFundShare.FinancialInstrumentID" is null then '' else "_InvestmentFundShare.FinancialInstrumentID" end ) as "_InvestmentFundShare.FinancialInstrumentID",
+    "SourceSystemID",
+    "ChangeTimestampInSourceSystem",
+    "ChangingUserInSourceSystem",
+    "ChangingProcessType",
+    "ChangingProcessID"
+from :ROW;
+
+--Insert ALL the input data
+
+CURR_INS = select 
+   "_FundRange.ID"  ,
+  "_FundRange.IDSystem"  ,
+  "_InvestmentFundShare.FinancialInstrumentID"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW;
+
+
+
+END

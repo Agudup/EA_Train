@@ -1,0 +1,29 @@
+view "sap.fsdm.Views::ProfitAndLossParticipation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "_ParticipationCert.FinancialInstrumentID" as "_ParticipationCert_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "Accumulation" as "Accumulation",
+      "AssessmentBase" as "AssessmentBase",
+      "AssessmentPeriodLength" as "AssessmentPeriodLength",
+      "AssessmentPeriodTimeUnit" as "AssessmentPeriodTimeUnit",
+      "DeterminationCurrency" as "DeterminationCurrency",
+      "DeterminationPerCertificate" as "DeterminationPerCertificate",
+      "Formula" as "Formula",
+      "LowerLimit" as "LowerLimit",
+      "Percentage" as "Percentage",
+      "PreconditionApplies" as "PreconditionApplies",
+      "ScaleApplies" as "ScaleApplies",
+      "UpperLimit" as "UpperLimit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ProfitAndLossParticipation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

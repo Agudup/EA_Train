@@ -1,0 +1,64 @@
+view "sap.fsdm.SQLViews::StandardFee_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_StandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardProduct.IDSystem" ,
+      "ASSOC_StandardProduct.PricingScheme" ,
+      "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AssessmentBase" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DayOfMonthOfFeeBillingDate" ,
+      "EventDescription" ,
+      "EventTriggerType" ,
+      "FeeAmount" ,
+      "FeeCalculationMethod" ,
+      "FeeCurrency" ,
+      "FeeTruncatedForStubPeriods" ,
+      "FeeType" ,
+      "Percentage" ,
+      "PeriodUntilFeeValidityEnd" ,
+      "PeriodUntilFeeValidityStart" ,
+      "PeriodUntilFirstFeeBillingDate" ,
+      "PeriodUntilLastFeeBillingDate" ,
+      "PreconditionApplies" ,
+      "ReccurringFeePeriodTimeUnit" ,
+      "RecurringFeePeriodLength" ,
+      "RoleOfPayer" ,
+      "ScaleApplies" ,
+      "StandardFeeCategory" ,
+      "TimeUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardFee"
+with associations
+(
+	join "sap.fsdm.SQLViews::ScaleInterval_View" as "_ScaleInterval_ASSOC_StandardFee"
+	  on "SequenceNumber" = "_ScaleInterval_ASSOC_StandardFee"."ASSOC_StandardFee.SequenceNumber" AND 
+	     "ASSOC_StandardProduct.PricingScheme" = "_ScaleInterval_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardProduct.IDSystem" = "_ScaleInterval_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardProduct.FinancialStandardProductID" = "_ScaleInterval_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "_ScaleInterval_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::SetOfPreconditions_View" as "_SetOfPreconditions_ASSOC_StandardFee"
+	  on "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "_SetOfPreconditions_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardProduct.FinancialStandardProductID" = "_SetOfPreconditions_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardProduct.IDSystem" = "_SetOfPreconditions_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardProduct.PricingScheme" = "_SetOfPreconditions_ASSOC_StandardFee"."ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" AND 
+	     "SequenceNumber" = "_SetOfPreconditions_ASSOC_StandardFee"."ASSOC_StandardFee.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "ASSOC_StandardProduct"
+	  on "ASSOC_StandardProduct"."ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardProduct"."FinancialStandardProductID" = "ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardProduct"."IDSystem" = "ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardProduct"."PricingScheme" = "ASSOC_StandardProduct.PricingScheme"
+	     
+);

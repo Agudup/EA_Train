@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::PartnerRelationClassification_View" 
+as select
+      "PartnerRelationClass" ,
+      "PartnerRelationClassificationSystem" ,
+      "ASSOC_BusinessPartnerRelation.BusinessPartnerRelationType" ,
+      "ASSOC_BusinessPartnerRelation.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_BusinessPartnerRelation.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PartnerRelationClassDescription" ,
+      "PartnerRelationClassificationSystemDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PartnerRelationClassification"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartnerRelation_View" as "ASSOC_BusinessPartnerRelation"
+	  on "ASSOC_BusinessPartnerRelation"."ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_BusinessPartnerRelation.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_BusinessPartnerRelation"."ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_BusinessPartnerRelation.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_BusinessPartnerRelation"."BusinessPartnerRelationType" = "ASSOC_BusinessPartnerRelation.BusinessPartnerRelationType"
+	     
+);

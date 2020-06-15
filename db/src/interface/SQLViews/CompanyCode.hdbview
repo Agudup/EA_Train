@@ -1,0 +1,29 @@
+view "sap.fsdm.SQLViews::CompanyCode_View" 
+as select
+      "CompanyCode" ,
+      "ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CompanyCode"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Company"
+	  on "ASSOC_Company"."BusinessPartnerID" = "ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__CompanyCode"
+	  on "CompanyCode" = "_GeneralLedgerAccountBalance__CompanyCode"."_CompanyCode.CompanyCode" AND 
+	     "ASSOC_Company.BusinessPartnerID" = "_GeneralLedgerAccountBalance__CompanyCode"."_CompanyCode.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__CompanyCode"
+	  on "ASSOC_Company.BusinessPartnerID" = "_SubledgerAccountbalance__CompanyCode"."_CompanyCode.ASSOC_Company.BusinessPartnerID" AND 
+	     "CompanyCode" = "_SubledgerAccountbalance__CompanyCode"."_CompanyCode.CompanyCode"
+	     
+);

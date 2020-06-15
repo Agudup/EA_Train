@@ -1,0 +1,21 @@
+view "sap.fsdm.SQLViews::SubledgerAccountGroup_View" 
+as select
+      "SubledgerAccountGroupId" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SubledgerAccountGroupDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SubledgerAccountGroup"
+with associations
+(
+	join "sap.fsdm.SQLViews::SubledgerAccount_View" as "_SubledgerAccount__SubledgerAccountGroup"
+	  on "SubledgerAccountGroupId" = "_SubledgerAccount__SubledgerAccountGroup"."_SubledgerAccountGroup.SubledgerAccountGroupId"
+	     
+);

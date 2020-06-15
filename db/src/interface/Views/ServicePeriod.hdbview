@@ -1,0 +1,21 @@
+view "sap.fsdm.Views::ServicePeriod_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "StartDate" as "StartDate",
+      "_Section._ReinsuranceContract.FinancialContractID" as "_Section__ReinsuranceContract_FinancialContractID",
+      "_Section._ReinsuranceContract.IDSystem" as "_Section__ReinsuranceContract_IDSystem",
+      "_Section.SectionID" as "_Section_SectionID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "EndDate" as "EndDate",
+      "LastNoticeDate" as "LastNoticeDate",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ServicePeriod"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

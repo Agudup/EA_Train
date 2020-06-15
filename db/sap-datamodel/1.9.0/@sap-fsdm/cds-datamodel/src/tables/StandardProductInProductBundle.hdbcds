@@ -1,0 +1,48 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialStandardProduct";
+using "sap"."fsdm"::"ProductBundle";
+
+entity "StandardProductInProductBundle" {
+    key "ASSOC_FinancialStandardProduct" : association to FinancialStandardProduct {
+                                                                                     FinancialStandardProductID,
+                                                                                     IDSystem,
+                                                                                     PricingScheme,
+                                                                                     ASSOC_Company
+                                                                                   }        not null;
+    key "ASSOC_ProductBundle"            : association to ProductBundle { ProductBundleID } not null;
+    key "BusinessValidFrom"              : LocalDate;
+    key "BusinessValidTo"                : LocalDate;
+        "SystemValidFrom"                : UTCTimestamp                                     not null;
+        "SystemValidTo"                  : UTCTimestamp                                     not null;
+        "SourceSystemID"                 : String(128);
+        "ChangeTimestampInSourceSystem"  : UTCTimestamp;
+        "ChangingUserInSourceSystem"     : String(128);
+        "ChangingProcessType"            : String(40);
+        "ChangingProcessID"              : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "StandardProductInProductBundle_Historical" {
+    "ASSOC_FinancialStandardProduct" : association to FinancialStandardProduct {
+                                                                                 FinancialStandardProductID,
+                                                                                 IDSystem,
+                                                                                 PricingScheme,
+                                                                                 ASSOC_Company
+                                                                               }        not null;
+    "ASSOC_ProductBundle"            : association to ProductBundle { ProductBundleID } not null;
+    "BusinessValidFrom"              : LocalDate                                        not null;
+    "BusinessValidTo"                : LocalDate                                        not null;
+    "SystemValidFrom"                : UTCTimestamp                                     not null;
+    "SystemValidTo"                  : UTCTimestamp                                     not null;
+    "SourceSystemID"                 : String(128);
+    "ChangeTimestampInSourceSystem"  : UTCTimestamp;
+    "ChangingUserInSourceSystem"     : String(128);
+    "ChangingProcessType"            : String(40);
+    "ChangingProcessID"              : String(128);
+}
+technical configuration {
+    column store;
+};

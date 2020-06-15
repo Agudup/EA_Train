@@ -1,0 +1,393 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskExposureAtDefaultLoad" (IN ROW "sap.fsdm.tabletypes::CreditRiskExposureAtDefaultTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'EADEstimationMethod=' || TO_VARCHAR("EADEstimationMethod") || ' ' ||
+                'EADTimeHorizon=' || TO_VARCHAR("EADTimeHorizon") || ' ' ||
+                'EADTimeHorizonTimeUnit=' || TO_VARCHAR("EADTimeHorizonTimeUnit") || ' ' ||
+                'RiskProvisionScenario=' || TO_VARCHAR("RiskProvisionScenario") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                '_Collection.CollectionID=' || TO_VARCHAR("_Collection.CollectionID") || ' ' ||
+                '_Collection.IDSystem=' || TO_VARCHAR("_Collection.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."EADEstimationMethod",
+                        "IN"."EADTimeHorizon",
+                        "IN"."EADTimeHorizonTimeUnit",
+                        "IN"."RiskProvisionScenario",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."EADEstimationMethod",
+                        "IN"."EADTimeHorizon",
+                        "IN"."EADTimeHorizonTimeUnit",
+                        "IN"."RiskProvisionScenario",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "EADEstimationMethod",
+                        "EADTimeHorizon",
+                        "EADTimeHorizonTimeUnit",
+                        "RiskProvisionScenario",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "_Collection.CollectionID",
+                        "_Collection.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."EADEstimationMethod",
+                                    "IN"."EADTimeHorizon",
+                                    "IN"."EADTimeHorizonTimeUnit",
+                                    "IN"."RiskProvisionScenario",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."EADEstimationMethod",
+                                    "IN"."EADTimeHorizon",
+                                    "IN"."EADTimeHorizonTimeUnit",
+                                    "IN"."RiskProvisionScenario",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::CreditRiskExposureAtDefault" (
+        "EADEstimationMethod",
+        "EADTimeHorizon",
+        "EADTimeHorizonTimeUnit",
+        "RiskProvisionScenario",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CreditConversionFactor",
+        "EADCurrency",
+        "ExposureAtDefault",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_EADEstimationMethod" as "EADEstimationMethod" ,
+            "OLD_EADTimeHorizon" as "EADTimeHorizon" ,
+            "OLD_EADTimeHorizonTimeUnit" as "EADTimeHorizonTimeUnit" ,
+            "OLD_RiskProvisionScenario" as "RiskProvisionScenario" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID" ,
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_CreditConversionFactor" as "CreditConversionFactor" ,
+            "OLD_EADCurrency" as "EADCurrency" ,
+            "OLD_ExposureAtDefault" as "ExposureAtDefault" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."EADEstimationMethod",
+                        "IN"."EADTimeHorizon",
+                        "IN"."EADTimeHorizonTimeUnit",
+                        "IN"."RiskProvisionScenario",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."EADEstimationMethod" as "OLD_EADEstimationMethod",
+                                "OLD"."EADTimeHorizon" as "OLD_EADTimeHorizon",
+                                "OLD"."EADTimeHorizonTimeUnit" as "OLD_EADTimeHorizonTimeUnit",
+                                "OLD"."RiskProvisionScenario" as "OLD_RiskProvisionScenario",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."CreditConversionFactor" as "OLD_CreditConversionFactor",
+                                "OLD"."EADCurrency" as "OLD_EADCurrency",
+                                "OLD"."ExposureAtDefault" as "OLD_ExposureAtDefault",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskExposureAtDefault" as "OLD"
+            on
+                ( case when "IN"."EADEstimationMethod" is null then '' else "IN"."EADEstimationMethod" end ) = "OLD"."EADEstimationMethod" and
+                ( case when "IN"."EADTimeHorizon" is null then 0 else "IN"."EADTimeHorizon" end ) = "OLD"."EADTimeHorizon" and
+                ( case when "IN"."EADTimeHorizonTimeUnit" is null then '' else "IN"."EADTimeHorizonTimeUnit" end ) = "OLD"."EADTimeHorizonTimeUnit" and
+                ( case when "IN"."RiskProvisionScenario" is null then '' else "IN"."RiskProvisionScenario" end ) = "OLD"."RiskProvisionScenario" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_Collection.CollectionID" is null then '' else "IN"."_Collection.CollectionID" end ) = "OLD"."_Collection.CollectionID" and
+                ( case when "IN"."_Collection.IDSystem" is null then '' else "IN"."_Collection.IDSystem" end ) = "OLD"."_Collection.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::CreditRiskExposureAtDefault" (
+        "EADEstimationMethod",
+        "EADTimeHorizon",
+        "EADTimeHorizonTimeUnit",
+        "RiskProvisionScenario",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CreditConversionFactor",
+        "EADCurrency",
+        "ExposureAtDefault",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_EADEstimationMethod" as "EADEstimationMethod",
+            "OLD_EADTimeHorizon" as "EADTimeHorizon",
+            "OLD_EADTimeHorizonTimeUnit" as "EADTimeHorizonTimeUnit",
+            "OLD_RiskProvisionScenario" as "RiskProvisionScenario",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID",
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_CreditConversionFactor" as "CreditConversionFactor",
+            "OLD_EADCurrency" as "EADCurrency",
+            "OLD_ExposureAtDefault" as "ExposureAtDefault",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."EADEstimationMethod",
+                        "IN"."EADTimeHorizon",
+                        "IN"."EADTimeHorizonTimeUnit",
+                        "IN"."RiskProvisionScenario",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."EADEstimationMethod" as "OLD_EADEstimationMethod",
+                        "OLD"."EADTimeHorizon" as "OLD_EADTimeHorizon",
+                        "OLD"."EADTimeHorizonTimeUnit" as "OLD_EADTimeHorizonTimeUnit",
+                        "OLD"."RiskProvisionScenario" as "OLD_RiskProvisionScenario",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."CreditConversionFactor" as "OLD_CreditConversionFactor",
+                        "OLD"."EADCurrency" as "OLD_EADCurrency",
+                        "OLD"."ExposureAtDefault" as "OLD_ExposureAtDefault",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskExposureAtDefault" as "OLD"
+            on
+                ( case when "IN"."EADEstimationMethod" is null then '' else "IN"."EADEstimationMethod" end ) = "OLD"."EADEstimationMethod" and
+                ( case when "IN"."EADTimeHorizon" is null then 0 else "IN"."EADTimeHorizon" end ) = "OLD"."EADTimeHorizon" and
+                ( case when "IN"."EADTimeHorizonTimeUnit" is null then '' else "IN"."EADTimeHorizonTimeUnit" end ) = "OLD"."EADTimeHorizonTimeUnit" and
+                ( case when "IN"."RiskProvisionScenario" is null then '' else "IN"."RiskProvisionScenario" end ) = "OLD"."RiskProvisionScenario" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_Collection.CollectionID" is null then '' else "IN"."_Collection.CollectionID" end ) = "OLD"."_Collection.CollectionID" and
+                ( case when "IN"."_Collection.IDSystem" is null then '' else "IN"."_Collection.IDSystem" end ) = "OLD"."_Collection.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::CreditRiskExposureAtDefault"
+    where (
+        "EADEstimationMethod",
+        "EADTimeHorizon",
+        "EADTimeHorizonTimeUnit",
+        "RiskProvisionScenario",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."EADEstimationMethod",
+            "OLD"."EADTimeHorizon",
+            "OLD"."EADTimeHorizonTimeUnit",
+            "OLD"."RiskProvisionScenario",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."_Collection.CollectionID",
+            "OLD"."_Collection.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CreditRiskExposureAtDefault" as "OLD"
+        on
+           ( case when "IN"."EADEstimationMethod" is null then '' else "IN"."EADEstimationMethod" end ) = "OLD"."EADEstimationMethod" and
+           ( case when "IN"."EADTimeHorizon" is null then 0 else "IN"."EADTimeHorizon" end ) = "OLD"."EADTimeHorizon" and
+           ( case when "IN"."EADTimeHorizonTimeUnit" is null then '' else "IN"."EADTimeHorizonTimeUnit" end ) = "OLD"."EADTimeHorizonTimeUnit" and
+           ( case when "IN"."RiskProvisionScenario" is null then '' else "IN"."RiskProvisionScenario" end ) = "OLD"."RiskProvisionScenario" and
+           ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+           ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+           ( case when "IN"."_Collection.CollectionID" is null then '' else "IN"."_Collection.CollectionID" end ) = "OLD"."_Collection.CollectionID" and
+           ( case when "IN"."_Collection.IDSystem" is null then '' else "IN"."_Collection.IDSystem" end ) = "OLD"."_Collection.IDSystem" and
+           ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::CreditRiskExposureAtDefault" (
+        "EADEstimationMethod",
+        "EADTimeHorizon",
+        "EADTimeHorizonTimeUnit",
+        "RiskProvisionScenario",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CreditConversionFactor",
+        "EADCurrency",
+        "ExposureAtDefault",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "EADEstimationMethod" is null then '' else "EADEstimationMethod" end ) as "EADEstimationMethod",
+            ( case when "EADTimeHorizon" is null then 0 else "EADTimeHorizon" end ) as "EADTimeHorizon",
+            ( case when "EADTimeHorizonTimeUnit" is null then '' else "EADTimeHorizonTimeUnit" end ) as "EADTimeHorizonTimeUnit",
+            ( case when "RiskProvisionScenario" is null then '' else "RiskProvisionScenario" end ) as "RiskProvisionScenario",
+            ( case when "ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_FinancialContract.FinancialContractID",
+            ( case when "ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_FinancialContract.IDSystem",
+            ( case when "_Collection.CollectionID" is null then '' else "_Collection.CollectionID" end ) as "_Collection.CollectionID",
+            ( case when "_Collection.IDSystem" is null then '' else "_Collection.IDSystem" end ) as "_Collection.IDSystem",
+            ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "CreditConversionFactor"  ,
+            "EADCurrency"  ,
+            "ExposureAtDefault"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

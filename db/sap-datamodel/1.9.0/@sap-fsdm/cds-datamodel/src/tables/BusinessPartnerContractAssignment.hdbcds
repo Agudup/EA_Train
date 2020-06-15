@@ -1,0 +1,99 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"Address";
+
+entity "BusinessPartnerContractAssignment" {
+    key "Role"                                      : String(50);
+    key "ASSOC_FinancialContract"                   : association to FinancialContract {
+                                                                                         FinancialContractID,
+                                                                                         IDSystem
+                                                                                       }                   not null;
+    key "ASSOC_PartnerInParticipation"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"                         : LocalDate;
+    key "BusinessValidTo"                           : LocalDate;
+        "SystemValidFrom"                           : UTCTimestamp                                         not null;
+        "SystemValidTo"                             : UTCTimestamp                                         not null;
+        "_Address"                                  : association to Address {
+                                                                               AddressType,
+                                                                               SequenceNumber,
+                                                                               ASSOC_BankingChannel,
+                                                                               ASSOC_BusinessPartnerID,
+                                                                               ASSOC_OrganizationalUnit,
+                                                                               ASSOC_PhysicalAsset,
+                                                                               _Claim
+                                                                             };
+        "AutomobileAssociationMember"               : Boolean;
+        "BusinessPartnerContractAssignmentCategory" : String(40);
+        "BusinessPartnerMakingTheOffer"             : Boolean;
+        "ContractDataOwner"                         : Boolean;
+        "MainCounterparty"                          : Boolean;
+        "MainIndicator"                             : Boolean;
+        "MarginPeriod"                              : Integer;
+        "MarginPeriodTimeUnit"                      : String(10);
+        "MinimumTransferAmount"                     : Decimal(34, 6);
+        "MinimumTransferAmountCurrency"             : String(3);
+        "OwnerOccupiedPropertyType"                 : String(40);
+        "PowerOfAttorneyIndicator"                  : Boolean;
+        "RoundingAmount"                            : Decimal(34, 6);
+        "RoundingAmountCurrency"                    : String(3);
+        "TariffGroup"                               : String(40);
+        "ThresholdAmount"                           : Decimal(34, 6);
+        "ThresholdAmountCurrency"                   : String(3);
+        "SourceSystemID"                            : String(128);
+        "ChangeTimestampInSourceSystem"             : UTCTimestamp;
+        "ChangingUserInSourceSystem"                : String(128);
+        "ChangingProcessType"                       : String(40);
+        "ChangingProcessID"                         : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BusinessPartnerContractAssignment_Historical" {
+    "Role"                                      : String(50)                                           not null;
+    "ASSOC_FinancialContract"                   : association to FinancialContract {
+                                                                                     FinancialContractID,
+                                                                                     IDSystem
+                                                                                   }                   not null;
+    "ASSOC_PartnerInParticipation"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"                         : LocalDate                                            not null;
+    "BusinessValidTo"                           : LocalDate                                            not null;
+    "SystemValidFrom"                           : UTCTimestamp                                         not null;
+    "SystemValidTo"                             : UTCTimestamp                                         not null;
+    "_Address"                                  : association to Address {
+                                                                           AddressType,
+                                                                           SequenceNumber,
+                                                                           ASSOC_BankingChannel,
+                                                                           ASSOC_BusinessPartnerID,
+                                                                           ASSOC_OrganizationalUnit,
+                                                                           ASSOC_PhysicalAsset,
+                                                                           _Claim
+                                                                         };
+    "AutomobileAssociationMember"               : Boolean;
+    "BusinessPartnerContractAssignmentCategory" : String(40);
+    "BusinessPartnerMakingTheOffer"             : Boolean;
+    "ContractDataOwner"                         : Boolean;
+    "MainCounterparty"                          : Boolean;
+    "MainIndicator"                             : Boolean;
+    "MarginPeriod"                              : Integer;
+    "MarginPeriodTimeUnit"                      : String(10);
+    "MinimumTransferAmount"                     : Decimal(34, 6);
+    "MinimumTransferAmountCurrency"             : String(3);
+    "OwnerOccupiedPropertyType"                 : String(40);
+    "PowerOfAttorneyIndicator"                  : Boolean;
+    "RoundingAmount"                            : Decimal(34, 6);
+    "RoundingAmountCurrency"                    : String(3);
+    "TariffGroup"                               : String(40);
+    "ThresholdAmount"                           : Decimal(34, 6);
+    "ThresholdAmountCurrency"                   : String(3);
+    "SourceSystemID"                            : String(128);
+    "ChangeTimestampInSourceSystem"             : UTCTimestamp;
+    "ChangingUserInSourceSystem"                : String(128);
+    "ChangingProcessType"                       : String(40);
+    "ChangingProcessID"                         : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,57 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+
+entity "TrancheInSyndication" {
+    key "TrancheSequenceNumber"         : Integer                            default -1;
+    key "_SyndicationAgreement"         : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                       not null;
+        "SystemValidTo"                 : UTCTimestamp                       not null;
+        "IsTrancheRevolving"            : Boolean;
+        "Status"                        : String(100);
+        "TrancheAmount"                 : Decimal(34, 6);
+        "TrancheCurrency"               : String(3);
+        "TrancheEndDate"                : LocalDate;
+        "TrancheStartDate"              : LocalDate;
+        "TrancheType"                   : String(40);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "TrancheInSyndication_Historical" {
+    "TrancheSequenceNumber"         : Integer                            default -1 not null;
+    "_SyndicationAgreement"         : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       } not null;
+    "BusinessValidFrom"             : LocalDate                          not null;
+    "BusinessValidTo"               : LocalDate                          not null;
+    "SystemValidFrom"               : UTCTimestamp                       not null;
+    "SystemValidTo"                 : UTCTimestamp                       not null;
+    "IsTrancheRevolving"            : Boolean;
+    "Status"                        : String(100);
+    "TrancheAmount"                 : Decimal(34, 6);
+    "TrancheCurrency"               : String(3);
+    "TrancheEndDate"                : LocalDate;
+    "TrancheStartDate"              : LocalDate;
+    "TrancheType"                   : String(40);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

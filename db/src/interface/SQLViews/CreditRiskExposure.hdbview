@@ -1,0 +1,110 @@
+view "sap.fsdm.SQLViews::CreditRiskExposure_View" 
+as select
+      "CreditRiskCalculationLevel" ,
+      "CreditRiskCalculationMethod" ,
+      "CreditRiskType" ,
+      "OffBalanceSheet" ,
+      "ASSOC_CollateralPortion.PortionNumber" ,
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "_CollectionOfInstruments.CollectionID" ,
+      "_CollectionOfInstruments.IDSystem" ,
+      "_CombinedCollateralAgreement.FinancialContractID" ,
+      "_CombinedCollateralAgreement.IDSystem" ,
+      "_FinancialContractUsedAsCollateral.FinancialContractID" ,
+      "_FinancialContractUsedAsCollateral.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" ,
+      "_PhysicalAssetUsedAsCollateral.PhysicalAssetID" ,
+      "_ReceivableUsedAsCollateral.ReceivableID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" ,
+      "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" ,
+      "_SimpleCollateralAgreement.FinancialContractID" ,
+      "_SimpleCollateralAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ApplicableMasterRating" ,
+      "CalculationApproach" ,
+      "CalculationSubApproach" ,
+      "Currency" ,
+      "CurrentExposure" ,
+      "DeductionFromCapital" ,
+      "ExpectedLoss" ,
+      "ExposureAtDefault" ,
+      "ExposureClass" ,
+      "LGDClass" ,
+      "LossGivenDefault" ,
+      "Maturity" ,
+      "MaturityPeriodTimeUnit" ,
+      "MaximumExposure" ,
+      "NominalAmount" ,
+      "ProbabilityOfDefault" ,
+      "Quantity" ,
+      "RegulatoryCapitalRequirements" ,
+      "RiskWeight" ,
+      "RiskWeightedAssets" ,
+      "RiskWeightedAssetsBeforeCreditRiskMitigation" ,
+      "Unit" ,
+      "UsedProtectionAmount" ,
+      "UsedProtectionAmountCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CreditRiskExposure"
+with associations
+(
+	join "sap.fsdm.SQLViews::CollateralPortion_View" as "ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralPortion"."ASSOC_CollateralAgreement.FinancialContractID" = "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralPortion"."ASSOC_CollateralAgreement.IDSystem" = "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "ASSOC_CollateralPortion"."PortionNumber" = "ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_CollectionOfInstruments"
+	  on "_CollectionOfInstruments"."CollectionID" = "_CollectionOfInstruments.CollectionID" AND 
+	     "_CollectionOfInstruments"."IDSystem" = "_CollectionOfInstruments.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_CombinedCollateralAgreement"
+	  on "_CombinedCollateralAgreement"."FinancialContractID" = "_CombinedCollateralAgreement.FinancialContractID" AND 
+	     "_CombinedCollateralAgreement"."IDSystem" = "_CombinedCollateralAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContractUsedAsCollateral"
+	  on "_FinancialContractUsedAsCollateral"."FinancialContractID" = "_FinancialContractUsedAsCollateral.FinancialContractID" AND 
+	     "_FinancialContractUsedAsCollateral"."IDSystem" = "_FinancialContractUsedAsCollateral.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrumentUsedAsCollateral"
+	  on "_FinancialInstrumentUsedAsCollateral"."FinancialInstrumentID" = "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "_PhysicalAssetUsedAsCollateral"
+	  on "_PhysicalAssetUsedAsCollateral"."PhysicalAssetID" = "_PhysicalAssetUsedAsCollateral.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "_ReceivableUsedAsCollateral"
+	  on "_ReceivableUsedAsCollateral"."ReceivableID" = "_ReceivableUsedAsCollateral.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID" AND 
+	     "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral"
+	  on "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral"."FinancialContractID" = "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" AND 
+	     "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral"."IDSystem" = "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SimpleCollateralAgreement"
+	  on "_SimpleCollateralAgreement"."FinancialContractID" = "_SimpleCollateralAgreement.FinancialContractID" AND 
+	     "_SimpleCollateralAgreement"."IDSystem" = "_SimpleCollateralAgreement.IDSystem"
+	     
+);

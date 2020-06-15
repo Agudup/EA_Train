@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::FinancialContractRelationErase" (IN ROW "sap.fsdm.tabletypes::FinancialContractRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "FinancialContractRelationType" is null and
+                         "SuccessionGroupID" is null and
+                         "_SourceInFinancialContractRelationship.FinancialContractID" is null and
+                         "_SourceInFinancialContractRelationship.IDSystem" is null and
+                         "_TargetInFinancialContractRelationship.FinancialContractID" is null and
+                         "_TargetInFinancialContractRelationship.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::FinancialContractRelation" WHERE
+("FinancialContractRelationType" ,
+"SuccessionGroupID" ,
+"_SourceInFinancialContractRelationship.FinancialContractID" ,
+"_SourceInFinancialContractRelationship.IDSystem" ,
+"_TargetInFinancialContractRelationship.FinancialContractID" ,
+"_TargetInFinancialContractRelationship.IDSystem" 
+)in ( select "OLD"."FinancialContractRelationType" ,
+"OLD"."SuccessionGroupID" ,
+"OLD"."_SourceInFinancialContractRelationship.FinancialContractID" ,
+"OLD"."_SourceInFinancialContractRelationship.IDSystem" ,
+"OLD"."_TargetInFinancialContractRelationship.FinancialContractID" ,
+"OLD"."_TargetInFinancialContractRelationship.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialContractRelation" "OLD"
+on
+  ( "IN"."FinancialContractRelationType" = "OLD"."FinancialContractRelationType" or "IN"."FinancialContractRelationType" is null ) and
+  ( "IN"."SuccessionGroupID" = "OLD"."SuccessionGroupID" or "IN"."SuccessionGroupID" is null ) and
+  ( "IN"."_SourceInFinancialContractRelationship.FinancialContractID" = "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" or "IN"."_SourceInFinancialContractRelationship.FinancialContractID" is null ) and
+  ( "IN"."_SourceInFinancialContractRelationship.IDSystem" = "OLD"."_SourceInFinancialContractRelationship.IDSystem" or "IN"."_SourceInFinancialContractRelationship.IDSystem" is null ) and
+  ( "IN"."_TargetInFinancialContractRelationship.FinancialContractID" = "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" or "IN"."_TargetInFinancialContractRelationship.FinancialContractID" is null ) and
+  ( "IN"."_TargetInFinancialContractRelationship.IDSystem" = "OLD"."_TargetInFinancialContractRelationship.IDSystem" or "IN"."_TargetInFinancialContractRelationship.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::FinancialContractRelation_Historical" WHERE
+("FinancialContractRelationType" ,
+"SuccessionGroupID" ,
+"_SourceInFinancialContractRelationship.FinancialContractID" ,
+"_SourceInFinancialContractRelationship.IDSystem" ,
+"_TargetInFinancialContractRelationship.FinancialContractID" ,
+"_TargetInFinancialContractRelationship.IDSystem" 
+)in ( select "OLD"."FinancialContractRelationType" ,
+"OLD"."SuccessionGroupID" ,
+"OLD"."_SourceInFinancialContractRelationship.FinancialContractID" ,
+"OLD"."_SourceInFinancialContractRelationship.IDSystem" ,
+"OLD"."_TargetInFinancialContractRelationship.FinancialContractID" ,
+"OLD"."_TargetInFinancialContractRelationship.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialContractRelation_Historical" "OLD"
+on
+  ( "IN"."FinancialContractRelationType" = "OLD"."FinancialContractRelationType" or "IN"."FinancialContractRelationType" is null ) and
+  ( "IN"."SuccessionGroupID" = "OLD"."SuccessionGroupID" or "IN"."SuccessionGroupID" is null ) and
+  ( "IN"."_SourceInFinancialContractRelationship.FinancialContractID" = "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" or "IN"."_SourceInFinancialContractRelationship.FinancialContractID" is null ) and
+  ( "IN"."_SourceInFinancialContractRelationship.IDSystem" = "OLD"."_SourceInFinancialContractRelationship.IDSystem" or "IN"."_SourceInFinancialContractRelationship.IDSystem" is null ) and
+  ( "IN"."_TargetInFinancialContractRelationship.FinancialContractID" = "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" or "IN"."_TargetInFinancialContractRelationship.FinancialContractID" is null ) and
+  ( "IN"."_TargetInFinancialContractRelationship.IDSystem" = "OLD"."_TargetInFinancialContractRelationship.IDSystem" or "IN"."_TargetInFinancialContractRelationship.IDSystem" is null ) 
+);
+
+END

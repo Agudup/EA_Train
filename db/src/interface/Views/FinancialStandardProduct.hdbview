@@ -1,0 +1,40 @@
+view "sap.fsdm.Views::FinancialStandardProduct_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "FinancialStandardProductID" as "FinancialStandardProductID",
+      "IDSystem" as "IDSystem",
+      "PricingScheme" as "PricingScheme",
+      "ASSOC_Company.BusinessPartnerID" as "ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_OrgUnit.OrganizationalUnitID" as "ASSOC_OrgUnit_OrganizationalUnitID",
+      "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrgUnit_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+      "_InsuranceProduct.FinancialStandardProductID" as "_InsuranceProduct_FinancialStandardProductID",
+      "_InsuranceProduct.IDSystem" as "_InsuranceProduct_IDSystem",
+      "_InsuranceProduct.PricingScheme" as "_InsuranceProduct_PricingScheme",
+      "_InsuranceProduct.ASSOC_Company.BusinessPartnerID" as "_InsuranceProduct_ASSOC_Company_BusinessPartnerID",
+      "_PensionPlan.ID" as "_PensionPlan_ID",
+      "_PensionPlan._RetirementPlan.ID" as "_PensionPlan__RetirementPlan_ID",
+      "_PensionPlan._RetirementPlan._BusinessPartner.BusinessPartnerID" as "_PensionPlan__RetirementPlan__BusinessPartner_BusinessPartnerID",
+      "AccountCurrency" as "AccountCurrency",
+      "ContractCurrency" as "ContractCurrency",
+      "DocumentationApproach" as "DocumentationApproach",
+      "FinancialStandardProductCategory" as "FinancialStandardProductCategory",
+      "GoverningLawCountry" as "GoverningLawCountry",
+      "NominalAmountCurrency" as "NominalAmountCurrency",
+      "ProductName" as "ProductName",
+      "SettlementCurrency" as "SettlementCurrency",
+      "SettlementMethod" as "SettlementMethod",
+      "SettlementPeriodLength" as "SettlementPeriodLength",
+      "SettlementPeriodTimeUnit" as "SettlementPeriodTimeUnit",
+      "StandardBankAccountProduct" as "StandardBankAccountProduct",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::FinancialStandardProduct"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

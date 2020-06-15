@@ -1,0 +1,375 @@
+PROCEDURE "sap.fsdm.procedures::ProductCatalogAssignmentDelete" (IN ROW "sap.fsdm.tabletypes::ProductCatalogAssignmentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_FinancialStandardProduct.FinancialStandardProductID=' || TO_VARCHAR("_FinancialStandardProduct.FinancialStandardProductID") || ' ' ||
+                '_FinancialStandardProduct.IDSystem=' || TO_VARCHAR("_FinancialStandardProduct.IDSystem") || ' ' ||
+                '_FinancialStandardProduct.PricingScheme=' || TO_VARCHAR("_FinancialStandardProduct.PricingScheme") || ' ' ||
+                '_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                '_ProductCatalogItem.ProductCatalogItem=' || TO_VARCHAR("_ProductCatalogItem.ProductCatalogItem") || ' ' ||
+                '_ProductCatalogItem._ProductCatalog.CatalogID=' || TO_VARCHAR("_ProductCatalogItem._ProductCatalog.CatalogID") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_FinancialStandardProduct.FinancialStandardProductID",
+                        "IN"."_FinancialStandardProduct.IDSystem",
+                        "IN"."_FinancialStandardProduct.PricingScheme",
+                        "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."_ProductCatalogItem.ProductCatalogItem",
+                        "IN"."_ProductCatalogItem._ProductCatalog.CatalogID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_FinancialStandardProduct.FinancialStandardProductID",
+                        "IN"."_FinancialStandardProduct.IDSystem",
+                        "IN"."_FinancialStandardProduct.PricingScheme",
+                        "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."_ProductCatalogItem.ProductCatalogItem",
+                        "IN"."_ProductCatalogItem._ProductCatalog.CatalogID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_FinancialStandardProduct.FinancialStandardProductID",
+                        "_FinancialStandardProduct.IDSystem",
+                        "_FinancialStandardProduct.PricingScheme",
+                        "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "_ProductCatalogItem.ProductCatalogItem",
+                        "_ProductCatalogItem._ProductCatalog.CatalogID",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_FinancialStandardProduct.FinancialStandardProductID",
+                                    "IN"."_FinancialStandardProduct.IDSystem",
+                                    "IN"."_FinancialStandardProduct.PricingScheme",
+                                    "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."_ProductCatalogItem.ProductCatalogItem",
+                                    "IN"."_ProductCatalogItem._ProductCatalog.CatalogID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_FinancialStandardProduct.FinancialStandardProductID",
+                                    "IN"."_FinancialStandardProduct.IDSystem",
+                                    "IN"."_FinancialStandardProduct.PricingScheme",
+                                    "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."_ProductCatalogItem.ProductCatalogItem",
+                                    "IN"."_ProductCatalogItem._ProductCatalog.CatalogID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ProductCatalogAssignment" (
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialStandardProduct.FinancialStandardProductID",
+        "_FinancialStandardProduct.IDSystem",
+        "_FinancialStandardProduct.PricingScheme",
+        "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+        "_ProductCatalogItem.ProductCatalogItem",
+        "_ProductCatalogItem._ProductCatalog.CatalogID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ProductCatalogAssignmentCategory",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__FinancialStandardProduct.FinancialStandardProductID" as "_FinancialStandardProduct.FinancialStandardProductID" ,
+            "OLD__FinancialStandardProduct.IDSystem" as "_FinancialStandardProduct.IDSystem" ,
+            "OLD__FinancialStandardProduct.PricingScheme" as "_FinancialStandardProduct.PricingScheme" ,
+            "OLD__FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "OLD__ProductCatalogItem.ProductCatalogItem" as "_ProductCatalogItem.ProductCatalogItem" ,
+            "OLD__ProductCatalogItem._ProductCatalog.CatalogID" as "_ProductCatalogItem._ProductCatalog.CatalogID" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ProductCatalogAssignmentCategory" as "ProductCatalogAssignmentCategory" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_FinancialStandardProduct.FinancialStandardProductID",
+                        "OLD"."_FinancialStandardProduct.IDSystem",
+                        "OLD"."_FinancialStandardProduct.PricingScheme",
+                        "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."_ProductCatalogItem.ProductCatalogItem",
+                        "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_FinancialStandardProduct.FinancialStandardProductID" as "OLD__FinancialStandardProduct.FinancialStandardProductID",
+                "OLD"."_FinancialStandardProduct.IDSystem" as "OLD__FinancialStandardProduct.IDSystem",
+                "OLD"."_FinancialStandardProduct.PricingScheme" as "OLD__FinancialStandardProduct.PricingScheme",
+                "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD__FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."_ProductCatalogItem.ProductCatalogItem" as "OLD__ProductCatalogItem.ProductCatalogItem",
+                "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" as "OLD__ProductCatalogItem._ProductCatalog.CatalogID",
+                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ProductCatalogAssignmentCategory" as "OLD_ProductCatalogAssignmentCategory",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ProductCatalogAssignment" as "OLD"
+            on
+                      ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                      ( "IN"."_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."_FinancialStandardProduct.FinancialStandardProductID" or "IN"."_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+                      ( "IN"."_FinancialStandardProduct.IDSystem" = "OLD"."_FinancialStandardProduct.IDSystem" or "IN"."_FinancialStandardProduct.IDSystem" is null ) and
+                      ( "IN"."_FinancialStandardProduct.PricingScheme" = "OLD"."_FinancialStandardProduct.PricingScheme" or "IN"."_FinancialStandardProduct.PricingScheme" is null ) and
+                      ( "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                      ( "IN"."_ProductCatalogItem.ProductCatalogItem" = "OLD"."_ProductCatalogItem.ProductCatalogItem" or "IN"."_ProductCatalogItem.ProductCatalogItem" is null ) and
+                      ( "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" = "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" or "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" is null ) and
+                      ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+                      ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ProductCatalogAssignment" (
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialStandardProduct.FinancialStandardProductID",
+        "_FinancialStandardProduct.IDSystem",
+        "_FinancialStandardProduct.PricingScheme",
+        "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+        "_ProductCatalogItem.ProductCatalogItem",
+        "_ProductCatalogItem._ProductCatalog.CatalogID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ProductCatalogAssignmentCategory",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__FinancialStandardProduct.FinancialStandardProductID" as "_FinancialStandardProduct.FinancialStandardProductID",
+            "OLD__FinancialStandardProduct.IDSystem" as "_FinancialStandardProduct.IDSystem",
+            "OLD__FinancialStandardProduct.PricingScheme" as "_FinancialStandardProduct.PricingScheme",
+            "OLD__FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD__ProductCatalogItem.ProductCatalogItem" as "_ProductCatalogItem.ProductCatalogItem",
+            "OLD__ProductCatalogItem._ProductCatalog.CatalogID" as "_ProductCatalogItem._ProductCatalog.CatalogID",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ProductCatalogAssignmentCategory" as "ProductCatalogAssignmentCategory",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_FinancialStandardProduct.FinancialStandardProductID",
+                        "OLD"."_FinancialStandardProduct.IDSystem",
+                        "OLD"."_FinancialStandardProduct.PricingScheme",
+                        "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."_ProductCatalogItem.ProductCatalogItem",
+                        "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_FinancialStandardProduct.FinancialStandardProductID" as "OLD__FinancialStandardProduct.FinancialStandardProductID",
+                "OLD"."_FinancialStandardProduct.IDSystem" as "OLD__FinancialStandardProduct.IDSystem",
+                "OLD"."_FinancialStandardProduct.PricingScheme" as "OLD__FinancialStandardProduct.PricingScheme",
+                "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD__FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."_ProductCatalogItem.ProductCatalogItem" as "OLD__ProductCatalogItem.ProductCatalogItem",
+                "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" as "OLD__ProductCatalogItem._ProductCatalog.CatalogID",
+                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ProductCatalogAssignmentCategory" as "OLD_ProductCatalogAssignmentCategory",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ProductCatalogAssignment" as "OLD"
+            on
+                                                ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                                ( "IN"."_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."_FinancialStandardProduct.FinancialStandardProductID" or "IN"."_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+                                                ( "IN"."_FinancialStandardProduct.IDSystem" = "OLD"."_FinancialStandardProduct.IDSystem" or "IN"."_FinancialStandardProduct.IDSystem" is null ) and
+                                                ( "IN"."_FinancialStandardProduct.PricingScheme" = "OLD"."_FinancialStandardProduct.PricingScheme" or "IN"."_FinancialStandardProduct.PricingScheme" is null ) and
+                                                ( "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                                ( "IN"."_ProductCatalogItem.ProductCatalogItem" = "OLD"."_ProductCatalogItem.ProductCatalogItem" or "IN"."_ProductCatalogItem.ProductCatalogItem" is null ) and
+                                                ( "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" = "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" or "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" is null ) and
+                                                ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+                                                ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ProductCatalogAssignment"
+    where (
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialStandardProduct.FinancialStandardProductID",
+        "_FinancialStandardProduct.IDSystem",
+        "_FinancialStandardProduct.PricingScheme",
+        "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+        "_ProductCatalogItem.ProductCatalogItem",
+        "_ProductCatalogItem._ProductCatalog.CatalogID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_FinancialStandardProduct.FinancialStandardProductID",
+            "OLD"."_FinancialStandardProduct.IDSystem",
+            "OLD"."_FinancialStandardProduct.PricingScheme",
+            "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."_ProductCatalogItem.ProductCatalogItem",
+            "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ProductCatalogAssignment" as "OLD"
+        on
+                                       ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                       ( "IN"."_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."_FinancialStandardProduct.FinancialStandardProductID" or "IN"."_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+                                       ( "IN"."_FinancialStandardProduct.IDSystem" = "OLD"."_FinancialStandardProduct.IDSystem" or "IN"."_FinancialStandardProduct.IDSystem" is null ) and
+                                       ( "IN"."_FinancialStandardProduct.PricingScheme" = "OLD"."_FinancialStandardProduct.PricingScheme" or "IN"."_FinancialStandardProduct.PricingScheme" is null ) and
+                                       ( "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                       ( "IN"."_ProductCatalogItem.ProductCatalogItem" = "OLD"."_ProductCatalogItem.ProductCatalogItem" or "IN"."_ProductCatalogItem.ProductCatalogItem" is null ) and
+                                       ( "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" = "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" or "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" is null ) and
+                                       ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+                                       ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

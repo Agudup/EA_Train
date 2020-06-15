@@ -1,0 +1,735 @@
+PROCEDURE "sap.fsdm.procedures::ValuationDelete" (IN ROW "sap.fsdm.tabletypes::ValuationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Appraiser=' || TO_VARCHAR("Appraiser") || ' ' ||
+                'RoleOfPayer=' || TO_VARCHAR("RoleOfPayer") || ' ' ||
+                'Scenario=' || TO_VARCHAR("Scenario") || ' ' ||
+                'ValuationMethod=' || TO_VARCHAR("ValuationMethod") || ' ' ||
+                'ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType=' || TO_VARCHAR("ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType") || ' ' ||
+                'ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID") || ' ' ||
+                'ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID") || ' ' ||
+                'ASSOC_CollateralPortion.PortionNumber=' || TO_VARCHAR("ASSOC_CollateralPortion.PortionNumber") || ' ' ||
+                'ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem=' || TO_VARCHAR("ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_Organization.BusinessPartnerID=' || TO_VARCHAR("ASSOC_Organization.BusinessPartnerID") || ' ' ||
+                'ASSOC_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("ASSOC_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                'ASSOC_Receivable.ReceivableID=' || TO_VARCHAR("ASSOC_Receivable.ReceivableID") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_Fund.FundID=' || TO_VARCHAR("_Fund.FundID") || ' ' ||
+                '_Fund._InvestmentCorporation.BusinessPartnerID=' || TO_VARCHAR("_Fund._InvestmentCorporation.BusinessPartnerID") || ' ' ||
+                '_SecuritiesAccount.FinancialContractID=' || TO_VARCHAR("_SecuritiesAccount.FinancialContractID") || ' ' ||
+                '_SecuritiesAccount.IDSystem=' || TO_VARCHAR("_SecuritiesAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Appraiser",
+                        "IN"."RoleOfPayer",
+                        "IN"."Scenario",
+                        "IN"."ValuationMethod",
+                        "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                        "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                        "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_Organization.BusinessPartnerID",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_Receivable.ReceivableID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_Fund.FundID",
+                        "IN"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Appraiser",
+                        "IN"."RoleOfPayer",
+                        "IN"."Scenario",
+                        "IN"."ValuationMethod",
+                        "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                        "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                        "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_Organization.BusinessPartnerID",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_Receivable.ReceivableID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_Fund.FundID",
+                        "IN"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Appraiser",
+                        "RoleOfPayer",
+                        "Scenario",
+                        "ValuationMethod",
+                        "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                        "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                        "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                        "ASSOC_CollateralPortion.PortionNumber",
+                        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_Organization.BusinessPartnerID",
+                        "ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "ASSOC_Receivable.ReceivableID",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_Fund.FundID",
+                        "_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "_SecuritiesAccount.FinancialContractID",
+                        "_SecuritiesAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Appraiser",
+                                    "IN"."RoleOfPayer",
+                                    "IN"."Scenario",
+                                    "IN"."ValuationMethod",
+                                    "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                                    "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                                    "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                                    "IN"."ASSOC_CollateralPortion.PortionNumber",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_Organization.BusinessPartnerID",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_Receivable.ReceivableID",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_Fund.FundID",
+                                    "IN"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Appraiser",
+                                    "IN"."RoleOfPayer",
+                                    "IN"."Scenario",
+                                    "IN"."ValuationMethod",
+                                    "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                                    "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                                    "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                                    "IN"."ASSOC_CollateralPortion.PortionNumber",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_Organization.BusinessPartnerID",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_Receivable.ReceivableID",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_Fund.FundID",
+                                    "IN"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Valuation" (
+        "Appraiser",
+        "RoleOfPayer",
+        "Scenario",
+        "ValuationMethod",
+        "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+        "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_Organization.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_Receivable.ReceivableID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_Fund.FundID",
+        "_Fund._InvestmentCorporation.BusinessPartnerID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_YieldCurve.YieldCurveID",
+        "ContractValuationCategory",
+        "CreditEquivalentAmount",
+        "CreditEquivalentAmountCurrency",
+        "EligibleforReducedRiskWeight",
+        "EstimatedMarketValue",
+        "EstimatedMarketValueCurrency",
+        "LegallyBinding",
+        "LendingValue",
+        "LendingValueCurrency",
+        "NetAssetValue",
+        "NetAssetValueCurrency",
+        "NetPresentValue",
+        "NetPresentValueCurrency",
+        "NominalAmountAtTimeOfValuation",
+        "NominalAmountAtTimeOfValuationCurrency",
+        "ScheduledNextValuationDate",
+        "StandardHaircut",
+        "Unit",
+        "ValuationCategory",
+        "ValuedNominalAmount",
+        "ValuedNominalAmountCurrency",
+        "ValuedQuantity",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Appraiser" as "Appraiser" ,
+            "OLD_RoleOfPayer" as "RoleOfPayer" ,
+            "OLD_Scenario" as "Scenario" ,
+            "OLD_ValuationMethod" as "ValuationMethod" ,
+            "OLD_ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" as "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" ,
+            "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+            "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+            "OLD_ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion.PortionNumber" ,
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_Organization.BusinessPartnerID" as "ASSOC_Organization.BusinessPartnerID" ,
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD_ASSOC_Receivable.ReceivableID" as "ASSOC_Receivable.ReceivableID" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__Fund.FundID" as "_Fund.FundID" ,
+            "OLD__Fund._InvestmentCorporation.BusinessPartnerID" as "_Fund._InvestmentCorporation.BusinessPartnerID" ,
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID" ,
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_YieldCurve.YieldCurveID" as "ASSOC_YieldCurve.YieldCurveID" ,
+            "OLD_ContractValuationCategory" as "ContractValuationCategory" ,
+            "OLD_CreditEquivalentAmount" as "CreditEquivalentAmount" ,
+            "OLD_CreditEquivalentAmountCurrency" as "CreditEquivalentAmountCurrency" ,
+            "OLD_EligibleforReducedRiskWeight" as "EligibleforReducedRiskWeight" ,
+            "OLD_EstimatedMarketValue" as "EstimatedMarketValue" ,
+            "OLD_EstimatedMarketValueCurrency" as "EstimatedMarketValueCurrency" ,
+            "OLD_LegallyBinding" as "LegallyBinding" ,
+            "OLD_LendingValue" as "LendingValue" ,
+            "OLD_LendingValueCurrency" as "LendingValueCurrency" ,
+            "OLD_NetAssetValue" as "NetAssetValue" ,
+            "OLD_NetAssetValueCurrency" as "NetAssetValueCurrency" ,
+            "OLD_NetPresentValue" as "NetPresentValue" ,
+            "OLD_NetPresentValueCurrency" as "NetPresentValueCurrency" ,
+            "OLD_NominalAmountAtTimeOfValuation" as "NominalAmountAtTimeOfValuation" ,
+            "OLD_NominalAmountAtTimeOfValuationCurrency" as "NominalAmountAtTimeOfValuationCurrency" ,
+            "OLD_ScheduledNextValuationDate" as "ScheduledNextValuationDate" ,
+            "OLD_StandardHaircut" as "StandardHaircut" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_ValuationCategory" as "ValuationCategory" ,
+            "OLD_ValuedNominalAmount" as "ValuedNominalAmount" ,
+            "OLD_ValuedNominalAmountCurrency" as "ValuedNominalAmountCurrency" ,
+            "OLD_ValuedQuantity" as "ValuedQuantity" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."Appraiser",
+                        "OLD"."RoleOfPayer",
+                        "OLD"."Scenario",
+                        "OLD"."ValuationMethod",
+                        "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                        "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                        "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                        "OLD"."ASSOC_CollateralPortion.PortionNumber",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_Organization.BusinessPartnerID",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_Receivable.ReceivableID",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_Fund.FundID",
+                        "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."Appraiser" as "OLD_Appraiser",
+                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                "OLD"."Scenario" as "OLD_Scenario",
+                "OLD"."ValuationMethod" as "OLD_ValuationMethod",
+                "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" as "OLD_ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_CollateralPortion.PortionNumber" as "OLD_ASSOC_CollateralPortion.PortionNumber",
+                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_Organization.BusinessPartnerID" as "OLD_ASSOC_Organization.BusinessPartnerID",
+                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" as "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."ASSOC_Receivable.ReceivableID" as "OLD_ASSOC_Receivable.ReceivableID",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_Fund.FundID" as "OLD__Fund.FundID",
+                "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" as "OLD__Fund._InvestmentCorporation.BusinessPartnerID",
+                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_YieldCurve.YieldCurveID" as "OLD_ASSOC_YieldCurve.YieldCurveID",
+                "OLD"."ContractValuationCategory" as "OLD_ContractValuationCategory",
+                "OLD"."CreditEquivalentAmount" as "OLD_CreditEquivalentAmount",
+                "OLD"."CreditEquivalentAmountCurrency" as "OLD_CreditEquivalentAmountCurrency",
+                "OLD"."EligibleforReducedRiskWeight" as "OLD_EligibleforReducedRiskWeight",
+                "OLD"."EstimatedMarketValue" as "OLD_EstimatedMarketValue",
+                "OLD"."EstimatedMarketValueCurrency" as "OLD_EstimatedMarketValueCurrency",
+                "OLD"."LegallyBinding" as "OLD_LegallyBinding",
+                "OLD"."LendingValue" as "OLD_LendingValue",
+                "OLD"."LendingValueCurrency" as "OLD_LendingValueCurrency",
+                "OLD"."NetAssetValue" as "OLD_NetAssetValue",
+                "OLD"."NetAssetValueCurrency" as "OLD_NetAssetValueCurrency",
+                "OLD"."NetPresentValue" as "OLD_NetPresentValue",
+                "OLD"."NetPresentValueCurrency" as "OLD_NetPresentValueCurrency",
+                "OLD"."NominalAmountAtTimeOfValuation" as "OLD_NominalAmountAtTimeOfValuation",
+                "OLD"."NominalAmountAtTimeOfValuationCurrency" as "OLD_NominalAmountAtTimeOfValuationCurrency",
+                "OLD"."ScheduledNextValuationDate" as "OLD_ScheduledNextValuationDate",
+                "OLD"."StandardHaircut" as "OLD_StandardHaircut",
+                "OLD"."Unit" as "OLD_Unit",
+                "OLD"."ValuationCategory" as "OLD_ValuationCategory",
+                "OLD"."ValuedNominalAmount" as "OLD_ValuedNominalAmount",
+                "OLD"."ValuedNominalAmountCurrency" as "OLD_ValuedNominalAmountCurrency",
+                "OLD"."ValuedQuantity" as "OLD_ValuedQuantity",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Valuation" as "OLD"
+            on
+                      ( "IN"."Appraiser" = "OLD"."Appraiser" or "IN"."Appraiser" is null ) and
+                      ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+                      ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) and
+                      ( "IN"."ValuationMethod" = "OLD"."ValuationMethod" or "IN"."ValuationMethod" is null ) and
+                      ( "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" = "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" or "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" is null ) and
+                      ( "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" or "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" or "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+                      ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_Organization.BusinessPartnerID" = "OLD"."ASSOC_Organization.BusinessPartnerID" or "IN"."ASSOC_Organization.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                      ( "IN"."ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_Receivable.ReceivableID" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                      ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+                      ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) and
+                      ( "IN"."_SecuritiesAccount.FinancialContractID" = "OLD"."_SecuritiesAccount.FinancialContractID" or "IN"."_SecuritiesAccount.FinancialContractID" is null ) and
+                      ( "IN"."_SecuritiesAccount.IDSystem" = "OLD"."_SecuritiesAccount.IDSystem" or "IN"."_SecuritiesAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Valuation" (
+        "Appraiser",
+        "RoleOfPayer",
+        "Scenario",
+        "ValuationMethod",
+        "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+        "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_Organization.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_Receivable.ReceivableID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_Fund.FundID",
+        "_Fund._InvestmentCorporation.BusinessPartnerID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_YieldCurve.YieldCurveID",
+        "ContractValuationCategory",
+        "CreditEquivalentAmount",
+        "CreditEquivalentAmountCurrency",
+        "EligibleforReducedRiskWeight",
+        "EstimatedMarketValue",
+        "EstimatedMarketValueCurrency",
+        "LegallyBinding",
+        "LendingValue",
+        "LendingValueCurrency",
+        "NetAssetValue",
+        "NetAssetValueCurrency",
+        "NetPresentValue",
+        "NetPresentValueCurrency",
+        "NominalAmountAtTimeOfValuation",
+        "NominalAmountAtTimeOfValuationCurrency",
+        "ScheduledNextValuationDate",
+        "StandardHaircut",
+        "Unit",
+        "ValuationCategory",
+        "ValuedNominalAmount",
+        "ValuedNominalAmountCurrency",
+        "ValuedQuantity",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Appraiser" as "Appraiser",
+            "OLD_RoleOfPayer" as "RoleOfPayer",
+            "OLD_Scenario" as "Scenario",
+            "OLD_ValuationMethod" as "ValuationMethod",
+            "OLD_ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" as "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+            "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+            "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+            "OLD_ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion.PortionNumber",
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_Organization.BusinessPartnerID" as "ASSOC_Organization.BusinessPartnerID",
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD_ASSOC_Receivable.ReceivableID" as "ASSOC_Receivable.ReceivableID",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__Fund.FundID" as "_Fund.FundID",
+            "OLD__Fund._InvestmentCorporation.BusinessPartnerID" as "_Fund._InvestmentCorporation.BusinessPartnerID",
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID",
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_YieldCurve.YieldCurveID" as "ASSOC_YieldCurve.YieldCurveID",
+            "OLD_ContractValuationCategory" as "ContractValuationCategory",
+            "OLD_CreditEquivalentAmount" as "CreditEquivalentAmount",
+            "OLD_CreditEquivalentAmountCurrency" as "CreditEquivalentAmountCurrency",
+            "OLD_EligibleforReducedRiskWeight" as "EligibleforReducedRiskWeight",
+            "OLD_EstimatedMarketValue" as "EstimatedMarketValue",
+            "OLD_EstimatedMarketValueCurrency" as "EstimatedMarketValueCurrency",
+            "OLD_LegallyBinding" as "LegallyBinding",
+            "OLD_LendingValue" as "LendingValue",
+            "OLD_LendingValueCurrency" as "LendingValueCurrency",
+            "OLD_NetAssetValue" as "NetAssetValue",
+            "OLD_NetAssetValueCurrency" as "NetAssetValueCurrency",
+            "OLD_NetPresentValue" as "NetPresentValue",
+            "OLD_NetPresentValueCurrency" as "NetPresentValueCurrency",
+            "OLD_NominalAmountAtTimeOfValuation" as "NominalAmountAtTimeOfValuation",
+            "OLD_NominalAmountAtTimeOfValuationCurrency" as "NominalAmountAtTimeOfValuationCurrency",
+            "OLD_ScheduledNextValuationDate" as "ScheduledNextValuationDate",
+            "OLD_StandardHaircut" as "StandardHaircut",
+            "OLD_Unit" as "Unit",
+            "OLD_ValuationCategory" as "ValuationCategory",
+            "OLD_ValuedNominalAmount" as "ValuedNominalAmount",
+            "OLD_ValuedNominalAmountCurrency" as "ValuedNominalAmountCurrency",
+            "OLD_ValuedQuantity" as "ValuedQuantity",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."Appraiser",
+                        "OLD"."RoleOfPayer",
+                        "OLD"."Scenario",
+                        "OLD"."ValuationMethod",
+                        "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                        "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                        "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                        "OLD"."ASSOC_CollateralPortion.PortionNumber",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_Organization.BusinessPartnerID",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_Receivable.ReceivableID",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_Fund.FundID",
+                        "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."Appraiser" as "OLD_Appraiser",
+                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                "OLD"."Scenario" as "OLD_Scenario",
+                "OLD"."ValuationMethod" as "OLD_ValuationMethod",
+                "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" as "OLD_ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+                "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_CollateralPortion.PortionNumber" as "OLD_ASSOC_CollateralPortion.PortionNumber",
+                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_Organization.BusinessPartnerID" as "OLD_ASSOC_Organization.BusinessPartnerID",
+                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" as "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."ASSOC_Receivable.ReceivableID" as "OLD_ASSOC_Receivable.ReceivableID",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_Fund.FundID" as "OLD__Fund.FundID",
+                "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" as "OLD__Fund._InvestmentCorporation.BusinessPartnerID",
+                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_YieldCurve.YieldCurveID" as "OLD_ASSOC_YieldCurve.YieldCurveID",
+                "OLD"."ContractValuationCategory" as "OLD_ContractValuationCategory",
+                "OLD"."CreditEquivalentAmount" as "OLD_CreditEquivalentAmount",
+                "OLD"."CreditEquivalentAmountCurrency" as "OLD_CreditEquivalentAmountCurrency",
+                "OLD"."EligibleforReducedRiskWeight" as "OLD_EligibleforReducedRiskWeight",
+                "OLD"."EstimatedMarketValue" as "OLD_EstimatedMarketValue",
+                "OLD"."EstimatedMarketValueCurrency" as "OLD_EstimatedMarketValueCurrency",
+                "OLD"."LegallyBinding" as "OLD_LegallyBinding",
+                "OLD"."LendingValue" as "OLD_LendingValue",
+                "OLD"."LendingValueCurrency" as "OLD_LendingValueCurrency",
+                "OLD"."NetAssetValue" as "OLD_NetAssetValue",
+                "OLD"."NetAssetValueCurrency" as "OLD_NetAssetValueCurrency",
+                "OLD"."NetPresentValue" as "OLD_NetPresentValue",
+                "OLD"."NetPresentValueCurrency" as "OLD_NetPresentValueCurrency",
+                "OLD"."NominalAmountAtTimeOfValuation" as "OLD_NominalAmountAtTimeOfValuation",
+                "OLD"."NominalAmountAtTimeOfValuationCurrency" as "OLD_NominalAmountAtTimeOfValuationCurrency",
+                "OLD"."ScheduledNextValuationDate" as "OLD_ScheduledNextValuationDate",
+                "OLD"."StandardHaircut" as "OLD_StandardHaircut",
+                "OLD"."Unit" as "OLD_Unit",
+                "OLD"."ValuationCategory" as "OLD_ValuationCategory",
+                "OLD"."ValuedNominalAmount" as "OLD_ValuedNominalAmount",
+                "OLD"."ValuedNominalAmountCurrency" as "OLD_ValuedNominalAmountCurrency",
+                "OLD"."ValuedQuantity" as "OLD_ValuedQuantity",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Valuation" as "OLD"
+            on
+                                                ( "IN"."Appraiser" = "OLD"."Appraiser" or "IN"."Appraiser" is null ) and
+                                                ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+                                                ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) and
+                                                ( "IN"."ValuationMethod" = "OLD"."ValuationMethod" or "IN"."ValuationMethod" is null ) and
+                                                ( "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" = "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" or "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" is null ) and
+                                                ( "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" or "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" or "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+                                                ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_Organization.BusinessPartnerID" = "OLD"."ASSOC_Organization.BusinessPartnerID" or "IN"."ASSOC_Organization.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_Receivable.ReceivableID" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                                ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+                                                ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) and
+                                                ( "IN"."_SecuritiesAccount.FinancialContractID" = "OLD"."_SecuritiesAccount.FinancialContractID" or "IN"."_SecuritiesAccount.FinancialContractID" is null ) and
+                                                ( "IN"."_SecuritiesAccount.IDSystem" = "OLD"."_SecuritiesAccount.IDSystem" or "IN"."_SecuritiesAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Valuation"
+    where (
+        "Appraiser",
+        "RoleOfPayer",
+        "Scenario",
+        "ValuationMethod",
+        "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+        "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_Organization.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_Receivable.ReceivableID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_Fund.FundID",
+        "_Fund._InvestmentCorporation.BusinessPartnerID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."Appraiser",
+            "OLD"."RoleOfPayer",
+            "OLD"."Scenario",
+            "OLD"."ValuationMethod",
+            "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+            "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+            "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+            "OLD"."ASSOC_CollateralPortion.PortionNumber",
+            "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_Organization.BusinessPartnerID",
+            "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."ASSOC_Receivable.ReceivableID",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_Fund.FundID",
+            "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID",
+            "OLD"."_SecuritiesAccount.FinancialContractID",
+            "OLD"."_SecuritiesAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Valuation" as "OLD"
+        on
+                                       ( "IN"."Appraiser" = "OLD"."Appraiser" or "IN"."Appraiser" is null ) and
+                                       ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+                                       ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) and
+                                       ( "IN"."ValuationMethod" = "OLD"."ValuationMethod" or "IN"."ValuationMethod" is null ) and
+                                       ( "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" = "OLD"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" or "IN"."ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" is null ) and
+                                       ( "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" or "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "OLD"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" or "IN"."ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+                                       ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_Organization.BusinessPartnerID" = "OLD"."ASSOC_Organization.BusinessPartnerID" or "IN"."ASSOC_Organization.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_Receivable.ReceivableID" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                       ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+                                       ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) and
+                                       ( "IN"."_SecuritiesAccount.FinancialContractID" = "OLD"."_SecuritiesAccount.FinancialContractID" or "IN"."_SecuritiesAccount.FinancialContractID" is null ) and
+                                       ( "IN"."_SecuritiesAccount.IDSystem" = "OLD"."_SecuritiesAccount.IDSystem" or "IN"."_SecuritiesAccount.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

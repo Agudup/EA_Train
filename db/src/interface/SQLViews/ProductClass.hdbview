@@ -1,0 +1,48 @@
+view "sap.fsdm.SQLViews::ProductClass_View" 
+as select
+      "ProductClass" ,
+      "ProductClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ProductClassDescription" ,
+      "ProductClassificationSystemDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProductClass"
+with associations
+(
+	join "sap.fsdm.SQLViews::ContractClassCoveredByMasterAgreement_View" as "_ContractClassCoveredByMasterAgreement__ProductClass"
+	  on "ProductClassificationSystem" = "_ContractClassCoveredByMasterAgreement__ProductClass"."_ProductClass.ProductClassificationSystem" AND 
+	     "ProductClass" = "_ContractClassCoveredByMasterAgreement__ProductClass"."_ProductClass.ProductClass"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__ProductClass"
+	  on "ProductClass" = "_FSSubledgerDocument__ProductClass"."_ProductClass.ProductClass" AND 
+	     "ProductClassificationSystem" = "_FSSubledgerDocument__ProductClass"."_ProductClass.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__ProductClass"
+	  on "ProductClass" = "_GeneralLedgerAccountBalance__ProductClass"."_ProductClass.ProductClass" AND 
+	     "ProductClassificationSystem" = "_GeneralLedgerAccountBalance__ProductClass"."_ProductClass.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClassHierarchyRelation_View" as "_ProductClassHierarchyRelation_ASSOC_Child"
+	  on "ProductClass" = "_ProductClassHierarchyRelation_ASSOC_Child"."ASSOC_Child.ProductClass" AND 
+	     "ProductClassificationSystem" = "_ProductClassHierarchyRelation_ASSOC_Child"."ASSOC_Child.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClassHierarchyRelation_View" as "_ProductClassHierarchyRelation_ASSOC_Parent"
+	  on "ProductClass" = "_ProductClassHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.ProductClass" AND 
+	     "ProductClassificationSystem" = "_ProductClassHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClassificationOfFinancialContract_View" as "_ProductClassificationOfFinancialContract_ASSOC_ProductClass"
+	  on "ProductClass" = "_ProductClassificationOfFinancialContract_ASSOC_ProductClass"."ASSOC_ProductClass.ProductClass" AND 
+	     "ProductClassificationSystem" = "_ProductClassificationOfFinancialContract_ASSOC_ProductClass"."ASSOC_ProductClass.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__ProductClass"
+	  on "ProductClass" = "_SubledgerAccountbalance__ProductClass"."_ProductClass.ProductClass" AND 
+	     "ProductClassificationSystem" = "_SubledgerAccountbalance__ProductClass"."_ProductClass.ProductClassificationSystem"
+	     
+);

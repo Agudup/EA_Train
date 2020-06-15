@@ -1,0 +1,48 @@
+view "sap.fsdm.SQLViews::CaseReserve_View" 
+as select
+      "Type" ,
+      "_Claim.ID" ,
+      "_Claim.IDSystem" ,
+      "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+      "_Subclaim._Claimant._Claim.ID" ,
+      "_Subclaim._Claimant._Claim.IDSystem" ,
+      "_Subclaim._InsuranceCoverage.ID" ,
+      "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CalculationMethod" ,
+      "CaseReserveCategory" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CaseReserve"
+with associations
+(
+	join "sap.fsdm.SQLViews::Claim_View" as "_Claim"
+	  on "_Claim"."ID" = "_Claim.ID" AND 
+	     "_Claim"."IDSystem" = "_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Subclaim_View" as "_Subclaim"
+	  on "_Subclaim"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuranceContract.IDSystem" = "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_Subclaim"."_InsuranceCoverage.ID" = "_Subclaim._InsuranceCoverage.ID" AND 
+	     "_Subclaim"."_Claimant._Claim.IDSystem" = "_Subclaim._Claimant._Claim.IDSystem" AND 
+	     "_Subclaim"."_Claimant._Claim.ID" = "_Subclaim._Claimant._Claim.ID" AND 
+	     "_Subclaim"."_Claimant._BusinessPartner.BusinessPartnerID" = "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CaseReserveItem_View" as "_CaseReserveItem__CaseReserve"
+	  on "Type" = "_CaseReserveItem__CaseReserve"."_CaseReserve.Type"
+	     
+);

@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::SecuritiesBalanceErase" (IN ROW "sap.fsdm.tabletypes::SecuritiesBalanceTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "LotID" is null and
+                         "_Account.FinancialContractID" is null and
+                         "_Account.IDSystem" is null and
+                         "_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::SecuritiesBalance" WHERE
+("LotID" ,
+"_Account.FinancialContractID" ,
+"_Account.IDSystem" ,
+"_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."LotID" ,
+"OLD"."_Account.FinancialContractID" ,
+"OLD"."_Account.IDSystem" ,
+"OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::SecuritiesBalance" "OLD"
+on
+  ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+  ( "IN"."_Account.FinancialContractID" = "OLD"."_Account.FinancialContractID" or "IN"."_Account.FinancialContractID" is null ) and
+  ( "IN"."_Account.IDSystem" = "OLD"."_Account.IDSystem" or "IN"."_Account.IDSystem" is null ) and
+  ( "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" = "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" or "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::SecuritiesBalance_Historical" WHERE
+("LotID" ,
+"_Account.FinancialContractID" ,
+"_Account.IDSystem" ,
+"_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."LotID" ,
+"OLD"."_Account.FinancialContractID" ,
+"OLD"."_Account.IDSystem" ,
+"OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::SecuritiesBalance_Historical" "OLD"
+on
+  ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+  ( "IN"."_Account.FinancialContractID" = "OLD"."_Account.FinancialContractID" or "IN"."_Account.FinancialContractID" is null ) and
+  ( "IN"."_Account.IDSystem" = "OLD"."_Account.IDSystem" or "IN"."_Account.IDSystem" is null ) and
+  ( "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" = "OLD"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" or "IN"."_AccountingSystemOfSecuritiesLotBalance.AccountingSystemID" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+END

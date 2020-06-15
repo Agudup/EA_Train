@@ -1,0 +1,37 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"ReferenceRate";
+
+entity "RateObservation" {
+    key "RateDataProvider"              : String(256);
+    key "Timestamp"                     : UTCTimestamp;
+    key "ASSOC_ReferenceRateID"         : association to ReferenceRate { ReferenceRateID } not null;
+        "SystemValidFrom"               : UTCTimestamp                                     not null;
+        "SystemValidTo"                 : UTCTimestamp                                     not null;
+        "Rate"                          : Decimal(15, 11);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "RateObservation_Historical" {
+    "RateDataProvider"              : String(256)                                      not null;
+    "Timestamp"                     : UTCTimestamp                                     not null;
+    "ASSOC_ReferenceRateID"         : association to ReferenceRate { ReferenceRateID } not null;
+    "SystemValidFrom"               : UTCTimestamp                                     not null;
+    "SystemValidTo"                 : UTCTimestamp                                     not null;
+    "Rate"                          : Decimal(15, 11);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

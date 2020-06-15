@@ -1,0 +1,47 @@
+view "sap.fsdm.SQLViews::PriceGain_View" 
+as select
+      "LotID" ,
+      "PriceGainCalculationMethod" ,
+      "_AccountingSystem.AccountingSystemID" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "_SettlementItem.IDSystem" ,
+      "_SettlementItem.ItemNumber" ,
+      "_SettlementItem.SettlementID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AmountInLotInPositionCurrency" ,
+      "InflowOutflowLot" ,
+      "NominalAmountInLot" ,
+      "PositionCurrency" ,
+      "PriceGain" ,
+      "QuantityInLot" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PriceGain"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystem"
+	  on "_AccountingSystem"."AccountingSystemID" = "_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID" AND 
+	     "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_SettlementItem"
+	  on "_SettlementItem"."SettlementID" = "_SettlementItem.SettlementID" AND 
+	     "_SettlementItem"."ItemNumber" = "_SettlementItem.ItemNumber" AND 
+	     "_SettlementItem"."IDSystem" = "_SettlementItem.IDSystem"
+	     
+);

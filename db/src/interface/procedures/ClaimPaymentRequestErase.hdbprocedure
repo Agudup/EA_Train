@@ -1,0 +1,128 @@
+PROCEDURE "sap.fsdm.procedures::ClaimPaymentRequestErase" (IN ROW "sap.fsdm.tabletypes::ClaimPaymentRequestTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ID" is null and
+                         "ItemNumber" is null and
+                         "_Claim.ID" is null and
+                         "_Claim.IDSystem" is null and
+                         "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null and
+                         "_Subclaim._Claimant._Claim.ID" is null and
+                         "_Subclaim._Claimant._Claim.IDSystem" is null and
+                         "_Subclaim._InsuranceCoverage.ID" is null and
+                         "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null and
+                         "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null and
+                         "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ClaimPaymentRequest" WHERE
+("ID" ,
+"ItemNumber" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" ,
+"_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+"_Subclaim._Claimant._Claim.ID" ,
+"_Subclaim._Claimant._Claim.IDSystem" ,
+"_Subclaim._InsuranceCoverage.ID" ,
+"_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."ID" ,
+"OLD"."ItemNumber" ,
+"OLD"."_Claim.ID" ,
+"OLD"."_Claim.IDSystem" ,
+"OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+"OLD"."_Subclaim._Claimant._Claim.ID" ,
+"OLD"."_Subclaim._Claimant._Claim.IDSystem" ,
+"OLD"."_Subclaim._InsuranceCoverage.ID" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::ClaimPaymentRequest" "OLD"
+on
+  ( "IN"."ID" = "OLD"."ID" or "IN"."ID" is null ) and
+  ( "IN"."ItemNumber" = "OLD"."ItemNumber" or "IN"."ItemNumber" is null ) and
+  ( "IN"."_Claim.ID" = "OLD"."_Claim.ID" or "IN"."_Claim.ID" is null ) and
+  ( "IN"."_Claim.IDSystem" = "OLD"."_Claim.IDSystem" or "IN"."_Claim.IDSystem" is null ) and
+  ( "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" = "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" or "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."_Subclaim._Claimant._Claim.ID" = "OLD"."_Subclaim._Claimant._Claim.ID" or "IN"."_Subclaim._Claimant._Claim.ID" is null ) and
+  ( "IN"."_Subclaim._Claimant._Claim.IDSystem" = "OLD"."_Subclaim._Claimant._Claim.IDSystem" or "IN"."_Subclaim._Claimant._Claim.IDSystem" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage.ID" = "OLD"."_Subclaim._InsuranceCoverage.ID" or "IN"."_Subclaim._InsuranceCoverage.ID" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ClaimPaymentRequest_Historical" WHERE
+("ID" ,
+"ItemNumber" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" ,
+"_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+"_Subclaim._Claimant._Claim.ID" ,
+"_Subclaim._Claimant._Claim.IDSystem" ,
+"_Subclaim._InsuranceCoverage.ID" ,
+"_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."ID" ,
+"OLD"."ItemNumber" ,
+"OLD"."_Claim.ID" ,
+"OLD"."_Claim.IDSystem" ,
+"OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+"OLD"."_Subclaim._Claimant._Claim.ID" ,
+"OLD"."_Subclaim._Claimant._Claim.IDSystem" ,
+"OLD"."_Subclaim._InsuranceCoverage.ID" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::ClaimPaymentRequest_Historical" "OLD"
+on
+  ( "IN"."ID" = "OLD"."ID" or "IN"."ID" is null ) and
+  ( "IN"."ItemNumber" = "OLD"."ItemNumber" or "IN"."ItemNumber" is null ) and
+  ( "IN"."_Claim.ID" = "OLD"."_Claim.ID" or "IN"."_Claim.ID" is null ) and
+  ( "IN"."_Claim.IDSystem" = "OLD"."_Claim.IDSystem" or "IN"."_Claim.IDSystem" is null ) and
+  ( "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" = "OLD"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" or "IN"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."_Subclaim._Claimant._Claim.ID" = "OLD"."_Subclaim._Claimant._Claim.ID" or "IN"."_Subclaim._Claimant._Claim.ID" is null ) and
+  ( "IN"."_Subclaim._Claimant._Claim.IDSystem" = "OLD"."_Subclaim._Claimant._Claim.IDSystem" or "IN"."_Subclaim._Claimant._Claim.IDSystem" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage.ID" = "OLD"."_Subclaim._InsuranceCoverage.ID" or "IN"."_Subclaim._InsuranceCoverage.ID" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

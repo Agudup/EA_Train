@@ -1,0 +1,23 @@
+view "sap.fsdm.SQLViews::Locking_View" 
+as select
+      "LockingType" ,
+      "_LockingOfFinancialContract.FinancialContractID" ,
+      "_LockingOfFinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Locking"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_LockingOfFinancialContract"
+	  on "_LockingOfFinancialContract"."FinancialContractID" = "_LockingOfFinancialContract.FinancialContractID" AND 
+	     "_LockingOfFinancialContract"."IDSystem" = "_LockingOfFinancialContract.IDSystem"
+	     
+);

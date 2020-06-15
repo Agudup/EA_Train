@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::ProductCatalogHierarchy_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Child.ProductCatalogItem" as "_Child_ProductCatalogItem",
+      "_Child._ProductCatalog.CatalogID" as "_Child__ProductCatalog_CatalogID",
+      "_Parent.ProductCatalogItem" as "_Parent_ProductCatalogItem",
+      "_Parent._ProductCatalog.CatalogID" as "_Parent__ProductCatalog_CatalogID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ProductCatalogHierarchy"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

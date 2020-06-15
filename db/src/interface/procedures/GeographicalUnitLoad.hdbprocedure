@@ -1,0 +1,286 @@
+PROCEDURE "sap.fsdm.procedures::GeographicalUnitLoad" (IN ROW "sap.fsdm.tabletypes::GeographicalUnitTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'GeographicalStructureID=' || TO_VARCHAR("GeographicalStructureID") || ' ' ||
+                'GeographicalUnitID=' || TO_VARCHAR("GeographicalUnitID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."GeographicalStructureID",
+                        "IN"."GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."GeographicalStructureID",
+                        "IN"."GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "GeographicalStructureID",
+                        "GeographicalUnitID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."GeographicalStructureID",
+                                    "IN"."GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."GeographicalStructureID",
+                                    "IN"."GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::GeographicalUnit" (
+        "GeographicalStructureID",
+        "GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CountryCode",
+        "CountryName",
+        "CountryShortName",
+        "GeographicalUnitCategory",
+        "GeographicalUnitName",
+        "HierarchyLevel",
+        "ISO3CountryCode",
+        "NationalityDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_GeographicalStructureID" as "GeographicalStructureID" ,
+            "OLD_GeographicalUnitID" as "GeographicalUnitID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_CountryCode" as "CountryCode" ,
+            "OLD_CountryName" as "CountryName" ,
+            "OLD_CountryShortName" as "CountryShortName" ,
+            "OLD_GeographicalUnitCategory" as "GeographicalUnitCategory" ,
+            "OLD_GeographicalUnitName" as "GeographicalUnitName" ,
+            "OLD_HierarchyLevel" as "HierarchyLevel" ,
+            "OLD_ISO3CountryCode" as "ISO3CountryCode" ,
+            "OLD_NationalityDescription" as "NationalityDescription" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."GeographicalStructureID",
+                        "IN"."GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."GeographicalStructureID" as "OLD_GeographicalStructureID",
+                                "OLD"."GeographicalUnitID" as "OLD_GeographicalUnitID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."CountryCode" as "OLD_CountryCode",
+                                "OLD"."CountryName" as "OLD_CountryName",
+                                "OLD"."CountryShortName" as "OLD_CountryShortName",
+                                "OLD"."GeographicalUnitCategory" as "OLD_GeographicalUnitCategory",
+                                "OLD"."GeographicalUnitName" as "OLD_GeographicalUnitName",
+                                "OLD"."HierarchyLevel" as "OLD_HierarchyLevel",
+                                "OLD"."ISO3CountryCode" as "OLD_ISO3CountryCode",
+                                "OLD"."NationalityDescription" as "OLD_NationalityDescription",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GeographicalUnit" as "OLD"
+            on
+                ( case when "IN"."GeographicalStructureID" is null then '' else "IN"."GeographicalStructureID" end ) = "OLD"."GeographicalStructureID" and
+                ( case when "IN"."GeographicalUnitID" is null then '' else "IN"."GeographicalUnitID" end ) = "OLD"."GeographicalUnitID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::GeographicalUnit" (
+        "GeographicalStructureID",
+        "GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CountryCode",
+        "CountryName",
+        "CountryShortName",
+        "GeographicalUnitCategory",
+        "GeographicalUnitName",
+        "HierarchyLevel",
+        "ISO3CountryCode",
+        "NationalityDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_GeographicalStructureID" as "GeographicalStructureID",
+            "OLD_GeographicalUnitID" as "GeographicalUnitID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_CountryCode" as "CountryCode",
+            "OLD_CountryName" as "CountryName",
+            "OLD_CountryShortName" as "CountryShortName",
+            "OLD_GeographicalUnitCategory" as "GeographicalUnitCategory",
+            "OLD_GeographicalUnitName" as "GeographicalUnitName",
+            "OLD_HierarchyLevel" as "HierarchyLevel",
+            "OLD_ISO3CountryCode" as "ISO3CountryCode",
+            "OLD_NationalityDescription" as "NationalityDescription",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."GeographicalStructureID",
+                        "IN"."GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."GeographicalStructureID" as "OLD_GeographicalStructureID",
+                        "OLD"."GeographicalUnitID" as "OLD_GeographicalUnitID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."CountryCode" as "OLD_CountryCode",
+                        "OLD"."CountryName" as "OLD_CountryName",
+                        "OLD"."CountryShortName" as "OLD_CountryShortName",
+                        "OLD"."GeographicalUnitCategory" as "OLD_GeographicalUnitCategory",
+                        "OLD"."GeographicalUnitName" as "OLD_GeographicalUnitName",
+                        "OLD"."HierarchyLevel" as "OLD_HierarchyLevel",
+                        "OLD"."ISO3CountryCode" as "OLD_ISO3CountryCode",
+                        "OLD"."NationalityDescription" as "OLD_NationalityDescription",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GeographicalUnit" as "OLD"
+            on
+                ( case when "IN"."GeographicalStructureID" is null then '' else "IN"."GeographicalStructureID" end ) = "OLD"."GeographicalStructureID" and
+                ( case when "IN"."GeographicalUnitID" is null then '' else "IN"."GeographicalUnitID" end ) = "OLD"."GeographicalUnitID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::GeographicalUnit"
+    where (
+        "GeographicalStructureID",
+        "GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."GeographicalStructureID",
+            "OLD"."GeographicalUnitID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::GeographicalUnit" as "OLD"
+        on
+           ( case when "IN"."GeographicalStructureID" is null then '' else "IN"."GeographicalStructureID" end ) = "OLD"."GeographicalStructureID" and
+           ( case when "IN"."GeographicalUnitID" is null then '' else "IN"."GeographicalUnitID" end ) = "OLD"."GeographicalUnitID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::GeographicalUnit" (
+        "GeographicalStructureID",
+        "GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CountryCode",
+        "CountryName",
+        "CountryShortName",
+        "GeographicalUnitCategory",
+        "GeographicalUnitName",
+        "HierarchyLevel",
+        "ISO3CountryCode",
+        "NationalityDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "GeographicalStructureID" is null then '' else "GeographicalStructureID" end ) as "GeographicalStructureID",
+            ( case when "GeographicalUnitID" is null then '' else "GeographicalUnitID" end ) as "GeographicalUnitID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "CountryCode"  ,
+            "CountryName"  ,
+            "CountryShortName"  ,
+            "GeographicalUnitCategory"  ,
+            "GeographicalUnitName"  ,
+            "HierarchyLevel"  ,
+            "ISO3CountryCode"  ,
+            "NationalityDescription"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

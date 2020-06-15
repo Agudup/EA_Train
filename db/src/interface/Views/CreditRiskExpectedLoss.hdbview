@@ -1,0 +1,28 @@
+view "sap.fsdm.Views::CreditRiskExpectedLoss_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "BestEstimateELMethod" as "BestEstimateELMethod",
+      "BestEstimateELTimeHorizon" as "BestEstimateELTimeHorizon",
+      "BestEstimateELTimeUnit" as "BestEstimateELTimeUnit",
+      "ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion_PortionNumber",
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion_ASSOC_CollateralAgreement_FinancialContractID",
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion_ASSOC_CollateralAgreement_IDSystem",
+      "ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract_IDSystem",
+      "_Collection.CollectionID" as "_Collection_CollectionID",
+      "_Collection.IDSystem" as "_Collection_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "BestEstimateELCurrency" as "BestEstimateELCurrency",
+      "BestEstimateExpectedLoss" as "BestEstimateExpectedLoss",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CreditRiskExpectedLoss"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

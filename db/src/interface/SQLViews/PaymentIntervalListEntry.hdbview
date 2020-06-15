@@ -1,0 +1,45 @@
+view "sap.fsdm.SQLViews::PaymentIntervalListEntry_View" 
+as select
+      "PaymentIntervalEndDate" ,
+      "PaymentIntervalStartDate" ,
+      "ASSOC_PaymentIntervalList.SequenceNumber" ,
+      "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" ,
+      "ASSOC_PaymentIntervalList._CreditCardLoan.ID" ,
+      "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+      "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+      "ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" ,
+      "ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" ,
+      "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+      "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PaymentAmount" ,
+      "PaymentCurrency" ,
+      "PaymentPercentage" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PaymentIntervalListEntry"
+with associations
+(
+	join "sap.fsdm.SQLViews::PaymentSchedule_View" as "ASSOC_PaymentIntervalList"
+	  on "ASSOC_PaymentIntervalList"."_InterestRateOptionComponent._InterestRateOption.IDSystem" = "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" AND 
+	     "ASSOC_PaymentIntervalList"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_PaymentIntervalList"."_InterestRateOptionComponent.ComponentNumber" = "ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" AND 
+	     "ASSOC_PaymentIntervalList"."_DebtInstrument.FinancialInstrumentID" = "ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" AND 
+	     "ASSOC_PaymentIntervalList"."_CreditCardLoan._CreditCardAgreement.IDSystem" = "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" AND 
+	     "ASSOC_PaymentIntervalList"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "ASSOC_PaymentIntervalList"."_CreditCardLoan.ID" = "ASSOC_PaymentIntervalList._CreditCardLoan.ID" AND 
+	     "ASSOC_PaymentIntervalList"."SequenceNumber" = "ASSOC_PaymentIntervalList.SequenceNumber" AND 
+	     "ASSOC_PaymentIntervalList"."ASSOC_Receivable.ReceivableID" = "ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" AND 
+	     "ASSOC_PaymentIntervalList"."ASSOC_FinancialContract.IDSystem" = "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_PaymentIntervalList"."ASSOC_FinancialContract.FinancialContractID" = "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID"
+	     
+);

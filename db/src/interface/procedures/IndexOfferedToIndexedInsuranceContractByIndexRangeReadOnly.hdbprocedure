@@ -1,0 +1,52 @@
+PROCEDURE "sap.fsdm.procedures::IndexOfferedToIndexedInsuranceContractByIndexRangeReadOnly" (IN ROW "sap.fsdm.tabletypes::IndexOfferedToIndexedInsuranceContractByIndexRangeTT" , OUT CURR_DEL "sap.fsdm.tabletypes::IndexOfferedToIndexedInsuranceContractByIndexRangeTT_Out", OUT CURR_INS "sap.fsdm.tabletypes::IndexOfferedToIndexedInsuranceContractByIndexRangeTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"_Index.IndexID",
+"_IndexRange.ID",
+"_IndexRange.IDSystem",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from "sap.fsdm::IndexOfferedToIndexedInsuranceContractByIndexRange" WHERE("_Index.IndexID" ,
+"_IndexRange.ID" ,
+"_IndexRange.IDSystem" 
+)in ( select "_Index.IndexID" ,
+"_IndexRange.ID" ,
+"_IndexRange.IDSystem" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+CURR_INS = select 
+"_Index.IndexID",
+"_IndexRange.ID",
+"_IndexRange.IDSystem",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from( select 
+   "_Index.IndexID"  ,
+  "_IndexRange.ID"  ,
+  "_IndexRange.IDSystem"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

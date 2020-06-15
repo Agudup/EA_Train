@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::BusinessPartnerOrganizationalUnitAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "BusinessPartnerRole" as "BusinessPartnerRole",
+      "ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner_BusinessPartnerID",
+      "ASSOC_OrganizationalUnit.OrganizationalUnitID" as "ASSOC_OrganizationalUnit_OrganizationalUnitID",
+      "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::BusinessPartnerOrganizationalUnitAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,33 @@
+view "sap.fsdm.Views::EndOfDayListedDerivativePriceObservation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ExpirationDate" as "ExpirationDate",
+      "PriceDataProvider" as "PriceDataProvider",
+      "PriceSeriesType" as "PriceSeriesType",
+      "PutOrCall" as "PutOrCall",
+      "StrikePrice" as "StrikePrice",
+      "_Exchange.MarketIdentifierCode" as "_Exchange_MarketIdentifierCode",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice_ReferencePriceID",
+      "Close" as "Close",
+      "Currency" as "Currency",
+      "EndOfDayListedDerivativePriceObservationCategory" as "EndOfDayListedDerivativePriceObservationCategory",
+      "High" as "High",
+      "Low" as "Low",
+      "Open" as "Open",
+      "OpenInterest" as "OpenInterest",
+      "PriceNotationForm" as "PriceNotationForm",
+      "StrikePriceCurrency" as "StrikePriceCurrency",
+      "Volume" as "Volume",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::EndOfDayListedDerivativePriceObservation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

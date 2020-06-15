@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::RedemptionRight_View" 
+as select
+      "SequenceNumber" ,
+      "_DebtInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "MaximumRedemptionAmount" ,
+      "NoticePeriodLength" ,
+      "NoticePeriodTimeUnit" ,
+      "ProRataRedemption" ,
+      "RedemptionPeriodEnd" ,
+      "RedemptionPeriodStart" ,
+      "RedemptionPrice" ,
+      "RedemptionPriceCurrency" ,
+      "RedemptionPriceInPercent" ,
+      "RedemptionRightHolder" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::RedemptionRight"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_DebtInstrument"
+	  on "_DebtInstrument"."FinancialInstrumentID" = "_DebtInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::SetOfPreconditions_View" as "_SetOfPreconditions__RedemptionRight"
+	  on "SequenceNumber" = "_SetOfPreconditions__RedemptionRight"."_RedemptionRight.SequenceNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_SetOfPreconditions__RedemptionRight"."_RedemptionRight._DebtInstrument.FinancialInstrumentID"
+	     
+);

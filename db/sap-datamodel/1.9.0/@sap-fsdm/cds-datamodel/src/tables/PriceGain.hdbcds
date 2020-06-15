@@ -1,0 +1,76 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"Settlement";
+
+entity "PriceGain" {
+    key "LotID"                         : String(128);
+    key "PriceGainCalculationMethod"    : String(20);
+    key "_AccountingSystem"             : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_SecuritiesAccount"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_SettlementItem"               : association to Settlement {
+                                                                      IDSystem,
+                                                                      ItemNumber,
+                                                                      SettlementID
+                                                                    }                                  not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "AmountInLotInPositionCurrency" : Decimal(34, 6);
+        "InflowOutflowLot"              : Integer;
+        "NominalAmountInLot"            : Decimal(34, 6);
+        "PositionCurrency"              : String(3);
+        "PriceGain"                     : Decimal(34, 6);
+        "QuantityInLot"                 : Decimal(34, 6);
+        "Unit"                          : String(10);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PriceGain_Historical" {
+    "LotID"                         : String(128)                                                  not null;
+    "PriceGainCalculationMethod"    : String(20)                                                   not null;
+    "_AccountingSystem"             : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_SecuritiesAccount"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_SettlementItem"               : association to Settlement {
+                                                                  IDSystem,
+                                                                  ItemNumber,
+                                                                  SettlementID
+                                                                }                                  not null;
+    "BusinessValidFrom"             : LocalDate                                                    not null;
+    "BusinessValidTo"               : LocalDate                                                    not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "AmountInLotInPositionCurrency" : Decimal(34, 6);
+    "InflowOutflowLot"              : Integer;
+    "NominalAmountInLot"            : Decimal(34, 6);
+    "PositionCurrency"              : String(3);
+    "PriceGain"                     : Decimal(34, 6);
+    "QuantityInLot"                 : Decimal(34, 6);
+    "Unit"                          : String(10);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

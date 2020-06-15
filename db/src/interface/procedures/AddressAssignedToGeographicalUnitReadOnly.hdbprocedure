@@ -1,0 +1,388 @@
+PROCEDURE "sap.fsdm.procedures::AddressAssignedToGeographicalUnitReadOnly" (IN ROW "sap.fsdm.tabletypes::AddressAssignedToGeographicalUnitTT", OUT CURR_DEL "sap.fsdm.tabletypes::AddressAssignedToGeographicalUnitTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::AddressAssignedToGeographicalUnitTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_Address.AddressType=' || TO_VARCHAR("ASSOC_Address.AddressType") || ' ' ||
+                'ASSOC_Address.SequenceNumber=' || TO_VARCHAR("ASSOC_Address.SequenceNumber") || ' ' ||
+                'ASSOC_Address.ASSOC_BankingChannel.BankingChannelID=' || TO_VARCHAR("ASSOC_Address.ASSOC_BankingChannel.BankingChannelID") || ' ' ||
+                'ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID=' || TO_VARCHAR("ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID") || ' ' ||
+                'ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID=' || TO_VARCHAR("ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID") || ' ' ||
+                'ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID=' || TO_VARCHAR("ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID") || ' ' ||
+                'ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                'ASSOC_Address._Claim.ID=' || TO_VARCHAR("ASSOC_Address._Claim.ID") || ' ' ||
+                'ASSOC_Address._Claim.IDSystem=' || TO_VARCHAR("ASSOC_Address._Claim.IDSystem") || ' ' ||
+                'ASSOC_GeographicalUnit.GeographicalStructureID=' || TO_VARCHAR("ASSOC_GeographicalUnit.GeographicalStructureID") || ' ' ||
+                'ASSOC_GeographicalUnit.GeographicalUnitID=' || TO_VARCHAR("ASSOC_GeographicalUnit.GeographicalUnitID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_Address.AddressType",
+                        "IN"."ASSOC_Address.SequenceNumber",
+                        "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                        "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_Address._Claim.ID",
+                        "IN"."ASSOC_Address._Claim.IDSystem",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalStructureID",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_Address.AddressType",
+                        "IN"."ASSOC_Address.SequenceNumber",
+                        "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                        "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_Address._Claim.ID",
+                        "IN"."ASSOC_Address._Claim.IDSystem",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalStructureID",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_Address.AddressType",
+                        "ASSOC_Address.SequenceNumber",
+                        "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                        "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "ASSOC_Address._Claim.ID",
+                        "ASSOC_Address._Claim.IDSystem",
+                        "ASSOC_GeographicalUnit.GeographicalStructureID",
+                        "ASSOC_GeographicalUnit.GeographicalUnitID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_Address.AddressType",
+                                    "IN"."ASSOC_Address.SequenceNumber",
+                                    "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                                    "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                    "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                    "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                    "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."ASSOC_Address._Claim.ID",
+                                    "IN"."ASSOC_Address._Claim.IDSystem",
+                                    "IN"."ASSOC_GeographicalUnit.GeographicalStructureID",
+                                    "IN"."ASSOC_GeographicalUnit.GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_Address.AddressType",
+                                    "IN"."ASSOC_Address.SequenceNumber",
+                                    "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                                    "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                    "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                    "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                    "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."ASSOC_Address._Claim.ID",
+                                    "IN"."ASSOC_Address._Claim.IDSystem",
+                                    "IN"."ASSOC_GeographicalUnit.GeographicalStructureID",
+                                    "IN"."ASSOC_GeographicalUnit.GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "ASSOC_Address.AddressType",
+        "ASSOC_Address.SequenceNumber",
+        "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+        "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_Address._Claim.ID",
+        "ASSOC_Address._Claim.IDSystem",
+        "ASSOC_GeographicalUnit.GeographicalStructureID",
+        "ASSOC_GeographicalUnit.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::AddressAssignedToGeographicalUnit" WHERE
+        (            "ASSOC_Address.AddressType" ,
+            "ASSOC_Address.SequenceNumber" ,
+            "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+            "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+            "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+            "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "ASSOC_Address._Claim.ID" ,
+            "ASSOC_Address._Claim.IDSystem" ,
+            "ASSOC_GeographicalUnit.GeographicalStructureID" ,
+            "ASSOC_GeographicalUnit.GeographicalUnitID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."ASSOC_Address.AddressType",
+            "OLD"."ASSOC_Address.SequenceNumber",
+            "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+            "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+            "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+            "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD"."ASSOC_Address._Claim.ID",
+            "OLD"."ASSOC_Address._Claim.IDSystem",
+            "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID",
+            "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::AddressAssignedToGeographicalUnit" as "OLD"
+            on
+               ( case when "IN"."ASSOC_Address.AddressType" is null then '' else "IN"."ASSOC_Address.AddressType" end ) = "OLD"."ASSOC_Address.AddressType" and
+               ( case when "IN"."ASSOC_Address.SequenceNumber" is null then -1 else "IN"."ASSOC_Address.SequenceNumber" end ) = "OLD"."ASSOC_Address.SequenceNumber" and
+               ( case when "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null then '' else "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" end ) = "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" and
+               ( case when "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null then '' else "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" end ) = "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" and
+               ( case when "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null then '' else "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" end ) = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" and
+               ( case when "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" and
+               ( case when "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" and
+               ( case when "IN"."ASSOC_Address._Claim.ID" is null then '' else "IN"."ASSOC_Address._Claim.ID" end ) = "OLD"."ASSOC_Address._Claim.ID" and
+               ( case when "IN"."ASSOC_Address._Claim.IDSystem" is null then '' else "IN"."ASSOC_Address._Claim.IDSystem" end ) = "OLD"."ASSOC_Address._Claim.IDSystem" and
+               ( case when "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" is null then '' else "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" end ) = "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" and
+               ( case when "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" is null then '' else "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" end ) = "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "ASSOC_Address.AddressType",
+        "ASSOC_Address.SequenceNumber",
+        "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+        "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "ASSOC_Address._Claim.ID",
+        "ASSOC_Address._Claim.IDSystem",
+        "ASSOC_GeographicalUnit.GeographicalStructureID",
+        "ASSOC_GeographicalUnit.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "ASSOC_Address.AddressType" is null then '' else "ASSOC_Address.AddressType" end ) as "ASSOC_Address.AddressType",
+                    ( case when "ASSOC_Address.SequenceNumber" is null then -1 else "ASSOC_Address.SequenceNumber" end ) as "ASSOC_Address.SequenceNumber",
+                    ( case when "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null then '' else "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" end ) as "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                    ( case when "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null then '' else "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" end ) as "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                    ( case when "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null then '' else "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" end ) as "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                    ( case when "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) as "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                    ( case when "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" end ) as "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                    ( case when "ASSOC_Address._Claim.ID" is null then '' else "ASSOC_Address._Claim.ID" end ) as "ASSOC_Address._Claim.ID",
+                    ( case when "ASSOC_Address._Claim.IDSystem" is null then '' else "ASSOC_Address._Claim.IDSystem" end ) as "ASSOC_Address._Claim.IDSystem",
+                    ( case when "ASSOC_GeographicalUnit.GeographicalStructureID" is null then '' else "ASSOC_GeographicalUnit.GeographicalStructureID" end ) as "ASSOC_GeographicalUnit.GeographicalStructureID",
+                    ( case when "ASSOC_GeographicalUnit.GeographicalUnitID" is null then '' else "ASSOC_GeographicalUnit.GeographicalUnitID" end ) as "ASSOC_GeographicalUnit.GeographicalUnitID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_ASSOC_Address.AddressType" as "ASSOC_Address.AddressType" ,
+                    "OLD_ASSOC_Address.SequenceNumber" as "ASSOC_Address.SequenceNumber" ,
+                    "OLD_ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" as "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+                    "OLD_ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+                    "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+                    "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+                    "OLD_ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+                    "OLD_ASSOC_Address._Claim.ID" as "ASSOC_Address._Claim.ID" ,
+                    "OLD_ASSOC_Address._Claim.IDSystem" as "ASSOC_Address._Claim.IDSystem" ,
+                    "OLD_ASSOC_GeographicalUnit.GeographicalStructureID" as "ASSOC_GeographicalUnit.GeographicalStructureID" ,
+                    "OLD_ASSOC_GeographicalUnit.GeographicalUnitID" as "ASSOC_GeographicalUnit.GeographicalUnitID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_Address.AddressType",
+                        "IN"."ASSOC_Address.SequenceNumber",
+                        "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                        "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_Address._Claim.ID",
+                        "IN"."ASSOC_Address._Claim.IDSystem",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalStructureID",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ASSOC_Address.AddressType" as "OLD_ASSOC_Address.AddressType",
+                                "OLD"."ASSOC_Address.SequenceNumber" as "OLD_ASSOC_Address.SequenceNumber",
+                                "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" as "OLD_ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                                "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD_ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                                "OLD"."ASSOC_Address._Claim.ID" as "OLD_ASSOC_Address._Claim.ID",
+                                "OLD"."ASSOC_Address._Claim.IDSystem" as "OLD_ASSOC_Address._Claim.IDSystem",
+                                "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" as "OLD_ASSOC_GeographicalUnit.GeographicalStructureID",
+                                "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" as "OLD_ASSOC_GeographicalUnit.GeographicalUnitID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AddressAssignedToGeographicalUnit" as "OLD"
+            on
+                ( case when "IN"."ASSOC_Address.AddressType" is null then '' else "IN"."ASSOC_Address.AddressType" end ) = "OLD"."ASSOC_Address.AddressType" and
+                ( case when "IN"."ASSOC_Address.SequenceNumber" is null then -1 else "IN"."ASSOC_Address.SequenceNumber" end ) = "OLD"."ASSOC_Address.SequenceNumber" and
+                ( case when "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null then '' else "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" end ) = "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null then '' else "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" end ) = "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null then '' else "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" end ) = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" and
+                ( case when "IN"."ASSOC_Address._Claim.ID" is null then '' else "IN"."ASSOC_Address._Claim.ID" end ) = "OLD"."ASSOC_Address._Claim.ID" and
+                ( case when "IN"."ASSOC_Address._Claim.IDSystem" is null then '' else "IN"."ASSOC_Address._Claim.IDSystem" end ) = "OLD"."ASSOC_Address._Claim.IDSystem" and
+                ( case when "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" is null then '' else "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" end ) = "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" and
+                ( case when "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" is null then '' else "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" end ) = "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_ASSOC_Address.AddressType" as "ASSOC_Address.AddressType",
+            "OLD_ASSOC_Address.SequenceNumber" as "ASSOC_Address.SequenceNumber",
+            "OLD_ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" as "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+            "OLD_ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+            "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+            "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD_ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD_ASSOC_Address._Claim.ID" as "ASSOC_Address._Claim.ID",
+            "OLD_ASSOC_Address._Claim.IDSystem" as "ASSOC_Address._Claim.IDSystem",
+            "OLD_ASSOC_GeographicalUnit.GeographicalStructureID" as "ASSOC_GeographicalUnit.GeographicalStructureID",
+            "OLD_ASSOC_GeographicalUnit.GeographicalUnitID" as "ASSOC_GeographicalUnit.GeographicalUnitID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_Address.AddressType",
+                        "IN"."ASSOC_Address.SequenceNumber",
+                        "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                        "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."ASSOC_Address._Claim.ID",
+                        "IN"."ASSOC_Address._Claim.IDSystem",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalStructureID",
+                        "IN"."ASSOC_GeographicalUnit.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."ASSOC_Address.AddressType" as "OLD_ASSOC_Address.AddressType",
+                        "OLD"."ASSOC_Address.SequenceNumber" as "OLD_ASSOC_Address.SequenceNumber",
+                        "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" as "OLD_ASSOC_Address.ASSOC_BankingChannel.BankingChannelID",
+                        "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD_ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."ASSOC_Address._Claim.ID" as "OLD_ASSOC_Address._Claim.ID",
+                        "OLD"."ASSOC_Address._Claim.IDSystem" as "OLD_ASSOC_Address._Claim.IDSystem",
+                        "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" as "OLD_ASSOC_GeographicalUnit.GeographicalStructureID",
+                        "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" as "OLD_ASSOC_GeographicalUnit.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AddressAssignedToGeographicalUnit" as "OLD"
+            on
+                ( case when "IN"."ASSOC_Address.AddressType" is null then '' else "IN"."ASSOC_Address.AddressType" end ) = "OLD"."ASSOC_Address.AddressType" and
+                ( case when "IN"."ASSOC_Address.SequenceNumber" is null then -1 else "IN"."ASSOC_Address.SequenceNumber" end ) = "OLD"."ASSOC_Address.SequenceNumber" and
+                ( case when "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null then '' else "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" end ) = "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null then '' else "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" end ) = "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null then '' else "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" end ) = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" and
+                ( case when "IN"."ASSOC_Address._Claim.ID" is null then '' else "IN"."ASSOC_Address._Claim.ID" end ) = "OLD"."ASSOC_Address._Claim.ID" and
+                ( case when "IN"."ASSOC_Address._Claim.IDSystem" is null then '' else "IN"."ASSOC_Address._Claim.IDSystem" end ) = "OLD"."ASSOC_Address._Claim.IDSystem" and
+                ( case when "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" is null then '' else "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" end ) = "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" and
+                ( case when "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" is null then '' else "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" end ) = "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,18 @@
+PROCEDURE "sap.fsdm.procedures::InvestmentFundShareProvidedToPolicyholderByFundRangeDelete" (IN ROW "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::InvestmentFundShareProvidedToPolicyholderByFundRange" WHERE("_FundRange.ID" ,
+"_FundRange.IDSystem" ,
+"_InvestmentFundShare.FinancialInstrumentID" 
+)in ( select "_FundRange.ID" ,
+"_FundRange.IDSystem" ,
+"_InvestmentFundShare.FinancialInstrumentID" 
+from :ROW );
+
+
+END

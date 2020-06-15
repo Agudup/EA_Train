@@ -1,0 +1,79 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "Fund" {
+    key "FundID"                        : String(128)                                          default '';
+    key "_InvestmentCorporation"        : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "AssetClass"                    : String(10);
+        "BaseCurrency"                  : String(3);
+        "Benchmark"                     : String(256);
+        "CustodianBank"                 : String(256);
+        "CutoffTime"                    : LocalTime;
+        "CutoffTimeZone"                : String(5);
+        "Domicile"                      : String(2);
+        "FinancialYearEnd"              : String(4);
+        "FundFamily"                    : String(256);
+        "FundManagingInstitution"       : String(256);
+        "FundName"                      : String(256);
+        "FundType"                      : String(40);
+        "InvestmentStyle"               : String(10);
+        "LaunchDate"                    : LocalDate;
+        "NAVCalculationPeriodLength"    : Decimal(34, 6);
+        "NAVCalculationTimeUnit"        : String(12);
+        "NAVDayBeforeCutoffTime"        : String(8);
+        "PortfolioManagingInstitution"  : String(256);
+        "RegulatoryAuthority"           : String(256);
+        "ReplicationType"               : String(40);
+        "SwingPricingMechanism"         : Boolean;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Fund_Historical" {
+    "FundID"                        : String(128)                                          default '' not null;
+    "_InvestmentCorporation"        : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "AssetClass"                    : String(10);
+    "BaseCurrency"                  : String(3);
+    "Benchmark"                     : String(256);
+    "CustodianBank"                 : String(256);
+    "CutoffTime"                    : LocalTime;
+    "CutoffTimeZone"                : String(5);
+    "Domicile"                      : String(2);
+    "FinancialYearEnd"              : String(4);
+    "FundFamily"                    : String(256);
+    "FundManagingInstitution"       : String(256);
+    "FundName"                      : String(256);
+    "FundType"                      : String(40);
+    "InvestmentStyle"               : String(10);
+    "LaunchDate"                    : LocalDate;
+    "NAVCalculationPeriodLength"    : Decimal(34, 6);
+    "NAVCalculationTimeUnit"        : String(12);
+    "NAVDayBeforeCutoffTime"        : String(8);
+    "PortfolioManagingInstitution"  : String(256);
+    "RegulatoryAuthority"           : String(256);
+    "ReplicationType"               : String(40);
+    "SwingPricingMechanism"         : Boolean;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

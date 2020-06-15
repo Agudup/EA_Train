@@ -1,0 +1,37 @@
+view "sap.fsdm.SQLViews::ConversionRight_View" 
+as select
+      "SequenceNumber" ,
+      "_DebtInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_ConversionTarget.FinancialInstrumentID" ,
+      "BearerCashSettlementOption" ,
+      "ConversionPeriodEndDate" ,
+      "ConversionPeriodStartDate" ,
+      "ConversionRightHolder" ,
+      "ConversionTargetIsPreferredOrCommonStock" ,
+      "ConversionTargetIssuer" ,
+      "ConversionTargetParValueCurrency" ,
+      "ConversionTargetParValuePerUnit" ,
+      "IssuerCashSettlementOption" ,
+      "PrespecifiedConversionPrice" ,
+      "PrespecifiedConversionRatio" ,
+      "ReferenceSharePrice" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ConversionRight"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_ConversionTarget"
+	  on "_ConversionTarget"."FinancialInstrumentID" = "_ConversionTarget.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_DebtInstrument"
+	  on "_DebtInstrument"."FinancialInstrumentID" = "_DebtInstrument.FinancialInstrumentID"
+	     
+);

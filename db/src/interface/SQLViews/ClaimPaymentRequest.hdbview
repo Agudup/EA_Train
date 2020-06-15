@@ -1,0 +1,90 @@
+view "sap.fsdm.SQLViews::ClaimPaymentRequest_View" 
+as select
+      "ID" ,
+      "ItemNumber" ,
+      "_Claim.ID" ,
+      "_Claim.IDSystem" ,
+      "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+      "_Subclaim._Claimant._Claim.ID" ,
+      "_Subclaim._Claimant._Claim.IDSystem" ,
+      "_Subclaim._InsuranceCoverage.ID" ,
+      "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_ClaimItem.ID" ,
+      "_ClaimItem._Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+      "_ClaimItem._Subclaim._Claimant._Claim.ID" ,
+      "_ClaimItem._Subclaim._Claimant._Claim.IDSystem" ,
+      "_ClaimItem._Subclaim._InsuranceCoverage.ID" ,
+      "_ClaimItem._Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_ClaimItem._Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_ClaimItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_ClaimItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_ClaimItem._Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "Amount" ,
+      "ClaimPaymentRequestCategory" ,
+      "ClaimPaymentRequestItemCategory" ,
+      "Currency" ,
+      "ExpenseType" ,
+      "IndemnityType" ,
+      "LifeCycleStatus" ,
+      "Reason" ,
+      "Type" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ClaimPaymentRequest"
+with associations
+(
+	join "sap.fsdm.SQLViews::Claim_View" as "_Claim"
+	  on "_Claim"."IDSystem" = "_Claim.IDSystem" AND 
+	     "_Claim"."ID" = "_Claim.ID"
+	     ,
+	join "sap.fsdm.SQLViews::ClaimItem_View" as "_ClaimItem"
+	  on "_ClaimItem"."ID" = "_ClaimItem.ID" AND 
+	     "_ClaimItem"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" = "_ClaimItem._Subclaim._Claimant._BusinessPartner.BusinessPartnerID" AND 
+	     "_ClaimItem"."_Subclaim._Claimant._Claim.ID" = "_ClaimItem._Subclaim._Claimant._Claim.ID" AND 
+	     "_ClaimItem"."_Subclaim._Claimant._Claim.IDSystem" = "_ClaimItem._Subclaim._Claimant._Claim.IDSystem" AND 
+	     "_ClaimItem"."_Subclaim._InsuranceCoverage.ID" = "_ClaimItem._Subclaim._InsuranceCoverage.ID" AND 
+	     "_ClaimItem"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" = "_ClaimItem._Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_ClaimItem"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" = "_ClaimItem._Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_ClaimItem"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_ClaimItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_ClaimItem"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_ClaimItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_ClaimItem"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_ClaimItem._Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Subclaim_View" as "_Subclaim"
+	  on "_Subclaim"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuranceContract.IDSystem" = "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_Subclaim"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_Subclaim"."_InsuranceCoverage.ID" = "_Subclaim._InsuranceCoverage.ID" AND 
+	     "_Subclaim"."_Claimant._Claim.IDSystem" = "_Subclaim._Claimant._Claim.IDSystem" AND 
+	     "_Subclaim"."_Claimant._Claim.ID" = "_Subclaim._Claimant._Claim.ID" AND 
+	     "_Subclaim"."_Claimant._BusinessPartner.BusinessPartnerID" = "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder__ClaimPaymentRequestItem"
+	  on "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_Subclaim._InsuranceCoverage.ID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage.ID" AND 
+	     "_Subclaim._Claimant._Claim.IDSystem" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._Claimant._Claim.IDSystem" AND 
+	     "_Subclaim._Claimant._Claim.ID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._Claimant._Claim.ID" AND 
+	     "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Subclaim._Claimant._BusinessPartner.BusinessPartnerID" AND 
+	     "_Claim.IDSystem" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Claim.IDSystem" AND 
+	     "_Claim.ID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem._Claim.ID" AND 
+	     "ItemNumber" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem.ItemNumber" AND 
+	     "ID" = "_TransferOrder__ClaimPaymentRequestItem"."_ClaimPaymentRequestItem.ID"
+	     
+);

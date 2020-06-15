@@ -1,0 +1,82 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"PhysicalAsset";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "MortgageRegisterEntry" {
+    key "Beneficiary"                          : String(256);
+    key "MortgageRegister"                     : String(128);
+    key "Rank"                                 : Integer;
+    key "Section"                              : String(128)                                      default '';
+    key "SequenceNumber"                       : Integer                                          default -1;
+    key "ASSOC_PhysicalAsset"                  : association to PhysicalAsset { PhysicalAssetID } not null;
+    key "BusinessValidFrom"                    : LocalDate;
+    key "BusinessValidTo"                      : LocalDate;
+        "SystemValidFrom"                      : UTCTimestamp                                     not null;
+        "SystemValidTo"                        : UTCTimestamp                                     not null;
+        "ASSOC_LandChargeArrangement"          : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  };
+        "_MovablesMortgageArrangement"         : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  };
+        "ActualUsableProtectionAmount"         : Decimal(34, 6);
+        "ActualUsableProtectionAmountCurrency" : String(3);
+        "AdministrativeArea"                   : String(128);
+        "AdministrativeSection"                : String(128);
+        "MortgageRegisterType"                 : String(40);
+        "ThirdPartyRights"                     : String(256);
+        "TitleID"                              : String(128);
+        "UnitID"                               : String(128);
+        "UsableProtectionAmount"               : Decimal(34, 6);
+        "UsableProtectionAmountCurrency"       : String(3);
+        "SourceSystemID"                       : String(128);
+        "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+        "ChangingUserInSourceSystem"           : String(128);
+        "ChangingProcessType"                  : String(40);
+        "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "MortgageRegisterEntry_Historical" {
+    "Beneficiary"                          : String(256)                                      not null;
+    "MortgageRegister"                     : String(128)                                      not null;
+    "Rank"                                 : Integer                                          not null;
+    "Section"                              : String(128)                                      default '' not null;
+    "SequenceNumber"                       : Integer                                          default -1 not null;
+    "ASSOC_PhysicalAsset"                  : association to PhysicalAsset { PhysicalAssetID } not null;
+    "BusinessValidFrom"                    : LocalDate                                        not null;
+    "BusinessValidTo"                      : LocalDate                                        not null;
+    "SystemValidFrom"                      : UTCTimestamp                                     not null;
+    "SystemValidTo"                        : UTCTimestamp                                     not null;
+    "ASSOC_LandChargeArrangement"          : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              };
+    "_MovablesMortgageArrangement"         : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              };
+    "ActualUsableProtectionAmount"         : Decimal(34, 6);
+    "ActualUsableProtectionAmountCurrency" : String(3);
+    "AdministrativeArea"                   : String(128);
+    "AdministrativeSection"                : String(128);
+    "MortgageRegisterType"                 : String(40);
+    "ThirdPartyRights"                     : String(256);
+    "TitleID"                              : String(128);
+    "UnitID"                               : String(128);
+    "UsableProtectionAmount"               : Decimal(34, 6);
+    "UsableProtectionAmountCurrency"       : String(3);
+    "SourceSystemID"                       : String(128);
+    "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+    "ChangingUserInSourceSystem"           : String(128);
+    "ChangingProcessType"                  : String(40);
+    "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::CollateralPortionErase" (IN ROW "sap.fsdm.tabletypes::CollateralPortionTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PortionNumber" is null and
+                         "ASSOC_CollateralAgreement.FinancialContractID" is null and
+                         "ASSOC_CollateralAgreement.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CollateralPortion" WHERE
+("PortionNumber" ,
+"ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralAgreement.IDSystem" 
+)in ( select "OLD"."PortionNumber" ,
+"OLD"."ASSOC_CollateralAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CollateralAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::CollateralPortion" "OLD"
+on
+  ( "IN"."PortionNumber" = "OLD"."PortionNumber" or "IN"."PortionNumber" is null ) and
+  ( "IN"."ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralAgreement.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CollateralPortion_Historical" WHERE
+("PortionNumber" ,
+"ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralAgreement.IDSystem" 
+)in ( select "OLD"."PortionNumber" ,
+"OLD"."ASSOC_CollateralAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CollateralAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::CollateralPortion_Historical" "OLD"
+on
+  ( "IN"."PortionNumber" = "OLD"."PortionNumber" or "IN"."PortionNumber" is null ) and
+  ( "IN"."ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralAgreement.IDSystem" is null ) 
+);
+
+END

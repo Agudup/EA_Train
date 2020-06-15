@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::BusinessPartnerClass_View" 
+as select
+      "PartnerClass" ,
+      "PartnerClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PartnerClassDescription" ,
+      "PartnerClassificationSystemDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BusinessPartnerClass"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartnerClassification_View" as "_BusinessPartnerClassification_ASSOC_ClassificationOfBusinessPartner"
+	  on "PartnerClassificationSystem" = "_BusinessPartnerClassification_ASSOC_ClassificationOfBusinessPartner"."ASSOC_ClassificationOfBusinessPartner.PartnerClassificationSystem" AND 
+	     "PartnerClass" = "_BusinessPartnerClassification_ASSOC_ClassificationOfBusinessPartner"."ASSOC_ClassificationOfBusinessPartner.PartnerClass"
+	     ,
+	join "sap.fsdm.SQLViews::PartnerClassHierarchyRelation_View" as "_PartnerClassHierarchyRelation_ASSOC_Child"
+	  on "PartnerClassificationSystem" = "_PartnerClassHierarchyRelation_ASSOC_Child"."ASSOC_Child.PartnerClassificationSystem" AND 
+	     "PartnerClass" = "_PartnerClassHierarchyRelation_ASSOC_Child"."ASSOC_Child.PartnerClass"
+	     ,
+	join "sap.fsdm.SQLViews::PartnerClassHierarchyRelation_View" as "_PartnerClassHierarchyRelation_ASSOC_Parent"
+	  on "PartnerClass" = "_PartnerClassHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.PartnerClass" AND 
+	     "PartnerClassificationSystem" = "_PartnerClassHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.PartnerClassificationSystem"
+	     
+);

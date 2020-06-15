@@ -1,0 +1,132 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "Position" {
+    key "Currency"                      : String(3);
+    key "ExpirationDate"                : LocalDate                                                    default date'9999-12-31';
+    key "LotID"                         : String(128)                                                  default '';
+    key "PutOrCall"                     : String(4)                                                    default '';
+    key "StrikePrice"                   : Decimal(34, 6)                                               default 0;
+    key "ValuationMethod"               : String(20);
+    key "_AccountingSystem"             : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_Collection"                   : association to Collection {
+                                                                      CollectionID,
+                                                                      IDSystem
+                                                                    }                                  not null;
+    key "_DerivativesAccount"           : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_SecuritiesAccount"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "Accrual"                       : Decimal(34, 6);
+        "AccrualCurrency"               : String(3);
+        "AveragePaidPrice"              : Decimal(34, 6);
+        "AveragePaidPriceCurrency"      : String(3);
+        "FuturesPrice"                  : Decimal(34, 6);
+        "FuturesPriceCurrency"          : String(3);
+        "InventoryValuationMethod"      : String(20);
+        "LendingValue"                  : Decimal(34, 6);
+        "LendingValueCurrency"          : String(3);
+        "LongPosition"                  : Decimal(34, 6);
+        "MarketValue"                   : Decimal(34, 6);
+        "MarketValueCurrency"           : String(3);
+        "NetPosition"                   : Decimal(34, 6);
+        "NominalAmount"                 : Decimal(34, 6);
+        "NominalAmountCurrency"         : String(3);
+        "OptionPremium"                 : Decimal(34, 6);
+        "OptionPremiumCurrency"         : String(3);
+        "PositionAmount"                : Decimal(34, 6);
+        "PositionCategory"              : String(40);
+        "Price"                         : Decimal(34, 6);
+        "PriceCurrency"                 : String(3);
+        "PurchasePrice"                 : Decimal(34, 6);
+        "PurchasePriceCurrency"         : String(3);
+        "Quantity"                      : Decimal(34, 6);
+        "SecurityPositionCategory"      : String(40);
+        "ShortPosition"                 : Decimal(34, 6);
+        "StrikePriceCurrency"           : String(3);
+        "Unit"                          : String(10);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Position_Historical" {
+    "Currency"                      : String(3)                                                    not null;
+    "ExpirationDate"                : LocalDate                                                    default date'9999-12-31' not null;
+    "LotID"                         : String(128)                                                  default '' not null;
+    "PutOrCall"                     : String(4)                                                    default '' not null;
+    "StrikePrice"                   : Decimal(34, 6)                                               default 0 not null;
+    "ValuationMethod"               : String(20)                                                   not null;
+    "_AccountingSystem"             : association to AccountingSystem { AccountingSystemID }       not null;
+    "_Collection"                   : association to Collection {
+                                                                  CollectionID,
+                                                                  IDSystem
+                                                                }                                  not null;
+    "_DerivativesAccount"           : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_SecuritiesAccount"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "BusinessValidFrom"             : UTCTimestamp                                                 not null;
+    "BusinessValidTo"               : UTCTimestamp                                                 not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "Accrual"                       : Decimal(34, 6);
+    "AccrualCurrency"               : String(3);
+    "AveragePaidPrice"              : Decimal(34, 6);
+    "AveragePaidPriceCurrency"      : String(3);
+    "FuturesPrice"                  : Decimal(34, 6);
+    "FuturesPriceCurrency"          : String(3);
+    "InventoryValuationMethod"      : String(20);
+    "LendingValue"                  : Decimal(34, 6);
+    "LendingValueCurrency"          : String(3);
+    "LongPosition"                  : Decimal(34, 6);
+    "MarketValue"                   : Decimal(34, 6);
+    "MarketValueCurrency"           : String(3);
+    "NetPosition"                   : Decimal(34, 6);
+    "NominalAmount"                 : Decimal(34, 6);
+    "NominalAmountCurrency"         : String(3);
+    "OptionPremium"                 : Decimal(34, 6);
+    "OptionPremiumCurrency"         : String(3);
+    "PositionAmount"                : Decimal(34, 6);
+    "PositionCategory"              : String(40);
+    "Price"                         : Decimal(34, 6);
+    "PriceCurrency"                 : String(3);
+    "PurchasePrice"                 : Decimal(34, 6);
+    "PurchasePriceCurrency"         : String(3);
+    "Quantity"                      : Decimal(34, 6);
+    "SecurityPositionCategory"      : String(40);
+    "ShortPosition"                 : Decimal(34, 6);
+    "StrikePriceCurrency"           : String(3);
+    "Unit"                          : String(10);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

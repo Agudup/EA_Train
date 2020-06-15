@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::LicenseErase" (IN ROW "sap.fsdm.tabletypes::LicenseTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "Authority" is null and
+                         "IDSystem" is null and
+                         "SubjectOfLicenseIdentifier" is null and
+                         "_BusinessPartner.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::License" WHERE
+("Authority" ,
+"IDSystem" ,
+"SubjectOfLicenseIdentifier" ,
+"_BusinessPartner.BusinessPartnerID" 
+)in ( select "OLD"."Authority" ,
+"OLD"."IDSystem" ,
+"OLD"."SubjectOfLicenseIdentifier" ,
+"OLD"."_BusinessPartner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::License" "OLD"
+on
+  ( "IN"."Authority" = "OLD"."Authority" or "IN"."Authority" is null ) and
+  ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+  ( "IN"."SubjectOfLicenseIdentifier" = "OLD"."SubjectOfLicenseIdentifier" or "IN"."SubjectOfLicenseIdentifier" is null ) and
+  ( "IN"."_BusinessPartner.BusinessPartnerID" = "OLD"."_BusinessPartner.BusinessPartnerID" or "IN"."_BusinessPartner.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::License_Historical" WHERE
+("Authority" ,
+"IDSystem" ,
+"SubjectOfLicenseIdentifier" ,
+"_BusinessPartner.BusinessPartnerID" 
+)in ( select "OLD"."Authority" ,
+"OLD"."IDSystem" ,
+"OLD"."SubjectOfLicenseIdentifier" ,
+"OLD"."_BusinessPartner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::License_Historical" "OLD"
+on
+  ( "IN"."Authority" = "OLD"."Authority" or "IN"."Authority" is null ) and
+  ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+  ( "IN"."SubjectOfLicenseIdentifier" = "OLD"."SubjectOfLicenseIdentifier" or "IN"."SubjectOfLicenseIdentifier" is null ) and
+  ( "IN"."_BusinessPartner.BusinessPartnerID" = "OLD"."_BusinessPartner.BusinessPartnerID" or "IN"."_BusinessPartner.BusinessPartnerID" is null ) 
+);
+
+END

@@ -1,0 +1,100 @@
+PROCEDURE "sap.fsdm.procedures::InterestAndFeeCalculationResultErase" (IN ROW "sap.fsdm.tabletypes::InterestAndFeeCalculationResultTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "CalculationPeriodID" is null and
+                         "InterestAndFeeCalculationMethod" is null and
+                         "ItemNumber" is null and
+                         "ItemType" is null and
+                         "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" is null and
+                         "ASSOC_FinancialContractOfCalculatedItems.IDSystem" is null and
+                         "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null and
+                         "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::InterestAndFeeCalculationResult" WHERE
+("CalculationPeriodID" ,
+"InterestAndFeeCalculationMethod" ,
+"ItemNumber" ,
+"ItemType" ,
+"ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+"ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+)in ( select "OLD"."CalculationPeriodID" ,
+"OLD"."InterestAndFeeCalculationMethod" ,
+"OLD"."ItemNumber" ,
+"OLD"."ItemType" ,
+"OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::InterestAndFeeCalculationResult" "OLD"
+on
+  ( "IN"."CalculationPeriodID" = "OLD"."CalculationPeriodID" or "IN"."CalculationPeriodID" is null ) and
+  ( "IN"."InterestAndFeeCalculationMethod" = "OLD"."InterestAndFeeCalculationMethod" or "IN"."InterestAndFeeCalculationMethod" is null ) and
+  ( "IN"."ItemNumber" = "OLD"."ItemNumber" or "IN"."ItemNumber" is null ) and
+  ( "IN"."ItemType" = "OLD"."ItemType" or "IN"."ItemType" is null ) and
+  ( "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" or "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" or "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::InterestAndFeeCalculationResult_Historical" WHERE
+("CalculationPeriodID" ,
+"InterestAndFeeCalculationMethod" ,
+"ItemNumber" ,
+"ItemType" ,
+"ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+"ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+)in ( select "OLD"."CalculationPeriodID" ,
+"OLD"."InterestAndFeeCalculationMethod" ,
+"OLD"."ItemNumber" ,
+"OLD"."ItemType" ,
+"OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::InterestAndFeeCalculationResult_Historical" "OLD"
+on
+  ( "IN"."CalculationPeriodID" = "OLD"."CalculationPeriodID" or "IN"."CalculationPeriodID" is null ) and
+  ( "IN"."InterestAndFeeCalculationMethod" = "OLD"."InterestAndFeeCalculationMethod" or "IN"."InterestAndFeeCalculationMethod" is null ) and
+  ( "IN"."ItemNumber" = "OLD"."ItemNumber" or "IN"."ItemNumber" is null ) and
+  ( "IN"."ItemType" = "OLD"."ItemType" or "IN"."ItemType" is null ) and
+  ( "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" or "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" or "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) 
+);
+
+END

@@ -1,0 +1,160 @@
+view "sap.fsdm.SQLViews::FSSubledgerDocument_View" 
+as select
+      "CompanyCode" ,
+      "DocumentNumber" ,
+      "FiscalYear" ,
+      "ItemNumber" ,
+      "PostingDate" ,
+      "_AccountingSystem.AccountingSystemID" ,
+      "_BusinessPartner.BusinessPartnerID" ,
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_GLAccount.GLAccount" ,
+      "_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+      "_GLDocumentItem.DocumentNumber" ,
+      "_GLDocumentItem.FiscalYear" ,
+      "_GLDocumentItem.ItemNumber" ,
+      "_GLDocumentItem.Ledger" ,
+      "_GLDocumentItem.PostingDate" ,
+      "_GLDocumentItem._AccountingSystem.AccountingSystemID" ,
+      "_GLDocumentItem._CompanyCode.BusinessPartnerID" ,
+      "_IndustryClass.Industry" ,
+      "_IndustryClass.IndustryClassificationSystem" ,
+      "_OrganizationalUnit.OrganizationalUnitID" ,
+      "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_ProductClass.ProductClass" ,
+      "_ProductClass.ProductClassificationSystem" ,
+      "_ProfitCenter.OrganizationalUnitID" ,
+      "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_ProfitCenterAtCounterparty.OrganizationalUnitID" ,
+      "_ProfitCenterAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "_SettlementItem.IDSystem" ,
+      "_SettlementItem.ItemNumber" ,
+      "_SettlementItem.SettlementID" ,
+      "_SubledgerAccount.SubledgerAccount" ,
+      "AccruingStatus" ,
+      "AmountInFunctionalCurrency" ,
+      "AmountInGroupCurrency" ,
+      "AmountInHardCurrency" ,
+      "AmountInIndexCurrency" ,
+      "AmountInLocalCurrency" ,
+      "AssetLiabilityStatus" ,
+      "Book" ,
+      "BusinessSegment" ,
+      "BusinessSegmentAtCounterparty" ,
+      "ContractLifeCycleStatus" ,
+      "CreationTimestamp" ,
+      "DocumentDate" ,
+      "FairValueLevel" ,
+      "FiscalPeriod" ,
+      "FunctionalCurrency" ,
+      "GroupCurrency" ,
+      "HardCurrency" ,
+      "HoldingCategory" ,
+      "ImpairmentStatus" ,
+      "IndexCurrency" ,
+      "InversedFlag" ,
+      "InvertedFlag" ,
+      "LifeCycleSegment" ,
+      "LocalCurrency" ,
+      "MarketConformityStatus" ,
+      "MovementType" ,
+      "NominalAmount" ,
+      "NominalAmountCurrency" ,
+      "PostingDirection" ,
+      "PostingRecord" ,
+      "ProductSegment" ,
+      "Quantity" ,
+      "RefDocumentNumber" ,
+      "RefFiscalYear" ,
+      "ReferenceTaxCode" ,
+      "ResetedFlag" ,
+      "TaxBaseAmountInFunctionalCurrency" ,
+      "TaxBaseAmountInTransactionCurrency" ,
+      "TaxCode" ,
+      "TaxCountry" ,
+      "TransactionAmount" ,
+      "TransactionCode" ,
+      "TransactionCurrency" ,
+      "Unit" ,
+      "ValueDate" ,
+      "WriteDownStatus" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FSSubledgerDocument"
+with associations
+(
+	join "sap.fsdm.SQLViews::CashFlowStream_View" as "_CashFlowStream__FSSubLedgerDocumentItem"
+	  on "_AccountingSystem.AccountingSystemID" = "_CashFlowStream__FSSubLedgerDocumentItem"."_FSSubLedgerDocumentItem._AccountingSystem.AccountingSystemID" AND 
+	     "PostingDate" = "_CashFlowStream__FSSubLedgerDocumentItem"."_FSSubLedgerDocumentItem.PostingDate" AND 
+	     "ItemNumber" = "_CashFlowStream__FSSubLedgerDocumentItem"."_FSSubLedgerDocumentItem.ItemNumber" AND 
+	     "FiscalYear" = "_CashFlowStream__FSSubLedgerDocumentItem"."_FSSubLedgerDocumentItem.FiscalYear" AND 
+	     "DocumentNumber" = "_CashFlowStream__FSSubLedgerDocumentItem"."_FSSubLedgerDocumentItem.DocumentNumber" AND 
+	     "CompanyCode" = "_CashFlowStream__FSSubLedgerDocumentItem"."_FSSubLedgerDocumentItem.CompanyCode"
+	     ,
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystem"
+	  on "_AccountingSystem"."AccountingSystemID" = "_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::GLAccount_View" as "_GLAccount"
+	  on "_GLAccount"."_ChartOfAccounts.ChartOfAccountId" = "_GLAccount._ChartOfAccounts.ChartOfAccountId" AND 
+	     "_GLAccount"."GLAccount" = "_GLAccount.GLAccount"
+	     ,
+	join "sap.fsdm.SQLViews::GLDocument_View" as "_GLDocumentItem"
+	  on "_GLDocumentItem"."DocumentNumber" = "_GLDocumentItem.DocumentNumber" AND 
+	     "_GLDocumentItem"."FiscalYear" = "_GLDocumentItem.FiscalYear" AND 
+	     "_GLDocumentItem"."ItemNumber" = "_GLDocumentItem.ItemNumber" AND 
+	     "_GLDocumentItem"."Ledger" = "_GLDocumentItem.Ledger" AND 
+	     "_GLDocumentItem"."PostingDate" = "_GLDocumentItem.PostingDate" AND 
+	     "_GLDocumentItem"."_AccountingSystem.AccountingSystemID" = "_GLDocumentItem._AccountingSystem.AccountingSystemID" AND 
+	     "_GLDocumentItem"."_CompanyCode.BusinessPartnerID" = "_GLDocumentItem._CompanyCode.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClass_View" as "_IndustryClass"
+	  on "_IndustryClass"."Industry" = "_IndustryClass.Industry" AND 
+	     "_IndustryClass"."IndustryClassificationSystem" = "_IndustryClass.IndustryClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_OrganizationalUnit"
+	  on "_OrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_OrganizationalUnit"."OrganizationalUnitID" = "_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClass_View" as "_ProductClass"
+	  on "_ProductClass"."ProductClass" = "_ProductClass.ProductClass" AND 
+	     "_ProductClass"."ProductClassificationSystem" = "_ProductClass.ProductClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_ProfitCenter"
+	  on "_ProfitCenter"."OrganizationalUnitID" = "_ProfitCenter.OrganizationalUnitID" AND 
+	     "_ProfitCenter"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_ProfitCenterAtCounterparty"
+	  on "_ProfitCenterAtCounterparty"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_ProfitCenterAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_ProfitCenterAtCounterparty"."OrganizationalUnitID" = "_ProfitCenterAtCounterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID" AND 
+	     "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_SettlementItem"
+	  on "_SettlementItem"."IDSystem" = "_SettlementItem.IDSystem" AND 
+	     "_SettlementItem"."ItemNumber" = "_SettlementItem.ItemNumber" AND 
+	     "_SettlementItem"."SettlementID" = "_SettlementItem.SettlementID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccount_View" as "_SubledgerAccount"
+	  on "_SubledgerAccount"."SubledgerAccount" = "_SubledgerAccount.SubledgerAccount"
+	     
+);

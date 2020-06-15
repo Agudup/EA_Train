@@ -1,0 +1,29 @@
+view "sap.fsdm.SQLViews::InstrumentsAtExchange_View" 
+as select
+      "_Exchange.MarketIdentifierCode" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ListingStatus" ,
+      "TickSize" ,
+      "TickSizeCurrency" ,
+      "TradingStatus" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentsAtExchange"
+with associations
+(
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

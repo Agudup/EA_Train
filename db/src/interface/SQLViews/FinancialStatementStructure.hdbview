@@ -1,0 +1,21 @@
+view "sap.fsdm.SQLViews::FinancialStatementStructure_View" 
+as select
+      "FinancialStatementStructureID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "FinancialStatementStructureDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FinancialStatementStructure"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialStatementSegment_View" as "_FinancialStatementSegment__FinancialStatementStructure"
+	  on "FinancialStatementStructureID" = "_FinancialStatementSegment__FinancialStatementStructure"."_FinancialStatementStructure.FinancialStatementStructureID"
+	     
+);

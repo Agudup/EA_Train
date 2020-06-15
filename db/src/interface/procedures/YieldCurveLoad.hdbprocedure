@@ -1,0 +1,329 @@
+PROCEDURE "sap.fsdm.procedures::YieldCurveLoad" (IN ROW "sap.fsdm.tabletypes::YieldCurveTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'YieldCurveID=' || TO_VARCHAR("YieldCurveID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."YieldCurveID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."YieldCurveID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "YieldCurveID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."YieldCurveID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."YieldCurveID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::YieldCurve" (
+        "YieldCurveID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_ReferenceRate.ReferenceRateID",
+        "CurveCurrency",
+        "Description",
+        "IsForwardStarting",
+        "IsSpreadCurve",
+        "Name",
+        "PeriodUntilForwardStartingDate",
+        "PeriodUntilTimeUnit",
+        "Rating",
+        "RatingAgency",
+        "RatingMethod",
+        "ShortMidLongTerm",
+        "TimeToMaturityUnit",
+        "YieldCurveCalculationMethod",
+        "YieldCurveCategory",
+        "YieldCurveType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_YieldCurveID" as "YieldCurveID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_ReferenceRate.ReferenceRateID" as "ASSOC_ReferenceRate.ReferenceRateID" ,
+            "OLD_CurveCurrency" as "CurveCurrency" ,
+            "OLD_Description" as "Description" ,
+            "OLD_IsForwardStarting" as "IsForwardStarting" ,
+            "OLD_IsSpreadCurve" as "IsSpreadCurve" ,
+            "OLD_Name" as "Name" ,
+            "OLD_PeriodUntilForwardStartingDate" as "PeriodUntilForwardStartingDate" ,
+            "OLD_PeriodUntilTimeUnit" as "PeriodUntilTimeUnit" ,
+            "OLD_Rating" as "Rating" ,
+            "OLD_RatingAgency" as "RatingAgency" ,
+            "OLD_RatingMethod" as "RatingMethod" ,
+            "OLD_ShortMidLongTerm" as "ShortMidLongTerm" ,
+            "OLD_TimeToMaturityUnit" as "TimeToMaturityUnit" ,
+            "OLD_YieldCurveCalculationMethod" as "YieldCurveCalculationMethod" ,
+            "OLD_YieldCurveCategory" as "YieldCurveCategory" ,
+            "OLD_YieldCurveType" as "YieldCurveType" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."YieldCurveID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."YieldCurveID" as "OLD_YieldCurveID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_ReferenceRate.ReferenceRateID" as "OLD_ASSOC_ReferenceRate.ReferenceRateID",
+                                "OLD"."CurveCurrency" as "OLD_CurveCurrency",
+                                "OLD"."Description" as "OLD_Description",
+                                "OLD"."IsForwardStarting" as "OLD_IsForwardStarting",
+                                "OLD"."IsSpreadCurve" as "OLD_IsSpreadCurve",
+                                "OLD"."Name" as "OLD_Name",
+                                "OLD"."PeriodUntilForwardStartingDate" as "OLD_PeriodUntilForwardStartingDate",
+                                "OLD"."PeriodUntilTimeUnit" as "OLD_PeriodUntilTimeUnit",
+                                "OLD"."Rating" as "OLD_Rating",
+                                "OLD"."RatingAgency" as "OLD_RatingAgency",
+                                "OLD"."RatingMethod" as "OLD_RatingMethod",
+                                "OLD"."ShortMidLongTerm" as "OLD_ShortMidLongTerm",
+                                "OLD"."TimeToMaturityUnit" as "OLD_TimeToMaturityUnit",
+                                "OLD"."YieldCurveCalculationMethod" as "OLD_YieldCurveCalculationMethod",
+                                "OLD"."YieldCurveCategory" as "OLD_YieldCurveCategory",
+                                "OLD"."YieldCurveType" as "OLD_YieldCurveType",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::YieldCurve" as "OLD"
+            on
+                ( case when "IN"."YieldCurveID" is null then '' else "IN"."YieldCurveID" end ) = "OLD"."YieldCurveID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::YieldCurve" (
+        "YieldCurveID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_ReferenceRate.ReferenceRateID",
+        "CurveCurrency",
+        "Description",
+        "IsForwardStarting",
+        "IsSpreadCurve",
+        "Name",
+        "PeriodUntilForwardStartingDate",
+        "PeriodUntilTimeUnit",
+        "Rating",
+        "RatingAgency",
+        "RatingMethod",
+        "ShortMidLongTerm",
+        "TimeToMaturityUnit",
+        "YieldCurveCalculationMethod",
+        "YieldCurveCategory",
+        "YieldCurveType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_YieldCurveID" as "YieldCurveID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_ReferenceRate.ReferenceRateID" as "ASSOC_ReferenceRate.ReferenceRateID",
+            "OLD_CurveCurrency" as "CurveCurrency",
+            "OLD_Description" as "Description",
+            "OLD_IsForwardStarting" as "IsForwardStarting",
+            "OLD_IsSpreadCurve" as "IsSpreadCurve",
+            "OLD_Name" as "Name",
+            "OLD_PeriodUntilForwardStartingDate" as "PeriodUntilForwardStartingDate",
+            "OLD_PeriodUntilTimeUnit" as "PeriodUntilTimeUnit",
+            "OLD_Rating" as "Rating",
+            "OLD_RatingAgency" as "RatingAgency",
+            "OLD_RatingMethod" as "RatingMethod",
+            "OLD_ShortMidLongTerm" as "ShortMidLongTerm",
+            "OLD_TimeToMaturityUnit" as "TimeToMaturityUnit",
+            "OLD_YieldCurveCalculationMethod" as "YieldCurveCalculationMethod",
+            "OLD_YieldCurveCategory" as "YieldCurveCategory",
+            "OLD_YieldCurveType" as "YieldCurveType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."YieldCurveID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."YieldCurveID" as "OLD_YieldCurveID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ASSOC_ReferenceRate.ReferenceRateID" as "OLD_ASSOC_ReferenceRate.ReferenceRateID",
+                        "OLD"."CurveCurrency" as "OLD_CurveCurrency",
+                        "OLD"."Description" as "OLD_Description",
+                        "OLD"."IsForwardStarting" as "OLD_IsForwardStarting",
+                        "OLD"."IsSpreadCurve" as "OLD_IsSpreadCurve",
+                        "OLD"."Name" as "OLD_Name",
+                        "OLD"."PeriodUntilForwardStartingDate" as "OLD_PeriodUntilForwardStartingDate",
+                        "OLD"."PeriodUntilTimeUnit" as "OLD_PeriodUntilTimeUnit",
+                        "OLD"."Rating" as "OLD_Rating",
+                        "OLD"."RatingAgency" as "OLD_RatingAgency",
+                        "OLD"."RatingMethod" as "OLD_RatingMethod",
+                        "OLD"."ShortMidLongTerm" as "OLD_ShortMidLongTerm",
+                        "OLD"."TimeToMaturityUnit" as "OLD_TimeToMaturityUnit",
+                        "OLD"."YieldCurveCalculationMethod" as "OLD_YieldCurveCalculationMethod",
+                        "OLD"."YieldCurveCategory" as "OLD_YieldCurveCategory",
+                        "OLD"."YieldCurveType" as "OLD_YieldCurveType",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::YieldCurve" as "OLD"
+            on
+                ( case when "IN"."YieldCurveID" is null then '' else "IN"."YieldCurveID" end ) = "OLD"."YieldCurveID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::YieldCurve"
+    where (
+        "YieldCurveID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."YieldCurveID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::YieldCurve" as "OLD"
+        on
+           ( case when "IN"."YieldCurveID" is null then '' else "IN"."YieldCurveID" end ) = "OLD"."YieldCurveID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::YieldCurve" (
+        "YieldCurveID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_ReferenceRate.ReferenceRateID",
+        "CurveCurrency",
+        "Description",
+        "IsForwardStarting",
+        "IsSpreadCurve",
+        "Name",
+        "PeriodUntilForwardStartingDate",
+        "PeriodUntilTimeUnit",
+        "Rating",
+        "RatingAgency",
+        "RatingMethod",
+        "ShortMidLongTerm",
+        "TimeToMaturityUnit",
+        "YieldCurveCalculationMethod",
+        "YieldCurveCategory",
+        "YieldCurveType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "YieldCurveID" is null then '' else "YieldCurveID" end ) as "YieldCurveID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "ASSOC_ReferenceRate.ReferenceRateID"  ,
+            "CurveCurrency"  ,
+            "Description"  ,
+            "IsForwardStarting"  ,
+            "IsSpreadCurve"  ,
+            "Name"  ,
+            "PeriodUntilForwardStartingDate"  ,
+            "PeriodUntilTimeUnit"  ,
+            "Rating"  ,
+            "RatingAgency"  ,
+            "RatingMethod"  ,
+            "ShortMidLongTerm"  ,
+            "TimeToMaturityUnit"  ,
+            "YieldCurveCalculationMethod"  ,
+            "YieldCurveCategory"  ,
+            "YieldCurveType"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

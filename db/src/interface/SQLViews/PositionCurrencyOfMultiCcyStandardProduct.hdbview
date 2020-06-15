@@ -1,0 +1,41 @@
+view "sap.fsdm.SQLViews::PositionCurrencyOfMultiCcyStandardProduct_View" 
+as select
+      "PositionCurrency" ,
+      "ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+      "ASSOC_StdMultiCcyAcct.IDSystem" ,
+      "ASSOC_StdMultiCcyAcct.PricingScheme" ,
+      "ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PositionCurrencyOfMultiCcyStandardProduct"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "ASSOC_StdMultiCcyAcct"
+	  on "ASSOC_StdMultiCcyAcct"."ASSOC_Company.BusinessPartnerID" = "ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StdMultiCcyAcct"."FinancialStandardProductID" = "ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_StdMultiCcyAcct"."IDSystem" = "ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_StdMultiCcyAcct"."PricingScheme" = "ASSOC_StdMultiCcyAcct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::StandardInterest_View" as "_StandardInterest_ASSOC_PosCcyOfStdAcc"
+	  on "PositionCurrency" = "_StandardInterest_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.PositionCurrency" AND 
+	     "ASSOC_StdMultiCcyAcct.PricingScheme" = "_StandardInterest_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" AND 
+	     "ASSOC_StdMultiCcyAcct.IDSystem" = "_StandardInterest_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "_StandardInterest_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "_StandardInterest_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardLimit_View" as "_StandardLimit_ASSOC_PosCcyOfStdAcc"
+	  on "ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "_StandardLimit_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "_StandardLimit_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_StdMultiCcyAcct.IDSystem" = "_StandardLimit_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_StdMultiCcyAcct.PricingScheme" = "_StandardLimit_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" AND 
+	     "PositionCurrency" = "_StandardLimit_ASSOC_PosCcyOfStdAcc"."ASSOC_PosCcyOfStdAcc.PositionCurrency"
+	     
+);

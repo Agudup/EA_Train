@@ -1,0 +1,383 @@
+PROCEDURE "sap.fsdm.procedures::GuaranteedMinimumBenefitSnapshotLoad" (IN ROW "sap.fsdm.tabletypes::GuaranteedMinimumBenefitSnapshotTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Type=' || TO_VARCHAR("Type") || ' ' ||
+                '_MainAnnuityCoverage.ID=' || TO_VARCHAR("_MainAnnuityCoverage.ID") || ' ' ||
+                '_MainAnnuityCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_MainAnnuityCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_MainAnnuityCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_MainAnnuityCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Type",
+                        "IN"."_MainAnnuityCoverage.ID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Type",
+                        "IN"."_MainAnnuityCoverage.ID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Type",
+                        "_MainAnnuityCoverage.ID",
+                        "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                        "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Type",
+                                    "IN"."_MainAnnuityCoverage.ID",
+                                    "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Type",
+                                    "IN"."_MainAnnuityCoverage.ID",
+                                    "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::GuaranteedMinimumBenefitSnapshot" (
+        "Type",
+        "_MainAnnuityCoverage.ID",
+        "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "GuaranteedBenefitAmount",
+        "GuaranteedMinimumBenefitSnapshotCategory",
+        "LastStepUpDate",
+        "NextEligibleElectionResetDate",
+        "PeriodGuaranteedIncomeRatePerMill",
+        "PeriodWithdrawalAmount",
+        "PeriodicGuaranteedWithdrawalAmount",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Type" as "Type" ,
+            "OLD__MainAnnuityCoverage.ID" as "_MainAnnuityCoverage.ID" ,
+            "OLD__MainAnnuityCoverage._InsuranceContract.FinancialContractID" as "_MainAnnuityCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__MainAnnuityCoverage._InsuranceContract.IDSystem" as "_MainAnnuityCoverage._InsuranceContract.IDSystem" ,
+            "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_GuaranteedBenefitAmount" as "GuaranteedBenefitAmount" ,
+            "OLD_GuaranteedMinimumBenefitSnapshotCategory" as "GuaranteedMinimumBenefitSnapshotCategory" ,
+            "OLD_LastStepUpDate" as "LastStepUpDate" ,
+            "OLD_NextEligibleElectionResetDate" as "NextEligibleElectionResetDate" ,
+            "OLD_PeriodGuaranteedIncomeRatePerMill" as "PeriodGuaranteedIncomeRatePerMill" ,
+            "OLD_PeriodWithdrawalAmount" as "PeriodWithdrawalAmount" ,
+            "OLD_PeriodicGuaranteedWithdrawalAmount" as "PeriodicGuaranteedWithdrawalAmount" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."Type",
+                        "IN"."_MainAnnuityCoverage.ID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Type" as "OLD_Type",
+                                "OLD"."_MainAnnuityCoverage.ID" as "OLD__MainAnnuityCoverage.ID",
+                                "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" as "OLD__MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" as "OLD__MainAnnuityCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."GuaranteedBenefitAmount" as "OLD_GuaranteedBenefitAmount",
+                                "OLD"."GuaranteedMinimumBenefitSnapshotCategory" as "OLD_GuaranteedMinimumBenefitSnapshotCategory",
+                                "OLD"."LastStepUpDate" as "OLD_LastStepUpDate",
+                                "OLD"."NextEligibleElectionResetDate" as "OLD_NextEligibleElectionResetDate",
+                                "OLD"."PeriodGuaranteedIncomeRatePerMill" as "OLD_PeriodGuaranteedIncomeRatePerMill",
+                                "OLD"."PeriodWithdrawalAmount" as "OLD_PeriodWithdrawalAmount",
+                                "OLD"."PeriodicGuaranteedWithdrawalAmount" as "OLD_PeriodicGuaranteedWithdrawalAmount",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GuaranteedMinimumBenefitSnapshot" as "OLD"
+            on
+                ( case when "IN"."Type" is null then '' else "IN"."Type" end ) = "OLD"."Type" and
+                ( case when "IN"."_MainAnnuityCoverage.ID" is null then '' else "IN"."_MainAnnuityCoverage.ID" end ) = "OLD"."_MainAnnuityCoverage.ID" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::GuaranteedMinimumBenefitSnapshot" (
+        "Type",
+        "_MainAnnuityCoverage.ID",
+        "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "GuaranteedBenefitAmount",
+        "GuaranteedMinimumBenefitSnapshotCategory",
+        "LastStepUpDate",
+        "NextEligibleElectionResetDate",
+        "PeriodGuaranteedIncomeRatePerMill",
+        "PeriodWithdrawalAmount",
+        "PeriodicGuaranteedWithdrawalAmount",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Type" as "Type",
+            "OLD__MainAnnuityCoverage.ID" as "_MainAnnuityCoverage.ID",
+            "OLD__MainAnnuityCoverage._InsuranceContract.FinancialContractID" as "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+            "OLD__MainAnnuityCoverage._InsuranceContract.IDSystem" as "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+            "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_GuaranteedBenefitAmount" as "GuaranteedBenefitAmount",
+            "OLD_GuaranteedMinimumBenefitSnapshotCategory" as "GuaranteedMinimumBenefitSnapshotCategory",
+            "OLD_LastStepUpDate" as "LastStepUpDate",
+            "OLD_NextEligibleElectionResetDate" as "NextEligibleElectionResetDate",
+            "OLD_PeriodGuaranteedIncomeRatePerMill" as "PeriodGuaranteedIncomeRatePerMill",
+            "OLD_PeriodWithdrawalAmount" as "PeriodWithdrawalAmount",
+            "OLD_PeriodicGuaranteedWithdrawalAmount" as "PeriodicGuaranteedWithdrawalAmount",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."Type",
+                        "IN"."_MainAnnuityCoverage.ID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."Type" as "OLD_Type",
+                        "OLD"."_MainAnnuityCoverage.ID" as "OLD__MainAnnuityCoverage.ID",
+                        "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" as "OLD__MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" as "OLD__MainAnnuityCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."GuaranteedBenefitAmount" as "OLD_GuaranteedBenefitAmount",
+                        "OLD"."GuaranteedMinimumBenefitSnapshotCategory" as "OLD_GuaranteedMinimumBenefitSnapshotCategory",
+                        "OLD"."LastStepUpDate" as "OLD_LastStepUpDate",
+                        "OLD"."NextEligibleElectionResetDate" as "OLD_NextEligibleElectionResetDate",
+                        "OLD"."PeriodGuaranteedIncomeRatePerMill" as "OLD_PeriodGuaranteedIncomeRatePerMill",
+                        "OLD"."PeriodWithdrawalAmount" as "OLD_PeriodWithdrawalAmount",
+                        "OLD"."PeriodicGuaranteedWithdrawalAmount" as "OLD_PeriodicGuaranteedWithdrawalAmount",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GuaranteedMinimumBenefitSnapshot" as "OLD"
+            on
+                ( case when "IN"."Type" is null then '' else "IN"."Type" end ) = "OLD"."Type" and
+                ( case when "IN"."_MainAnnuityCoverage.ID" is null then '' else "IN"."_MainAnnuityCoverage.ID" end ) = "OLD"."_MainAnnuityCoverage.ID" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::GuaranteedMinimumBenefitSnapshot"
+    where (
+        "Type",
+        "_MainAnnuityCoverage.ID",
+        "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."Type",
+            "OLD"."_MainAnnuityCoverage.ID",
+            "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem",
+            "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::GuaranteedMinimumBenefitSnapshot" as "OLD"
+        on
+           ( case when "IN"."Type" is null then '' else "IN"."Type" end ) = "OLD"."Type" and
+           ( case when "IN"."_MainAnnuityCoverage.ID" is null then '' else "IN"."_MainAnnuityCoverage.ID" end ) = "OLD"."_MainAnnuityCoverage.ID" and
+           ( case when "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" and
+           ( case when "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_MainAnnuityCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_MainAnnuityCoverage._InsuranceContract.IDSystem" and
+           ( case when "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+           ( case when "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" and
+           ( case when "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::GuaranteedMinimumBenefitSnapshot" (
+        "Type",
+        "_MainAnnuityCoverage.ID",
+        "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "GuaranteedBenefitAmount",
+        "GuaranteedMinimumBenefitSnapshotCategory",
+        "LastStepUpDate",
+        "NextEligibleElectionResetDate",
+        "PeriodGuaranteedIncomeRatePerMill",
+        "PeriodWithdrawalAmount",
+        "PeriodicGuaranteedWithdrawalAmount",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "Type" is null then '' else "Type" end ) as "Type",
+            ( case when "_MainAnnuityCoverage.ID" is null then '' else "_MainAnnuityCoverage.ID" end ) as "_MainAnnuityCoverage.ID",
+            ( case when "_MainAnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "_MainAnnuityCoverage._InsuranceContract.FinancialContractID" end ) as "_MainAnnuityCoverage._InsuranceContract.FinancialContractID",
+            ( case when "_MainAnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "_MainAnnuityCoverage._InsuranceContract.IDSystem" end ) as "_MainAnnuityCoverage._InsuranceContract.IDSystem",
+            ( case when "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) as "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            ( case when "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) as "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+            ( case when "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) as "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "GuaranteedBenefitAmount"  ,
+            "GuaranteedMinimumBenefitSnapshotCategory"  ,
+            "LastStepUpDate"  ,
+            "NextEligibleElectionResetDate"  ,
+            "PeriodGuaranteedIncomeRatePerMill"  ,
+            "PeriodWithdrawalAmount"  ,
+            "PeriodicGuaranteedWithdrawalAmount"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

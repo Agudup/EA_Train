@@ -1,0 +1,50 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"InsuranceCoverage";
+
+entity "InvestmentFundShareSelection" {
+    key "_InvestmentFundShare"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_LifeAndAnnuityInsuranceCoverage" : association to InsuranceCoverage {
+                                                                                ID,
+                                                                                _InsuranceContract,
+                                                                                _InsuredObject
+                                                                              }                           not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+        "SystemValidTo"                    : UTCTimestamp                                                 not null;
+        "EndDate"                          : LocalDate;
+        "StartDate"                        : LocalDate;
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InvestmentFundShareSelection_Historical" {
+    "_InvestmentFundShare"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_LifeAndAnnuityInsuranceCoverage" : association to InsuranceCoverage {
+                                                                            ID,
+                                                                            _InsuranceContract,
+                                                                            _InsuredObject
+                                                                          }                           not null;
+    "BusinessValidFrom"                : LocalDate                                                    not null;
+    "BusinessValidTo"                  : LocalDate                                                    not null;
+    "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+    "SystemValidTo"                    : UTCTimestamp                                                 not null;
+    "EndDate"                          : LocalDate;
+    "StartDate"                        : LocalDate;
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

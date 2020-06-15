@@ -1,0 +1,55 @@
+view "sap.fsdm.SQLViews::LossObject_View" 
+as select
+      "LossObjectID" ,
+      "_PropertyLoss.LossCategory" ,
+      "_PropertyLoss._Claim.ID" ,
+      "_PropertyLoss._Claim.IDSystem" ,
+      "_LossObject.LossObjectID" ,
+      "_LossObject._PropertyLoss.LossCategory" ,
+      "_LossObject._PropertyLoss._Claim.ID" ,
+      "_LossObject._PropertyLoss._Claim.IDSystem" ,
+      "_PhysicalAsset.PhysicalAssetID" ,
+      "ActualRepairDate" ,
+      "Currency" ,
+      "EstimatedRepairDate" ,
+      "LossCause" ,
+      "LossObjectCategory" ,
+      "LossObjectCurrentMarketValue" ,
+      "LossObjectRepairCost" ,
+      "LossObjectRepairableIndicator" ,
+      "LossObjectReplaceableIndicator" ,
+      "LossObjectReplacementValue" ,
+      "LossObjectType" ,
+      "OdometerReading" ,
+      "SalvageSoldDate" ,
+      "VehicleParkedIndicator" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::LossObject"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClaimItem_View" as "_ClaimItem__LossObject"
+	  on "LossObjectID" = "_ClaimItem__LossObject"."_LossObject.LossObjectID" AND 
+	     "_PropertyLoss.LossCategory" = "_ClaimItem__LossObject"."_LossObject._PropertyLoss.LossCategory" AND 
+	     "_PropertyLoss._Claim.ID" = "_ClaimItem__LossObject"."_LossObject._PropertyLoss._Claim.ID" AND 
+	     "_PropertyLoss._Claim.IDSystem" = "_ClaimItem__LossObject"."_LossObject._PropertyLoss._Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::LossObject_View" as "_LossObject"
+	  on "_LossObject"."LossObjectID" = "_LossObject.LossObjectID" AND 
+	     "_LossObject"."_PropertyLoss.LossCategory" = "_LossObject._PropertyLoss.LossCategory" AND 
+	     "_LossObject"."_PropertyLoss._Claim.ID" = "_LossObject._PropertyLoss._Claim.ID" AND 
+	     "_LossObject"."_PropertyLoss._Claim.IDSystem" = "_LossObject._PropertyLoss._Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "_PhysicalAsset"
+	  on "_PhysicalAsset"."PhysicalAssetID" = "_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Loss_View" as "_PropertyLoss"
+	  on "_PropertyLoss"."LossCategory" = "_PropertyLoss.LossCategory" AND 
+	     "_PropertyLoss"."_Claim.ID" = "_PropertyLoss._Claim.ID" AND 
+	     "_PropertyLoss"."_Claim.IDSystem" = "_PropertyLoss._Claim.IDSystem"
+	     
+);

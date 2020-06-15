@@ -1,0 +1,24 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentIntradayQuotationDelete" (IN ROW "sap.fsdm.tabletypes::InstrumentIntradayQuotationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::InstrumentIntradayQuotation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+from :ROW );
+
+
+END

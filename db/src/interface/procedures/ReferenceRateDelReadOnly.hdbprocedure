@@ -1,0 +1,230 @@
+PROCEDURE "sap.fsdm.procedures::ReferenceRateDelReadOnly" (IN ROW "sap.fsdm.tabletypes::ReferenceRateTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::ReferenceRateTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::ReferenceRateTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ReferenceRateID=' || TO_VARCHAR("ReferenceRateID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ReferenceRateID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ReferenceRateID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ReferenceRateID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ReferenceRateID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ReferenceRateID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "ReferenceRateID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::ReferenceRate" WHERE
+            (
+            "ReferenceRateID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."ReferenceRateID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ReferenceRate" as "OLD"
+        on
+                              ( "IN"."ReferenceRateID" = "OLD"."ReferenceRateID" or "IN"."ReferenceRateID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "ReferenceRateID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "DayCountConvention",
+        "FixingIntervalPeriodLength",
+        "FixingIntervalTimeUnit",
+        "IsInternallyFixed",
+        "ProviderOfReferenceRate",
+        "ReferenceRateCurrency",
+        "ReferenceRateType",
+        "TimeToMaturity",
+        "TimeToMaturityUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_ReferenceRateID" as "ReferenceRateID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BusinessCalendar" as "BusinessCalendar" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_DayCountConvention" as "DayCountConvention" ,
+            "OLD_FixingIntervalPeriodLength" as "FixingIntervalPeriodLength" ,
+            "OLD_FixingIntervalTimeUnit" as "FixingIntervalTimeUnit" ,
+            "OLD_IsInternallyFixed" as "IsInternallyFixed" ,
+            "OLD_ProviderOfReferenceRate" as "ProviderOfReferenceRate" ,
+            "OLD_ReferenceRateCurrency" as "ReferenceRateCurrency" ,
+            "OLD_ReferenceRateType" as "ReferenceRateType" ,
+            "OLD_TimeToMaturity" as "TimeToMaturity" ,
+            "OLD_TimeToMaturityUnit" as "TimeToMaturityUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ReferenceRateID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ReferenceRateID" as "OLD_ReferenceRateID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                                "OLD"."FixingIntervalPeriodLength" as "OLD_FixingIntervalPeriodLength",
+                                "OLD"."FixingIntervalTimeUnit" as "OLD_FixingIntervalTimeUnit",
+                                "OLD"."IsInternallyFixed" as "OLD_IsInternallyFixed",
+                                "OLD"."ProviderOfReferenceRate" as "OLD_ProviderOfReferenceRate",
+                                "OLD"."ReferenceRateCurrency" as "OLD_ReferenceRateCurrency",
+                                "OLD"."ReferenceRateType" as "OLD_ReferenceRateType",
+                                "OLD"."TimeToMaturity" as "OLD_TimeToMaturity",
+                                "OLD"."TimeToMaturityUnit" as "OLD_TimeToMaturityUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ReferenceRate" as "OLD"
+            on
+                                      ( "IN"."ReferenceRateID" = "OLD"."ReferenceRateID" or "IN"."ReferenceRateID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_ReferenceRateID" as "ReferenceRateID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_DayCountConvention" as "DayCountConvention",
+            "OLD_FixingIntervalPeriodLength" as "FixingIntervalPeriodLength",
+            "OLD_FixingIntervalTimeUnit" as "FixingIntervalTimeUnit",
+            "OLD_IsInternallyFixed" as "IsInternallyFixed",
+            "OLD_ProviderOfReferenceRate" as "ProviderOfReferenceRate",
+            "OLD_ReferenceRateCurrency" as "ReferenceRateCurrency",
+            "OLD_ReferenceRateType" as "ReferenceRateType",
+            "OLD_TimeToMaturity" as "TimeToMaturity",
+            "OLD_TimeToMaturityUnit" as "TimeToMaturityUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ReferenceRateID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."ReferenceRateID" as "OLD_ReferenceRateID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                                "OLD"."FixingIntervalPeriodLength" as "OLD_FixingIntervalPeriodLength",
+                                "OLD"."FixingIntervalTimeUnit" as "OLD_FixingIntervalTimeUnit",
+                                "OLD"."IsInternallyFixed" as "OLD_IsInternallyFixed",
+                                "OLD"."ProviderOfReferenceRate" as "OLD_ProviderOfReferenceRate",
+                                "OLD"."ReferenceRateCurrency" as "OLD_ReferenceRateCurrency",
+                                "OLD"."ReferenceRateType" as "OLD_ReferenceRateType",
+                                "OLD"."TimeToMaturity" as "OLD_TimeToMaturity",
+                                "OLD"."TimeToMaturityUnit" as "OLD_TimeToMaturityUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ReferenceRate" as "OLD"
+            on
+               ( "IN"."ReferenceRateID" = "OLD"."ReferenceRateID" or "IN"."ReferenceRateID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

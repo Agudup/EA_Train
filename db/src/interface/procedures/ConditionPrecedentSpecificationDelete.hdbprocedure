@@ -1,0 +1,1284 @@
+PROCEDURE "sap.fsdm.procedures::ConditionPrecedentSpecificationDelete" (IN ROW "sap.fsdm.tabletypes::ConditionPrecedentSpecificationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.PreconditionSetNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.PreconditionSetNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme") || ' ' ||
+                'ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                'ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID=' || TO_VARCHAR("ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID") || ' ' ||
+                'ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber=' || TO_VARCHAR("ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber") || ' ' ||
+                'ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID=' || TO_VARCHAR("ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                        "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                        "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                        "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                        "ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                        "ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                        "ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                                    "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                    "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                                    "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                                    "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ConditionPrecedentSpecification" (
+        "SequenceNumber",
+        "ASSOC_SetOfPreconditions.PreconditionSetNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+        "ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+        "ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+        "ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BoundaryUnit",
+        "FinancialCriterion",
+        "LowerBoundary",
+        "LowerBoundaryCount",
+        "LowerBoundaryPercentage",
+        "LowerNonnumericalBoundary",
+        "UpperBoundary",
+        "UpperBoundaryCount",
+        "UpperBoundaryPercentage",
+        "UpperNonnumericalBoundary",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.PreconditionSetNumber" as "ASSOC_SetOfPreconditions.PreconditionSetNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" as "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" ,
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "OLD_ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" as "ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" as "ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" ,
+            "OLD_ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" as "ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" ,
+            "OLD_ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" as "ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BoundaryUnit" as "BoundaryUnit" ,
+            "OLD_FinancialCriterion" as "FinancialCriterion" ,
+            "OLD_LowerBoundary" as "LowerBoundary" ,
+            "OLD_LowerBoundaryCount" as "LowerBoundaryCount" ,
+            "OLD_LowerBoundaryPercentage" as "LowerBoundaryPercentage" ,
+            "OLD_LowerNonnumericalBoundary" as "LowerNonnumericalBoundary" ,
+            "OLD_UpperBoundary" as "UpperBoundary" ,
+            "OLD_UpperBoundaryCount" as "UpperBoundaryCount" ,
+            "OLD_UpperBoundaryPercentage" as "UpperBoundaryPercentage" ,
+            "OLD_UpperNonnumericalBoundary" as "UpperNonnumericalBoundary" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                        "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber" as "OLD_ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" as "OLD_ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."BoundaryUnit" as "OLD_BoundaryUnit",
+                "OLD"."FinancialCriterion" as "OLD_FinancialCriterion",
+                "OLD"."LowerBoundary" as "OLD_LowerBoundary",
+                "OLD"."LowerBoundaryCount" as "OLD_LowerBoundaryCount",
+                "OLD"."LowerBoundaryPercentage" as "OLD_LowerBoundaryPercentage",
+                "OLD"."LowerNonnumericalBoundary" as "OLD_LowerNonnumericalBoundary",
+                "OLD"."UpperBoundary" as "OLD_UpperBoundary",
+                "OLD"."UpperBoundaryCount" as "OLD_UpperBoundaryCount",
+                "OLD"."UpperBoundaryPercentage" as "OLD_UpperBoundaryPercentage",
+                "OLD"."UpperNonnumericalBoundary" as "OLD_UpperNonnumericalBoundary",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ConditionPrecedentSpecification" as "OLD"
+            on
+                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber" = "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber" or "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ConditionPrecedentSpecification" (
+        "SequenceNumber",
+        "ASSOC_SetOfPreconditions.PreconditionSetNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+        "ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+        "ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+        "ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BoundaryUnit",
+        "FinancialCriterion",
+        "LowerBoundary",
+        "LowerBoundaryCount",
+        "LowerBoundaryPercentage",
+        "LowerNonnumericalBoundary",
+        "UpperBoundary",
+        "UpperBoundaryCount",
+        "UpperBoundaryPercentage",
+        "UpperNonnumericalBoundary",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.PreconditionSetNumber" as "ASSOC_SetOfPreconditions.PreconditionSetNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" as "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" as "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" as "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" as "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+            "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD_ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" as "ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" as "ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+            "OLD_ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" as "ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+            "OLD_ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" as "ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BoundaryUnit" as "BoundaryUnit",
+            "OLD_FinancialCriterion" as "FinancialCriterion",
+            "OLD_LowerBoundary" as "LowerBoundary",
+            "OLD_LowerBoundaryCount" as "LowerBoundaryCount",
+            "OLD_LowerBoundaryPercentage" as "LowerBoundaryPercentage",
+            "OLD_LowerNonnumericalBoundary" as "LowerNonnumericalBoundary",
+            "OLD_UpperBoundary" as "UpperBoundary",
+            "OLD_UpperBoundaryCount" as "UpperBoundaryCount",
+            "OLD_UpperBoundaryPercentage" as "UpperBoundaryPercentage",
+            "OLD_UpperNonnumericalBoundary" as "UpperNonnumericalBoundary",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                        "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                        "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber" as "OLD_ASSOC_SetOfPreconditions.PreconditionSetNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+                "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" as "OLD_ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+                "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" as "OLD_ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+                "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."BoundaryUnit" as "OLD_BoundaryUnit",
+                "OLD"."FinancialCriterion" as "OLD_FinancialCriterion",
+                "OLD"."LowerBoundary" as "OLD_LowerBoundary",
+                "OLD"."LowerBoundaryCount" as "OLD_LowerBoundaryCount",
+                "OLD"."LowerBoundaryPercentage" as "OLD_LowerBoundaryPercentage",
+                "OLD"."LowerNonnumericalBoundary" as "OLD_LowerNonnumericalBoundary",
+                "OLD"."UpperBoundary" as "OLD_UpperBoundary",
+                "OLD"."UpperBoundaryCount" as "OLD_UpperBoundaryCount",
+                "OLD"."UpperBoundaryPercentage" as "OLD_UpperBoundaryPercentage",
+                "OLD"."UpperNonnumericalBoundary" as "OLD_UpperNonnumericalBoundary",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ConditionPrecedentSpecification" as "OLD"
+            on
+                                                ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber" = "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber" or "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ConditionPrecedentSpecification"
+    where (
+        "SequenceNumber",
+        "ASSOC_SetOfPreconditions.PreconditionSetNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+        "ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+        "ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+        "ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme",
+            "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID",
+            "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber",
+            "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ConditionPrecedentSpecification" as "OLD"
+        on
+                                       ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber" = "OLD"."ASSOC_SetOfPreconditions.PreconditionSetNumber" or "IN"."ASSOC_SetOfPreconditions.PreconditionSetNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_CancellationOption._Trade.TradeID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._Trade.TradeID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest.ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._DebtInstrument.FinancialInstrumentID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_Interest._Trade.TradeID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.PricingScheme" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardCancellationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_SetOfPreconditions.ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions._PandLParticipation.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions._PandLParticipation._ParticipationCert.FinancialInstrumentID" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" = "OLD"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" or "IN"."ASSOC_SetOfPreconditions._RedemptionRight.SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_SetOfPreconditions._RedemptionRight._DebtInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::FinancialStandardProductErase" (IN ROW "sap.fsdm.tabletypes::FinancialStandardProductTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "FinancialStandardProductID" is null and
+                         "IDSystem" is null and
+                         "PricingScheme" is null and
+                         "ASSOC_Company.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::FinancialStandardProduct" WHERE
+("FinancialStandardProductID" ,
+"IDSystem" ,
+"PricingScheme" ,
+"ASSOC_Company.BusinessPartnerID" 
+)in ( select "OLD"."FinancialStandardProductID" ,
+"OLD"."IDSystem" ,
+"OLD"."PricingScheme" ,
+"OLD"."ASSOC_Company.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialStandardProduct" "OLD"
+on
+  ( "IN"."FinancialStandardProductID" = "OLD"."FinancialStandardProductID" or "IN"."FinancialStandardProductID" is null ) and
+  ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+  ( "IN"."PricingScheme" = "OLD"."PricingScheme" or "IN"."PricingScheme" is null ) and
+  ( "IN"."ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_Company.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::FinancialStandardProduct_Historical" WHERE
+("FinancialStandardProductID" ,
+"IDSystem" ,
+"PricingScheme" ,
+"ASSOC_Company.BusinessPartnerID" 
+)in ( select "OLD"."FinancialStandardProductID" ,
+"OLD"."IDSystem" ,
+"OLD"."PricingScheme" ,
+"OLD"."ASSOC_Company.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialStandardProduct_Historical" "OLD"
+on
+  ( "IN"."FinancialStandardProductID" = "OLD"."FinancialStandardProductID" or "IN"."FinancialStandardProductID" is null ) and
+  ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+  ( "IN"."PricingScheme" = "OLD"."PricingScheme" or "IN"."PricingScheme" is null ) and
+  ( "IN"."ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_Company.BusinessPartnerID" is null ) 
+);
+
+END

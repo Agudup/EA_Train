@@ -1,0 +1,24 @@
+PROCEDURE "sap.fsdm.procedures::FSSubledgerDocumentDelete" (IN ROW "sap.fsdm.tabletypes::FSSubledgerDocumentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::FSSubledgerDocument" WHERE("CompanyCode" ,
+"DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" 
+)in ( select "CompanyCode" ,
+"DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" 
+from :ROW );
+
+
+END

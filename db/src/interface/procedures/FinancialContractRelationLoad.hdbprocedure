@@ -1,0 +1,330 @@
+PROCEDURE "sap.fsdm.procedures::FinancialContractRelationLoad" (IN ROW "sap.fsdm.tabletypes::FinancialContractRelationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'FinancialContractRelationType=' || TO_VARCHAR("FinancialContractRelationType") || ' ' ||
+                'SuccessionGroupID=' || TO_VARCHAR("SuccessionGroupID") || ' ' ||
+                '_SourceInFinancialContractRelationship.FinancialContractID=' || TO_VARCHAR("_SourceInFinancialContractRelationship.FinancialContractID") || ' ' ||
+                '_SourceInFinancialContractRelationship.IDSystem=' || TO_VARCHAR("_SourceInFinancialContractRelationship.IDSystem") || ' ' ||
+                '_TargetInFinancialContractRelationship.FinancialContractID=' || TO_VARCHAR("_TargetInFinancialContractRelationship.FinancialContractID") || ' ' ||
+                '_TargetInFinancialContractRelationship.IDSystem=' || TO_VARCHAR("_TargetInFinancialContractRelationship.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."FinancialContractRelationType",
+                        "IN"."SuccessionGroupID",
+                        "IN"."_SourceInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_SourceInFinancialContractRelationship.IDSystem",
+                        "IN"."_TargetInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_TargetInFinancialContractRelationship.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."FinancialContractRelationType",
+                        "IN"."SuccessionGroupID",
+                        "IN"."_SourceInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_SourceInFinancialContractRelationship.IDSystem",
+                        "IN"."_TargetInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_TargetInFinancialContractRelationship.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "FinancialContractRelationType",
+                        "SuccessionGroupID",
+                        "_SourceInFinancialContractRelationship.FinancialContractID",
+                        "_SourceInFinancialContractRelationship.IDSystem",
+                        "_TargetInFinancialContractRelationship.FinancialContractID",
+                        "_TargetInFinancialContractRelationship.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."FinancialContractRelationType",
+                                    "IN"."SuccessionGroupID",
+                                    "IN"."_SourceInFinancialContractRelationship.FinancialContractID",
+                                    "IN"."_SourceInFinancialContractRelationship.IDSystem",
+                                    "IN"."_TargetInFinancialContractRelationship.FinancialContractID",
+                                    "IN"."_TargetInFinancialContractRelationship.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."FinancialContractRelationType",
+                                    "IN"."SuccessionGroupID",
+                                    "IN"."_SourceInFinancialContractRelationship.FinancialContractID",
+                                    "IN"."_SourceInFinancialContractRelationship.IDSystem",
+                                    "IN"."_TargetInFinancialContractRelationship.FinancialContractID",
+                                    "IN"."_TargetInFinancialContractRelationship.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::FinancialContractRelation" (
+        "FinancialContractRelationType",
+        "SuccessionGroupID",
+        "_SourceInFinancialContractRelationship.FinancialContractID",
+        "_SourceInFinancialContractRelationship.IDSystem",
+        "_TargetInFinancialContractRelationship.FinancialContractID",
+        "_TargetInFinancialContractRelationship.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FinancialContractRelationCategory",
+        "ReplacedAmount",
+        "ReplacedAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_FinancialContractRelationType" as "FinancialContractRelationType" ,
+            "OLD_SuccessionGroupID" as "SuccessionGroupID" ,
+            "OLD__SourceInFinancialContractRelationship.FinancialContractID" as "_SourceInFinancialContractRelationship.FinancialContractID" ,
+            "OLD__SourceInFinancialContractRelationship.IDSystem" as "_SourceInFinancialContractRelationship.IDSystem" ,
+            "OLD__TargetInFinancialContractRelationship.FinancialContractID" as "_TargetInFinancialContractRelationship.FinancialContractID" ,
+            "OLD__TargetInFinancialContractRelationship.IDSystem" as "_TargetInFinancialContractRelationship.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_FinancialContractRelationCategory" as "FinancialContractRelationCategory" ,
+            "OLD_ReplacedAmount" as "ReplacedAmount" ,
+            "OLD_ReplacedAmountCurrency" as "ReplacedAmountCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."FinancialContractRelationType",
+                        "IN"."SuccessionGroupID",
+                        "IN"."_SourceInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_SourceInFinancialContractRelationship.IDSystem",
+                        "IN"."_TargetInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_TargetInFinancialContractRelationship.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."FinancialContractRelationType" as "OLD_FinancialContractRelationType",
+                                "OLD"."SuccessionGroupID" as "OLD_SuccessionGroupID",
+                                "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" as "OLD__SourceInFinancialContractRelationship.FinancialContractID",
+                                "OLD"."_SourceInFinancialContractRelationship.IDSystem" as "OLD__SourceInFinancialContractRelationship.IDSystem",
+                                "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" as "OLD__TargetInFinancialContractRelationship.FinancialContractID",
+                                "OLD"."_TargetInFinancialContractRelationship.IDSystem" as "OLD__TargetInFinancialContractRelationship.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."FinancialContractRelationCategory" as "OLD_FinancialContractRelationCategory",
+                                "OLD"."ReplacedAmount" as "OLD_ReplacedAmount",
+                                "OLD"."ReplacedAmountCurrency" as "OLD_ReplacedAmountCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialContractRelation" as "OLD"
+            on
+                ( case when "IN"."FinancialContractRelationType" is null then '' else "IN"."FinancialContractRelationType" end ) = "OLD"."FinancialContractRelationType" and
+                ( case when "IN"."SuccessionGroupID" is null then '' else "IN"."SuccessionGroupID" end ) = "OLD"."SuccessionGroupID" and
+                ( case when "IN"."_SourceInFinancialContractRelationship.FinancialContractID" is null then '' else "IN"."_SourceInFinancialContractRelationship.FinancialContractID" end ) = "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" and
+                ( case when "IN"."_SourceInFinancialContractRelationship.IDSystem" is null then '' else "IN"."_SourceInFinancialContractRelationship.IDSystem" end ) = "OLD"."_SourceInFinancialContractRelationship.IDSystem" and
+                ( case when "IN"."_TargetInFinancialContractRelationship.FinancialContractID" is null then '' else "IN"."_TargetInFinancialContractRelationship.FinancialContractID" end ) = "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" and
+                ( case when "IN"."_TargetInFinancialContractRelationship.IDSystem" is null then '' else "IN"."_TargetInFinancialContractRelationship.IDSystem" end ) = "OLD"."_TargetInFinancialContractRelationship.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::FinancialContractRelation" (
+        "FinancialContractRelationType",
+        "SuccessionGroupID",
+        "_SourceInFinancialContractRelationship.FinancialContractID",
+        "_SourceInFinancialContractRelationship.IDSystem",
+        "_TargetInFinancialContractRelationship.FinancialContractID",
+        "_TargetInFinancialContractRelationship.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FinancialContractRelationCategory",
+        "ReplacedAmount",
+        "ReplacedAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_FinancialContractRelationType" as "FinancialContractRelationType",
+            "OLD_SuccessionGroupID" as "SuccessionGroupID",
+            "OLD__SourceInFinancialContractRelationship.FinancialContractID" as "_SourceInFinancialContractRelationship.FinancialContractID",
+            "OLD__SourceInFinancialContractRelationship.IDSystem" as "_SourceInFinancialContractRelationship.IDSystem",
+            "OLD__TargetInFinancialContractRelationship.FinancialContractID" as "_TargetInFinancialContractRelationship.FinancialContractID",
+            "OLD__TargetInFinancialContractRelationship.IDSystem" as "_TargetInFinancialContractRelationship.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_FinancialContractRelationCategory" as "FinancialContractRelationCategory",
+            "OLD_ReplacedAmount" as "ReplacedAmount",
+            "OLD_ReplacedAmountCurrency" as "ReplacedAmountCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."FinancialContractRelationType",
+                        "IN"."SuccessionGroupID",
+                        "IN"."_SourceInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_SourceInFinancialContractRelationship.IDSystem",
+                        "IN"."_TargetInFinancialContractRelationship.FinancialContractID",
+                        "IN"."_TargetInFinancialContractRelationship.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."FinancialContractRelationType" as "OLD_FinancialContractRelationType",
+                        "OLD"."SuccessionGroupID" as "OLD_SuccessionGroupID",
+                        "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" as "OLD__SourceInFinancialContractRelationship.FinancialContractID",
+                        "OLD"."_SourceInFinancialContractRelationship.IDSystem" as "OLD__SourceInFinancialContractRelationship.IDSystem",
+                        "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" as "OLD__TargetInFinancialContractRelationship.FinancialContractID",
+                        "OLD"."_TargetInFinancialContractRelationship.IDSystem" as "OLD__TargetInFinancialContractRelationship.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."FinancialContractRelationCategory" as "OLD_FinancialContractRelationCategory",
+                        "OLD"."ReplacedAmount" as "OLD_ReplacedAmount",
+                        "OLD"."ReplacedAmountCurrency" as "OLD_ReplacedAmountCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialContractRelation" as "OLD"
+            on
+                ( case when "IN"."FinancialContractRelationType" is null then '' else "IN"."FinancialContractRelationType" end ) = "OLD"."FinancialContractRelationType" and
+                ( case when "IN"."SuccessionGroupID" is null then '' else "IN"."SuccessionGroupID" end ) = "OLD"."SuccessionGroupID" and
+                ( case when "IN"."_SourceInFinancialContractRelationship.FinancialContractID" is null then '' else "IN"."_SourceInFinancialContractRelationship.FinancialContractID" end ) = "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" and
+                ( case when "IN"."_SourceInFinancialContractRelationship.IDSystem" is null then '' else "IN"."_SourceInFinancialContractRelationship.IDSystem" end ) = "OLD"."_SourceInFinancialContractRelationship.IDSystem" and
+                ( case when "IN"."_TargetInFinancialContractRelationship.FinancialContractID" is null then '' else "IN"."_TargetInFinancialContractRelationship.FinancialContractID" end ) = "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" and
+                ( case when "IN"."_TargetInFinancialContractRelationship.IDSystem" is null then '' else "IN"."_TargetInFinancialContractRelationship.IDSystem" end ) = "OLD"."_TargetInFinancialContractRelationship.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::FinancialContractRelation"
+    where (
+        "FinancialContractRelationType",
+        "SuccessionGroupID",
+        "_SourceInFinancialContractRelationship.FinancialContractID",
+        "_SourceInFinancialContractRelationship.IDSystem",
+        "_TargetInFinancialContractRelationship.FinancialContractID",
+        "_TargetInFinancialContractRelationship.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."FinancialContractRelationType",
+            "OLD"."SuccessionGroupID",
+            "OLD"."_SourceInFinancialContractRelationship.FinancialContractID",
+            "OLD"."_SourceInFinancialContractRelationship.IDSystem",
+            "OLD"."_TargetInFinancialContractRelationship.FinancialContractID",
+            "OLD"."_TargetInFinancialContractRelationship.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FinancialContractRelation" as "OLD"
+        on
+           ( case when "IN"."FinancialContractRelationType" is null then '' else "IN"."FinancialContractRelationType" end ) = "OLD"."FinancialContractRelationType" and
+           ( case when "IN"."SuccessionGroupID" is null then '' else "IN"."SuccessionGroupID" end ) = "OLD"."SuccessionGroupID" and
+           ( case when "IN"."_SourceInFinancialContractRelationship.FinancialContractID" is null then '' else "IN"."_SourceInFinancialContractRelationship.FinancialContractID" end ) = "OLD"."_SourceInFinancialContractRelationship.FinancialContractID" and
+           ( case when "IN"."_SourceInFinancialContractRelationship.IDSystem" is null then '' else "IN"."_SourceInFinancialContractRelationship.IDSystem" end ) = "OLD"."_SourceInFinancialContractRelationship.IDSystem" and
+           ( case when "IN"."_TargetInFinancialContractRelationship.FinancialContractID" is null then '' else "IN"."_TargetInFinancialContractRelationship.FinancialContractID" end ) = "OLD"."_TargetInFinancialContractRelationship.FinancialContractID" and
+           ( case when "IN"."_TargetInFinancialContractRelationship.IDSystem" is null then '' else "IN"."_TargetInFinancialContractRelationship.IDSystem" end ) = "OLD"."_TargetInFinancialContractRelationship.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::FinancialContractRelation" (
+        "FinancialContractRelationType",
+        "SuccessionGroupID",
+        "_SourceInFinancialContractRelationship.FinancialContractID",
+        "_SourceInFinancialContractRelationship.IDSystem",
+        "_TargetInFinancialContractRelationship.FinancialContractID",
+        "_TargetInFinancialContractRelationship.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FinancialContractRelationCategory",
+        "ReplacedAmount",
+        "ReplacedAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "FinancialContractRelationType" is null then '' else "FinancialContractRelationType" end ) as "FinancialContractRelationType",
+            ( case when "SuccessionGroupID" is null then '' else "SuccessionGroupID" end ) as "SuccessionGroupID",
+            ( case when "_SourceInFinancialContractRelationship.FinancialContractID" is null then '' else "_SourceInFinancialContractRelationship.FinancialContractID" end ) as "_SourceInFinancialContractRelationship.FinancialContractID",
+            ( case when "_SourceInFinancialContractRelationship.IDSystem" is null then '' else "_SourceInFinancialContractRelationship.IDSystem" end ) as "_SourceInFinancialContractRelationship.IDSystem",
+            ( case when "_TargetInFinancialContractRelationship.FinancialContractID" is null then '' else "_TargetInFinancialContractRelationship.FinancialContractID" end ) as "_TargetInFinancialContractRelationship.FinancialContractID",
+            ( case when "_TargetInFinancialContractRelationship.IDSystem" is null then '' else "_TargetInFinancialContractRelationship.IDSystem" end ) as "_TargetInFinancialContractRelationship.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "FinancialContractRelationCategory"  ,
+            "ReplacedAmount"  ,
+            "ReplacedAmountCurrency"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

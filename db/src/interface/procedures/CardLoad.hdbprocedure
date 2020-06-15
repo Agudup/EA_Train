@@ -1,0 +1,386 @@
+PROCEDURE "sap.fsdm.procedures::CardLoad" (IN ROW "sap.fsdm.tabletypes::CardTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CardIssueSequenceID=' || TO_VARCHAR("CardIssueSequenceID") || ' ' ||
+                'ASSOC_CardIssue.CardIssueID=' || TO_VARCHAR("ASSOC_CardIssue.CardIssueID") || ' ' ||
+                'ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem=' || TO_VARCHAR("ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem") || ' ' ||
+                'ASSOC_CardIssue._BankAccount.FinancialContractID=' || TO_VARCHAR("ASSOC_CardIssue._BankAccount.FinancialContractID") || ' ' ||
+                'ASSOC_CardIssue._BankAccount.IDSystem=' || TO_VARCHAR("ASSOC_CardIssue._BankAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CardIssueSequenceID",
+                        "IN"."ASSOC_CardIssue.CardIssueID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                        "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+                        "IN"."ASSOC_CardIssue._BankAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CardIssueSequenceID",
+                        "IN"."ASSOC_CardIssue.CardIssueID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                        "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+                        "IN"."ASSOC_CardIssue._BankAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CardIssueSequenceID",
+                        "ASSOC_CardIssue.CardIssueID",
+                        "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                        "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                        "ASSOC_CardIssue._BankAccount.FinancialContractID",
+                        "ASSOC_CardIssue._BankAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CardIssueSequenceID",
+                                    "IN"."ASSOC_CardIssue.CardIssueID",
+                                    "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                                    "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+                                    "IN"."ASSOC_CardIssue._BankAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CardIssueSequenceID",
+                                    "IN"."ASSOC_CardIssue.CardIssueID",
+                                    "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                                    "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+                                    "IN"."ASSOC_CardIssue._BankAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Card" (
+        "CardIssueSequenceID",
+        "ASSOC_CardIssue.CardIssueID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+        "ASSOC_CardIssue._BankAccount.FinancialContractID",
+        "ASSOC_CardIssue._BankAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CardDeliveryDate",
+        "IssueReason",
+        "LifeCycleStatusReason",
+        "LifecycleStatus",
+        "LifecycleStatusChangeDate",
+        "NumberOnCard",
+        "PINDeliveryDate",
+        "ShippingMethod",
+        "ValidFromOnCard",
+        "ValidToOnCard",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_CardIssueSequenceID" as "CardIssueSequenceID" ,
+            "OLD_ASSOC_CardIssue.CardIssueID" as "ASSOC_CardIssue.CardIssueID" ,
+            "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" as "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+            "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" as "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+            "OLD_ASSOC_CardIssue._BankAccount.FinancialContractID" as "ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+            "OLD_ASSOC_CardIssue._BankAccount.IDSystem" as "ASSOC_CardIssue._BankAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_CardDeliveryDate" as "CardDeliveryDate" ,
+            "OLD_IssueReason" as "IssueReason" ,
+            "OLD_LifeCycleStatusReason" as "LifeCycleStatusReason" ,
+            "OLD_LifecycleStatus" as "LifecycleStatus" ,
+            "OLD_LifecycleStatusChangeDate" as "LifecycleStatusChangeDate" ,
+            "OLD_NumberOnCard" as "NumberOnCard" ,
+            "OLD_PINDeliveryDate" as "PINDeliveryDate" ,
+            "OLD_ShippingMethod" as "ShippingMethod" ,
+            "OLD_ValidFromOnCard" as "ValidFromOnCard" ,
+            "OLD_ValidToOnCard" as "ValidToOnCard" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."CardIssueSequenceID",
+                        "IN"."ASSOC_CardIssue.CardIssueID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                        "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+                        "IN"."ASSOC_CardIssue._BankAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."CardIssueSequenceID" as "OLD_CardIssueSequenceID",
+                                "OLD"."ASSOC_CardIssue.CardIssueID" as "OLD_ASSOC_CardIssue.CardIssueID",
+                                "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" as "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                                "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" as "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                                "OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" as "OLD_ASSOC_CardIssue._BankAccount.FinancialContractID",
+                                "OLD"."ASSOC_CardIssue._BankAccount.IDSystem" as "OLD_ASSOC_CardIssue._BankAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."CardDeliveryDate" as "OLD_CardDeliveryDate",
+                                "OLD"."IssueReason" as "OLD_IssueReason",
+                                "OLD"."LifeCycleStatusReason" as "OLD_LifeCycleStatusReason",
+                                "OLD"."LifecycleStatus" as "OLD_LifecycleStatus",
+                                "OLD"."LifecycleStatusChangeDate" as "OLD_LifecycleStatusChangeDate",
+                                "OLD"."NumberOnCard" as "OLD_NumberOnCard",
+                                "OLD"."PINDeliveryDate" as "OLD_PINDeliveryDate",
+                                "OLD"."ShippingMethod" as "OLD_ShippingMethod",
+                                "OLD"."ValidFromOnCard" as "OLD_ValidFromOnCard",
+                                "OLD"."ValidToOnCard" as "OLD_ValidToOnCard",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Card" as "OLD"
+            on
+                ( case when "IN"."CardIssueSequenceID" is null then '' else "IN"."CardIssueSequenceID" end ) = "OLD"."CardIssueSequenceID" and
+                ( case when "IN"."ASSOC_CardIssue.CardIssueID" is null then '' else "IN"."ASSOC_CardIssue.CardIssueID" end ) = "OLD"."ASSOC_CardIssue.CardIssueID" and
+                ( case when "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null then '' else "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" end ) = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" and
+                ( case when "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID" is null then '' else "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID" end ) = "OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" and
+                ( case when "IN"."ASSOC_CardIssue._BankAccount.IDSystem" is null then '' else "IN"."ASSOC_CardIssue._BankAccount.IDSystem" end ) = "OLD"."ASSOC_CardIssue._BankAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Card" (
+        "CardIssueSequenceID",
+        "ASSOC_CardIssue.CardIssueID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+        "ASSOC_CardIssue._BankAccount.FinancialContractID",
+        "ASSOC_CardIssue._BankAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CardDeliveryDate",
+        "IssueReason",
+        "LifeCycleStatusReason",
+        "LifecycleStatus",
+        "LifecycleStatusChangeDate",
+        "NumberOnCard",
+        "PINDeliveryDate",
+        "ShippingMethod",
+        "ValidFromOnCard",
+        "ValidToOnCard",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_CardIssueSequenceID" as "CardIssueSequenceID",
+            "OLD_ASSOC_CardIssue.CardIssueID" as "ASSOC_CardIssue.CardIssueID",
+            "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" as "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+            "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" as "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+            "OLD_ASSOC_CardIssue._BankAccount.FinancialContractID" as "ASSOC_CardIssue._BankAccount.FinancialContractID",
+            "OLD_ASSOC_CardIssue._BankAccount.IDSystem" as "ASSOC_CardIssue._BankAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_CardDeliveryDate" as "CardDeliveryDate",
+            "OLD_IssueReason" as "IssueReason",
+            "OLD_LifeCycleStatusReason" as "LifeCycleStatusReason",
+            "OLD_LifecycleStatus" as "LifecycleStatus",
+            "OLD_LifecycleStatusChangeDate" as "LifecycleStatusChangeDate",
+            "OLD_NumberOnCard" as "NumberOnCard",
+            "OLD_PINDeliveryDate" as "PINDeliveryDate",
+            "OLD_ShippingMethod" as "ShippingMethod",
+            "OLD_ValidFromOnCard" as "ValidFromOnCard",
+            "OLD_ValidToOnCard" as "ValidToOnCard",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."CardIssueSequenceID",
+                        "IN"."ASSOC_CardIssue.CardIssueID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                        "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                        "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+                        "IN"."ASSOC_CardIssue._BankAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."CardIssueSequenceID" as "OLD_CardIssueSequenceID",
+                        "OLD"."ASSOC_CardIssue.CardIssueID" as "OLD_ASSOC_CardIssue.CardIssueID",
+                        "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" as "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" as "OLD_ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+                        "OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" as "OLD_ASSOC_CardIssue._BankAccount.FinancialContractID",
+                        "OLD"."ASSOC_CardIssue._BankAccount.IDSystem" as "OLD_ASSOC_CardIssue._BankAccount.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."CardDeliveryDate" as "OLD_CardDeliveryDate",
+                        "OLD"."IssueReason" as "OLD_IssueReason",
+                        "OLD"."LifeCycleStatusReason" as "OLD_LifeCycleStatusReason",
+                        "OLD"."LifecycleStatus" as "OLD_LifecycleStatus",
+                        "OLD"."LifecycleStatusChangeDate" as "OLD_LifecycleStatusChangeDate",
+                        "OLD"."NumberOnCard" as "OLD_NumberOnCard",
+                        "OLD"."PINDeliveryDate" as "OLD_PINDeliveryDate",
+                        "OLD"."ShippingMethod" as "OLD_ShippingMethod",
+                        "OLD"."ValidFromOnCard" as "OLD_ValidFromOnCard",
+                        "OLD"."ValidToOnCard" as "OLD_ValidToOnCard",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Card" as "OLD"
+            on
+                ( case when "IN"."CardIssueSequenceID" is null then '' else "IN"."CardIssueSequenceID" end ) = "OLD"."CardIssueSequenceID" and
+                ( case when "IN"."ASSOC_CardIssue.CardIssueID" is null then '' else "IN"."ASSOC_CardIssue.CardIssueID" end ) = "OLD"."ASSOC_CardIssue.CardIssueID" and
+                ( case when "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null then '' else "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" end ) = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" and
+                ( case when "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID" is null then '' else "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID" end ) = "OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" and
+                ( case when "IN"."ASSOC_CardIssue._BankAccount.IDSystem" is null then '' else "IN"."ASSOC_CardIssue._BankAccount.IDSystem" end ) = "OLD"."ASSOC_CardIssue._BankAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Card"
+    where (
+        "CardIssueSequenceID",
+        "ASSOC_CardIssue.CardIssueID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+        "ASSOC_CardIssue._BankAccount.FinancialContractID",
+        "ASSOC_CardIssue._BankAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."CardIssueSequenceID",
+            "OLD"."ASSOC_CardIssue.CardIssueID",
+            "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+            "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+            "OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID",
+            "OLD"."ASSOC_CardIssue._BankAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Card" as "OLD"
+        on
+           ( case when "IN"."CardIssueSequenceID" is null then '' else "IN"."CardIssueSequenceID" end ) = "OLD"."CardIssueSequenceID" and
+           ( case when "IN"."ASSOC_CardIssue.CardIssueID" is null then '' else "IN"."ASSOC_CardIssue.CardIssueID" end ) = "OLD"."ASSOC_CardIssue.CardIssueID" and
+           ( case when "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" and
+           ( case when "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null then '' else "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" end ) = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" and
+           ( case when "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID" is null then '' else "IN"."ASSOC_CardIssue._BankAccount.FinancialContractID" end ) = "OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" and
+           ( case when "IN"."ASSOC_CardIssue._BankAccount.IDSystem" is null then '' else "IN"."ASSOC_CardIssue._BankAccount.IDSystem" end ) = "OLD"."ASSOC_CardIssue._BankAccount.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::Card" (
+        "CardIssueSequenceID",
+        "ASSOC_CardIssue.CardIssueID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+        "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+        "ASSOC_CardIssue._BankAccount.FinancialContractID",
+        "ASSOC_CardIssue._BankAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CardDeliveryDate",
+        "IssueReason",
+        "LifeCycleStatusReason",
+        "LifecycleStatus",
+        "LifecycleStatusChangeDate",
+        "NumberOnCard",
+        "PINDeliveryDate",
+        "ShippingMethod",
+        "ValidFromOnCard",
+        "ValidToOnCard",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "CardIssueSequenceID" is null then '' else "CardIssueSequenceID" end ) as "CardIssueSequenceID",
+            ( case when "ASSOC_CardIssue.CardIssueID" is null then '' else "ASSOC_CardIssue.CardIssueID" end ) as "ASSOC_CardIssue.CardIssueID",
+            ( case when "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null then '' else "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" end ) as "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+            ( case when "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null then '' else "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" end ) as "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+            ( case when "ASSOC_CardIssue._BankAccount.FinancialContractID" is null then '' else "ASSOC_CardIssue._BankAccount.FinancialContractID" end ) as "ASSOC_CardIssue._BankAccount.FinancialContractID",
+            ( case when "ASSOC_CardIssue._BankAccount.IDSystem" is null then '' else "ASSOC_CardIssue._BankAccount.IDSystem" end ) as "ASSOC_CardIssue._BankAccount.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "CardDeliveryDate"  ,
+            "IssueReason"  ,
+            "LifeCycleStatusReason"  ,
+            "LifecycleStatus"  ,
+            "LifecycleStatusChangeDate"  ,
+            "NumberOnCard"  ,
+            "PINDeliveryDate"  ,
+            "ShippingMethod"  ,
+            "ValidFromOnCard"  ,
+            "ValidToOnCard"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

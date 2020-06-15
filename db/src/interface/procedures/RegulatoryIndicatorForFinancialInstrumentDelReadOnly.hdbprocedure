@@ -1,0 +1,238 @@
+PROCEDURE "sap.fsdm.procedures::RegulatoryIndicatorForFinancialInstrumentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::RegulatoryIndicatorForFinancialInstrumentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::RegulatoryIndicatorForFinancialInstrumentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::RegulatoryIndicatorForFinancialInstrumentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Criterion=' || TO_VARCHAR("Criterion") || ' ' ||
+                'Regulation=' || TO_VARCHAR("Regulation") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Criterion",
+                        "IN"."Regulation",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Criterion",
+                        "IN"."Regulation",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Criterion",
+                        "Regulation",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Criterion",
+                                    "IN"."Regulation",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Criterion",
+                                    "IN"."Regulation",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "Criterion",
+            "Regulation",
+            "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::RegulatoryIndicatorForFinancialInstrument" WHERE
+            (
+            "Criterion" ,
+            "Regulation" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."Criterion",
+            "OLD"."Regulation",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::RegulatoryIndicatorForFinancialInstrument" as "OLD"
+        on
+                              ( "IN"."Criterion" = "OLD"."Criterion" or "IN"."Criterion" is null ) and
+                              ( "IN"."Regulation" = "OLD"."Regulation" or "IN"."Regulation" is null ) and
+                              ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "Criterion",
+        "Regulation",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "IndicatorAmount",
+        "IndicatorAmountCurrency",
+        "IndicatorBooleanValue",
+        "IndicatorCharValue",
+        "IndicatorDataType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_Criterion" as "Criterion" ,
+            "OLD_Regulation" as "Regulation" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_IndicatorAmount" as "IndicatorAmount" ,
+            "OLD_IndicatorAmountCurrency" as "IndicatorAmountCurrency" ,
+            "OLD_IndicatorBooleanValue" as "IndicatorBooleanValue" ,
+            "OLD_IndicatorCharValue" as "IndicatorCharValue" ,
+            "OLD_IndicatorDataType" as "IndicatorDataType" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."Criterion",
+                        "OLD"."Regulation",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Criterion" as "OLD_Criterion",
+                                "OLD"."Regulation" as "OLD_Regulation",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."IndicatorAmount" as "OLD_IndicatorAmount",
+                                "OLD"."IndicatorAmountCurrency" as "OLD_IndicatorAmountCurrency",
+                                "OLD"."IndicatorBooleanValue" as "OLD_IndicatorBooleanValue",
+                                "OLD"."IndicatorCharValue" as "OLD_IndicatorCharValue",
+                                "OLD"."IndicatorDataType" as "OLD_IndicatorDataType",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::RegulatoryIndicatorForFinancialInstrument" as "OLD"
+            on
+                                      ( "IN"."Criterion" = "OLD"."Criterion" or "IN"."Criterion" is null ) and
+                                      ( "IN"."Regulation" = "OLD"."Regulation" or "IN"."Regulation" is null ) and
+                                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_Criterion" as "Criterion",
+            "OLD_Regulation" as "Regulation",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_IndicatorAmount" as "IndicatorAmount",
+            "OLD_IndicatorAmountCurrency" as "IndicatorAmountCurrency",
+            "OLD_IndicatorBooleanValue" as "IndicatorBooleanValue",
+            "OLD_IndicatorCharValue" as "IndicatorCharValue",
+            "OLD_IndicatorDataType" as "IndicatorDataType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."Criterion",
+                        "OLD"."Regulation",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."Criterion" as "OLD_Criterion",
+                                "OLD"."Regulation" as "OLD_Regulation",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."IndicatorAmount" as "OLD_IndicatorAmount",
+                                "OLD"."IndicatorAmountCurrency" as "OLD_IndicatorAmountCurrency",
+                                "OLD"."IndicatorBooleanValue" as "OLD_IndicatorBooleanValue",
+                                "OLD"."IndicatorCharValue" as "OLD_IndicatorCharValue",
+                                "OLD"."IndicatorDataType" as "OLD_IndicatorDataType",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::RegulatoryIndicatorForFinancialInstrument" as "OLD"
+            on
+               ( "IN"."Criterion" = "OLD"."Criterion" or "IN"."Criterion" is null ) and
+               ( "IN"."Regulation" = "OLD"."Regulation" or "IN"."Regulation" is null ) and
+               ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,36 @@
+view "sap.fsdm.Views::RefinancingRelation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "RefinancingType" as "RefinancingType",
+      "ASSOC_RefinancedContract.FinancialContractID" as "ASSOC_RefinancedContract_FinancialContractID",
+      "ASSOC_RefinancedContract.IDSystem" as "ASSOC_RefinancedContract_IDSystem",
+      "ASSOC_RefinancedPositionCurrency.PositionCurrency" as "ASSOC_RefinancedPositionCurrency_PositionCurrency",
+      "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_RefinancedPositionCurrency_ASSOC_MultiCcyAccnt_FinancialContractID",
+      "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_RefinancedPositionCurrency_ASSOC_MultiCcyAccnt_IDSystem",
+      "ASSOC_RefinancingContract.FinancialContractID" as "ASSOC_RefinancingContract_FinancialContractID",
+      "ASSOC_RefinancingContract.IDSystem" as "ASSOC_RefinancingContract_IDSystem",
+      "ASSOC_RefinancingPositionCurrency.PositionCurrency" as "ASSOC_RefinancingPositionCurrency_PositionCurrency",
+      "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_RefinancingPositionCurrency_ASSOC_MultiCcyAccnt_FinancialContractID",
+      "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_RefinancingPositionCurrency_ASSOC_MultiCcyAccnt_IDSystem",
+      "_CollectionOfRefinancedSecuritiesHolding.CollectionID" as "_CollectionOfRefinancedSecuritiesHolding_CollectionID",
+      "_CollectionOfRefinancedSecuritiesHolding.IDSystem" as "_CollectionOfRefinancedSecuritiesHolding_IDSystem",
+      "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" as "_InstrumentOfRefinancedSecuritiesHolding_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "DisclosedRefinancing" as "DisclosedRefinancing",
+      "IndemnificationAgreement" as "IndemnificationAgreement",
+      "IndemnificationPercentage" as "IndemnificationPercentage",
+      "MaximumAssumedLiabilityAmount" as "MaximumAssumedLiabilityAmount",
+      "MaximumAssumedLiabilityAmountCurrency" as "MaximumAssumedLiabilityAmountCurrency",
+      "PositionCurrency" as "PositionCurrency",
+      "RefinancedAmountInPositionCurrency" as "RefinancedAmountInPositionCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::RefinancingRelation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

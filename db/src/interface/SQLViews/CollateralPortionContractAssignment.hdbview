@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::CollateralPortionContractAssignment_View" 
+as select
+      "ASSOC_CollateralPortion.PortionNumber" ,
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+      "ASSOC_CollateralizedFinancialContract.FinancialContractID" ,
+      "ASSOC_CollateralizedFinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AgreedProtectionAmount" ,
+      "AgreedProtectionAmountCurrency" ,
+      "CoveragePercentage" ,
+      "RankAmongCollateralsCoveringTheContract" ,
+      "RankAmongContractsCoveredByTheCollateral" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CollateralPortionContractAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::CollateralPortion_View" as "ASSOC_CollateralPortion"
+	  on "ASSOC_CollateralPortion"."ASSOC_CollateralAgreement.FinancialContractID" = "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_CollateralPortion"."ASSOC_CollateralAgreement.IDSystem" = "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" AND 
+	     "ASSOC_CollateralPortion"."PortionNumber" = "ASSOC_CollateralPortion.PortionNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_CollateralizedFinancialContract"
+	  on "ASSOC_CollateralizedFinancialContract"."FinancialContractID" = "ASSOC_CollateralizedFinancialContract.FinancialContractID" AND 
+	     "ASSOC_CollateralizedFinancialContract"."IDSystem" = "ASSOC_CollateralizedFinancialContract.IDSystem"
+	     
+);

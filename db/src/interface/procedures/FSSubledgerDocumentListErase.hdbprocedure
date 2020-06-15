@@ -1,0 +1,52 @@
+PROCEDURE "sap.fsdm.procedures::FSSubledgerDocumentListErase" (IN ROW "sap.fsdm.tabletypes::FSSubledgerDocumentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "CompanyCode" is null and
+                         "FiscalYear" is null and
+                         "DocumentNumber" is null and
+                         "PostingDate" is null and
+                         "_AccountingSystem.AccountingSystemID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::FSSubledgerDocument" WHERE
+("CompanyCode" ,
+"DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" 
+)in ( select "OLD"."CompanyCode" ,
+"OLD"."DocumentNumber" ,
+"OLD"."FiscalYear" ,
+"OLD"."ItemNumber" ,
+"OLD"."PostingDate" ,
+"OLD"."_AccountingSystem.AccountingSystemID" 
+from :ROW "IN"
+inner join "sap.fsdm::FSSubledgerDocument" "OLD"
+on
+  ( "IN"."CompanyCode" = "OLD"."CompanyCode" or "IN"."CompanyCode" is null ) and
+  ( "IN"."FiscalYear" = "OLD"."FiscalYear" or "IN"."FiscalYear" is null ) and
+  ( "IN"."DocumentNumber" = "OLD"."DocumentNumber" or "IN"."DocumentNumber" is null ) and
+  ( "IN"."PostingDate" = "OLD"."PostingDate" or "IN"."PostingDate" is null ) and
+  ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) 
+);
+
+END

@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::CardProgramTransactionDetails_View" 
+as select
+      "CardProgramID" ,
+      "ASSOC_BusinessTransactionItem.IDSystem" ,
+      "ASSOC_BusinessTransactionItem.ItemNumber" ,
+      "ASSOC_BusinessTransactionItem.SettlementID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CardProgramAmountCurrency" ,
+      "CardProgramAmountFromTransaction" ,
+      "CardProgramPointsFromTransaction" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CardProgramTransactionDetails"
+with associations
+(
+	join "sap.fsdm.SQLViews::Settlement_View" as "ASSOC_BusinessTransactionItem"
+	  on "ASSOC_BusinessTransactionItem"."IDSystem" = "ASSOC_BusinessTransactionItem.IDSystem" AND 
+	     "ASSOC_BusinessTransactionItem"."ItemNumber" = "ASSOC_BusinessTransactionItem.ItemNumber" AND 
+	     "ASSOC_BusinessTransactionItem"."SettlementID" = "ASSOC_BusinessTransactionItem.SettlementID"
+	     
+);

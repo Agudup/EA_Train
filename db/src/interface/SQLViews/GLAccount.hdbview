@@ -1,0 +1,49 @@
+view "sap.fsdm.SQLViews::GLAccount_View" 
+as select
+      "GLAccount" ,
+      "_ChartOfAccounts.ChartOfAccountId" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_GLAccountGroup.GLAccountGroupID" ,
+      "AssetLiabilityAssignment" ,
+      "GLAccountCurrency" ,
+      "GLAccountDescription" ,
+      "GLAccountType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::GLAccount"
+with associations
+(
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__GLAccount"
+	  on "_ChartOfAccounts.ChartOfAccountId" = "_FSSubledgerDocument__GLAccount"."_GLAccount._ChartOfAccounts.ChartOfAccountId" AND 
+	     "GLAccount" = "_FSSubledgerDocument__GLAccount"."_GLAccount.GLAccount"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStatementSegment_View" as "_FinancialStatementSegment__GLAccount"
+	  on "GLAccount" = "_FinancialStatementSegment__GLAccount"."_GLAccount.GLAccount" AND 
+	     "_ChartOfAccounts.ChartOfAccountId" = "_FinancialStatementSegment__GLAccount"."_GLAccount._ChartOfAccounts.ChartOfAccountId"
+	     ,
+	join "sap.fsdm.SQLViews::ChartOfAccounts_View" as "_ChartOfAccounts"
+	  on "_ChartOfAccounts"."ChartOfAccountId" = "_ChartOfAccounts.ChartOfAccountId"
+	     ,
+	join "sap.fsdm.SQLViews::GLAccountGroup_View" as "_GLAccountGroup"
+	  on "_GLAccountGroup"."GLAccountGroupID" = "_GLAccountGroup.GLAccountGroupID"
+	     ,
+	join "sap.fsdm.SQLViews::GLDocument_View" as "_GLDocument__GLAccount"
+	  on "GLAccount" = "_GLDocument__GLAccount"."_GLAccount.GLAccount" AND 
+	     "_ChartOfAccounts.ChartOfAccountId" = "_GLDocument__GLAccount"."_GLAccount._ChartOfAccounts.ChartOfAccountId"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__GLAccount"
+	  on "GLAccount" = "_GeneralLedgerAccountBalance__GLAccount"."_GLAccount.GLAccount" AND 
+	     "_ChartOfAccounts.ChartOfAccountId" = "_GeneralLedgerAccountBalance__GLAccount"."_GLAccount._ChartOfAccounts.ChartOfAccountId"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__GLAccount"
+	  on "_ChartOfAccounts.ChartOfAccountId" = "_SubledgerAccountbalance__GLAccount"."_GLAccount._ChartOfAccounts.ChartOfAccountId" AND 
+	     "GLAccount" = "_SubledgerAccountbalance__GLAccount"."_GLAccount.GLAccount"
+	     
+);

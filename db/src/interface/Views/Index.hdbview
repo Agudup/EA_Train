@@ -1,0 +1,28 @@
+view "sap.fsdm.Views::Index_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "IndexID" as "IndexID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "IndexAnnexDate" as "IndexAnnexDate",
+      "IndexAnnexSource" as "IndexAnnexSource",
+      "IndexAnnexVersion" as "IndexAnnexVersion",
+      "IndexCategory" as "IndexCategory",
+      "IndexDescription" as "IndexDescription",
+      "IndexName" as "IndexName",
+      "IndexPublisher" as "IndexPublisher",
+      "IndexREDCode" as "IndexREDCode",
+      "IndexSeries" as "IndexSeries",
+      "IndexType" as "IndexType",
+      "IsIndexSeriesOnTheRun" as "IsIndexSeriesOnTheRun",
+      "MainIndexAsPerCRR" as "MainIndexAsPerCRR",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::Index"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

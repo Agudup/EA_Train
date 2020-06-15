@@ -1,0 +1,58 @@
+view "sap.fsdm.SQLViews::CreditRiskAdjustment_View" 
+as select
+      "CalculationMethod" ,
+      "IndicatorResultBeforeChange" ,
+      "LotID" ,
+      "RiskProvisionScenario" ,
+      "RiskProvisionType" ,
+      "ASSOC_AccountingSystem.AccountingSystemID" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" ,
+      "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_InvestmentAccount.FinancialContractID" ,
+      "_InvestmentAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CalculationCurrency" ,
+      "CreditRiskAdjustedEffectiveInterestRate" ,
+      "NominalAmount" ,
+      "PositionCurrency" ,
+      "Quantity" ,
+      "RiskProvisionInCalculationCurrency" ,
+      "RiskProvisionInPositionCurrency" ,
+      "Significance" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CreditRiskAdjustment"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "ASSOC_AccountingSystem"
+	  on "ASSOC_AccountingSystem"."AccountingSystemID" = "ASSOC_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCurrencyOfMultiCurrencyContract"
+	  on "ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCurrencyOfMultiCurrencyContract"."PositionCurrency" = "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_InvestmentAccount"
+	  on "_InvestmentAccount"."FinancialContractID" = "_InvestmentAccount.FinancialContractID" AND 
+	     "_InvestmentAccount"."IDSystem" = "_InvestmentAccount.IDSystem"
+	     
+);

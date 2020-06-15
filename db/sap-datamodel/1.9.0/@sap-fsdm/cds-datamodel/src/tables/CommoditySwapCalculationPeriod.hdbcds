@@ -1,0 +1,69 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+
+entity "CommoditySwapCalculationPeriod" {
+    key "IntervalEndDate"               : LocalDate;
+    key "IntervalStartDate"             : LocalDate;
+    key "RoleOfPayer"                   : String(50)                         default '';
+    key "_Swap"                         : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                       not null;
+        "SystemValidTo"                 : UTCTimestamp                       not null;
+        "BusinessCalendar"              : String(10);
+        "BusinessDayConvention"         : String(40);
+        "DeliveryDate"                  : String(50);
+        "FixedPriceCurrency"            : String(3);
+        "FixedPricePerUnit"             : Decimal(34, 6);
+        "NotionalQuantity"              : Decimal(34, 6);
+        "NotionalQuantityUnit"          : String(10);
+        "PricingDate"                   : String(50);
+        "Spread"                        : Decimal(15, 11);
+        "SpreadAmount"                  : Decimal(34, 6);
+        "SpreadAmountCurrency"          : String(3);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CommoditySwapCalculationPeriod_Historical" {
+    "IntervalEndDate"               : LocalDate                          not null;
+    "IntervalStartDate"             : LocalDate                          not null;
+    "RoleOfPayer"                   : String(50)                         default '' not null;
+    "_Swap"                         : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       } not null;
+    "BusinessValidFrom"             : LocalDate                          not null;
+    "BusinessValidTo"               : LocalDate                          not null;
+    "SystemValidFrom"               : UTCTimestamp                       not null;
+    "SystemValidTo"                 : UTCTimestamp                       not null;
+    "BusinessCalendar"              : String(10);
+    "BusinessDayConvention"         : String(40);
+    "DeliveryDate"                  : String(50);
+    "FixedPriceCurrency"            : String(3);
+    "FixedPricePerUnit"             : Decimal(34, 6);
+    "NotionalQuantity"              : Decimal(34, 6);
+    "NotionalQuantityUnit"          : String(10);
+    "PricingDate"                   : String(50);
+    "Spread"                        : Decimal(15, 11);
+    "SpreadAmount"                  : Decimal(34, 6);
+    "SpreadAmountCurrency"          : String(3);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

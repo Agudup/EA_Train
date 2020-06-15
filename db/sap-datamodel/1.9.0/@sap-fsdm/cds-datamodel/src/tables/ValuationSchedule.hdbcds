@@ -1,0 +1,59 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"TotalReturnSwapReturnLeg";
+
+entity "ValuationSchedule" {
+    key "SequenceNumber"                : Integer                                   default -1;
+    key "_TotalReturnSwapReturnLeg"     : association to TotalReturnSwapReturnLeg {
+                                                                                    _Swap,
+                                                                                    _Underlying,
+                                                                                    _UnderlyingIndex
+                                                                                  } not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                              not null;
+        "SystemValidTo"                 : UTCTimestamp                              not null;
+        "BusinessCalendar"              : String(10);
+        "BusinessDayConvention"         : String(40);
+        "FirstValuationDate"            : LocalDate;
+        "LastValuationDate"             : LocalDate;
+        "ValuationDate"                 : LocalDate;
+        "ValuationPeriodLength"         : Decimal(34, 6);
+        "ValuationPeriodUnit"           : String(12);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ValuationSchedule_Historical" {
+    "SequenceNumber"                : Integer                                   default -1 not null;
+    "_TotalReturnSwapReturnLeg"     : association to TotalReturnSwapReturnLeg {
+                                                                                _Swap,
+                                                                                _Underlying,
+                                                                                _UnderlyingIndex
+                                                                              } not null;
+    "BusinessValidFrom"             : UTCTimestamp                              not null;
+    "BusinessValidTo"               : UTCTimestamp                              not null;
+    "SystemValidFrom"               : UTCTimestamp                              not null;
+    "SystemValidTo"                 : UTCTimestamp                              not null;
+    "BusinessCalendar"              : String(10);
+    "BusinessDayConvention"         : String(40);
+    "FirstValuationDate"            : LocalDate;
+    "LastValuationDate"             : LocalDate;
+    "ValuationDate"                 : LocalDate;
+    "ValuationPeriodLength"         : Decimal(34, 6);
+    "ValuationPeriodUnit"           : String(12);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

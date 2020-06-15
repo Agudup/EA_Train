@@ -1,0 +1,397 @@
+PROCEDURE "sap.fsdm.procedures::FundsTransferPricingRateDelete" (IN ROW "sap.fsdm.tabletypes::FundsTransferPricingRateTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SplittingTranche=' || TO_VARCHAR("SplittingTranche") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                '_Collection.CollectionID=' || TO_VARCHAR("_Collection.CollectionID") || ' ' ||
+                '_Collection.IDSystem=' || TO_VARCHAR("_Collection.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SplittingTranche",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SplittingTranche",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SplittingTranche",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "_Collection.CollectionID",
+                        "_Collection.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SplittingTranche",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SplittingTranche",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::FundsTransferPricingRate" (
+        "SplittingTranche",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_YieldCurve.YieldCurveID",
+        "AssetOrLiabilityStatus",
+        "BusinessDayCalendar",
+        "Currency",
+        "DayCountConvention",
+        "DisturbanceDate",
+        "FTPRate",
+        "FTPRateBeforeOverride",
+        "MaturityPeriodLength",
+        "MaturityPeriodTimeUnit",
+        "RecalculatedDueToDisturbance",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SplittingTranche" as "SplittingTranche" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID" ,
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_YieldCurve.YieldCurveID" as "ASSOC_YieldCurve.YieldCurveID" ,
+            "OLD_AssetOrLiabilityStatus" as "AssetOrLiabilityStatus" ,
+            "OLD_BusinessDayCalendar" as "BusinessDayCalendar" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_DayCountConvention" as "DayCountConvention" ,
+            "OLD_DisturbanceDate" as "DisturbanceDate" ,
+            "OLD_FTPRate" as "FTPRate" ,
+            "OLD_FTPRateBeforeOverride" as "FTPRateBeforeOverride" ,
+            "OLD_MaturityPeriodLength" as "MaturityPeriodLength" ,
+            "OLD_MaturityPeriodTimeUnit" as "MaturityPeriodTimeUnit" ,
+            "OLD_RecalculatedDueToDisturbance" as "RecalculatedDueToDisturbance" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SplittingTranche",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."SplittingTranche" as "OLD_SplittingTranche",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_YieldCurve.YieldCurveID" as "OLD_ASSOC_YieldCurve.YieldCurveID",
+                "OLD"."AssetOrLiabilityStatus" as "OLD_AssetOrLiabilityStatus",
+                "OLD"."BusinessDayCalendar" as "OLD_BusinessDayCalendar",
+                "OLD"."Currency" as "OLD_Currency",
+                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                "OLD"."DisturbanceDate" as "OLD_DisturbanceDate",
+                "OLD"."FTPRate" as "OLD_FTPRate",
+                "OLD"."FTPRateBeforeOverride" as "OLD_FTPRateBeforeOverride",
+                "OLD"."MaturityPeriodLength" as "OLD_MaturityPeriodLength",
+                "OLD"."MaturityPeriodTimeUnit" as "OLD_MaturityPeriodTimeUnit",
+                "OLD"."RecalculatedDueToDisturbance" as "OLD_RecalculatedDueToDisturbance",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FundsTransferPricingRate" as "OLD"
+            on
+                      ( "IN"."SplittingTranche" = "OLD"."SplittingTranche" or "IN"."SplittingTranche" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+                      ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                      ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                      ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::FundsTransferPricingRate" (
+        "SplittingTranche",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_YieldCurve.YieldCurveID",
+        "AssetOrLiabilityStatus",
+        "BusinessDayCalendar",
+        "Currency",
+        "DayCountConvention",
+        "DisturbanceDate",
+        "FTPRate",
+        "FTPRateBeforeOverride",
+        "MaturityPeriodLength",
+        "MaturityPeriodTimeUnit",
+        "RecalculatedDueToDisturbance",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SplittingTranche" as "SplittingTranche",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID",
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_YieldCurve.YieldCurveID" as "ASSOC_YieldCurve.YieldCurveID",
+            "OLD_AssetOrLiabilityStatus" as "AssetOrLiabilityStatus",
+            "OLD_BusinessDayCalendar" as "BusinessDayCalendar",
+            "OLD_Currency" as "Currency",
+            "OLD_DayCountConvention" as "DayCountConvention",
+            "OLD_DisturbanceDate" as "DisturbanceDate",
+            "OLD_FTPRate" as "FTPRate",
+            "OLD_FTPRateBeforeOverride" as "FTPRateBeforeOverride",
+            "OLD_MaturityPeriodLength" as "MaturityPeriodLength",
+            "OLD_MaturityPeriodTimeUnit" as "MaturityPeriodTimeUnit",
+            "OLD_RecalculatedDueToDisturbance" as "RecalculatedDueToDisturbance",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SplittingTranche",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."SplittingTranche" as "OLD_SplittingTranche",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_YieldCurve.YieldCurveID" as "OLD_ASSOC_YieldCurve.YieldCurveID",
+                "OLD"."AssetOrLiabilityStatus" as "OLD_AssetOrLiabilityStatus",
+                "OLD"."BusinessDayCalendar" as "OLD_BusinessDayCalendar",
+                "OLD"."Currency" as "OLD_Currency",
+                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                "OLD"."DisturbanceDate" as "OLD_DisturbanceDate",
+                "OLD"."FTPRate" as "OLD_FTPRate",
+                "OLD"."FTPRateBeforeOverride" as "OLD_FTPRateBeforeOverride",
+                "OLD"."MaturityPeriodLength" as "OLD_MaturityPeriodLength",
+                "OLD"."MaturityPeriodTimeUnit" as "OLD_MaturityPeriodTimeUnit",
+                "OLD"."RecalculatedDueToDisturbance" as "OLD_RecalculatedDueToDisturbance",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FundsTransferPricingRate" as "OLD"
+            on
+                                                ( "IN"."SplittingTranche" = "OLD"."SplittingTranche" or "IN"."SplittingTranche" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+                                                ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                                ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                                                ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::FundsTransferPricingRate"
+    where (
+        "SplittingTranche",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SplittingTranche",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+            "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."_Collection.CollectionID",
+            "OLD"."_Collection.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FundsTransferPricingRate" as "OLD"
+        on
+                                       ( "IN"."SplittingTranche" = "OLD"."SplittingTranche" or "IN"."SplittingTranche" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+                                       ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                       ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                                       ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

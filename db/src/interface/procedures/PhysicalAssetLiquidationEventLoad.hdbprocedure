@@ -1,0 +1,49 @@
+PROCEDURE "sap.fsdm.procedures::PhysicalAssetLiquidationEventLoad" (IN ROW "sap.fsdm.tabletypes::PhysicalAssetLiquidationEventTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+delete from "sap.fsdm::PhysicalAssetLiquidationEvent" WHERE("LiquidationEventDate" ,
+"LiquidationEventType" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select     ( case when "LiquidationEventDate" is null then '0001-01-01' else "LiquidationEventDate" end ) as "LiquidationEventDate",
+    ( case when "LiquidationEventType" is null then '' else "LiquidationEventType" end ) as "LiquidationEventType",
+    ( case when "ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "ASSOC_PhysicalAsset.PhysicalAssetID" end ) as "ASSOC_PhysicalAsset.PhysicalAssetID"
+from :row );
+
+--Insert ALL the input data
+insert into "sap.fsdm::PhysicalAssetLiquidationEvent"  (
+"LiquidationEventDate",
+"LiquidationEventType",
+"ASSOC_PhysicalAsset.PhysicalAssetID",
+"ASSOC_BankingChannel.BankingChannelID",
+"ASSOC_BusinessEventDataOwner.BusinessPartnerID",
+"LiquidationEventOutcome",
+"RealizedLiquidationAmount",
+"RealizedLiquidationAmountCurrency",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+     ( case when "LiquidationEventDate" is null then '0001-01-01' else "LiquidationEventDate" end ) as "LiquidationEventDate",
+    ( case when "LiquidationEventType" is null then '' else "LiquidationEventType" end ) as "LiquidationEventType",
+    ( case when "ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "ASSOC_PhysicalAsset.PhysicalAssetID" end ) as "ASSOC_PhysicalAsset.PhysicalAssetID",
+  "ASSOC_BankingChannel.BankingChannelID"  ,
+  "ASSOC_BusinessEventDataOwner.BusinessPartnerID"  ,
+  "LiquidationEventOutcome"  ,
+  "RealizedLiquidationAmount"  ,
+  "RealizedLiquidationAmountCurrency"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

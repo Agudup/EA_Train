@@ -1,0 +1,95 @@
+view "sap.fsdm.SQLViews::Fee_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_TransferOrder.IDSystem" ,
+      "ASSOC_TransferOrder.TransferOrderID" ,
+      "_Trade.IDSystem" ,
+      "_Trade.TradeID" ,
+      "_TrancheInSyndication.TrancheSequenceNumber" ,
+      "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+      "_TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DayOfMonthOfFeeBillingDate" ,
+      "EventDescription" ,
+      "EventTriggerType" ,
+      "FeeAmount" ,
+      "FeeAssessmentBase" ,
+      "FeeAssessmentBaseAggregationMethod" ,
+      "FeeCalculationMethod" ,
+      "FeeCategory" ,
+      "FeeChargingEndDate" ,
+      "FeeChargingStartDate" ,
+      "FeeCurrency" ,
+      "FeeLowerLimitAmount" ,
+      "FeePercentage" ,
+      "FeeTruncatedForStubPeriods" ,
+      "FeeType" ,
+      "FeeUpperLimitAmount" ,
+      "FirstFeeBillingDate" ,
+      "FirstRegularFeeBillingDate" ,
+      "LastFeeBillingDate" ,
+      "PreconditionExists" ,
+      "ReccurringFeePeriodTimeUnit" ,
+      "RecurringFeePeriodLength" ,
+      "RoleOfPayer" ,
+      "ScaleApplies" ,
+      "WaiverCode" ,
+      "WaiverNote" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Fee"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "ASSOC_TransferOrder"
+	  on "ASSOC_TransferOrder"."IDSystem" = "ASSOC_TransferOrder.IDSystem" AND 
+	     "ASSOC_TransferOrder"."TransferOrderID" = "ASSOC_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade"
+	  on "_Trade"."IDSystem" = "_Trade.IDSystem" AND 
+	     "_Trade"."TradeID" = "_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::TrancheInSyndication_View" as "_TrancheInSyndication"
+	  on "_TrancheInSyndication"."TrancheSequenceNumber" = "_TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "_TrancheInSyndication"."_SyndicationAgreement.FinancialContractID" = "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "_TrancheInSyndication"."_SyndicationAgreement.IDSystem" = "_TrancheInSyndication._SyndicationAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ScaleInterval_View" as "_ScaleInterval_ASSOC_FeeSpecification"
+	  on "_TrancheInSyndication._SyndicationAgreement.IDSystem" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" AND 
+	     "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "_TrancheInSyndication.TrancheSequenceNumber" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "_Trade.TradeID" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification._Trade.TradeID" AND 
+	     "_Trade.IDSystem" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification._Trade.IDSystem" AND 
+	     "SequenceNumber" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification.SequenceNumber" AND 
+	     "ASSOC_TransferOrder.TransferOrderID" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" AND 
+	     "ASSOC_TransferOrder.IDSystem" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_ScaleInterval_ASSOC_FeeSpecification"."ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::SetOfPreconditions_View" as "_SetOfPreconditions_ASSOC_Fee"
+	  on "_TrancheInSyndication._SyndicationAgreement.IDSystem" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.IDSystem" AND 
+	     "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee._TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "_TrancheInSyndication.TrancheSequenceNumber" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee._TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "_Trade.TradeID" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee._Trade.TradeID" AND 
+	     "_Trade.IDSystem" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee._Trade.IDSystem" AND 
+	     "SequenceNumber" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee.SequenceNumber" AND 
+	     "ASSOC_TransferOrder.TransferOrderID" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee.ASSOC_TransferOrder.TransferOrderID" AND 
+	     "ASSOC_TransferOrder.IDSystem" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee.ASSOC_TransferOrder.IDSystem" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_SetOfPreconditions_ASSOC_Fee"."ASSOC_Fee.ASSOC_FinancialContract.FinancialContractID"
+	     
+);

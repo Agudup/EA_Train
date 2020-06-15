@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::ProductClassificationOfFinancialContract_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract_IDSystem",
+      "ASSOC_ProductClass.ProductClass" as "ASSOC_ProductClass_ProductClass",
+      "ASSOC_ProductClass.ProductClassificationSystem" as "ASSOC_ProductClass_ProductClassificationSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ProductClassificationOfFinancialContract"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

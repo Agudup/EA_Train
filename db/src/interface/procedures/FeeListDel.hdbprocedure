@@ -1,0 +1,508 @@
+PROCEDURE "sap.fsdm.procedures::FeeListDel" (IN ROW "sap.fsdm.tabletypes::FeeTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_TransferOrder.IDSystem=' || TO_VARCHAR("ASSOC_TransferOrder.IDSystem") || ' ' ||
+                'ASSOC_TransferOrder.TransferOrderID=' || TO_VARCHAR("ASSOC_TransferOrder.TransferOrderID") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                '_TrancheInSyndication.TrancheSequenceNumber=' || TO_VARCHAR("_TrancheInSyndication.TrancheSequenceNumber") || ' ' ||
+                '_TrancheInSyndication._SyndicationAgreement.FinancialContractID=' || TO_VARCHAR("_TrancheInSyndication._SyndicationAgreement.FinancialContractID") || ' ' ||
+                '_TrancheInSyndication._SyndicationAgreement.IDSystem=' || TO_VARCHAR("_TrancheInSyndication._SyndicationAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_TransferOrder.IDSystem",
+                        "IN"."ASSOC_TransferOrder.TransferOrderID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "IN"."_TrancheInSyndication.TrancheSequenceNumber",
+                        "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_TransferOrder.IDSystem",
+                        "IN"."ASSOC_TransferOrder.TransferOrderID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "IN"."_TrancheInSyndication.TrancheSequenceNumber",
+                        "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_TransferOrder.IDSystem",
+                        "ASSOC_TransferOrder.TransferOrderID",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID",
+                        "_TrancheInSyndication.TrancheSequenceNumber",
+                        "_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "_TrancheInSyndication._SyndicationAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_TransferOrder.IDSystem",
+                                    "IN"."ASSOC_TransferOrder.TransferOrderID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID",
+                                    "IN"."_TrancheInSyndication.TrancheSequenceNumber",
+                                    "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                                    "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_TransferOrder.IDSystem",
+                                    "IN"."ASSOC_TransferOrder.TransferOrderID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID",
+                                    "IN"."_TrancheInSyndication.TrancheSequenceNumber",
+                                    "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                                    "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Fee" (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_TransferOrder.IDSystem",
+        "ASSOC_TransferOrder.TransferOrderID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "_TrancheInSyndication.TrancheSequenceNumber",
+        "_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+        "_TrancheInSyndication._SyndicationAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "DayOfMonthOfFeeBillingDate",
+        "EventDescription",
+        "EventTriggerType",
+        "FeeAmount",
+        "FeeAssessmentBase",
+        "FeeAssessmentBaseAggregationMethod",
+        "FeeCalculationMethod",
+        "FeeCategory",
+        "FeeChargingEndDate",
+        "FeeChargingStartDate",
+        "FeeCurrency",
+        "FeeLowerLimitAmount",
+        "FeePercentage",
+        "FeeTruncatedForStubPeriods",
+        "FeeType",
+        "FeeUpperLimitAmount",
+        "FirstFeeBillingDate",
+        "FirstRegularFeeBillingDate",
+        "LastFeeBillingDate",
+        "PreconditionExists",
+        "ReccurringFeePeriodTimeUnit",
+        "RecurringFeePeriodLength",
+        "RoleOfPayer",
+        "ScaleApplies",
+        "WaiverCode",
+        "WaiverNote",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_TransferOrder.IDSystem" as "ASSOC_TransferOrder.IDSystem" ,
+            "OLD_ASSOC_TransferOrder.TransferOrderID" as "ASSOC_TransferOrder.TransferOrderID" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "OLD__TrancheInSyndication.TrancheSequenceNumber" as "_TrancheInSyndication.TrancheSequenceNumber" ,
+            "OLD__TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+            "OLD__TrancheInSyndication._SyndicationAgreement.IDSystem" as "_TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BusinessCalendar" as "BusinessCalendar" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_DayOfMonthOfFeeBillingDate" as "DayOfMonthOfFeeBillingDate" ,
+            "OLD_EventDescription" as "EventDescription" ,
+            "OLD_EventTriggerType" as "EventTriggerType" ,
+            "OLD_FeeAmount" as "FeeAmount" ,
+            "OLD_FeeAssessmentBase" as "FeeAssessmentBase" ,
+            "OLD_FeeAssessmentBaseAggregationMethod" as "FeeAssessmentBaseAggregationMethod" ,
+            "OLD_FeeCalculationMethod" as "FeeCalculationMethod" ,
+            "OLD_FeeCategory" as "FeeCategory" ,
+            "OLD_FeeChargingEndDate" as "FeeChargingEndDate" ,
+            "OLD_FeeChargingStartDate" as "FeeChargingStartDate" ,
+            "OLD_FeeCurrency" as "FeeCurrency" ,
+            "OLD_FeeLowerLimitAmount" as "FeeLowerLimitAmount" ,
+            "OLD_FeePercentage" as "FeePercentage" ,
+            "OLD_FeeTruncatedForStubPeriods" as "FeeTruncatedForStubPeriods" ,
+            "OLD_FeeType" as "FeeType" ,
+            "OLD_FeeUpperLimitAmount" as "FeeUpperLimitAmount" ,
+            "OLD_FirstFeeBillingDate" as "FirstFeeBillingDate" ,
+            "OLD_FirstRegularFeeBillingDate" as "FirstRegularFeeBillingDate" ,
+            "OLD_LastFeeBillingDate" as "LastFeeBillingDate" ,
+            "OLD_PreconditionExists" as "PreconditionExists" ,
+            "OLD_ReccurringFeePeriodTimeUnit" as "ReccurringFeePeriodTimeUnit" ,
+            "OLD_RecurringFeePeriodLength" as "RecurringFeePeriodLength" ,
+            "OLD_RoleOfPayer" as "RoleOfPayer" ,
+            "OLD_ScaleApplies" as "ScaleApplies" ,
+            "OLD_WaiverCode" as "WaiverCode" ,
+            "OLD_WaiverNote" as "WaiverNote" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_TransferOrder.IDSystem",
+                        "OLD"."ASSOC_TransferOrder.TransferOrderID",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_TransferOrder.IDSystem" as "OLD_ASSOC_TransferOrder.IDSystem",
+                "OLD"."ASSOC_TransferOrder.TransferOrderID" as "OLD_ASSOC_TransferOrder.TransferOrderID",
+                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                "OLD"."_TrancheInSyndication.TrancheSequenceNumber" as "OLD__TrancheInSyndication.TrancheSequenceNumber",
+                "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "OLD__TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" as "OLD__TrancheInSyndication._SyndicationAgreement.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                "OLD"."DayOfMonthOfFeeBillingDate" as "OLD_DayOfMonthOfFeeBillingDate",
+                "OLD"."EventDescription" as "OLD_EventDescription",
+                "OLD"."EventTriggerType" as "OLD_EventTriggerType",
+                "OLD"."FeeAmount" as "OLD_FeeAmount",
+                "OLD"."FeeAssessmentBase" as "OLD_FeeAssessmentBase",
+                "OLD"."FeeAssessmentBaseAggregationMethod" as "OLD_FeeAssessmentBaseAggregationMethod",
+                "OLD"."FeeCalculationMethod" as "OLD_FeeCalculationMethod",
+                "OLD"."FeeCategory" as "OLD_FeeCategory",
+                "OLD"."FeeChargingEndDate" as "OLD_FeeChargingEndDate",
+                "OLD"."FeeChargingStartDate" as "OLD_FeeChargingStartDate",
+                "OLD"."FeeCurrency" as "OLD_FeeCurrency",
+                "OLD"."FeeLowerLimitAmount" as "OLD_FeeLowerLimitAmount",
+                "OLD"."FeePercentage" as "OLD_FeePercentage",
+                "OLD"."FeeTruncatedForStubPeriods" as "OLD_FeeTruncatedForStubPeriods",
+                "OLD"."FeeType" as "OLD_FeeType",
+                "OLD"."FeeUpperLimitAmount" as "OLD_FeeUpperLimitAmount",
+                "OLD"."FirstFeeBillingDate" as "OLD_FirstFeeBillingDate",
+                "OLD"."FirstRegularFeeBillingDate" as "OLD_FirstRegularFeeBillingDate",
+                "OLD"."LastFeeBillingDate" as "OLD_LastFeeBillingDate",
+                "OLD"."PreconditionExists" as "OLD_PreconditionExists",
+                "OLD"."ReccurringFeePeriodTimeUnit" as "OLD_ReccurringFeePeriodTimeUnit",
+                "OLD"."RecurringFeePeriodLength" as "OLD_RecurringFeePeriodLength",
+                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                "OLD"."WaiverCode" as "OLD_WaiverCode",
+                "OLD"."WaiverNote" as "OLD_WaiverNote",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Fee" as "OLD"
+            on
+                      ( "IN"."ASSOC_TransferOrder.IDSystem" = "OLD"."ASSOC_TransferOrder.IDSystem" or "IN"."ASSOC_TransferOrder.IDSystem" is null ) and
+                      ( "IN"."ASSOC_TransferOrder.TransferOrderID" = "OLD"."ASSOC_TransferOrder.TransferOrderID" or "IN"."ASSOC_TransferOrder.TransferOrderID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+                      ( "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) and
+                      ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) and
+                      ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Fee" (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_TransferOrder.IDSystem",
+        "ASSOC_TransferOrder.TransferOrderID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "_TrancheInSyndication.TrancheSequenceNumber",
+        "_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+        "_TrancheInSyndication._SyndicationAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "DayOfMonthOfFeeBillingDate",
+        "EventDescription",
+        "EventTriggerType",
+        "FeeAmount",
+        "FeeAssessmentBase",
+        "FeeAssessmentBaseAggregationMethod",
+        "FeeCalculationMethod",
+        "FeeCategory",
+        "FeeChargingEndDate",
+        "FeeChargingStartDate",
+        "FeeCurrency",
+        "FeeLowerLimitAmount",
+        "FeePercentage",
+        "FeeTruncatedForStubPeriods",
+        "FeeType",
+        "FeeUpperLimitAmount",
+        "FirstFeeBillingDate",
+        "FirstRegularFeeBillingDate",
+        "LastFeeBillingDate",
+        "PreconditionExists",
+        "ReccurringFeePeriodTimeUnit",
+        "RecurringFeePeriodLength",
+        "RoleOfPayer",
+        "ScaleApplies",
+        "WaiverCode",
+        "WaiverNote",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_TransferOrder.IDSystem" as "ASSOC_TransferOrder.IDSystem",
+            "OLD_ASSOC_TransferOrder.TransferOrderID" as "ASSOC_TransferOrder.TransferOrderID",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "OLD__TrancheInSyndication.TrancheSequenceNumber" as "_TrancheInSyndication.TrancheSequenceNumber",
+            "OLD__TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+            "OLD__TrancheInSyndication._SyndicationAgreement.IDSystem" as "_TrancheInSyndication._SyndicationAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_DayOfMonthOfFeeBillingDate" as "DayOfMonthOfFeeBillingDate",
+            "OLD_EventDescription" as "EventDescription",
+            "OLD_EventTriggerType" as "EventTriggerType",
+            "OLD_FeeAmount" as "FeeAmount",
+            "OLD_FeeAssessmentBase" as "FeeAssessmentBase",
+            "OLD_FeeAssessmentBaseAggregationMethod" as "FeeAssessmentBaseAggregationMethod",
+            "OLD_FeeCalculationMethod" as "FeeCalculationMethod",
+            "OLD_FeeCategory" as "FeeCategory",
+            "OLD_FeeChargingEndDate" as "FeeChargingEndDate",
+            "OLD_FeeChargingStartDate" as "FeeChargingStartDate",
+            "OLD_FeeCurrency" as "FeeCurrency",
+            "OLD_FeeLowerLimitAmount" as "FeeLowerLimitAmount",
+            "OLD_FeePercentage" as "FeePercentage",
+            "OLD_FeeTruncatedForStubPeriods" as "FeeTruncatedForStubPeriods",
+            "OLD_FeeType" as "FeeType",
+            "OLD_FeeUpperLimitAmount" as "FeeUpperLimitAmount",
+            "OLD_FirstFeeBillingDate" as "FirstFeeBillingDate",
+            "OLD_FirstRegularFeeBillingDate" as "FirstRegularFeeBillingDate",
+            "OLD_LastFeeBillingDate" as "LastFeeBillingDate",
+            "OLD_PreconditionExists" as "PreconditionExists",
+            "OLD_ReccurringFeePeriodTimeUnit" as "ReccurringFeePeriodTimeUnit",
+            "OLD_RecurringFeePeriodLength" as "RecurringFeePeriodLength",
+            "OLD_RoleOfPayer" as "RoleOfPayer",
+            "OLD_ScaleApplies" as "ScaleApplies",
+            "OLD_WaiverCode" as "WaiverCode",
+            "OLD_WaiverNote" as "WaiverNote",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_TransferOrder.IDSystem",
+                        "OLD"."ASSOC_TransferOrder.TransferOrderID",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem",
+                        "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_TransferOrder.IDSystem" as "OLD_ASSOC_TransferOrder.IDSystem",
+                "OLD"."ASSOC_TransferOrder.TransferOrderID" as "OLD_ASSOC_TransferOrder.TransferOrderID",
+                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                "OLD"."_TrancheInSyndication.TrancheSequenceNumber" as "OLD__TrancheInSyndication.TrancheSequenceNumber",
+                "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" as "OLD__TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+                "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" as "OLD__TrancheInSyndication._SyndicationAgreement.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                "OLD"."DayOfMonthOfFeeBillingDate" as "OLD_DayOfMonthOfFeeBillingDate",
+                "OLD"."EventDescription" as "OLD_EventDescription",
+                "OLD"."EventTriggerType" as "OLD_EventTriggerType",
+                "OLD"."FeeAmount" as "OLD_FeeAmount",
+                "OLD"."FeeAssessmentBase" as "OLD_FeeAssessmentBase",
+                "OLD"."FeeAssessmentBaseAggregationMethod" as "OLD_FeeAssessmentBaseAggregationMethod",
+                "OLD"."FeeCalculationMethod" as "OLD_FeeCalculationMethod",
+                "OLD"."FeeCategory" as "OLD_FeeCategory",
+                "OLD"."FeeChargingEndDate" as "OLD_FeeChargingEndDate",
+                "OLD"."FeeChargingStartDate" as "OLD_FeeChargingStartDate",
+                "OLD"."FeeCurrency" as "OLD_FeeCurrency",
+                "OLD"."FeeLowerLimitAmount" as "OLD_FeeLowerLimitAmount",
+                "OLD"."FeePercentage" as "OLD_FeePercentage",
+                "OLD"."FeeTruncatedForStubPeriods" as "OLD_FeeTruncatedForStubPeriods",
+                "OLD"."FeeType" as "OLD_FeeType",
+                "OLD"."FeeUpperLimitAmount" as "OLD_FeeUpperLimitAmount",
+                "OLD"."FirstFeeBillingDate" as "OLD_FirstFeeBillingDate",
+                "OLD"."FirstRegularFeeBillingDate" as "OLD_FirstRegularFeeBillingDate",
+                "OLD"."LastFeeBillingDate" as "OLD_LastFeeBillingDate",
+                "OLD"."PreconditionExists" as "OLD_PreconditionExists",
+                "OLD"."ReccurringFeePeriodTimeUnit" as "OLD_ReccurringFeePeriodTimeUnit",
+                "OLD"."RecurringFeePeriodLength" as "OLD_RecurringFeePeriodLength",
+                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                "OLD"."WaiverCode" as "OLD_WaiverCode",
+                "OLD"."WaiverNote" as "OLD_WaiverNote",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Fee" as "OLD"
+            on
+                                                ( "IN"."ASSOC_TransferOrder.IDSystem" = "OLD"."ASSOC_TransferOrder.IDSystem" or "IN"."ASSOC_TransferOrder.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_TransferOrder.TransferOrderID" = "OLD"."ASSOC_TransferOrder.TransferOrderID" or "IN"."ASSOC_TransferOrder.TransferOrderID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+                                                ( "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) and
+                                                ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) and
+                                                ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Fee"
+    where (
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_TransferOrder.IDSystem",
+        "ASSOC_TransferOrder.TransferOrderID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "_TrancheInSyndication.TrancheSequenceNumber",
+        "_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+        "_TrancheInSyndication._SyndicationAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_TransferOrder.IDSystem",
+            "OLD"."ASSOC_TransferOrder.TransferOrderID",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."_TrancheInSyndication.TrancheSequenceNumber",
+            "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+            "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Fee" as "OLD"
+        on
+                                       ( "IN"."ASSOC_TransferOrder.IDSystem" = "OLD"."ASSOC_TransferOrder.IDSystem" or "IN"."ASSOC_TransferOrder.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_TransferOrder.TransferOrderID" = "OLD"."ASSOC_TransferOrder.TransferOrderID" or "IN"."ASSOC_TransferOrder.TransferOrderID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+                                       ( "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) and
+                                       ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) and
+                                       ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

@@ -1,0 +1,22 @@
+view "sap.fsdm.SQLViews::CurrencyRoles_View" 
+as select
+      "RoleOfCurrency" ,
+      "_BusinessPartner.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CurrencyCode" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CurrencyRoles"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     
+);

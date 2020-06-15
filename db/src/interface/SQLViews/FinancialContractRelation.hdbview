@@ -1,0 +1,33 @@
+view "sap.fsdm.SQLViews::FinancialContractRelation_View" 
+as select
+      "FinancialContractRelationType" ,
+      "SuccessionGroupID" ,
+      "_SourceInFinancialContractRelationship.FinancialContractID" ,
+      "_SourceInFinancialContractRelationship.IDSystem" ,
+      "_TargetInFinancialContractRelationship.FinancialContractID" ,
+      "_TargetInFinancialContractRelationship.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "FinancialContractRelationCategory" ,
+      "ReplacedAmount" ,
+      "ReplacedAmountCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FinancialContractRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SourceInFinancialContractRelationship"
+	  on "_SourceInFinancialContractRelationship"."FinancialContractID" = "_SourceInFinancialContractRelationship.FinancialContractID" AND 
+	     "_SourceInFinancialContractRelationship"."IDSystem" = "_SourceInFinancialContractRelationship.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_TargetInFinancialContractRelationship"
+	  on "_TargetInFinancialContractRelationship"."FinancialContractID" = "_TargetInFinancialContractRelationship.FinancialContractID" AND 
+	     "_TargetInFinancialContractRelationship"."IDSystem" = "_TargetInFinancialContractRelationship.IDSystem"
+	     
+);

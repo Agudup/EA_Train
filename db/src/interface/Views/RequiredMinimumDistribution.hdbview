@@ -1,0 +1,21 @@
+view "sap.fsdm.Views::RequiredMinimumDistribution_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_LifeAndAnnuityInsuranceContract.FinancialContractID" as "_LifeAndAnnuityInsuranceContract_FinancialContractID",
+      "_LifeAndAnnuityInsuranceContract.IDSystem" as "_LifeAndAnnuityInsuranceContract_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ActuarialPresentValueAmount" as "ActuarialPresentValueAmount",
+      "CurrentYearRequiredMinimumDistributionAmount" as "CurrentYearRequiredMinimumDistributionAmount",
+      "CurrentYearWithdrawalAmount" as "CurrentYearWithdrawalAmount",
+      "FriendlyIndicator" as "FriendlyIndicator",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::RequiredMinimumDistribution"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

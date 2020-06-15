@@ -1,0 +1,110 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CardIssue";
+using "sap"."fsdm"::"Representation";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialContractDelegation";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"TrancheInSyndication";
+
+entity "AgreedLimit" {
+    key "SequenceNumber"                          : Integer                                                  default -1;
+    key "ASSOC_CardIssue"                         : association to CardIssue {
+                                                                               CardIssueID,
+                                                                               ASSOC_CardAgreement,
+                                                                               _BankAccount
+                                                                             }                               not null;
+    key "ASSOC_ContactWithLimitedPowerOfAttorney" : association to Representation {
+                                                                                    TypeOfContact,
+                                                                                    ASSOC_BusinessPartner,
+                                                                                    ASSOC_ContactPerson
+                                                                                  }                          not null;
+    key "ASSOC_FinancialContract"                 : association to FinancialContract {
+                                                                                       FinancialContractID,
+                                                                                       IDSystem
+                                                                                     }                       not null;
+    key "ASSOC_FinancialContractDelegation"       : association to FinancialContractDelegation {
+                                                                                                 DelegatedRole,
+                                                                                                 ASSOC_BusinessPartner,
+                                                                                                 ASSOC_Delegator,
+                                                                                                 ASSOC_FinancialContract
+                                                                                               }             not null;
+    key "ASSOC_PositionCcyOfMultiCcyAccnt"        : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                             PositionCurrency,
+                                                                                                             ASSOC_MultiCcyAccnt
+                                                                                                           } not null;
+    key "_TrancheInSyndication"                   : association to TrancheInSyndication {
+                                                                                          TrancheSequenceNumber,
+                                                                                          _SyndicationAgreement
+                                                                                        }                    not null;
+    key "BusinessValidFrom"                       : LocalDate;
+    key "BusinessValidTo"                         : LocalDate;
+        "SystemValidFrom"                         : UTCTimestamp                                             not null;
+        "SystemValidTo"                           : UTCTimestamp                                             not null;
+        "LimitAmount"                             : Decimal(34, 6);
+        "LimitCurrency"                           : String(3);
+        "LimitQuantity"                           : Decimal(34, 6);
+        "LimitType"                               : String(40);
+        "LimitUnit"                               : String(10);
+        "LimitValidFrom"                          : LocalDate;
+        "LimitValidTo"                            : LocalDate;
+        "SourceSystemID"                          : String(128);
+        "ChangeTimestampInSourceSystem"           : UTCTimestamp;
+        "ChangingUserInSourceSystem"              : String(128);
+        "ChangingProcessType"                     : String(40);
+        "ChangingProcessID"                       : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "AgreedLimit_Historical" {
+    "SequenceNumber"                          : Integer                                                  default -1 not null;
+    "ASSOC_CardIssue"                         : association to CardIssue {
+                                                                           CardIssueID,
+                                                                           ASSOC_CardAgreement,
+                                                                           _BankAccount
+                                                                         }                               not null;
+    "ASSOC_ContactWithLimitedPowerOfAttorney" : association to Representation {
+                                                                                TypeOfContact,
+                                                                                ASSOC_BusinessPartner,
+                                                                                ASSOC_ContactPerson
+                                                                              }                          not null;
+    "ASSOC_FinancialContract"                 : association to FinancialContract {
+                                                                                   FinancialContractID,
+                                                                                   IDSystem
+                                                                                 }                       not null;
+    "ASSOC_FinancialContractDelegation"       : association to FinancialContractDelegation {
+                                                                                             DelegatedRole,
+                                                                                             ASSOC_BusinessPartner,
+                                                                                             ASSOC_Delegator,
+                                                                                             ASSOC_FinancialContract
+                                                                                           }             not null;
+    "ASSOC_PositionCcyOfMultiCcyAccnt"        : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                         PositionCurrency,
+                                                                                                         ASSOC_MultiCcyAccnt
+                                                                                                       } not null;
+    "_TrancheInSyndication"                   : association to TrancheInSyndication {
+                                                                                      TrancheSequenceNumber,
+                                                                                      _SyndicationAgreement
+                                                                                    }                    not null;
+    "BusinessValidFrom"                       : LocalDate                                                not null;
+    "BusinessValidTo"                         : LocalDate                                                not null;
+    "SystemValidFrom"                         : UTCTimestamp                                             not null;
+    "SystemValidTo"                           : UTCTimestamp                                             not null;
+    "LimitAmount"                             : Decimal(34, 6);
+    "LimitCurrency"                           : String(3);
+    "LimitQuantity"                           : Decimal(34, 6);
+    "LimitType"                               : String(40);
+    "LimitUnit"                               : String(10);
+    "LimitValidFrom"                          : LocalDate;
+    "LimitValidTo"                            : LocalDate;
+    "SourceSystemID"                          : String(128);
+    "ChangeTimestampInSourceSystem"           : UTCTimestamp;
+    "ChangingUserInSourceSystem"              : String(128);
+    "ChangingProcessType"                     : String(40);
+    "ChangingProcessID"                       : String(128);
+}
+technical configuration {
+    column store;
+};

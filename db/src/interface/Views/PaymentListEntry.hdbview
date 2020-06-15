@@ -1,0 +1,30 @@
+view "sap.fsdm.Views::PaymentListEntry_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PaymentDate" as "PaymentDate",
+      "ASSOC_PaymentList.SequenceNumber" as "ASSOC_PaymentList_SequenceNumber",
+      "ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_PaymentList_ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" as "ASSOC_PaymentList_ASSOC_FinancialContract_IDSystem",
+      "ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" as "ASSOC_PaymentList_ASSOC_Receivable_ReceivableID",
+      "ASSOC_PaymentList._CreditCardLoan.ID" as "ASSOC_PaymentList__CreditCardLoan_ID",
+      "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" as "ASSOC_PaymentList__CreditCardLoan__CreditCardAgreement_FinancialContractID",
+      "ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" as "ASSOC_PaymentList__CreditCardLoan__CreditCardAgreement_IDSystem",
+      "ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" as "ASSOC_PaymentList__DebtInstrument_FinancialInstrumentID",
+      "ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" as "ASSOC_PaymentList__InterestRateOptionComponent_ComponentNumber",
+      "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "ASSOC_PaymentList__InterestRateOptionComponent__InterestRateOption_FinancialContractID",
+      "ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" as "ASSOC_PaymentList__InterestRateOptionComponent__InterestRateOption_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PaymentAmount" as "PaymentAmount",
+      "PaymentCurrency" as "PaymentCurrency",
+      "PaymentPercentage" as "PaymentPercentage",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PaymentListEntry"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

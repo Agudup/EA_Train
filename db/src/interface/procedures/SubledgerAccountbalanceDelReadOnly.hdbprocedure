@@ -1,0 +1,80 @@
+PROCEDURE "sap.fsdm.procedures::SubledgerAccountbalanceDelReadOnly" (IN ROW "sap.fsdm.tabletypes::SubledgerAccountbalanceTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::SubledgerAccountbalanceTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"AccountingBalanceType",
+"FiscalYear",
+"PostingDate",
+"_AccountingSystem.AccountingSystemID",
+"_BusinessPartner.BusinessPartnerID",
+"_BusinessSegment.OrganizationalUnitID",
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID",
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_CompanyCode.CompanyCode",
+"_CompanyCode.ASSOC_Company.BusinessPartnerID",
+"_FinancialContract.FinancialContractID",
+"_FinancialContract.IDSystem",
+"_GLAccount.GLAccount",
+"_GLAccount._ChartOfAccounts.ChartOfAccountId",
+"_ProductClass.ProductClass",
+"_ProductClass.ProductClassificationSystem",
+"_ProfitCenter.OrganizationalUnitID",
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_ProftCenterAtCouterparty.OrganizationalUnitID",
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_SubledgerAccount.SubledgerAccount"
+from "sap.fsdm::SubledgerAccountbalance" WHERE("AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessPartner.BusinessPartnerID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_SubledgerAccount.SubledgerAccount" 
+)in ( select "AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessPartner.BusinessPartnerID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_SubledgerAccount.SubledgerAccount" 
+from :ROW );
+
+
+END

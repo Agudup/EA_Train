@@ -1,0 +1,154 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+
+entity "InterestAndFeeCalculationResult" {
+    key "CalculationPeriodID"                      : String(20);
+    key "InterestAndFeeCalculationMethod"          : String(20);
+    key "ItemNumber"                               : Integer;
+    key "ItemType"                                 : String(40)                                               default '';
+    key "ASSOC_FinancialContractOfCalculatedItems" : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                       not null;
+    key "ASSOC_PositionCcyOfMultiCcyContract"      : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                              PositionCurrency,
+                                                                                                              ASSOC_MultiCcyAccnt
+                                                                                                            } not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                                             not null;
+        "SystemValidTo"                            : UTCTimestamp                                             not null;
+        "ActualBaseAmount"                         : Decimal(34, 6);
+        "ActualCount"                              : Integer;
+        "ApplicableInterestRate"                   : Decimal(15, 11);
+        "BalanceAggregationMethod"                 : String(20);
+        "BalanceAmount"                            : Decimal(34, 6);
+        "BalanceAmountCurrency"                    : String(3);
+        "BalanceType"                              : String(40);
+        "BaseAmountCurrency"                       : String(3);
+        "CalculatedAmountBeforeLimits"             : Decimal(34, 6);
+        "CalculatedAmountBeforeLimitsCurrency"     : String(3);
+        "CalculatedItemCategory"                   : String(80);
+        "CalculationBaseType"                      : String(40);
+        "CalculationPeriodEnd"                     : UTCTimestamp;
+        "CalculationPeriodEndDate"                 : LocalDate;
+        "CalculationPeriodStart"                   : UTCTimestamp;
+        "CalculationPeriodStartDate"               : LocalDate;
+        "DueAmountInPaymentCurrency"               : Decimal(34, 6);
+        "DueAmountInPositionCurrency"              : Decimal(34, 6);
+        "EarliestConsideredPostingDate"            : LocalDate;
+        "EarliestConsideredValueDate"              : LocalDate;
+        "FeeType"                                  : String(40);
+        "InterestType"                             : String(40);
+        "IsToBePosted"                             : Boolean;
+        "LatestConsideredPostingDate"              : LocalDate;
+        "LatestConsideredValueDate"                : LocalDate;
+        "LowerLimit"                               : Decimal(34, 6);
+        "NumberOfBaseDays"                         : Integer;
+        "NumberOfDays"                             : Integer;
+        "PaymentCurrency"                          : String(3);
+        "PositionCurrency"                         : String(3);
+        "PostingCutoff"                            : UTCTimestamp;
+        "PostingDate"                              : LocalDate;
+        "PostingDirection"                         : String(6);
+        "Rate"                                     : Decimal(15, 11);
+        "ScaleBaseType"                            : String(40);
+        "ScalingMethod"                            : String(20);
+        "SettledBaseAmount"                        : Decimal(34, 6);
+        "SettledCount"                             : Integer;
+        "SettlementAccountIsDifferent"             : Boolean;
+        "TaxableIndicator"                         : Boolean;
+        "ThresholdAmount"                          : Decimal(34, 6);
+        "ThresholdAmountCurrency"                  : String(3);
+        "UnsignedCalculatedAmountBeforeLimits"     : Decimal(34, 6);
+        "UnsignedDueAmountInPaymentCurrency"       : Decimal(34, 6);
+        "UnsignedDueAmountInPositionCurrency"      : Decimal(34, 6);
+        "UpperLimit"                               : Decimal(34, 6);
+        "ValueCutoff"                              : UTCTimestamp;
+        "ValueDate"                                : LocalDate;
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InterestAndFeeCalculationResult_Historical" {
+    "CalculationPeriodID"                      : String(20)                                               not null;
+    "InterestAndFeeCalculationMethod"          : String(20)                                               not null;
+    "ItemNumber"                               : Integer                                                  not null;
+    "ItemType"                                 : String(40)                                               default '' not null;
+    "ASSOC_FinancialContractOfCalculatedItems" : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                       not null;
+    "ASSOC_PositionCcyOfMultiCcyContract"      : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                          PositionCurrency,
+                                                                                                          ASSOC_MultiCcyAccnt
+                                                                                                        } not null;
+    "BusinessValidFrom"                        : LocalDate                                                not null;
+    "BusinessValidTo"                          : LocalDate                                                not null;
+    "SystemValidFrom"                          : UTCTimestamp                                             not null;
+    "SystemValidTo"                            : UTCTimestamp                                             not null;
+    "ActualBaseAmount"                         : Decimal(34, 6);
+    "ActualCount"                              : Integer;
+    "ApplicableInterestRate"                   : Decimal(15, 11);
+    "BalanceAggregationMethod"                 : String(20);
+    "BalanceAmount"                            : Decimal(34, 6);
+    "BalanceAmountCurrency"                    : String(3);
+    "BalanceType"                              : String(40);
+    "BaseAmountCurrency"                       : String(3);
+    "CalculatedAmountBeforeLimits"             : Decimal(34, 6);
+    "CalculatedAmountBeforeLimitsCurrency"     : String(3);
+    "CalculatedItemCategory"                   : String(80);
+    "CalculationBaseType"                      : String(40);
+    "CalculationPeriodEnd"                     : UTCTimestamp;
+    "CalculationPeriodEndDate"                 : LocalDate;
+    "CalculationPeriodStart"                   : UTCTimestamp;
+    "CalculationPeriodStartDate"               : LocalDate;
+    "DueAmountInPaymentCurrency"               : Decimal(34, 6);
+    "DueAmountInPositionCurrency"              : Decimal(34, 6);
+    "EarliestConsideredPostingDate"            : LocalDate;
+    "EarliestConsideredValueDate"              : LocalDate;
+    "FeeType"                                  : String(40);
+    "InterestType"                             : String(40);
+    "IsToBePosted"                             : Boolean;
+    "LatestConsideredPostingDate"              : LocalDate;
+    "LatestConsideredValueDate"                : LocalDate;
+    "LowerLimit"                               : Decimal(34, 6);
+    "NumberOfBaseDays"                         : Integer;
+    "NumberOfDays"                             : Integer;
+    "PaymentCurrency"                          : String(3);
+    "PositionCurrency"                         : String(3);
+    "PostingCutoff"                            : UTCTimestamp;
+    "PostingDate"                              : LocalDate;
+    "PostingDirection"                         : String(6);
+    "Rate"                                     : Decimal(15, 11);
+    "ScaleBaseType"                            : String(40);
+    "ScalingMethod"                            : String(20);
+    "SettledBaseAmount"                        : Decimal(34, 6);
+    "SettledCount"                             : Integer;
+    "SettlementAccountIsDifferent"             : Boolean;
+    "TaxableIndicator"                         : Boolean;
+    "ThresholdAmount"                          : Decimal(34, 6);
+    "ThresholdAmountCurrency"                  : String(3);
+    "UnsignedCalculatedAmountBeforeLimits"     : Decimal(34, 6);
+    "UnsignedDueAmountInPaymentCurrency"       : Decimal(34, 6);
+    "UnsignedDueAmountInPositionCurrency"      : Decimal(34, 6);
+    "UpperLimit"                               : Decimal(34, 6);
+    "ValueCutoff"                              : UTCTimestamp;
+    "ValueDate"                                : LocalDate;
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

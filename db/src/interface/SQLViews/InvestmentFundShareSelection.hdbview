@@ -1,0 +1,45 @@
+view "sap.fsdm.SQLViews::InvestmentFundShareSelection_View" 
+as select
+      "_InvestmentFundShare.FinancialInstrumentID" ,
+      "_LifeAndAnnuityInsuranceCoverage.ID" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EndDate" ,
+      "StartDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InvestmentFundShareSelection"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__InvestmentFundShareSelection"
+	  on "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage.ID" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_InvestmentFundShare.FinancialInstrumentID" = "_FinancialContract__InvestmentFundShareSelection"."_InvestmentFundShareSelection._InvestmentFundShare.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_InvestmentFundShare"
+	  on "_InvestmentFundShare"."FinancialInstrumentID" = "_InvestmentFundShare.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_LifeAndAnnuityInsuranceCoverage"
+	  on "_LifeAndAnnuityInsuranceCoverage"."ID" = "_LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuranceContract.FinancialContractID" = "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuranceContract.IDSystem" = "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

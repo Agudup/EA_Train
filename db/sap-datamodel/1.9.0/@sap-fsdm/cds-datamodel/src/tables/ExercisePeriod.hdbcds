@@ -1,0 +1,56 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "ExercisePeriod" {
+    key "StartDate"                     : LocalDate                                                    default '0001-01-01';
+    key "_Option"                       : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_Swaption"                     : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_Warrant"                      : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "EndDate"                       : LocalDate;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ExercisePeriod_Historical" {
+    "StartDate"                     : LocalDate                                                    default '0001-01-01' not null;
+    "_Option"                       : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_Swaption"                     : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_Warrant"                      : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"             : LocalDate                                                    not null;
+    "BusinessValidTo"               : LocalDate                                                    not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "EndDate"                       : LocalDate;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

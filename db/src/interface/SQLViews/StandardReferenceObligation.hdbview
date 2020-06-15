@@ -1,0 +1,25 @@
+view "sap.fsdm.SQLViews::StandardReferenceObligation_View" 
+as select
+      "_BusinessPartner.BusinessPartnerID" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "StandardReferenceObligationREDPairCode" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardReferenceObligation"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

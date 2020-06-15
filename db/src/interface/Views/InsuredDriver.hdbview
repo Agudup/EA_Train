@@ -1,0 +1,21 @@
+view "sap.fsdm.Views::InsuredDriver_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_IndividualPerson.BusinessPartnerID" as "_IndividualPerson_BusinessPartnerID",
+      "_InsuredVehicle._FinancialContract.FinancialContractID" as "_InsuredVehicle__FinancialContract_FinancialContractID",
+      "_InsuredVehicle._FinancialContract.IDSystem" as "_InsuredVehicle__FinancialContract_IDSystem",
+      "_InsuredVehicle._PhysicalAsset.PhysicalAssetID" as "_InsuredVehicle__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "MainIndicator" as "MainIndicator",
+      "NoClaimsBonusIndicator" as "NoClaimsBonusIndicator",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::InsuredDriver"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

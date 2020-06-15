@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::IndexConstituent_View" 
+as select
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_Index.IndexID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_ReferenceEntity.BusinessPartnerID" ,
+      "ConstituentWeight" ,
+      "ReferenceEntityPairCode" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndexConstituent"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::Index_View" as "_Index"
+	  on "_Index"."IndexID" = "_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_ReferenceEntity"
+	  on "_ReferenceEntity"."BusinessPartnerID" = "_ReferenceEntity.BusinessPartnerID"
+	     
+);

@@ -1,0 +1,22 @@
+view "sap.fsdm.SQLViews::IndexOfferedToIndexedInsuranceContractByIndexRange_View" 
+as select
+      "_Index.IndexID" ,
+      "_IndexRange.ID" ,
+      "_IndexRange.IDSystem" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndexOfferedToIndexedInsuranceContractByIndexRange"
+with associations
+(
+	join "sap.fsdm.SQLViews::Index_View" as "_Index"
+	  on "_Index"."IndexID" = "_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::IndexRange_View" as "_IndexRange"
+	  on "_IndexRange"."IDSystem" = "_IndexRange.IDSystem" AND 
+	     "_IndexRange"."ID" = "_IndexRange.ID"
+	     
+);

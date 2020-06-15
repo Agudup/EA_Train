@@ -1,0 +1,155 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"PositionCurrencyOfMultiCcyStandardProduct";
+using "sap"."fsdm"::"FinancialStandardProduct";
+using "sap"."fsdm"::"ReferenceRate";
+
+entity "StandardInterest" {
+    key "SequenceNumber"                          : Integer;
+    key "ASSOC_PosCcyOfStdAcc"                    : association to PositionCurrencyOfMultiCcyStandardProduct {
+                                                                                                               PositionCurrency,
+                                                                                                               ASSOC_StdMultiCcyAcct
+                                                                                                             } not null;
+    key "ASSOC_StandardProduct"                   : association to FinancialStandardProduct {
+                                                                                              FinancialStandardProductID,
+                                                                                              IDSystem,
+                                                                                              PricingScheme,
+                                                                                              ASSOC_Company
+                                                                                            }                  not null;
+    key "BusinessValidFrom"                       : LocalDate;
+    key "BusinessValidTo"                         : LocalDate;
+        "SystemValidFrom"                         : UTCTimestamp                                               not null;
+        "SystemValidTo"                           : UTCTimestamp                                               not null;
+        "ASSOC_ReferenceRate"                     : association to ReferenceRate { ReferenceRateID };
+        "BusinessDayConvention"                   : String(40);
+        "CompoundingConvention"                   : String(10);
+        "CutoffRelativeToDate"                    : String(11);
+        "DayCountConvention"                      : String(20);
+        "DayOfMonthOfReset"                       : Integer;
+        "DueScheduleBusinessCalendar"             : String(10);
+        "DueScheduleBusinessDayConvention"        : String(40);
+        "DueSchedulePeriodLength"                 : Decimal(34, 6);
+        "DueSchedulePeriodTimeUnit"               : String(12);
+        "FixedRate"                               : Decimal(15, 11);
+        "InterestBusinessCalendar"                : String(10);
+        "InterestCurrency"                        : String(3);
+        "InterestInAdvance"                       : Boolean;
+        "InterestIsCompounded"                    : Boolean;
+        "InterestPaymentPrecision"                : Integer;
+        "InterestPaymentRoundingMethod"           : String(20);
+        "InterestPeriodLength"                    : Decimal(34, 6);
+        "InterestPeriodTimeUnit"                  : String(12);
+        "PeriodEndDayOfMonth"                     : Integer;
+        "PeriodEndDueDateLag"                     : Decimal(34, 6);
+        "PeriodEndDueDateLagTimeUnit"             : String(10);
+        "PeriodUntilFirstDueDate"                 : Decimal(34, 6);
+        "PeriodUntilFirstInterestPeriodStart"     : Decimal(34, 6);
+        "PeriodUntilLastInterestPeriodEnd"        : Decimal(34, 6);
+        "PeriodUntilTimeUnit"                     : String(12);
+        "PreconditionApplies"                     : Boolean;
+        "ReferenceRateFactor"                     : Decimal(15, 11);
+        "ReferenceRateFormula"                    : String(200);
+        "RelativeToInterestPeriodStartOrEnd"      : String(40);
+        "ResetBusinessCalendar"                   : String(10);
+        "ResetBusinessDayConvention"              : String(40);
+        "ResetCutoffLength"                       : Decimal(34, 6);
+        "ResetCutoffTimeUnit"                     : String(12);
+        "ResetInArrears"                          : Boolean;
+        "ResetLagLength"                          : Decimal(34, 6);
+        "ResetLagTimeUnit"                        : String(12);
+        "ResetPeriodLength"                       : Decimal(34, 6);
+        "ResetPeriodTimeUnit"                     : String(12);
+        "ResetPrecision"                          : Integer;
+        "ResetRounding"                           : String(10);
+        "RoleOfPayer"                             : String(50);
+        "ScaleApplies"                            : Boolean;
+        "Spread"                                  : Decimal(15, 11);
+        "StandardFixingRateSpecificationCategory" : String(40);
+        "StandardInterestSpecificationCategory"   : String(50);
+        "StandardInterestType"                    : String(40);
+        "VariableRateMax"                         : Decimal(15, 11);
+        "VariableRateMin"                         : Decimal(15, 11);
+        "SourceSystemID"                          : String(128);
+        "ChangeTimestampInSourceSystem"           : UTCTimestamp;
+        "ChangingUserInSourceSystem"              : String(128);
+        "ChangingProcessType"                     : String(40);
+        "ChangingProcessID"                       : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "StandardInterest_Historical" {
+    "SequenceNumber"                          : Integer                                                    not null;
+    "ASSOC_PosCcyOfStdAcc"                    : association to PositionCurrencyOfMultiCcyStandardProduct {
+                                                                                                           PositionCurrency,
+                                                                                                           ASSOC_StdMultiCcyAcct
+                                                                                                         } not null;
+    "ASSOC_StandardProduct"                   : association to FinancialStandardProduct {
+                                                                                          FinancialStandardProductID,
+                                                                                          IDSystem,
+                                                                                          PricingScheme,
+                                                                                          ASSOC_Company
+                                                                                        }                  not null;
+    "BusinessValidFrom"                       : LocalDate                                                  not null;
+    "BusinessValidTo"                         : LocalDate                                                  not null;
+    "SystemValidFrom"                         : UTCTimestamp                                               not null;
+    "SystemValidTo"                           : UTCTimestamp                                               not null;
+    "ASSOC_ReferenceRate"                     : association to ReferenceRate { ReferenceRateID };
+    "BusinessDayConvention"                   : String(40);
+    "CompoundingConvention"                   : String(10);
+    "CutoffRelativeToDate"                    : String(11);
+    "DayCountConvention"                      : String(20);
+    "DayOfMonthOfReset"                       : Integer;
+    "DueScheduleBusinessCalendar"             : String(10);
+    "DueScheduleBusinessDayConvention"        : String(40);
+    "DueSchedulePeriodLength"                 : Decimal(34, 6);
+    "DueSchedulePeriodTimeUnit"               : String(12);
+    "FixedRate"                               : Decimal(15, 11);
+    "InterestBusinessCalendar"                : String(10);
+    "InterestCurrency"                        : String(3);
+    "InterestInAdvance"                       : Boolean;
+    "InterestIsCompounded"                    : Boolean;
+    "InterestPaymentPrecision"                : Integer;
+    "InterestPaymentRoundingMethod"           : String(20);
+    "InterestPeriodLength"                    : Decimal(34, 6);
+    "InterestPeriodTimeUnit"                  : String(12);
+    "PeriodEndDayOfMonth"                     : Integer;
+    "PeriodEndDueDateLag"                     : Decimal(34, 6);
+    "PeriodEndDueDateLagTimeUnit"             : String(10);
+    "PeriodUntilFirstDueDate"                 : Decimal(34, 6);
+    "PeriodUntilFirstInterestPeriodStart"     : Decimal(34, 6);
+    "PeriodUntilLastInterestPeriodEnd"        : Decimal(34, 6);
+    "PeriodUntilTimeUnit"                     : String(12);
+    "PreconditionApplies"                     : Boolean;
+    "ReferenceRateFactor"                     : Decimal(15, 11);
+    "ReferenceRateFormula"                    : String(200);
+    "RelativeToInterestPeriodStartOrEnd"      : String(40);
+    "ResetBusinessCalendar"                   : String(10);
+    "ResetBusinessDayConvention"              : String(40);
+    "ResetCutoffLength"                       : Decimal(34, 6);
+    "ResetCutoffTimeUnit"                     : String(12);
+    "ResetInArrears"                          : Boolean;
+    "ResetLagLength"                          : Decimal(34, 6);
+    "ResetLagTimeUnit"                        : String(12);
+    "ResetPeriodLength"                       : Decimal(34, 6);
+    "ResetPeriodTimeUnit"                     : String(12);
+    "ResetPrecision"                          : Integer;
+    "ResetRounding"                           : String(10);
+    "RoleOfPayer"                             : String(50);
+    "ScaleApplies"                            : Boolean;
+    "Spread"                                  : Decimal(15, 11);
+    "StandardFixingRateSpecificationCategory" : String(40);
+    "StandardInterestSpecificationCategory"   : String(50);
+    "StandardInterestType"                    : String(40);
+    "VariableRateMax"                         : Decimal(15, 11);
+    "VariableRateMin"                         : Decimal(15, 11);
+    "SourceSystemID"                          : String(128);
+    "ChangeTimestampInSourceSystem"           : UTCTimestamp;
+    "ChangingUserInSourceSystem"              : String(128);
+    "ChangingProcessType"                     : String(40);
+    "ChangingProcessID"                       : String(128);
+}
+technical configuration {
+    column store;
+};

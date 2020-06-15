@@ -1,0 +1,128 @@
+view "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" 
+as select
+      "PositionCurrency" ,
+      "ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_MultiCcyAccnt.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PositionCurrencyOfMultiCurrencyContract"
+with associations
+(
+	join "sap.fsdm.SQLViews::Accrual_View" as "_Accrual_ASSOC_PositionCurrencyOfMultiCurrencyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_Accrual_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_Accrual_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_Accrual_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::AgreedLimit_View" as "_AgreedLimit_ASSOC_PositionCcyOfMultiCcyAccnt"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_AgreedLimit_ASSOC_PositionCcyOfMultiCcyAccnt"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_AgreedLimit_ASSOC_PositionCcyOfMultiCcyAccnt"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_AgreedLimit_ASSOC_PositionCcyOfMultiCcyAccnt"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::ApplicableInterestRate_View" as "_ApplicableInterestRate_ASSOC_PositionCurrencyForAccount"
+	  on "PositionCurrency" = "_ApplicableInterestRate_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_ApplicableInterestRate_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_ApplicableInterestRate_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::BookValue_View" as "_BookValue_ASSOC_PositionCurrencyForAccount"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_BookValue_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_BookValue_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_BookValue_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::CashFlowStream_View" as "_CashFlowStream_ASSOC_PositionCurrencyOfCashFlow"
+	  on "PositionCurrency" = "_CashFlowStream_ASSOC_PositionCurrencyOfCashFlow"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_CashFlowStream_ASSOC_PositionCurrencyOfCashFlow"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_CashFlowStream_ASSOC_PositionCurrencyOfCashFlow"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskAdjustment_View" as "_CreditRiskAdjustment_ASSOC_PositionCurrencyOfMultiCurrencyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_CreditRiskAdjustment_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_CreditRiskAdjustment_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_CreditRiskAdjustment_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::DaysPastDue_View" as "_DaysPastDue_ASSOC_PositionCurrencyOfMultiCurrencyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_DaysPastDue_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_DaysPastDue_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_DaysPastDue_ASSOC_PositionCurrencyOfMultiCurrencyContract"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::DueSettlement_View" as "_DueSettlement_ASSOC_PositionCurrencyForAccount"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_DueSettlement_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_DueSettlement_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_DueSettlement_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveInterestRate_View" as "_EffectiveInterestRate_ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_EffectiveInterestRate_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_EffectiveInterestRate_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_EffectiveInterestRate_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveLimit_View" as "_EffectiveLimit_ASSOC_PositionCcyOfMultiCcyContract"
+	  on "PositionCurrency" = "_EffectiveLimit_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_EffectiveLimit_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_EffectiveLimit_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContractStatement_View" as "_FinancialContractStatement__PositionCurrencyOfMultiCurrencyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_FinancialContractStatement__PositionCurrencyOfMultiCurrencyContract"."_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_FinancialContractStatement__PositionCurrencyOfMultiCurrencyContract"."_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_FinancialContractStatement__PositionCurrencyOfMultiCurrencyContract"."_PositionCurrencyOfMultiCurrencyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::FundsTransferPricingRate_View" as "_FundsTransferPricingRate_ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_FundsTransferPricingRate_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_FundsTransferPricingRate_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_FundsTransferPricingRate_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::Interest_View" as "_Interest_ASSOC_CcyOfMultiCcyAccnt"
+	  on "PositionCurrency" = "_Interest_ASSOC_CcyOfMultiCcyAccnt"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_Interest_ASSOC_CcyOfMultiCcyAccnt"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_Interest_ASSOC_CcyOfMultiCcyAccnt"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::InterestAndFeeCalculationResult_View" as "_InterestAndFeeCalculationResult_ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_InterestAndFeeCalculationResult_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_InterestAndFeeCalculationResult_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_InterestAndFeeCalculationResult_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::MonetaryBalance_View" as "_MonetaryBalance_ASSOC_BalanceForCcyOfMultiCcyAccount"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_MonetaryBalance_ASSOC_BalanceForCcyOfMultiCcyAccount"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_MonetaryBalance_ASSOC_BalanceForCcyOfMultiCcyAccount"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_MonetaryBalance_ASSOC_BalanceForCcyOfMultiCcyAccount"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_MultiCcyAccnt"
+	  on "ASSOC_MultiCcyAccnt"."FinancialContractID" = "ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt"."IDSystem" = "ASSOC_MultiCcyAccnt.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::RefinancingRelation_View" as "_RefinancingRelation_ASSOC_RefinancedPositionCurrency"
+	  on "PositionCurrency" = "_RefinancingRelation_ASSOC_RefinancedPositionCurrency"."ASSOC_RefinancedPositionCurrency.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_RefinancingRelation_ASSOC_RefinancedPositionCurrency"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_RefinancingRelation_ASSOC_RefinancedPositionCurrency"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::RefinancingRelation_View" as "_RefinancingRelation_ASSOC_RefinancingPositionCurrency"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_RefinancingRelation_ASSOC_RefinancingPositionCurrency"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_RefinancingRelation_ASSOC_RefinancingPositionCurrency"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_RefinancingRelation_ASSOC_RefinancingPositionCurrency"."ASSOC_RefinancingPositionCurrency.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_PositionCurrencyForAccount"
+	  on "PositionCurrency" = "_Settlement_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_Settlement_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_Settlement_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder_ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_TransferOrder_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_TransferOrder_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_TransferOrder_ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_PositionCurrencyForAccount"
+	  on "PositionCurrency" = "_Valuation_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.PositionCurrency" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_Valuation_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_MultiCcyAccnt.FinancialContractID" = "_Valuation_ASSOC_PositionCurrencyForAccount"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::WriteDownAmount_View" as "_WriteDownAmount_ASSOC_PositionCurrency"
+	  on "ASSOC_MultiCcyAccnt.FinancialContractID" = "_WriteDownAmount_ASSOC_PositionCurrency"."ASSOC_PositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_MultiCcyAccnt.IDSystem" = "_WriteDownAmount_ASSOC_PositionCurrency"."ASSOC_PositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "PositionCurrency" = "_WriteDownAmount_ASSOC_PositionCurrency"."ASSOC_PositionCurrency.PositionCurrency"
+	     
+);

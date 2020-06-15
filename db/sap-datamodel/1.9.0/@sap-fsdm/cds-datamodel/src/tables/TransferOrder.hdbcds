@@ -1,0 +1,155 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BankingChannel";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"ClaimPaymentRequest";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "TransferOrder" {
+    key "IDSystem"                               : String(40);
+    key "ItemNumber"                             : Integer;
+    key "TransferOrderID"                        : String(128);
+    key "BusinessValidFrom"                      : LocalDate;
+    key "BusinessValidTo"                        : LocalDate;
+        "SystemValidFrom"                        : UTCTimestamp not null;
+        "SystemValidTo"                          : UTCTimestamp not null;
+        "ASSOC_BankingChannel"                   : association to BankingChannel { BankingChannelID };
+        "ASSOC_BusinessEventDataOwner"           : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_DestinationAccount"               : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    };
+        "ASSOC_InitiatingAccount"                : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    };
+        "ASSOC_Initiator"                        : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_OrganizationalUnit"               : association to OrganizationalUnit {
+                                                                                       OrganizationalUnitID,
+                                                                                       ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                     };
+        "ASSOC_PositionCcyOfMultiCcyContract"    : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                            PositionCurrency,
+                                                                                                            ASSOC_MultiCcyAccnt
+                                                                                                          };
+        "_ClaimPaymentRequestItem"               : association to ClaimPaymentRequest {
+                                                                                        ID,
+                                                                                        ItemNumber,
+                                                                                        _Claim,
+                                                                                        _Subclaim
+                                                                                      };
+        "_Security"                              : association to FinancialInstrument { FinancialInstrumentID };
+        "BusinessCalendar"                       : String(10);
+        "BusinessDayConvention"                  : String(40);
+        "DestinationAccountIdentificationSystem" : String(128);
+        "DestinationBankAccountCurrency"         : String(3);
+        "DestinationBankAccountHolderName"       : String(256);
+        "DestinationBankAccountID"               : String(128);
+        "DestinationBankID"                      : String(128);
+        "DestinationBankIdentificationSystem"    : String(128);
+        "DestinationBankName"                    : String(256);
+        "DestinationCountry"                     : String(2);
+        "DestinationIBAN"                        : String(128);
+        "DestinationSWIFT"                       : String(128);
+        "DirectionOfTransfer"                    : String(50);
+        "FeeBillingMethod"                       : String(20);
+        "LifecycleStatus"                        : String(100);
+        "RecurringTransferOrderEndOfExecution"   : LocalDate;
+        "RecurringTransferOrderPeriodLength"     : Decimal(34, 6);
+        "RecurringTransferOrderPeriodTimeUnit"   : String(12);
+        "TransferAgreementCategory"              : String(50);
+        "TransferAmount"                         : Decimal(34, 6);
+        "TransferAmountCurrency"                 : String(3);
+        "TransferOrderFirstExecutionDate"        : LocalDate;
+        "TransferOrderIsRecurring"               : Boolean;
+        "TransferOrderReceivedDate"              : LocalDate;
+        "TransferOrderType"                      : String(40);
+        "TransferableNominalAmount"              : Decimal(34, 6);
+        "TransferableNominalAmountCurrency"      : String(3);
+        "TransferableQuantity"                   : Decimal(34, 6);
+        "TransferableUnit"                       : String(10);
+        "SourceSystemID"                         : String(128);
+        "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+        "ChangingUserInSourceSystem"             : String(128);
+        "ChangingProcessType"                    : String(40);
+        "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "TransferOrder_Historical" {
+    "IDSystem"                               : String(40)   not null;
+    "ItemNumber"                             : Integer      not null;
+    "TransferOrderID"                        : String(128)  not null;
+    "BusinessValidFrom"                      : LocalDate    not null;
+    "BusinessValidTo"                        : LocalDate    not null;
+    "SystemValidFrom"                        : UTCTimestamp not null;
+    "SystemValidTo"                          : UTCTimestamp not null;
+    "ASSOC_BankingChannel"                   : association to BankingChannel { BankingChannelID };
+    "ASSOC_BusinessEventDataOwner"           : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_DestinationAccount"               : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                };
+    "ASSOC_InitiatingAccount"                : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                };
+    "ASSOC_Initiator"                        : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_OrganizationalUnit"               : association to OrganizationalUnit {
+                                                                                   OrganizationalUnitID,
+                                                                                   ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                 };
+    "ASSOC_PositionCcyOfMultiCcyContract"    : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                        PositionCurrency,
+                                                                                                        ASSOC_MultiCcyAccnt
+                                                                                                      };
+    "_ClaimPaymentRequestItem"               : association to ClaimPaymentRequest {
+                                                                                    ID,
+                                                                                    ItemNumber,
+                                                                                    _Claim,
+                                                                                    _Subclaim
+                                                                                  };
+    "_Security"                              : association to FinancialInstrument { FinancialInstrumentID };
+    "BusinessCalendar"                       : String(10);
+    "BusinessDayConvention"                  : String(40);
+    "DestinationAccountIdentificationSystem" : String(128);
+    "DestinationBankAccountCurrency"         : String(3);
+    "DestinationBankAccountHolderName"       : String(256);
+    "DestinationBankAccountID"               : String(128);
+    "DestinationBankID"                      : String(128);
+    "DestinationBankIdentificationSystem"    : String(128);
+    "DestinationBankName"                    : String(256);
+    "DestinationCountry"                     : String(2);
+    "DestinationIBAN"                        : String(128);
+    "DestinationSWIFT"                       : String(128);
+    "DirectionOfTransfer"                    : String(50);
+    "FeeBillingMethod"                       : String(20);
+    "LifecycleStatus"                        : String(100);
+    "RecurringTransferOrderEndOfExecution"   : LocalDate;
+    "RecurringTransferOrderPeriodLength"     : Decimal(34, 6);
+    "RecurringTransferOrderPeriodTimeUnit"   : String(12);
+    "TransferAgreementCategory"              : String(50);
+    "TransferAmount"                         : Decimal(34, 6);
+    "TransferAmountCurrency"                 : String(3);
+    "TransferOrderFirstExecutionDate"        : LocalDate;
+    "TransferOrderIsRecurring"               : Boolean;
+    "TransferOrderReceivedDate"              : LocalDate;
+    "TransferOrderType"                      : String(40);
+    "TransferableNominalAmount"              : Decimal(34, 6);
+    "TransferableNominalAmountCurrency"      : String(3);
+    "TransferableQuantity"                   : Decimal(34, 6);
+    "TransferableUnit"                       : String(10);
+    "SourceSystemID"                         : String(128);
+    "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+    "ChangingUserInSourceSystem"             : String(128);
+    "ChangingProcessType"                    : String(40);
+    "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,46 @@
+PROCEDURE "sap.fsdm.procedures::LossObjectErase" (IN ROW "sap.fsdm.tabletypes::LossObjectTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "LossObjectID" is null and
+                         "_PropertyLoss.LossCategory" is null and
+                         "_PropertyLoss._Claim.ID" is null and
+                         "_PropertyLoss._Claim.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::LossObject" WHERE
+("LossObjectID" ,
+"_PropertyLoss.LossCategory" ,
+"_PropertyLoss._Claim.ID" ,
+"_PropertyLoss._Claim.IDSystem" 
+)in ( select "OLD"."LossObjectID" ,
+"OLD"."_PropertyLoss.LossCategory" ,
+"OLD"."_PropertyLoss._Claim.ID" ,
+"OLD"."_PropertyLoss._Claim.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::LossObject" "OLD"
+on
+  ( "IN"."LossObjectID" = "OLD"."LossObjectID" or "IN"."LossObjectID" is null ) and
+  ( "IN"."_PropertyLoss.LossCategory" = "OLD"."_PropertyLoss.LossCategory" or "IN"."_PropertyLoss.LossCategory" is null ) and
+  ( "IN"."_PropertyLoss._Claim.ID" = "OLD"."_PropertyLoss._Claim.ID" or "IN"."_PropertyLoss._Claim.ID" is null ) and
+  ( "IN"."_PropertyLoss._Claim.IDSystem" = "OLD"."_PropertyLoss._Claim.IDSystem" or "IN"."_PropertyLoss._Claim.IDSystem" is null ) 
+);
+
+END

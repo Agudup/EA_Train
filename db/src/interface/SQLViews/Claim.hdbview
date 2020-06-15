@@ -1,0 +1,56 @@
+view "sap.fsdm.SQLViews::Claim_View" 
+as select
+      "ID" ,
+      "IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "AgentReportedDate" ,
+      "EstimatedLossDate" ,
+      "EstimatedLossTime" ,
+      "IncidentType" ,
+      "InsurerReportedDate" ,
+      "LifeCycleStatus" ,
+      "LossDate" ,
+      "LossTime" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Claim"
+with associations
+(
+	join "sap.fsdm.SQLViews::Address_View" as "_Address__Claim"
+	  on "ID" = "_Address__Claim"."_Claim.ID" AND 
+	     "IDSystem" = "_Address__Claim"."_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CaseReserve_View" as "_CaseReserve__Claim"
+	  on "ID" = "_CaseReserve__Claim"."_Claim.ID" AND 
+	     "IDSystem" = "_CaseReserve__Claim"."_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ClaimPaymentRequest_View" as "_ClaimPaymentRequest__Claim"
+	  on "IDSystem" = "_ClaimPaymentRequest__Claim"."_Claim.IDSystem" AND 
+	     "ID" = "_ClaimPaymentRequest__Claim"."_Claim.ID"
+	     ,
+	join "sap.fsdm.SQLViews::Claimant_View" as "_Claimant__Claim"
+	  on "ID" = "_Claimant__Claim"."_Claim.ID" AND 
+	     "IDSystem" = "_Claimant__Claim"."_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Loss_View" as "_Loss__Claim"
+	  on "ID" = "_Loss__Claim"."_Claim.ID" AND 
+	     "IDSystem" = "_Loss__Claim"."_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Subrogation_View" as "_Subrogation__Claim"
+	  on "ID" = "_Subrogation__Claim"."_Claim.ID" AND 
+	     "IDSystem" = "_Subrogation__Claim"."_Claim.IDSystem"
+	     
+);

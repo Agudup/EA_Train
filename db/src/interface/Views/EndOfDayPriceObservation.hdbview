@@ -1,0 +1,38 @@
+view "sap.fsdm.Views::EndOfDayPriceObservation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PriceDataProvider" as "PriceDataProvider",
+      "PriceSeriesType" as "PriceSeriesType",
+      "_Exchange.MarketIdentifierCode" as "_Exchange_MarketIdentifierCode",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AdjustedClosePrice" as "AdjustedClosePrice",
+      "AdjustmentFactor" as "AdjustmentFactor",
+      "Ask" as "Ask",
+      "Bid" as "Bid",
+      "CleanDirtyIndicator" as "CleanDirtyIndicator",
+      "Close" as "Close",
+      "Currency" as "Currency",
+      "EndOfDayPriceObservationCategory" as "EndOfDayPriceObservationCategory",
+      "High" as "High",
+      "Low" as "Low",
+      "NAVperShare" as "NAVperShare",
+      "NumberOfTrades" as "NumberOfTrades",
+      "Open" as "Open",
+      "PriceNotationForm" as "PriceNotationForm",
+      "PriceType" as "PriceType",
+      "TradedNominalAmount" as "TradedNominalAmount",
+      "TradedNominalAmountCurrency" as "TradedNominalAmountCurrency",
+      "Unit" as "Unit",
+      "Volume" as "Volume",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::EndOfDayPriceObservation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,71 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialStandardProduct";
+
+entity "StandardCancellationOption" {
+    key "SequenceNumber"                     : Integer;
+    key "ASSOC_StandardProduct"              : association to FinancialStandardProduct {
+                                                                                         FinancialStandardProductID,
+                                                                                         IDSystem,
+                                                                                         PricingScheme,
+                                                                                         ASSOC_Company
+                                                                                       } not null;
+    key "BusinessValidFrom"                  : LocalDate;
+    key "BusinessValidTo"                    : LocalDate;
+        "SystemValidFrom"                    : UTCTimestamp                              not null;
+        "SystemValidTo"                      : UTCTimestamp                              not null;
+        "BusinessCalendar"                   : String(10);
+        "BusinessDayConvention"              : String(40);
+        "CancellationOptionType"             : String(40);
+        "NoticePeriodLength"                 : Integer;
+        "NoticePeriodTimeUnit"               : String(12);
+        "OpportunityCostCompensation"        : Boolean;
+        "OptionHolder"                       : String(50);
+        "PartialCancellationAllowed"         : Boolean;
+        "PeriodUntilExercisePeriodEnd"       : Decimal(34, 6);
+        "PeriodUntilExercisePeriodStart"     : Decimal(34, 6);
+        "StandardCancellationOptionCategory" : String(40);
+        "TimeUnit"                           : String(12);
+        "SourceSystemID"                     : String(128);
+        "ChangeTimestampInSourceSystem"      : UTCTimestamp;
+        "ChangingUserInSourceSystem"         : String(128);
+        "ChangingProcessType"                : String(40);
+        "ChangingProcessID"                  : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "StandardCancellationOption_Historical" {
+    "SequenceNumber"                     : Integer                                   not null;
+    "ASSOC_StandardProduct"              : association to FinancialStandardProduct {
+                                                                                     FinancialStandardProductID,
+                                                                                     IDSystem,
+                                                                                     PricingScheme,
+                                                                                     ASSOC_Company
+                                                                                   } not null;
+    "BusinessValidFrom"                  : LocalDate                                 not null;
+    "BusinessValidTo"                    : LocalDate                                 not null;
+    "SystemValidFrom"                    : UTCTimestamp                              not null;
+    "SystemValidTo"                      : UTCTimestamp                              not null;
+    "BusinessCalendar"                   : String(10);
+    "BusinessDayConvention"              : String(40);
+    "CancellationOptionType"             : String(40);
+    "NoticePeriodLength"                 : Integer;
+    "NoticePeriodTimeUnit"               : String(12);
+    "OpportunityCostCompensation"        : Boolean;
+    "OptionHolder"                       : String(50);
+    "PartialCancellationAllowed"         : Boolean;
+    "PeriodUntilExercisePeriodEnd"       : Decimal(34, 6);
+    "PeriodUntilExercisePeriodStart"     : Decimal(34, 6);
+    "StandardCancellationOptionCategory" : String(40);
+    "TimeUnit"                           : String(12);
+    "SourceSystemID"                     : String(128);
+    "ChangeTimestampInSourceSystem"      : UTCTimestamp;
+    "ChangingUserInSourceSystem"         : String(128);
+    "ChangingProcessType"                : String(40);
+    "ChangingProcessID"                  : String(128);
+}
+technical configuration {
+    column store;
+};

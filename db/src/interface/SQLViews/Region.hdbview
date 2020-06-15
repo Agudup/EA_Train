@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::Region_View" 
+as select
+      "Region" ,
+      "_ReinsuranceCoverage.CoverageID" ,
+      "_ReinsuranceCoverage.SectionID" ,
+      "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+      "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "DefaultIndicator" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Region"
+with associations
+(
+	join "sap.fsdm.SQLViews::NonProportionalCoverageLimitDeductible_View" as "_NonProportionalCoverageLimitDeductible__Region"
+	  on "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "_NonProportionalCoverageLimitDeductible__Region"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" AND 
+	     "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "_NonProportionalCoverageLimitDeductible__Region"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_ReinsuranceCoverage.SectionID" = "_NonProportionalCoverageLimitDeductible__Region"."_Region._ReinsuranceCoverage.SectionID" AND 
+	     "_ReinsuranceCoverage.CoverageID" = "_NonProportionalCoverageLimitDeductible__Region"."_Region._ReinsuranceCoverage.CoverageID" AND 
+	     "Region" = "_NonProportionalCoverageLimitDeductible__Region"."_Region.Region"
+	     ,
+	join "sap.fsdm.SQLViews::SectionCoverage_View" as "_ReinsuranceCoverage"
+	  on "_ReinsuranceCoverage"."CoverageID" = "_ReinsuranceCoverage.CoverageID" AND 
+	     "_ReinsuranceCoverage"."SectionID" = "_ReinsuranceCoverage.SectionID" AND 
+	     "_ReinsuranceCoverage"."_ReinsuranceContract.FinancialContractID" = "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_ReinsuranceCoverage"."_ReinsuranceContract.IDSystem" = "_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+	     
+);

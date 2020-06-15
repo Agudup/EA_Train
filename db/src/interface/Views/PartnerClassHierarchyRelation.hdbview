@@ -1,0 +1,21 @@
+view "sap.fsdm.Views::PartnerClassHierarchyRelation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PartnerClassHierarchy" as "PartnerClassHierarchy",
+      "ASSOC_Child.PartnerClass" as "ASSOC_Child_PartnerClass",
+      "ASSOC_Child.PartnerClassificationSystem" as "ASSOC_Child_PartnerClassificationSystem",
+      "ASSOC_Parent.PartnerClass" as "ASSOC_Parent_PartnerClass",
+      "ASSOC_Parent.PartnerClassificationSystem" as "ASSOC_Parent_PartnerClassificationSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PartnerClassHierarchyName" as "PartnerClassHierarchyName",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PartnerClassHierarchyRelation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

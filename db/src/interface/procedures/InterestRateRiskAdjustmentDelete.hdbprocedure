@@ -1,0 +1,360 @@
+PROCEDURE "sap.fsdm.procedures::InterestRateRiskAdjustmentDelete" (IN ROW "sap.fsdm.tabletypes::InterestRateRiskAdjustmentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'IRRCalculationMethod=' || TO_VARCHAR("IRRCalculationMethod") || ' ' ||
+                'IndicatorResultBeforeChange=' || TO_VARCHAR("IndicatorResultBeforeChange") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_InvestmentAccount.FinancialContractID=' || TO_VARCHAR("_InvestmentAccount.FinancialContractID") || ' ' ||
+                '_InvestmentAccount.IDSystem=' || TO_VARCHAR("_InvestmentAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."IRRCalculationMethod",
+                        "IN"."IndicatorResultBeforeChange",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."IRRCalculationMethod",
+                        "IN"."IndicatorResultBeforeChange",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "IRRCalculationMethod",
+                        "IndicatorResultBeforeChange",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_InvestmentAccount.FinancialContractID",
+                        "_InvestmentAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."IRRCalculationMethod",
+                                    "IN"."IndicatorResultBeforeChange",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."IRRCalculationMethod",
+                                    "IN"."IndicatorResultBeforeChange",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InterestRateRiskAdjustment" (
+        "IRRCalculationMethod",
+        "IndicatorResultBeforeChange",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "IRRHedgePaymentCurrency",
+        "IRRHedgePositionCurrency",
+        "IRRPaymentCurrency",
+        "IRRPositionCurrency",
+        "IRRiskAdjHedgedInPaymentPositionCurrency",
+        "IRRiskAdjHedgedInPositionCurrency",
+        "IRRiskAdjUnhedgedInPaymentCurrency",
+        "IRRiskAdjUnhedgedInPositionCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IRRCalculationMethod" as "IRRCalculationMethod" ,
+            "OLD_IndicatorResultBeforeChange" as "IndicatorResultBeforeChange" ,
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID" ,
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_IRRHedgePaymentCurrency" as "IRRHedgePaymentCurrency" ,
+            "OLD_IRRHedgePositionCurrency" as "IRRHedgePositionCurrency" ,
+            "OLD_IRRPaymentCurrency" as "IRRPaymentCurrency" ,
+            "OLD_IRRPositionCurrency" as "IRRPositionCurrency" ,
+            "OLD_IRRiskAdjHedgedInPaymentPositionCurrency" as "IRRiskAdjHedgedInPaymentPositionCurrency" ,
+            "OLD_IRRiskAdjHedgedInPositionCurrency" as "IRRiskAdjHedgedInPositionCurrency" ,
+            "OLD_IRRiskAdjUnhedgedInPaymentCurrency" as "IRRiskAdjUnhedgedInPaymentCurrency" ,
+            "OLD_IRRiskAdjUnhedgedInPositionCurrency" as "IRRiskAdjUnhedgedInPositionCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."IRRCalculationMethod",
+                        "OLD"."IndicatorResultBeforeChange",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."IRRCalculationMethod" as "OLD_IRRCalculationMethod",
+                "OLD"."IndicatorResultBeforeChange" as "OLD_IndicatorResultBeforeChange",
+                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."IRRHedgePaymentCurrency" as "OLD_IRRHedgePaymentCurrency",
+                "OLD"."IRRHedgePositionCurrency" as "OLD_IRRHedgePositionCurrency",
+                "OLD"."IRRPaymentCurrency" as "OLD_IRRPaymentCurrency",
+                "OLD"."IRRPositionCurrency" as "OLD_IRRPositionCurrency",
+                "OLD"."IRRiskAdjHedgedInPaymentPositionCurrency" as "OLD_IRRiskAdjHedgedInPaymentPositionCurrency",
+                "OLD"."IRRiskAdjHedgedInPositionCurrency" as "OLD_IRRiskAdjHedgedInPositionCurrency",
+                "OLD"."IRRiskAdjUnhedgedInPaymentCurrency" as "OLD_IRRiskAdjUnhedgedInPaymentCurrency",
+                "OLD"."IRRiskAdjUnhedgedInPositionCurrency" as "OLD_IRRiskAdjUnhedgedInPositionCurrency",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InterestRateRiskAdjustment" as "OLD"
+            on
+                      ( "IN"."IRRCalculationMethod" = "OLD"."IRRCalculationMethod" or "IN"."IRRCalculationMethod" is null ) and
+                      ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                      ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                      ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                      ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                      ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InterestRateRiskAdjustment" (
+        "IRRCalculationMethod",
+        "IndicatorResultBeforeChange",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "IRRHedgePaymentCurrency",
+        "IRRHedgePositionCurrency",
+        "IRRPaymentCurrency",
+        "IRRPositionCurrency",
+        "IRRiskAdjHedgedInPaymentPositionCurrency",
+        "IRRiskAdjHedgedInPositionCurrency",
+        "IRRiskAdjUnhedgedInPaymentCurrency",
+        "IRRiskAdjUnhedgedInPositionCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IRRCalculationMethod" as "IRRCalculationMethod",
+            "OLD_IndicatorResultBeforeChange" as "IndicatorResultBeforeChange",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID",
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_IRRHedgePaymentCurrency" as "IRRHedgePaymentCurrency",
+            "OLD_IRRHedgePositionCurrency" as "IRRHedgePositionCurrency",
+            "OLD_IRRPaymentCurrency" as "IRRPaymentCurrency",
+            "OLD_IRRPositionCurrency" as "IRRPositionCurrency",
+            "OLD_IRRiskAdjHedgedInPaymentPositionCurrency" as "IRRiskAdjHedgedInPaymentPositionCurrency",
+            "OLD_IRRiskAdjHedgedInPositionCurrency" as "IRRiskAdjHedgedInPositionCurrency",
+            "OLD_IRRiskAdjUnhedgedInPaymentCurrency" as "IRRiskAdjUnhedgedInPaymentCurrency",
+            "OLD_IRRiskAdjUnhedgedInPositionCurrency" as "IRRiskAdjUnhedgedInPositionCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."IRRCalculationMethod",
+                        "OLD"."IndicatorResultBeforeChange",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."IRRCalculationMethod" as "OLD_IRRCalculationMethod",
+                "OLD"."IndicatorResultBeforeChange" as "OLD_IndicatorResultBeforeChange",
+                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."IRRHedgePaymentCurrency" as "OLD_IRRHedgePaymentCurrency",
+                "OLD"."IRRHedgePositionCurrency" as "OLD_IRRHedgePositionCurrency",
+                "OLD"."IRRPaymentCurrency" as "OLD_IRRPaymentCurrency",
+                "OLD"."IRRPositionCurrency" as "OLD_IRRPositionCurrency",
+                "OLD"."IRRiskAdjHedgedInPaymentPositionCurrency" as "OLD_IRRiskAdjHedgedInPaymentPositionCurrency",
+                "OLD"."IRRiskAdjHedgedInPositionCurrency" as "OLD_IRRiskAdjHedgedInPositionCurrency",
+                "OLD"."IRRiskAdjUnhedgedInPaymentCurrency" as "OLD_IRRiskAdjUnhedgedInPaymentCurrency",
+                "OLD"."IRRiskAdjUnhedgedInPositionCurrency" as "OLD_IRRiskAdjUnhedgedInPositionCurrency",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InterestRateRiskAdjustment" as "OLD"
+            on
+                                                ( "IN"."IRRCalculationMethod" = "OLD"."IRRCalculationMethod" or "IN"."IRRCalculationMethod" is null ) and
+                                                ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                                                ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                                                ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                                ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                                                ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InterestRateRiskAdjustment"
+    where (
+        "IRRCalculationMethod",
+        "IndicatorResultBeforeChange",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."IRRCalculationMethod",
+            "OLD"."IndicatorResultBeforeChange",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_InvestmentAccount.FinancialContractID",
+            "OLD"."_InvestmentAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InterestRateRiskAdjustment" as "OLD"
+        on
+                                       ( "IN"."IRRCalculationMethod" = "OLD"."IRRCalculationMethod" or "IN"."IRRCalculationMethod" is null ) and
+                                       ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                                       ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                                       ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                       ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                                       ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

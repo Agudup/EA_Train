@@ -1,0 +1,91 @@
+view "sap.fsdm.SQLViews::CommunicationEvent_View" 
+as select
+      "CommunicationEventID" ,
+      "IDSystem" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_BusinessEventDataOwner.BusinessPartnerID" ,
+      "ASSOC_CompanyEmployeeHandlingTheEvent.BusinessPartnerID" ,
+      "ASSOC_EarlyWarningForPartner.BusinessPartnerID" ,
+      "ASSOC_EmployeeResponsibleForEarlyWarning.BusinessPartnerID" ,
+      "ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ASSOC_ReferencedFinancialContract.FinancialContractID" ,
+      "ASSOC_ReferencedFinancialContract.IDSystem" ,
+      "ASSOC_Sender.BusinessPartnerID" ,
+      "AdditionalRequestedTermLength" ,
+      "AdditionalRequestedTermLengthUnit" ,
+      "AnnouncedPrepaymentAmount" ,
+      "AnnouncedPrepaymentDate" ,
+      "CancelledAmount" ,
+      "CancelledAmountCurrency" ,
+      "CommunicationEventCategory" ,
+      "CustomerCommunicationEventType" ,
+      "DateOfReceipt" ,
+      "EarlyWarningEventCategory" ,
+      "EarlyWarningEventType" ,
+      "EventAmount" ,
+      "EventComment" ,
+      "EventCurrency" ,
+      "FinancialCriterion" ,
+      "FinancialCriterionValue" ,
+      "InitiatedByCustomer" ,
+      "ManuallyCreatedEarlyWarning" ,
+      "NonnumericalCriterionValue" ,
+      "Note" ,
+      "PartialCancellation" ,
+      "RequestedCancellationDate" ,
+      "TradeFinanceEventType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CommunicationEvent"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClassificationOfCommunicationEvent_View" as "_ClassificationOfCommunicationEvent_ASSOC_CommunicationEvent"
+	  on "CommunicationEventID" = "_ClassificationOfCommunicationEvent_ASSOC_CommunicationEvent"."ASSOC_CommunicationEvent.CommunicationEventID" AND 
+	     "IDSystem" = "_ClassificationOfCommunicationEvent_ASSOC_CommunicationEvent"."ASSOC_CommunicationEvent.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessEventDataOwner"
+	  on "ASSOC_BusinessEventDataOwner"."BusinessPartnerID" = "ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_CompanyEmployeeHandlingTheEvent"
+	  on "ASSOC_CompanyEmployeeHandlingTheEvent"."BusinessPartnerID" = "ASSOC_CompanyEmployeeHandlingTheEvent.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_EarlyWarningForPartner"
+	  on "ASSOC_EarlyWarningForPartner"."BusinessPartnerID" = "ASSOC_EarlyWarningForPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_EmployeeResponsibleForEarlyWarning"
+	  on "ASSOC_EmployeeResponsibleForEarlyWarning"."BusinessPartnerID" = "ASSOC_EmployeeResponsibleForEarlyWarning.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit"."OrganizationalUnitID" = "ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_ReferencedFinancialContract"
+	  on "ASSOC_ReferencedFinancialContract"."FinancialContractID" = "ASSOC_ReferencedFinancialContract.FinancialContractID" AND 
+	     "ASSOC_ReferencedFinancialContract"."IDSystem" = "ASSOC_ReferencedFinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Sender"
+	  on "ASSOC_Sender"."BusinessPartnerID" = "ASSOC_Sender.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEventStatus_View" as "_CommunicationEventStatus_ASSOC_CommunicationEvent"
+	  on "CommunicationEventID" = "_CommunicationEventStatus_ASSOC_CommunicationEvent"."ASSOC_CommunicationEvent.CommunicationEventID" AND 
+	     "IDSystem" = "_CommunicationEventStatus_ASSOC_CommunicationEvent"."ASSOC_CommunicationEvent.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ContractMentionedInCustomerIncident_View" as "_ContractMentionedInCustomerIncident_ASSOC_CustomerIncident"
+	  on "CommunicationEventID" = "_ContractMentionedInCustomerIncident_ASSOC_CustomerIncident"."ASSOC_CustomerIncident.CommunicationEventID" AND 
+	     "IDSystem" = "_ContractMentionedInCustomerIncident_ASSOC_CustomerIncident"."ASSOC_CustomerIncident.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Document_View" as "_Document_ASSOC_CommunicationEvent"
+	  on "CommunicationEventID" = "_Document_ASSOC_CommunicationEvent"."ASSOC_CommunicationEvent.CommunicationEventID" AND 
+	     "IDSystem" = "_Document_ASSOC_CommunicationEvent"."ASSOC_CommunicationEvent.IDSystem"
+	     
+);

@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::CommodityIntradayTradingObservation_View" 
+as select
+      "PriceDataProvider" ,
+      "PriceSeriesType" ,
+      "SequenceNumber" ,
+      "Timestamp" ,
+      "_Commodity.CommodityID" ,
+      "_Exchange.MarketIdentifierCode" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_CommodityReferencePrice.ReferencePriceID" ,
+      "Currency" ,
+      "Price" ,
+      "PriceNotationForm" ,
+      "Quantity" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CommodityIntradayTradingObservation"
+with associations
+(
+	join "sap.fsdm.SQLViews::Commodity_View" as "_Commodity"
+	  on "_Commodity"."CommodityID" = "_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::CommodityReferencePrice_View" as "_CommodityReferencePrice"
+	  on "_CommodityReferencePrice"."ReferencePriceID" = "_CommodityReferencePrice.ReferencePriceID"
+	     ,
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     
+);

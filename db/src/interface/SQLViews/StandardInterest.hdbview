@@ -1,0 +1,115 @@
+view "sap.fsdm.SQLViews::StandardInterest_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+      "ASSOC_StandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardProduct.IDSystem" ,
+      "ASSOC_StandardProduct.PricingScheme" ,
+      "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_ReferenceRate.ReferenceRateID" ,
+      "BusinessDayConvention" ,
+      "CompoundingConvention" ,
+      "CutoffRelativeToDate" ,
+      "DayCountConvention" ,
+      "DayOfMonthOfReset" ,
+      "DueScheduleBusinessCalendar" ,
+      "DueScheduleBusinessDayConvention" ,
+      "DueSchedulePeriodLength" ,
+      "DueSchedulePeriodTimeUnit" ,
+      "FixedRate" ,
+      "InterestBusinessCalendar" ,
+      "InterestCurrency" ,
+      "InterestInAdvance" ,
+      "InterestIsCompounded" ,
+      "InterestPaymentPrecision" ,
+      "InterestPaymentRoundingMethod" ,
+      "InterestPeriodLength" ,
+      "InterestPeriodTimeUnit" ,
+      "PeriodEndDayOfMonth" ,
+      "PeriodEndDueDateLag" ,
+      "PeriodEndDueDateLagTimeUnit" ,
+      "PeriodUntilFirstDueDate" ,
+      "PeriodUntilFirstInterestPeriodStart" ,
+      "PeriodUntilLastInterestPeriodEnd" ,
+      "PeriodUntilTimeUnit" ,
+      "PreconditionApplies" ,
+      "ReferenceRateFactor" ,
+      "ReferenceRateFormula" ,
+      "RelativeToInterestPeriodStartOrEnd" ,
+      "ResetBusinessCalendar" ,
+      "ResetBusinessDayConvention" ,
+      "ResetCutoffLength" ,
+      "ResetCutoffTimeUnit" ,
+      "ResetInArrears" ,
+      "ResetLagLength" ,
+      "ResetLagTimeUnit" ,
+      "ResetPeriodLength" ,
+      "ResetPeriodTimeUnit" ,
+      "ResetPrecision" ,
+      "ResetRounding" ,
+      "RoleOfPayer" ,
+      "ScaleApplies" ,
+      "Spread" ,
+      "StandardFixingRateSpecificationCategory" ,
+      "StandardInterestSpecificationCategory" ,
+      "StandardInterestType" ,
+      "VariableRateMax" ,
+      "VariableRateMin" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardInterest"
+with associations
+(
+	join "sap.fsdm.SQLViews::ScaleInterval_View" as "_ScaleInterval_ASSOC_StandardInterest"
+	  on "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" AND 
+	     "ASSOC_PosCcyOfStdAcc.PositionCurrency" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" AND 
+	     "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardProduct.FinancialStandardProductID" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardProduct.IDSystem" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardProduct.PricingScheme" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" AND 
+	     "SequenceNumber" = "_ScaleInterval_ASSOC_StandardInterest"."ASSOC_StandardInterest.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::SetOfPreconditions_View" as "_SetOfPreconditions_ASSOC_StdIntrst"
+	  on "SequenceNumber" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.SequenceNumber" AND 
+	     "ASSOC_StandardProduct.PricingScheme" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_StandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardProduct.IDSystem" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardProduct.FinancialStandardProductID" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_PosCcyOfStdAcc.PositionCurrency" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.PositionCurrency" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "_SetOfPreconditions_ASSOC_StdIntrst"."ASSOC_StdIntrst.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCcyStandardProduct_View" as "ASSOC_PosCcyOfStdAcc"
+	  on "ASSOC_PosCcyOfStdAcc"."PositionCurrency" = "ASSOC_PosCcyOfStdAcc.PositionCurrency" AND 
+	     "ASSOC_PosCcyOfStdAcc"."ASSOC_StdMultiCcyAcct.PricingScheme" = "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" AND 
+	     "ASSOC_PosCcyOfStdAcc"."ASSOC_StdMultiCcyAcct.IDSystem" = "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_PosCcyOfStdAcc"."ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_PosCcyOfStdAcc"."ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ReferenceRate_View" as "ASSOC_ReferenceRate"
+	  on "ASSOC_ReferenceRate"."ReferenceRateID" = "ASSOC_ReferenceRate.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "ASSOC_StandardProduct"
+	  on "ASSOC_StandardProduct"."ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardProduct"."FinancialStandardProductID" = "ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardProduct"."IDSystem" = "ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardProduct"."PricingScheme" = "ASSOC_StandardProduct.PricingScheme"
+	     
+);

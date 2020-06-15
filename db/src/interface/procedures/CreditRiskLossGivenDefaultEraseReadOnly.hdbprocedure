@@ -1,0 +1,169 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskLossGivenDefaultEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::CreditRiskLossGivenDefaultTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::CreditRiskLossGivenDefaultTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::CreditRiskLossGivenDefaultTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "LGDEstimationMethod" is null and
+                         "LGDTimeHorizon" is null and
+                         "LGDTimeHorizonTimeUnit" is null and
+                         "RiskProvisionScenario" is null and
+                         "ASSOC_CollateralPortion.PortionNumber" is null and
+                         "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null and
+                         "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "_CombinedCollateralAgreement.FinancialContractID" is null and
+                         "_CombinedCollateralAgreement.IDSystem" is null and
+                         "_FinancialContractUsedAsCollateral.FinancialContractID" is null and
+                         "_FinancialContractUsedAsCollateral.IDSystem" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null and
+                         "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" is null and
+                         "_PhysicalAssetUsedAsCollateral.PhysicalAssetID" is null and
+                         "_ReceivableUsedAsCollateral.ReceivableID" is null and
+                         "_SimpleCollateralAgreement.FinancialContractID" is null and
+                         "_SimpleCollateralAgreement.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"LGDEstimationMethod",
+"LGDTimeHorizon",
+"LGDTimeHorizonTimeUnit",
+"RiskProvisionScenario",
+"ASSOC_CollateralPortion.PortionNumber",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+"ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContract.IDSystem",
+"_CombinedCollateralAgreement.FinancialContractID",
+"_CombinedCollateralAgreement.IDSystem",
+"_FinancialContractUsedAsCollateral.FinancialContractID",
+"_FinancialContractUsedAsCollateral.IDSystem",
+"_FinancialInstrument.FinancialInstrumentID",
+"_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+"_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+"_ReceivableUsedAsCollateral.ReceivableID",
+"_SimpleCollateralAgreement.FinancialContractID",
+"_SimpleCollateralAgreement.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::CreditRiskLossGivenDefault" WHERE("LGDEstimationMethod" ,
+"LGDTimeHorizon" ,
+"LGDTimeHorizonTimeUnit" ,
+"RiskProvisionScenario" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_CombinedCollateralAgreement.FinancialContractID" ,
+"_CombinedCollateralAgreement.IDSystem" ,
+"_FinancialContractUsedAsCollateral.FinancialContractID" ,
+"_FinancialContractUsedAsCollateral.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" ,
+"_PhysicalAssetUsedAsCollateral.PhysicalAssetID" ,
+"_ReceivableUsedAsCollateral.ReceivableID" ,
+"_SimpleCollateralAgreement.FinancialContractID" ,
+"_SimpleCollateralAgreement.IDSystem" 
+)in ( select "LGDEstimationMethod" ,
+"LGDTimeHorizon" ,
+"LGDTimeHorizonTimeUnit" ,
+"RiskProvisionScenario" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_CombinedCollateralAgreement.FinancialContractID" ,
+"_CombinedCollateralAgreement.IDSystem" ,
+"_FinancialContractUsedAsCollateral.FinancialContractID" ,
+"_FinancialContractUsedAsCollateral.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" ,
+"_PhysicalAssetUsedAsCollateral.PhysicalAssetID" ,
+"_ReceivableUsedAsCollateral.ReceivableID" ,
+"_SimpleCollateralAgreement.FinancialContractID" ,
+"_SimpleCollateralAgreement.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"LGDEstimationMethod",
+"LGDTimeHorizon",
+"LGDTimeHorizonTimeUnit",
+"RiskProvisionScenario",
+"ASSOC_CollateralPortion.PortionNumber",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+"ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContract.IDSystem",
+"_CombinedCollateralAgreement.FinancialContractID",
+"_CombinedCollateralAgreement.IDSystem",
+"_FinancialContractUsedAsCollateral.FinancialContractID",
+"_FinancialContractUsedAsCollateral.IDSystem",
+"_FinancialInstrument.FinancialInstrumentID",
+"_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+"_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+"_ReceivableUsedAsCollateral.ReceivableID",
+"_SimpleCollateralAgreement.FinancialContractID",
+"_SimpleCollateralAgreement.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::CreditRiskLossGivenDefault_Historical" WHERE("LGDEstimationMethod" ,
+"LGDTimeHorizon" ,
+"LGDTimeHorizonTimeUnit" ,
+"RiskProvisionScenario" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_CombinedCollateralAgreement.FinancialContractID" ,
+"_CombinedCollateralAgreement.IDSystem" ,
+"_FinancialContractUsedAsCollateral.FinancialContractID" ,
+"_FinancialContractUsedAsCollateral.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" ,
+"_PhysicalAssetUsedAsCollateral.PhysicalAssetID" ,
+"_ReceivableUsedAsCollateral.ReceivableID" ,
+"_SimpleCollateralAgreement.FinancialContractID" ,
+"_SimpleCollateralAgreement.IDSystem" 
+)in ( select "LGDEstimationMethod" ,
+"LGDTimeHorizon" ,
+"LGDTimeHorizonTimeUnit" ,
+"RiskProvisionScenario" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_CombinedCollateralAgreement.FinancialContractID" ,
+"_CombinedCollateralAgreement.IDSystem" ,
+"_FinancialContractUsedAsCollateral.FinancialContractID" ,
+"_FinancialContractUsedAsCollateral.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" ,
+"_PhysicalAssetUsedAsCollateral.PhysicalAssetID" ,
+"_ReceivableUsedAsCollateral.ReceivableID" ,
+"_SimpleCollateralAgreement.FinancialContractID" ,
+"_SimpleCollateralAgreement.IDSystem" 
+from :ROW );
+
+END

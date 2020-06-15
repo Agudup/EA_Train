@@ -1,0 +1,56 @@
+PROCEDURE "sap.fsdm.procedures::StatusOfAgeReadOnly" (IN ROW "sap.fsdm.tabletypes::StatusOfAgeTT" , OUT CURR_DEL "sap.fsdm.tabletypes::StatusOfAgeTT_Out", OUT CURR_INS "sap.fsdm.tabletypes::StatusOfAgeTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"Country",
+"Status",
+"AgeInDays",
+"AgeInMonths",
+"AgeInYears",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from "sap.fsdm::StatusOfAge" WHERE("Country" ,
+"Status" 
+)in ( select "Country" ,
+"Status" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+CURR_INS = select 
+"Country",
+"Status",
+"AgeInDays",
+"AgeInMonths",
+"AgeInYears",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from( select 
+   "Country"  ,
+  "Status"  ,
+  "AgeInDays"  ,
+  "AgeInMonths"  ,
+  "AgeInYears"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

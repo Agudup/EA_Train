@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::InsuredDriverErase" (IN ROW "sap.fsdm.tabletypes::InsuredDriverTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_IndividualPerson.BusinessPartnerID" is null and
+                         "_InsuredVehicle._FinancialContract.FinancialContractID" is null and
+                         "_InsuredVehicle._FinancialContract.IDSystem" is null and
+                         "_InsuredVehicle._PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::InsuredDriver" WHERE
+("_IndividualPerson.BusinessPartnerID" ,
+"_InsuredVehicle._FinancialContract.FinancialContractID" ,
+"_InsuredVehicle._FinancialContract.IDSystem" ,
+"_InsuredVehicle._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."_IndividualPerson.BusinessPartnerID" ,
+"OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" ,
+"OLD"."_InsuredVehicle._FinancialContract.IDSystem" ,
+"OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::InsuredDriver" "OLD"
+on
+  ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) and
+  ( "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" = "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" or "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuredVehicle._FinancialContract.IDSystem" = "OLD"."_InsuredVehicle._FinancialContract.IDSystem" or "IN"."_InsuredVehicle._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::InsuredDriver_Historical" WHERE
+("_IndividualPerson.BusinessPartnerID" ,
+"_InsuredVehicle._FinancialContract.FinancialContractID" ,
+"_InsuredVehicle._FinancialContract.IDSystem" ,
+"_InsuredVehicle._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."_IndividualPerson.BusinessPartnerID" ,
+"OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" ,
+"OLD"."_InsuredVehicle._FinancialContract.IDSystem" ,
+"OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::InsuredDriver_Historical" "OLD"
+on
+  ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) and
+  ( "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" = "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" or "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuredVehicle._FinancialContract.IDSystem" = "OLD"."_InsuredVehicle._FinancialContract.IDSystem" or "IN"."_InsuredVehicle._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

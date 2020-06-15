@@ -1,0 +1,74 @@
+PROCEDURE "sap.fsdm.procedures::InvestmentFundShareProvidedToPolicyholderByFundRangeUpdate" (IN ROW "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+--Update the existing records 
+
+  --select data matching in current table
+  var_matching = 
+  select    "IN"."_FundRange.ID"  ,
+    "OLD"."_FundRange.ID" AS "OLD__FundRange.ID" ,
+    "IN"."_FundRange.IDSystem"  ,
+    "OLD"."_FundRange.IDSystem" AS "OLD__FundRange.IDSystem" ,
+    "IN"."_InvestmentFundShare.FinancialInstrumentID"  ,
+    "OLD"."_InvestmentFundShare.FinancialInstrumentID" AS "OLD__InvestmentFundShare.FinancialInstrumentID" ,
+    "IN"."SourceSystemID"  ,
+    "OLD"."SourceSystemID" AS "OLD_SourceSystemID" ,
+    "IN"."ChangeTimestampInSourceSystem"  ,
+    "OLD"."ChangeTimestampInSourceSystem" AS "OLD_ChangeTimestampInSourceSystem" ,
+    "IN"."ChangingUserInSourceSystem"  ,
+    "OLD"."ChangingUserInSourceSystem" AS "OLD_ChangingUserInSourceSystem" ,
+    "IN"."ChangingProcessType"  ,
+    "OLD"."ChangingProcessType" AS "OLD_ChangingProcessType" ,
+    "IN"."ChangingProcessID"  ,
+    "OLD"."ChangingProcessID" AS "OLD_ChangingProcessID" 
+  
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::InvestmentFundShareProvidedToPolicyholderByFundRange" AS "OLD"
+  ON
+  "IN"."_FundRange.ID" = "OLD"."_FundRange.ID" and
+  "IN"."_FundRange.IDSystem" = "OLD"."_FundRange.IDSystem" and
+  "IN"."_InvestmentFundShare.FinancialInstrumentID" = "OLD"."_InvestmentFundShare.FinancialInstrumentID" 
+;
+
+
+
+
+--Delete entries for update from current table
+delete from "sap.fsdm::InvestmentFundShareProvidedToPolicyholderByFundRange" WHERE("_FundRange.ID" ,
+"_FundRange.IDSystem" ,
+"_InvestmentFundShare.FinancialInstrumentID" 
+)in ( select "OLD__FundRange.ID" AS "_FundRange.ID" ,
+"OLD__FundRange.IDSystem" AS "_FundRange.IDSystem" ,
+"OLD__InvestmentFundShare.FinancialInstrumentID" AS "_InvestmentFundShare.FinancialInstrumentID" 
+from :var_matching );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::InvestmentFundShareProvidedToPolicyholderByFundRange"  (
+"_FundRange.ID",
+"_FundRange.IDSystem",
+"_InvestmentFundShare.FinancialInstrumentID",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "_FundRange.ID"  ,
+  "_FundRange.IDSystem"  ,
+  "_InvestmentFundShare.FinancialInstrumentID"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :var_matching );
+
+
+
+END

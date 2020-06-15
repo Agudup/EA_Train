@@ -1,0 +1,86 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "CardIssue" {
+    key "CardIssueID"                   : String(20);
+    key "ASSOC_CardAgreement"           : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                    not null;
+    key "_BankAccount"                  : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                    not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                          not null;
+        "SystemValidTo"                 : UTCTimestamp                                          not null;
+        "ASSOC_CardHolder"              : association to BusinessPartner { BusinessPartnerID };
+        "ApplicationDate"               : LocalDate;
+        "ApprovalDate"                  : LocalDate;
+        "BusinessNameOnCard"            : String(256);
+        "CardBIN"                       : String(10);
+        "CardStatus"                    : String(100);
+        "CommonDesignID"                : String(128);
+        "EmbossedName"                  : String(256);
+        "HasChip"                       : Boolean;
+        "HasMagneticStrip"              : Boolean;
+        "HasPIN"                        : Boolean;
+        "HasPhoto"                      : Boolean;
+        "IndividualDesignID"            : String(128);
+        "IsMainCard"                    : Boolean;
+        "IsNFCenabled"                  : Boolean;
+        "IssueDate"                     : LocalDate;
+        "PhotoReferenceID"              : String(128);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CardIssue_Historical" {
+    "CardIssueID"                   : String(20)                                            not null;
+    "ASSOC_CardAgreement"           : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                    not null;
+    "_BankAccount"                  : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                    not null;
+    "BusinessValidFrom"             : LocalDate                                             not null;
+    "BusinessValidTo"               : LocalDate                                             not null;
+    "SystemValidFrom"               : UTCTimestamp                                          not null;
+    "SystemValidTo"                 : UTCTimestamp                                          not null;
+    "ASSOC_CardHolder"              : association to BusinessPartner { BusinessPartnerID };
+    "ApplicationDate"               : LocalDate;
+    "ApprovalDate"                  : LocalDate;
+    "BusinessNameOnCard"            : String(256);
+    "CardBIN"                       : String(10);
+    "CardStatus"                    : String(100);
+    "CommonDesignID"                : String(128);
+    "EmbossedName"                  : String(256);
+    "HasChip"                       : Boolean;
+    "HasMagneticStrip"              : Boolean;
+    "HasPIN"                        : Boolean;
+    "HasPhoto"                      : Boolean;
+    "IndividualDesignID"            : String(128);
+    "IsMainCard"                    : Boolean;
+    "IsNFCenabled"                  : Boolean;
+    "IssueDate"                     : LocalDate;
+    "PhotoReferenceID"              : String(128);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

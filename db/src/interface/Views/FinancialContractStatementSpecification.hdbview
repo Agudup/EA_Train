@@ -1,0 +1,20 @@
+view "sap.fsdm.Views::FinancialContractStatementSpecification_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "StatementDayInMonth" as "StatementDayInMonth",
+      "StatementDispatchMode" as "StatementDispatchMode",
+      "StatementFrequency" as "StatementFrequency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::FinancialContractStatementSpecification"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

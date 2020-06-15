@@ -1,0 +1,23 @@
+view "sap.fsdm.Views::EuropeanRegulatoryReportingForBusinessPartner_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_BusinessPartner.BusinessPartnerID" as "_BusinessPartner_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "InternationalOrganizationCode" as "InternationalOrganizationCode",
+      "LegalFormCode" as "LegalFormCode",
+      "NationalIdentifier" as "NationalIdentifier",
+      "NationalIdentifierType" as "NationalIdentifierType",
+      "PublicSectorEntityTreatedAsCentralGovernment" as "PublicSectorEntityTreatedAsCentralGovernment",
+      "PublicSectorEntityTreatedAsRegionalGovernmentOrLocalAuthority" as "PublicSectorEntityTreatedAsRegionalGovernmentOrLocalAuthority",
+      "RegionalGovernmentOrLocalAuthorityTreatedAsCentralGovernment" as "RegionalGovernmentOrLocalAuthorityTreatedAsCentralGovernment",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::EuropeanRegulatoryReportingForBusinessPartner"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

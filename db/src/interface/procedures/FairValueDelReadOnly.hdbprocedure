@@ -1,0 +1,378 @@
+PROCEDURE "sap.fsdm.procedures::FairValueDelReadOnly" (IN ROW "sap.fsdm.tabletypes::FairValueTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::FairValueTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::FairValueTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'FVCalculationMethod=' || TO_VARCHAR("FVCalculationMethod") || ' ' ||
+                'IndicatorResultBeforeChange=' || TO_VARCHAR("IndicatorResultBeforeChange") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_InvestmentAccount.FinancialContractID=' || TO_VARCHAR("_InvestmentAccount.FinancialContractID") || ' ' ||
+                '_InvestmentAccount.IDSystem=' || TO_VARCHAR("_InvestmentAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."FVCalculationMethod",
+                        "IN"."IndicatorResultBeforeChange",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."FVCalculationMethod",
+                        "IN"."IndicatorResultBeforeChange",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "FVCalculationMethod",
+                        "IndicatorResultBeforeChange",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_InvestmentAccount.FinancialContractID",
+                        "_InvestmentAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."FVCalculationMethod",
+                                    "IN"."IndicatorResultBeforeChange",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."FVCalculationMethod",
+                                    "IN"."IndicatorResultBeforeChange",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "FVCalculationMethod",
+            "IndicatorResultBeforeChange",
+            "_AccountingSystem.AccountingSystemID",
+            "_FinancialContract.FinancialContractID",
+            "_FinancialContract.IDSystem",
+            "_FinancialInstrument.FinancialInstrumentID",
+            "_InvestmentAccount.FinancialContractID",
+            "_InvestmentAccount.IDSystem",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::FairValue" WHERE
+            (
+            "FVCalculationMethod" ,
+            "IndicatorResultBeforeChange" ,
+            "_AccountingSystem.AccountingSystemID" ,
+            "_FinancialContract.FinancialContractID" ,
+            "_FinancialContract.IDSystem" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "_InvestmentAccount.FinancialContractID" ,
+            "_InvestmentAccount.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."FVCalculationMethod",
+            "OLD"."IndicatorResultBeforeChange",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_InvestmentAccount.FinancialContractID",
+            "OLD"."_InvestmentAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FairValue" as "OLD"
+        on
+                              ( "IN"."FVCalculationMethod" = "OLD"."FVCalculationMethod" or "IN"."FVCalculationMethod" is null ) and
+                              ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                              ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                              ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                              ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                              ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "FVCalculationMethod",
+        "IndicatorResultBeforeChange",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FairValueInFunctionalCurrency",
+        "FairValueInGroupCurrency",
+        "FairValueInHardCurrency",
+        "FairValueInIndexlCurrency",
+        "FairValueInLocalCurrency",
+        "FairValueInPaymentCurrency",
+        "FairValueInPositionCurrency",
+        "FunctionalCurrency",
+        "GroupCurrency",
+        "HardCurrency",
+        "IndexCurrency",
+        "LocalCurrency",
+        "PaymentCurrency",
+        "PositionCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_FVCalculationMethod" as "FVCalculationMethod" ,
+            "OLD_IndicatorResultBeforeChange" as "IndicatorResultBeforeChange" ,
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID" ,
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_FairValueInFunctionalCurrency" as "FairValueInFunctionalCurrency" ,
+            "OLD_FairValueInGroupCurrency" as "FairValueInGroupCurrency" ,
+            "OLD_FairValueInHardCurrency" as "FairValueInHardCurrency" ,
+            "OLD_FairValueInIndexlCurrency" as "FairValueInIndexlCurrency" ,
+            "OLD_FairValueInLocalCurrency" as "FairValueInLocalCurrency" ,
+            "OLD_FairValueInPaymentCurrency" as "FairValueInPaymentCurrency" ,
+            "OLD_FairValueInPositionCurrency" as "FairValueInPositionCurrency" ,
+            "OLD_FunctionalCurrency" as "FunctionalCurrency" ,
+            "OLD_GroupCurrency" as "GroupCurrency" ,
+            "OLD_HardCurrency" as "HardCurrency" ,
+            "OLD_IndexCurrency" as "IndexCurrency" ,
+            "OLD_LocalCurrency" as "LocalCurrency" ,
+            "OLD_PaymentCurrency" as "PaymentCurrency" ,
+            "OLD_PositionCurrency" as "PositionCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."FVCalculationMethod",
+                        "OLD"."IndicatorResultBeforeChange",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."FVCalculationMethod" as "OLD_FVCalculationMethod",
+                                "OLD"."IndicatorResultBeforeChange" as "OLD_IndicatorResultBeforeChange",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."FairValueInFunctionalCurrency" as "OLD_FairValueInFunctionalCurrency",
+                                "OLD"."FairValueInGroupCurrency" as "OLD_FairValueInGroupCurrency",
+                                "OLD"."FairValueInHardCurrency" as "OLD_FairValueInHardCurrency",
+                                "OLD"."FairValueInIndexlCurrency" as "OLD_FairValueInIndexlCurrency",
+                                "OLD"."FairValueInLocalCurrency" as "OLD_FairValueInLocalCurrency",
+                                "OLD"."FairValueInPaymentCurrency" as "OLD_FairValueInPaymentCurrency",
+                                "OLD"."FairValueInPositionCurrency" as "OLD_FairValueInPositionCurrency",
+                                "OLD"."FunctionalCurrency" as "OLD_FunctionalCurrency",
+                                "OLD"."GroupCurrency" as "OLD_GroupCurrency",
+                                "OLD"."HardCurrency" as "OLD_HardCurrency",
+                                "OLD"."IndexCurrency" as "OLD_IndexCurrency",
+                                "OLD"."LocalCurrency" as "OLD_LocalCurrency",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FairValue" as "OLD"
+            on
+                                      ( "IN"."FVCalculationMethod" = "OLD"."FVCalculationMethod" or "IN"."FVCalculationMethod" is null ) and
+                                      ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                                      ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                                      ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                      ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                                      ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_FVCalculationMethod" as "FVCalculationMethod",
+            "OLD_IndicatorResultBeforeChange" as "IndicatorResultBeforeChange",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID",
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_FairValueInFunctionalCurrency" as "FairValueInFunctionalCurrency",
+            "OLD_FairValueInGroupCurrency" as "FairValueInGroupCurrency",
+            "OLD_FairValueInHardCurrency" as "FairValueInHardCurrency",
+            "OLD_FairValueInIndexlCurrency" as "FairValueInIndexlCurrency",
+            "OLD_FairValueInLocalCurrency" as "FairValueInLocalCurrency",
+            "OLD_FairValueInPaymentCurrency" as "FairValueInPaymentCurrency",
+            "OLD_FairValueInPositionCurrency" as "FairValueInPositionCurrency",
+            "OLD_FunctionalCurrency" as "FunctionalCurrency",
+            "OLD_GroupCurrency" as "GroupCurrency",
+            "OLD_HardCurrency" as "HardCurrency",
+            "OLD_IndexCurrency" as "IndexCurrency",
+            "OLD_LocalCurrency" as "LocalCurrency",
+            "OLD_PaymentCurrency" as "PaymentCurrency",
+            "OLD_PositionCurrency" as "PositionCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."FVCalculationMethod",
+                        "OLD"."IndicatorResultBeforeChange",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."FVCalculationMethod" as "OLD_FVCalculationMethod",
+                                "OLD"."IndicatorResultBeforeChange" as "OLD_IndicatorResultBeforeChange",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."FairValueInFunctionalCurrency" as "OLD_FairValueInFunctionalCurrency",
+                                "OLD"."FairValueInGroupCurrency" as "OLD_FairValueInGroupCurrency",
+                                "OLD"."FairValueInHardCurrency" as "OLD_FairValueInHardCurrency",
+                                "OLD"."FairValueInIndexlCurrency" as "OLD_FairValueInIndexlCurrency",
+                                "OLD"."FairValueInLocalCurrency" as "OLD_FairValueInLocalCurrency",
+                                "OLD"."FairValueInPaymentCurrency" as "OLD_FairValueInPaymentCurrency",
+                                "OLD"."FairValueInPositionCurrency" as "OLD_FairValueInPositionCurrency",
+                                "OLD"."FunctionalCurrency" as "OLD_FunctionalCurrency",
+                                "OLD"."GroupCurrency" as "OLD_GroupCurrency",
+                                "OLD"."HardCurrency" as "OLD_HardCurrency",
+                                "OLD"."IndexCurrency" as "OLD_IndexCurrency",
+                                "OLD"."LocalCurrency" as "OLD_LocalCurrency",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FairValue" as "OLD"
+            on
+               ( "IN"."FVCalculationMethod" = "OLD"."FVCalculationMethod" or "IN"."FVCalculationMethod" is null ) and
+               ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+               ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+               ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+               ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+               ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+               ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

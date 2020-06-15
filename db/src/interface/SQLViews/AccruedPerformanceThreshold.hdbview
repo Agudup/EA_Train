@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::AccruedPerformanceThreshold_View" 
+as select
+      "_IndexSpecification._Index.IndexID" ,
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" ,
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AccruedCapRate" ,
+      "AccruedShieldRate" ,
+      "AccruedStepRate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AccruedPerformanceThreshold"
+with associations
+(
+	join "sap.fsdm.SQLViews::IndexSpecification_View" as "_IndexSpecification"
+	  on "_IndexSpecification"."_Index.IndexID" = "_IndexSpecification._Index.IndexID" AND 
+	     "_IndexSpecification"."_LifeAndAnnuityInsuranceCoverage.ID" = "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_IndexSpecification"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_IndexSpecification"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_IndexSpecification"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_IndexSpecification"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_IndexSpecification"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

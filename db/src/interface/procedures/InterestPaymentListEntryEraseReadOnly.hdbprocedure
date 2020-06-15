@@ -1,0 +1,148 @@
+PROCEDURE "sap.fsdm.procedures::InterestPaymentListEntryEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::InterestPaymentListEntryTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::InterestPaymentListEntryTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::InterestPaymentListEntryTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "InterestPaymentDate" is null and
+                         "ASSOC_InterestPaymentList.SequenceNumber" is null and
+                         "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null and
+                         "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" is null and
+                         "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" is null and
+                         "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null and
+                         "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" is null and
+                         "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null and
+                         "ASSOC_InterestPaymentList._Trade.IDSystem" is null and
+                         "ASSOC_InterestPaymentList._Trade.TradeID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"InterestPaymentDate",
+"ASSOC_InterestPaymentList.SequenceNumber",
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+"ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestPaymentList._Trade.IDSystem",
+"ASSOC_InterestPaymentList._Trade.TradeID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::InterestPaymentListEntry" WHERE("InterestPaymentDate" ,
+"ASSOC_InterestPaymentList.SequenceNumber" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.TradeID" 
+)in ( select "InterestPaymentDate" ,
+"ASSOC_InterestPaymentList.SequenceNumber" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.TradeID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"InterestPaymentDate",
+"ASSOC_InterestPaymentList.SequenceNumber",
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+"ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestPaymentList._Trade.IDSystem",
+"ASSOC_InterestPaymentList._Trade.TradeID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::InterestPaymentListEntry_Historical" WHERE("InterestPaymentDate" ,
+"ASSOC_InterestPaymentList.SequenceNumber" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.TradeID" 
+)in ( select "InterestPaymentDate" ,
+"ASSOC_InterestPaymentList.SequenceNumber" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.IDSystem" ,
+"ASSOC_InterestPaymentList._Trade.TradeID" 
+from :ROW );
+
+END

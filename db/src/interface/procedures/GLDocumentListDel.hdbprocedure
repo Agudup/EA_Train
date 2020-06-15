@@ -1,0 +1,26 @@
+PROCEDURE "sap.fsdm.procedures::GLDocumentListDel" (IN ROW "sap.fsdm.tabletypes::GLDocumentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::GLDocument" WHERE("DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"Ledger" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_CompanyCode.BusinessPartnerID" 
+)in ( select "DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"Ledger" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_CompanyCode.BusinessPartnerID" 
+from :ROW );
+
+
+END

@@ -1,0 +1,59 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+
+entity "FinancialContractRelation" {
+    key "FinancialContractRelationType"          : String(100);
+    key "SuccessionGroupID"                      : String(128)                        default '';
+    key "_SourceInFinancialContractRelationship" : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    } not null;
+    key "_TargetInFinancialContractRelationship" : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    } not null;
+    key "BusinessValidFrom"                      : LocalDate;
+    key "BusinessValidTo"                        : LocalDate;
+        "SystemValidFrom"                        : UTCTimestamp                       not null;
+        "SystemValidTo"                          : UTCTimestamp                       not null;
+        "FinancialContractRelationCategory"      : String(100);
+        "ReplacedAmount"                         : Decimal(34, 6);
+        "ReplacedAmountCurrency"                 : String(3);
+        "SourceSystemID"                         : String(128);
+        "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+        "ChangingUserInSourceSystem"             : String(128);
+        "ChangingProcessType"                    : String(40);
+        "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FinancialContractRelation_Historical" {
+    "FinancialContractRelationType"          : String(100)                        not null;
+    "SuccessionGroupID"                      : String(128)                        default '' not null;
+    "_SourceInFinancialContractRelationship" : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                } not null;
+    "_TargetInFinancialContractRelationship" : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                } not null;
+    "BusinessValidFrom"                      : LocalDate                          not null;
+    "BusinessValidTo"                        : LocalDate                          not null;
+    "SystemValidFrom"                        : UTCTimestamp                       not null;
+    "SystemValidTo"                          : UTCTimestamp                       not null;
+    "FinancialContractRelationCategory"      : String(100);
+    "ReplacedAmount"                         : Decimal(34, 6);
+    "ReplacedAmountCurrency"                 : String(3);
+    "SourceSystemID"                         : String(128);
+    "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+    "ChangingUserInSourceSystem"             : String(128);
+    "ChangingProcessType"                    : String(40);
+    "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};

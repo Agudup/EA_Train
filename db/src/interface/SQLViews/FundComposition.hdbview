@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::FundComposition_View" 
+as select
+      "AssetClass" ,
+      "_Fund.FundID" ,
+      "_Fund._InvestmentCorporation.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AssetClassAmount" ,
+      "AssetClassAmountCurrency" ,
+      "AssetClassPercentage" ,
+      "DifferentiationCriterion" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FundComposition"
+with associations
+(
+	join "sap.fsdm.SQLViews::Fund_View" as "_Fund"
+	  on "_Fund"."_InvestmentCorporation.BusinessPartnerID" = "_Fund._InvestmentCorporation.BusinessPartnerID" AND 
+	     "_Fund"."FundID" = "_Fund.FundID"
+	     
+);

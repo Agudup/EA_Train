@@ -1,0 +1,50 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CommunicationEvent";
+using "sap"."fsdm"::"CommunicationEventClass";
+
+entity "ClassificationOfCommunicationEvent" {
+    key "ASSOC_CommunicationEvent"      : association to CommunicationEvent {
+                                                                              CommunicationEventID,
+                                                                              IDSystem
+                                                                            }      not null;
+    key "ASSOC_CommunicationEventClass" : association to CommunicationEventClass {
+                                                                                   CommunicationEventClass,
+                                                                                   CommunicationEventClassificationSystem
+                                                                                 } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                             not null;
+        "SystemValidTo"                 : UTCTimestamp                             not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ClassificationOfCommunicationEvent_Historical" {
+    "ASSOC_CommunicationEvent"      : association to CommunicationEvent {
+                                                                          CommunicationEventID,
+                                                                          IDSystem
+                                                                        }      not null;
+    "ASSOC_CommunicationEventClass" : association to CommunicationEventClass {
+                                                                               CommunicationEventClass,
+                                                                               CommunicationEventClassificationSystem
+                                                                             } not null;
+    "BusinessValidFrom"             : LocalDate                                not null;
+    "BusinessValidTo"               : LocalDate                                not null;
+    "SystemValidFrom"               : UTCTimestamp                             not null;
+    "SystemValidTo"                 : UTCTimestamp                             not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

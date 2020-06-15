@@ -1,0 +1,78 @@
+PROCEDURE "sap.fsdm.procedures::ExercisePeriodEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::ExercisePeriodTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::ExercisePeriodTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::ExercisePeriodTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "StartDate" is null and
+                         "_Option.FinancialContractID" is null and
+                         "_Option.IDSystem" is null and
+                         "_Swaption.FinancialContractID" is null and
+                         "_Swaption.IDSystem" is null and
+                         "_Warrant.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"StartDate",
+"_Option.FinancialContractID",
+"_Option.IDSystem",
+"_Swaption.FinancialContractID",
+"_Swaption.IDSystem",
+"_Warrant.FinancialInstrumentID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::ExercisePeriod" WHERE("StartDate" ,
+"_Option.FinancialContractID" ,
+"_Option.IDSystem" ,
+"_Swaption.FinancialContractID" ,
+"_Swaption.IDSystem" ,
+"_Warrant.FinancialInstrumentID" 
+)in ( select "StartDate" ,
+"_Option.FinancialContractID" ,
+"_Option.IDSystem" ,
+"_Swaption.FinancialContractID" ,
+"_Swaption.IDSystem" ,
+"_Warrant.FinancialInstrumentID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"StartDate",
+"_Option.FinancialContractID",
+"_Option.IDSystem",
+"_Swaption.FinancialContractID",
+"_Swaption.IDSystem",
+"_Warrant.FinancialInstrumentID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::ExercisePeriod_Historical" WHERE("StartDate" ,
+"_Option.FinancialContractID" ,
+"_Option.IDSystem" ,
+"_Swaption.FinancialContractID" ,
+"_Swaption.IDSystem" ,
+"_Warrant.FinancialInstrumentID" 
+)in ( select "StartDate" ,
+"_Option.FinancialContractID" ,
+"_Option.IDSystem" ,
+"_Swaption.FinancialContractID" ,
+"_Swaption.IDSystem" ,
+"_Warrant.FinancialInstrumentID" 
+from :ROW );
+
+END

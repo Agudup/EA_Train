@@ -1,0 +1,240 @@
+PROCEDURE "sap.fsdm.procedures::CashFlowStreamErase" (IN ROW "sap.fsdm.tabletypes::CashFlowStreamTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "CashFlowEndDate" is null and
+                         "CashFlowScenario" is null and
+                         "CashFlowSource" is null and
+                         "CashFlowStartDate" is null and
+                         "CashFlowType" is null and
+                         "ItemNumber" is null and
+                         "ASSOC_Contract.FinancialContractID" is null and
+                         "ASSOC_Contract.IDSystem" is null and
+                         "ASSOC_InterestSpecification.SequenceNumber" is null and
+                         "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null and
+                         "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" is null and
+                         "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" is null and
+                         "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null and
+                         "ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" is null and
+                         "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null and
+                         "ASSOC_InterestSpecification._Trade.IDSystem" is null and
+                         "ASSOC_InterestSpecification._Trade.TradeID" is null and
+                         "ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" is null and
+                         "ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "_CollectionOfCashFlow.CollectionID" is null and
+                         "_CollectionOfCashFlow.IDSystem" is null and
+                         "_Instrument.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CashFlowStream" WHERE
+("CashFlowEndDate" ,
+"CashFlowScenario" ,
+"CashFlowSource" ,
+"CashFlowStartDate" ,
+"CashFlowType" ,
+"ItemNumber" ,
+"ASSOC_Contract.FinancialContractID" ,
+"ASSOC_Contract.IDSystem" ,
+"ASSOC_InterestSpecification.SequenceNumber" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.TradeID" ,
+"ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" ,
+"ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_CollectionOfCashFlow.CollectionID" ,
+"_CollectionOfCashFlow.IDSystem" ,
+"_Instrument.FinancialInstrumentID" 
+)in ( select "OLD"."CashFlowEndDate" ,
+"OLD"."CashFlowScenario" ,
+"OLD"."CashFlowSource" ,
+"OLD"."CashFlowStartDate" ,
+"OLD"."CashFlowType" ,
+"OLD"."ItemNumber" ,
+"OLD"."ASSOC_Contract.FinancialContractID" ,
+"OLD"."ASSOC_Contract.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification.SequenceNumber" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._Trade.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._Trade.TradeID" ,
+"OLD"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" ,
+"OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_CollectionOfCashFlow.CollectionID" ,
+"OLD"."_CollectionOfCashFlow.IDSystem" ,
+"OLD"."_Instrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CashFlowStream" "OLD"
+on
+  ( "IN"."CashFlowEndDate" = "OLD"."CashFlowEndDate" or "IN"."CashFlowEndDate" is null ) and
+  ( "IN"."CashFlowScenario" = "OLD"."CashFlowScenario" or "IN"."CashFlowScenario" is null ) and
+  ( "IN"."CashFlowSource" = "OLD"."CashFlowSource" or "IN"."CashFlowSource" is null ) and
+  ( "IN"."CashFlowStartDate" = "OLD"."CashFlowStartDate" or "IN"."CashFlowStartDate" is null ) and
+  ( "IN"."CashFlowType" = "OLD"."CashFlowType" or "IN"."CashFlowType" is null ) and
+  ( "IN"."ItemNumber" = "OLD"."ItemNumber" or "IN"."ItemNumber" is null ) and
+  ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.SequenceNumber" = "OLD"."ASSOC_InterestSpecification.SequenceNumber" or "IN"."ASSOC_InterestSpecification.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" = "OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" or "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" = "OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" or "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._Trade.IDSystem" = "OLD"."ASSOC_InterestSpecification._Trade.IDSystem" or "IN"."ASSOC_InterestSpecification._Trade.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._Trade.TradeID" = "OLD"."ASSOC_InterestSpecification._Trade.TradeID" or "IN"."ASSOC_InterestSpecification._Trade.TradeID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."_CollectionOfCashFlow.CollectionID" = "OLD"."_CollectionOfCashFlow.CollectionID" or "IN"."_CollectionOfCashFlow.CollectionID" is null ) and
+  ( "IN"."_CollectionOfCashFlow.IDSystem" = "OLD"."_CollectionOfCashFlow.IDSystem" or "IN"."_CollectionOfCashFlow.IDSystem" is null ) and
+  ( "IN"."_Instrument.FinancialInstrumentID" = "OLD"."_Instrument.FinancialInstrumentID" or "IN"."_Instrument.FinancialInstrumentID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CashFlowStream_Historical" WHERE
+("CashFlowEndDate" ,
+"CashFlowScenario" ,
+"CashFlowSource" ,
+"CashFlowStartDate" ,
+"CashFlowType" ,
+"ItemNumber" ,
+"ASSOC_Contract.FinancialContractID" ,
+"ASSOC_Contract.IDSystem" ,
+"ASSOC_InterestSpecification.SequenceNumber" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.TradeID" ,
+"ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" ,
+"ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_CollectionOfCashFlow.CollectionID" ,
+"_CollectionOfCashFlow.IDSystem" ,
+"_Instrument.FinancialInstrumentID" 
+)in ( select "OLD"."CashFlowEndDate" ,
+"OLD"."CashFlowScenario" ,
+"OLD"."CashFlowSource" ,
+"OLD"."CashFlowStartDate" ,
+"OLD"."CashFlowType" ,
+"OLD"."ItemNumber" ,
+"OLD"."ASSOC_Contract.FinancialContractID" ,
+"OLD"."ASSOC_Contract.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification.SequenceNumber" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._Trade.IDSystem" ,
+"OLD"."ASSOC_InterestSpecification._Trade.TradeID" ,
+"OLD"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" ,
+"OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_CollectionOfCashFlow.CollectionID" ,
+"OLD"."_CollectionOfCashFlow.IDSystem" ,
+"OLD"."_Instrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CashFlowStream_Historical" "OLD"
+on
+  ( "IN"."CashFlowEndDate" = "OLD"."CashFlowEndDate" or "IN"."CashFlowEndDate" is null ) and
+  ( "IN"."CashFlowScenario" = "OLD"."CashFlowScenario" or "IN"."CashFlowScenario" is null ) and
+  ( "IN"."CashFlowSource" = "OLD"."CashFlowSource" or "IN"."CashFlowSource" is null ) and
+  ( "IN"."CashFlowStartDate" = "OLD"."CashFlowStartDate" or "IN"."CashFlowStartDate" is null ) and
+  ( "IN"."CashFlowType" = "OLD"."CashFlowType" or "IN"."CashFlowType" is null ) and
+  ( "IN"."ItemNumber" = "OLD"."ItemNumber" or "IN"."ItemNumber" is null ) and
+  ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.SequenceNumber" = "OLD"."ASSOC_InterestSpecification.SequenceNumber" or "IN"."ASSOC_InterestSpecification.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" = "OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" or "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" = "OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" or "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._Trade.IDSystem" = "OLD"."ASSOC_InterestSpecification._Trade.IDSystem" or "IN"."ASSOC_InterestSpecification._Trade.IDSystem" is null ) and
+  ( "IN"."ASSOC_InterestSpecification._Trade.TradeID" = "OLD"."ASSOC_InterestSpecification._Trade.TradeID" or "IN"."ASSOC_InterestSpecification._Trade.TradeID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfCashFlow.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfCashFlow.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."_CollectionOfCashFlow.CollectionID" = "OLD"."_CollectionOfCashFlow.CollectionID" or "IN"."_CollectionOfCashFlow.CollectionID" is null ) and
+  ( "IN"."_CollectionOfCashFlow.IDSystem" = "OLD"."_CollectionOfCashFlow.IDSystem" or "IN"."_CollectionOfCashFlow.IDSystem" is null ) and
+  ( "IN"."_Instrument.FinancialInstrumentID" = "OLD"."_Instrument.FinancialInstrumentID" or "IN"."_Instrument.FinancialInstrumentID" is null ) 
+);
+
+END

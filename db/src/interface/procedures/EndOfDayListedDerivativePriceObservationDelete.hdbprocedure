@@ -1,0 +1,359 @@
+PROCEDURE "sap.fsdm.procedures::EndOfDayListedDerivativePriceObservationDelete" (IN ROW "sap.fsdm.tabletypes::EndOfDayListedDerivativePriceObservationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ExpirationDate=' || TO_VARCHAR("ExpirationDate") || ' ' ||
+                'PriceDataProvider=' || TO_VARCHAR("PriceDataProvider") || ' ' ||
+                'PriceSeriesType=' || TO_VARCHAR("PriceSeriesType") || ' ' ||
+                'PutOrCall=' || TO_VARCHAR("PutOrCall") || ' ' ||
+                'StrikePrice=' || TO_VARCHAR("StrikePrice") || ' ' ||
+                '_Exchange.MarketIdentifierCode=' || TO_VARCHAR("_Exchange.MarketIdentifierCode") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ExpirationDate",
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."PutOrCall",
+                        "IN"."StrikePrice",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ExpirationDate",
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."PutOrCall",
+                        "IN"."StrikePrice",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ExpirationDate",
+                        "PriceDataProvider",
+                        "PriceSeriesType",
+                        "PutOrCall",
+                        "StrikePrice",
+                        "_Exchange.MarketIdentifierCode",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ExpirationDate",
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."PutOrCall",
+                                    "IN"."StrikePrice",
+                                    "IN"."_Exchange.MarketIdentifierCode",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ExpirationDate",
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."PutOrCall",
+                                    "IN"."StrikePrice",
+                                    "IN"."_Exchange.MarketIdentifierCode",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::EndOfDayListedDerivativePriceObservation" (
+        "ExpirationDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "StrikePrice",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_CommodityReferencePrice.ReferencePriceID",
+        "Close",
+        "Currency",
+        "EndOfDayListedDerivativePriceObservationCategory",
+        "High",
+        "Low",
+        "Open",
+        "OpenInterest",
+        "PriceNotationForm",
+        "StrikePriceCurrency",
+        "Volume",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ExpirationDate" as "ExpirationDate" ,
+            "OLD_PriceDataProvider" as "PriceDataProvider" ,
+            "OLD_PriceSeriesType" as "PriceSeriesType" ,
+            "OLD_PutOrCall" as "PutOrCall" ,
+            "OLD_StrikePrice" as "StrikePrice" ,
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice.ReferencePriceID" ,
+            "OLD_Close" as "Close" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_EndOfDayListedDerivativePriceObservationCategory" as "EndOfDayListedDerivativePriceObservationCategory" ,
+            "OLD_High" as "High" ,
+            "OLD_Low" as "Low" ,
+            "OLD_Open" as "Open" ,
+            "OLD_OpenInterest" as "OpenInterest" ,
+            "OLD_PriceNotationForm" as "PriceNotationForm" ,
+            "OLD_StrikePriceCurrency" as "StrikePriceCurrency" ,
+            "OLD_Volume" as "Volume" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ExpirationDate",
+                        "OLD"."PriceDataProvider",
+                        "OLD"."PriceSeriesType",
+                        "OLD"."PutOrCall",
+                        "OLD"."StrikePrice",
+                        "OLD"."_Exchange.MarketIdentifierCode",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."ExpirationDate" as "OLD_ExpirationDate",
+                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                "OLD"."PutOrCall" as "OLD_PutOrCall",
+                "OLD"."StrikePrice" as "OLD_StrikePrice",
+                "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_CommodityReferencePrice.ReferencePriceID" as "OLD__CommodityReferencePrice.ReferencePriceID",
+                "OLD"."Close" as "OLD_Close",
+                "OLD"."Currency" as "OLD_Currency",
+                "OLD"."EndOfDayListedDerivativePriceObservationCategory" as "OLD_EndOfDayListedDerivativePriceObservationCategory",
+                "OLD"."High" as "OLD_High",
+                "OLD"."Low" as "OLD_Low",
+                "OLD"."Open" as "OLD_Open",
+                "OLD"."OpenInterest" as "OLD_OpenInterest",
+                "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                "OLD"."StrikePriceCurrency" as "OLD_StrikePriceCurrency",
+                "OLD"."Volume" as "OLD_Volume",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayListedDerivativePriceObservation" as "OLD"
+            on
+                      ( "IN"."ExpirationDate" = "OLD"."ExpirationDate" or "IN"."ExpirationDate" is null ) and
+                      ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+                      ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+                      ( "IN"."PutOrCall" = "OLD"."PutOrCall" or "IN"."PutOrCall" is null ) and
+                      ( "IN"."StrikePrice" = "OLD"."StrikePrice" or "IN"."StrikePrice" is null ) and
+                      ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::EndOfDayListedDerivativePriceObservation" (
+        "ExpirationDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "StrikePrice",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_CommodityReferencePrice.ReferencePriceID",
+        "Close",
+        "Currency",
+        "EndOfDayListedDerivativePriceObservationCategory",
+        "High",
+        "Low",
+        "Open",
+        "OpenInterest",
+        "PriceNotationForm",
+        "StrikePriceCurrency",
+        "Volume",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ExpirationDate" as "ExpirationDate",
+            "OLD_PriceDataProvider" as "PriceDataProvider",
+            "OLD_PriceSeriesType" as "PriceSeriesType",
+            "OLD_PutOrCall" as "PutOrCall",
+            "OLD_StrikePrice" as "StrikePrice",
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice.ReferencePriceID",
+            "OLD_Close" as "Close",
+            "OLD_Currency" as "Currency",
+            "OLD_EndOfDayListedDerivativePriceObservationCategory" as "EndOfDayListedDerivativePriceObservationCategory",
+            "OLD_High" as "High",
+            "OLD_Low" as "Low",
+            "OLD_Open" as "Open",
+            "OLD_OpenInterest" as "OpenInterest",
+            "OLD_PriceNotationForm" as "PriceNotationForm",
+            "OLD_StrikePriceCurrency" as "StrikePriceCurrency",
+            "OLD_Volume" as "Volume",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ExpirationDate",
+                        "OLD"."PriceDataProvider",
+                        "OLD"."PriceSeriesType",
+                        "OLD"."PutOrCall",
+                        "OLD"."StrikePrice",
+                        "OLD"."_Exchange.MarketIdentifierCode",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."ExpirationDate" as "OLD_ExpirationDate",
+                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                "OLD"."PutOrCall" as "OLD_PutOrCall",
+                "OLD"."StrikePrice" as "OLD_StrikePrice",
+                "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_CommodityReferencePrice.ReferencePriceID" as "OLD__CommodityReferencePrice.ReferencePriceID",
+                "OLD"."Close" as "OLD_Close",
+                "OLD"."Currency" as "OLD_Currency",
+                "OLD"."EndOfDayListedDerivativePriceObservationCategory" as "OLD_EndOfDayListedDerivativePriceObservationCategory",
+                "OLD"."High" as "OLD_High",
+                "OLD"."Low" as "OLD_Low",
+                "OLD"."Open" as "OLD_Open",
+                "OLD"."OpenInterest" as "OLD_OpenInterest",
+                "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                "OLD"."StrikePriceCurrency" as "OLD_StrikePriceCurrency",
+                "OLD"."Volume" as "OLD_Volume",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayListedDerivativePriceObservation" as "OLD"
+            on
+                                                ( "IN"."ExpirationDate" = "OLD"."ExpirationDate" or "IN"."ExpirationDate" is null ) and
+                                                ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+                                                ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+                                                ( "IN"."PutOrCall" = "OLD"."PutOrCall" or "IN"."PutOrCall" is null ) and
+                                                ( "IN"."StrikePrice" = "OLD"."StrikePrice" or "IN"."StrikePrice" is null ) and
+                                                ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::EndOfDayListedDerivativePriceObservation"
+    where (
+        "ExpirationDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "StrikePrice",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ExpirationDate",
+            "OLD"."PriceDataProvider",
+            "OLD"."PriceSeriesType",
+            "OLD"."PutOrCall",
+            "OLD"."StrikePrice",
+            "OLD"."_Exchange.MarketIdentifierCode",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::EndOfDayListedDerivativePriceObservation" as "OLD"
+        on
+                                       ( "IN"."ExpirationDate" = "OLD"."ExpirationDate" or "IN"."ExpirationDate" is null ) and
+                                       ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+                                       ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+                                       ( "IN"."PutOrCall" = "OLD"."PutOrCall" or "IN"."PutOrCall" is null ) and
+                                       ( "IN"."StrikePrice" = "OLD"."StrikePrice" or "IN"."StrikePrice" is null ) and
+                                       ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

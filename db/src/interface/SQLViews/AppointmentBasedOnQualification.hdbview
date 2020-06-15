@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::AppointmentBasedOnQualification_View" 
+as select
+      "_Appointment.SequenceNumber" ,
+      "_Appointment._IndividualPerson.BusinessPartnerID" ,
+      "_ProofOfQualification.IDSystem" ,
+      "_ProofOfQualification.IssuingOrganization" ,
+      "_ProofOfQualification.QualificationIdentifier" ,
+      "_ProofOfQualification._IndividualPerson.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AppointmentBasedOnQualification"
+with associations
+(
+	join "sap.fsdm.SQLViews::Appointment_View" as "_Appointment"
+	  on "_Appointment"."SequenceNumber" = "_Appointment.SequenceNumber" AND 
+	     "_Appointment"."_IndividualPerson.BusinessPartnerID" = "_Appointment._IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ProofOfQualification_View" as "_ProofOfQualification"
+	  on "_ProofOfQualification"."IDSystem" = "_ProofOfQualification.IDSystem" AND 
+	     "_ProofOfQualification"."IssuingOrganization" = "_ProofOfQualification.IssuingOrganization" AND 
+	     "_ProofOfQualification"."QualificationIdentifier" = "_ProofOfQualification.QualificationIdentifier" AND 
+	     "_ProofOfQualification"."_IndividualPerson.BusinessPartnerID" = "_ProofOfQualification._IndividualPerson.BusinessPartnerID"
+	     
+);

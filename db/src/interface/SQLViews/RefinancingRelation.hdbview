@@ -1,0 +1,62 @@
+view "sap.fsdm.SQLViews::RefinancingRelation_View" 
+as select
+      "RefinancingType" ,
+      "ASSOC_RefinancedContract.FinancialContractID" ,
+      "ASSOC_RefinancedContract.IDSystem" ,
+      "ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+      "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_RefinancingContract.FinancialContractID" ,
+      "ASSOC_RefinancingContract.IDSystem" ,
+      "ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+      "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+      "_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+      "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "DisclosedRefinancing" ,
+      "IndemnificationAgreement" ,
+      "IndemnificationPercentage" ,
+      "MaximumAssumedLiabilityAmount" ,
+      "MaximumAssumedLiabilityAmountCurrency" ,
+      "PositionCurrency" ,
+      "RefinancedAmountInPositionCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::RefinancingRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_RefinancedContract"
+	  on "ASSOC_RefinancedContract"."FinancialContractID" = "ASSOC_RefinancedContract.FinancialContractID" AND 
+	     "ASSOC_RefinancedContract"."IDSystem" = "ASSOC_RefinancedContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_RefinancedPositionCurrency"
+	  on "ASSOC_RefinancedPositionCurrency"."PositionCurrency" = "ASSOC_RefinancedPositionCurrency.PositionCurrency" AND 
+	     "ASSOC_RefinancedPositionCurrency"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_RefinancedPositionCurrency"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_RefinancingContract"
+	  on "ASSOC_RefinancingContract"."FinancialContractID" = "ASSOC_RefinancingContract.FinancialContractID" AND 
+	     "ASSOC_RefinancingContract"."IDSystem" = "ASSOC_RefinancingContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_RefinancingPositionCurrency"
+	  on "ASSOC_RefinancingPositionCurrency"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_RefinancingPositionCurrency"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_RefinancingPositionCurrency"."PositionCurrency" = "ASSOC_RefinancingPositionCurrency.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_CollectionOfRefinancedSecuritiesHolding"
+	  on "_CollectionOfRefinancedSecuritiesHolding"."CollectionID" = "_CollectionOfRefinancedSecuritiesHolding.CollectionID" AND 
+	     "_CollectionOfRefinancedSecuritiesHolding"."IDSystem" = "_CollectionOfRefinancedSecuritiesHolding.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_InstrumentOfRefinancedSecuritiesHolding"
+	  on "_InstrumentOfRefinancedSecuritiesHolding"."FinancialInstrumentID" = "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID"
+	     
+);

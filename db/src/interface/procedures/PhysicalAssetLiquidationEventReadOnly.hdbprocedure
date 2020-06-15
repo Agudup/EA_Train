@@ -1,0 +1,54 @@
+PROCEDURE "sap.fsdm.procedures::PhysicalAssetLiquidationEventReadOnly" (IN ROW "sap.fsdm.tabletypes::PhysicalAssetLiquidationEventTT" , OUT CURR_DEL "sap.fsdm.tabletypes::PhysicalAssetLiquidationEventTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::PhysicalAssetLiquidationEventTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"LiquidationEventDate",
+"LiquidationEventType",
+"ASSOC_PhysicalAsset.PhysicalAssetID"
+from "sap.fsdm::PhysicalAssetLiquidationEvent" WHERE("LiquidationEventDate" ,
+"LiquidationEventType" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select     ( case when "LiquidationEventDate" is null then '0001-01-01' else "LiquidationEventDate" end ) as "LiquidationEventDate",
+    ( case when "LiquidationEventType" is null then '' else "LiquidationEventType" end ) as "LiquidationEventType",
+    ( case when "ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "ASSOC_PhysicalAsset.PhysicalAssetID" end ) as "ASSOC_PhysicalAsset.PhysicalAssetID"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"LiquidationEventDate",
+"LiquidationEventType",
+"ASSOC_PhysicalAsset.PhysicalAssetID",
+"ASSOC_BankingChannel.BankingChannelID",
+"ASSOC_BusinessEventDataOwner.BusinessPartnerID",
+"LiquidationEventOutcome",
+"RealizedLiquidationAmount",
+"RealizedLiquidationAmountCurrency",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "LiquidationEventDate" is null then '0001-01-01' else "LiquidationEventDate" end ) as "LiquidationEventDate",
+    ( case when "LiquidationEventType" is null then '' else "LiquidationEventType" end ) as "LiquidationEventType",
+    ( case when "ASSOC_PhysicalAsset.PhysicalAssetID" is null then '' else "ASSOC_PhysicalAsset.PhysicalAssetID" end ) as "ASSOC_PhysicalAsset.PhysicalAssetID",
+  "ASSOC_BankingChannel.BankingChannelID"  ,
+  "ASSOC_BusinessEventDataOwner.BusinessPartnerID"  ,
+  "LiquidationEventOutcome"  ,
+  "RealizedLiquidationAmount"  ,
+  "RealizedLiquidationAmountCurrency"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

@@ -1,0 +1,220 @@
+PROCEDURE "sap.fsdm.procedures::TradeClassReadOnly" (IN ROW "sap.fsdm.tabletypes::TradeClassTT", OUT CURR_DEL "sap.fsdm.tabletypes::TradeClassTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::TradeClassTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'TradeClass=' || TO_VARCHAR("TradeClass") || ' ' ||
+                'TradeClassificationSystem=' || TO_VARCHAR("TradeClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."TradeClass",
+                        "IN"."TradeClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."TradeClass",
+                        "IN"."TradeClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "TradeClass",
+                        "TradeClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."TradeClass",
+                                    "IN"."TradeClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."TradeClass",
+                                    "IN"."TradeClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "TradeClass",
+        "TradeClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::TradeClass" WHERE
+        (            "TradeClass" ,
+            "TradeClassificationSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."TradeClass",
+            "OLD"."TradeClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeClass" as "OLD"
+            on
+               ( case when "IN"."TradeClass" is null then '' else "IN"."TradeClass" end ) = "OLD"."TradeClass" and
+               ( case when "IN"."TradeClassificationSystem" is null then '' else "IN"."TradeClassificationSystem" end ) = "OLD"."TradeClassificationSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "TradeClass",
+        "TradeClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "TradeClassDescription",
+        "TradeClassificationDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "TradeClass" is null then '' else "TradeClass" end ) as "TradeClass",
+                    ( case when "TradeClassificationSystem" is null then '' else "TradeClassificationSystem" end ) as "TradeClassificationSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "TradeClassDescription"  ,
+                    "TradeClassificationDescription"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_TradeClass" as "TradeClass" ,
+                    "OLD_TradeClassificationSystem" as "TradeClassificationSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_TradeClassDescription" as "TradeClassDescription" ,
+                    "OLD_TradeClassificationDescription" as "TradeClassificationDescription" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."TradeClass",
+                        "IN"."TradeClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."TradeClass" as "OLD_TradeClass",
+                                "OLD"."TradeClassificationSystem" as "OLD_TradeClassificationSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."TradeClassDescription" as "OLD_TradeClassDescription",
+                                "OLD"."TradeClassificationDescription" as "OLD_TradeClassificationDescription",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeClass" as "OLD"
+            on
+                ( case when "IN"."TradeClass" is null then '' else "IN"."TradeClass" end ) = "OLD"."TradeClass" and
+                ( case when "IN"."TradeClassificationSystem" is null then '' else "IN"."TradeClassificationSystem" end ) = "OLD"."TradeClassificationSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_TradeClass" as "TradeClass",
+            "OLD_TradeClassificationSystem" as "TradeClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_TradeClassDescription" as "TradeClassDescription",
+            "OLD_TradeClassificationDescription" as "TradeClassificationDescription",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."TradeClass",
+                        "IN"."TradeClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."TradeClass" as "OLD_TradeClass",
+                        "OLD"."TradeClassificationSystem" as "OLD_TradeClassificationSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."TradeClassDescription" as "OLD_TradeClassDescription",
+                        "OLD"."TradeClassificationDescription" as "OLD_TradeClassificationDescription",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeClass" as "OLD"
+            on
+                ( case when "IN"."TradeClass" is null then '' else "IN"."TradeClass" end ) = "OLD"."TradeClass" and
+                ( case when "IN"."TradeClassificationSystem" is null then '' else "IN"."TradeClassificationSystem" end ) = "OLD"."TradeClassificationSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

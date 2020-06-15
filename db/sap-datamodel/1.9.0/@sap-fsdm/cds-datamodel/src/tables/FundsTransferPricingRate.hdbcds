@@ -1,0 +1,87 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"Collection";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"YieldCurve";
+
+entity "FundsTransferPricingRate" {
+    key "SplittingTranche"                    : String(10);
+    key "ASSOC_FinancialContract"             : association to FinancialContract {
+                                                                                   FinancialContractID,
+                                                                                   IDSystem
+                                                                                 }                           not null;
+    key "ASSOC_PositionCcyOfMultiCcyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                         PositionCurrency,
+                                                                                                         ASSOC_MultiCcyAccnt
+                                                                                                       }     not null;
+    key "_Collection"                         : association to Collection {
+                                                                            CollectionID,
+                                                                            IDSystem
+                                                                          }                                  not null;
+    key "_FinancialInstrument"                : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                   : LocalDate;
+    key "BusinessValidTo"                     : LocalDate;
+        "SystemValidFrom"                     : UTCTimestamp                                                 not null;
+        "SystemValidTo"                       : UTCTimestamp                                                 not null;
+        "ASSOC_YieldCurve"                    : association to YieldCurve { YieldCurveID };
+        "AssetOrLiabilityStatus"              : String(10);
+        "BusinessDayCalendar"                 : String(10);
+        "Currency"                            : String(3);
+        "DayCountConvention"                  : String(20);
+        "DisturbanceDate"                     : LocalDate;
+        "FTPRate"                             : Decimal(15, 11);
+        "FTPRateBeforeOverride"               : Decimal(15, 11);
+        "MaturityPeriodLength"                : Decimal(34, 6);
+        "MaturityPeriodTimeUnit"              : String(12);
+        "RecalculatedDueToDisturbance"        : Boolean;
+        "SourceSystemID"                      : String(128);
+        "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+        "ChangingUserInSourceSystem"          : String(128);
+        "ChangingProcessType"                 : String(40);
+        "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FundsTransferPricingRate_Historical" {
+    "SplittingTranche"                    : String(10)                                                   not null;
+    "ASSOC_FinancialContract"             : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }                           not null;
+    "ASSOC_PositionCcyOfMultiCcyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                     PositionCurrency,
+                                                                                                     ASSOC_MultiCcyAccnt
+                                                                                                   }     not null;
+    "_Collection"                         : association to Collection {
+                                                                        CollectionID,
+                                                                        IDSystem
+                                                                      }                                  not null;
+    "_FinancialInstrument"                : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                   : LocalDate                                                    not null;
+    "BusinessValidTo"                     : LocalDate                                                    not null;
+    "SystemValidFrom"                     : UTCTimestamp                                                 not null;
+    "SystemValidTo"                       : UTCTimestamp                                                 not null;
+    "ASSOC_YieldCurve"                    : association to YieldCurve { YieldCurveID };
+    "AssetOrLiabilityStatus"              : String(10);
+    "BusinessDayCalendar"                 : String(10);
+    "Currency"                            : String(3);
+    "DayCountConvention"                  : String(20);
+    "DisturbanceDate"                     : LocalDate;
+    "FTPRate"                             : Decimal(15, 11);
+    "FTPRateBeforeOverride"               : Decimal(15, 11);
+    "MaturityPeriodLength"                : Decimal(34, 6);
+    "MaturityPeriodTimeUnit"              : String(12);
+    "RecalculatedDueToDisturbance"        : Boolean;
+    "SourceSystemID"                      : String(128);
+    "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+    "ChangingUserInSourceSystem"          : String(128);
+    "ChangingProcessType"                 : String(40);
+    "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};

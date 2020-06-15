@@ -1,0 +1,386 @@
+PROCEDURE "sap.fsdm.procedures::DeferralCalculatedResultDelReadOnly" (IN ROW "sap.fsdm.tabletypes::DeferralCalculatedResultTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::DeferralCalculatedResultTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::DeferralCalculatedResultTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'DeferralCalculationMethod=' || TO_VARCHAR("DeferralCalculationMethod") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_InvestmentAccount.FinancialContractID=' || TO_VARCHAR("_InvestmentAccount.FinancialContractID") || ' ' ||
+                '_InvestmentAccount.IDSystem=' || TO_VARCHAR("_InvestmentAccount.IDSystem") || ' ' ||
+                '_SettlementItem.IDSystem=' || TO_VARCHAR("_SettlementItem.IDSystem") || ' ' ||
+                '_SettlementItem.ItemNumber=' || TO_VARCHAR("_SettlementItem.ItemNumber") || ' ' ||
+                '_SettlementItem.SettlementID=' || TO_VARCHAR("_SettlementItem.SettlementID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."DeferralCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem",
+                        "IN"."_SettlementItem.IDSystem",
+                        "IN"."_SettlementItem.ItemNumber",
+                        "IN"."_SettlementItem.SettlementID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."DeferralCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem",
+                        "IN"."_SettlementItem.IDSystem",
+                        "IN"."_SettlementItem.ItemNumber",
+                        "IN"."_SettlementItem.SettlementID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "DeferralCalculationMethod",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_InvestmentAccount.FinancialContractID",
+                        "_InvestmentAccount.IDSystem",
+                        "_SettlementItem.IDSystem",
+                        "_SettlementItem.ItemNumber",
+                        "_SettlementItem.SettlementID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."DeferralCalculationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem",
+                                    "IN"."_SettlementItem.IDSystem",
+                                    "IN"."_SettlementItem.ItemNumber",
+                                    "IN"."_SettlementItem.SettlementID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."DeferralCalculationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem",
+                                    "IN"."_SettlementItem.IDSystem",
+                                    "IN"."_SettlementItem.ItemNumber",
+                                    "IN"."_SettlementItem.SettlementID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "DeferralCalculationMethod",
+            "_AccountingSystem.AccountingSystemID",
+            "_FinancialContract.FinancialContractID",
+            "_FinancialContract.IDSystem",
+            "_FinancialInstrument.FinancialInstrumentID",
+            "_InvestmentAccount.FinancialContractID",
+            "_InvestmentAccount.IDSystem",
+            "_SettlementItem.IDSystem",
+            "_SettlementItem.ItemNumber",
+            "_SettlementItem.SettlementID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::DeferralCalculatedResult" WHERE
+            (
+            "DeferralCalculationMethod" ,
+            "_AccountingSystem.AccountingSystemID" ,
+            "_FinancialContract.FinancialContractID" ,
+            "_FinancialContract.IDSystem" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "_InvestmentAccount.FinancialContractID" ,
+            "_InvestmentAccount.IDSystem" ,
+            "_SettlementItem.IDSystem" ,
+            "_SettlementItem.ItemNumber" ,
+            "_SettlementItem.SettlementID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."DeferralCalculationMethod",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_InvestmentAccount.FinancialContractID",
+            "OLD"."_InvestmentAccount.IDSystem",
+            "OLD"."_SettlementItem.IDSystem",
+            "OLD"."_SettlementItem.ItemNumber",
+            "OLD"."_SettlementItem.SettlementID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::DeferralCalculatedResult" as "OLD"
+        on
+                              ( "IN"."DeferralCalculationMethod" = "OLD"."DeferralCalculationMethod" or "IN"."DeferralCalculationMethod" is null ) and
+                              ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                              ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                              ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                              ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) and
+                              ( "IN"."_SettlementItem.IDSystem" = "OLD"."_SettlementItem.IDSystem" or "IN"."_SettlementItem.IDSystem" is null ) and
+                              ( "IN"."_SettlementItem.ItemNumber" = "OLD"."_SettlementItem.ItemNumber" or "IN"."_SettlementItem.ItemNumber" is null ) and
+                              ( "IN"."_SettlementItem.SettlementID" = "OLD"."_SettlementItem.SettlementID" or "IN"."_SettlementItem.SettlementID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "DeferralCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "_SettlementItem.IDSystem",
+        "_SettlementItem.ItemNumber",
+        "_SettlementItem.SettlementID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Deferral1TimeInPaymentCurrency",
+        "Deferral1TimeInPositionCurrency",
+        "Deferral1TimePaymentCurrency",
+        "Deferral1TimePositionCurrency",
+        "DeferralInPaymentCurrency",
+        "DeferralInPositionCurrency",
+        "DeferralPaymentCurrency",
+        "DeferralPositionCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_DeferralCalculationMethod" as "DeferralCalculationMethod" ,
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID" ,
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem" ,
+            "OLD__SettlementItem.IDSystem" as "_SettlementItem.IDSystem" ,
+            "OLD__SettlementItem.ItemNumber" as "_SettlementItem.ItemNumber" ,
+            "OLD__SettlementItem.SettlementID" as "_SettlementItem.SettlementID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_Deferral1TimeInPaymentCurrency" as "Deferral1TimeInPaymentCurrency" ,
+            "OLD_Deferral1TimeInPositionCurrency" as "Deferral1TimeInPositionCurrency" ,
+            "OLD_Deferral1TimePaymentCurrency" as "Deferral1TimePaymentCurrency" ,
+            "OLD_Deferral1TimePositionCurrency" as "Deferral1TimePositionCurrency" ,
+            "OLD_DeferralInPaymentCurrency" as "DeferralInPaymentCurrency" ,
+            "OLD_DeferralInPositionCurrency" as "DeferralInPositionCurrency" ,
+            "OLD_DeferralPaymentCurrency" as "DeferralPaymentCurrency" ,
+            "OLD_DeferralPositionCurrency" as "DeferralPositionCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."DeferralCalculationMethod",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."_SettlementItem.IDSystem",
+                        "OLD"."_SettlementItem.ItemNumber",
+                        "OLD"."_SettlementItem.SettlementID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."DeferralCalculationMethod" as "OLD_DeferralCalculationMethod",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."_SettlementItem.IDSystem" as "OLD__SettlementItem.IDSystem",
+                                "OLD"."_SettlementItem.ItemNumber" as "OLD__SettlementItem.ItemNumber",
+                                "OLD"."_SettlementItem.SettlementID" as "OLD__SettlementItem.SettlementID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Deferral1TimeInPaymentCurrency" as "OLD_Deferral1TimeInPaymentCurrency",
+                                "OLD"."Deferral1TimeInPositionCurrency" as "OLD_Deferral1TimeInPositionCurrency",
+                                "OLD"."Deferral1TimePaymentCurrency" as "OLD_Deferral1TimePaymentCurrency",
+                                "OLD"."Deferral1TimePositionCurrency" as "OLD_Deferral1TimePositionCurrency",
+                                "OLD"."DeferralInPaymentCurrency" as "OLD_DeferralInPaymentCurrency",
+                                "OLD"."DeferralInPositionCurrency" as "OLD_DeferralInPositionCurrency",
+                                "OLD"."DeferralPaymentCurrency" as "OLD_DeferralPaymentCurrency",
+                                "OLD"."DeferralPositionCurrency" as "OLD_DeferralPositionCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::DeferralCalculatedResult" as "OLD"
+            on
+                                      ( "IN"."DeferralCalculationMethod" = "OLD"."DeferralCalculationMethod" or "IN"."DeferralCalculationMethod" is null ) and
+                                      ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                                      ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                      ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                                      ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) and
+                                      ( "IN"."_SettlementItem.IDSystem" = "OLD"."_SettlementItem.IDSystem" or "IN"."_SettlementItem.IDSystem" is null ) and
+                                      ( "IN"."_SettlementItem.ItemNumber" = "OLD"."_SettlementItem.ItemNumber" or "IN"."_SettlementItem.ItemNumber" is null ) and
+                                      ( "IN"."_SettlementItem.SettlementID" = "OLD"."_SettlementItem.SettlementID" or "IN"."_SettlementItem.SettlementID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_DeferralCalculationMethod" as "DeferralCalculationMethod",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID",
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem",
+            "OLD__SettlementItem.IDSystem" as "_SettlementItem.IDSystem",
+            "OLD__SettlementItem.ItemNumber" as "_SettlementItem.ItemNumber",
+            "OLD__SettlementItem.SettlementID" as "_SettlementItem.SettlementID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Deferral1TimeInPaymentCurrency" as "Deferral1TimeInPaymentCurrency",
+            "OLD_Deferral1TimeInPositionCurrency" as "Deferral1TimeInPositionCurrency",
+            "OLD_Deferral1TimePaymentCurrency" as "Deferral1TimePaymentCurrency",
+            "OLD_Deferral1TimePositionCurrency" as "Deferral1TimePositionCurrency",
+            "OLD_DeferralInPaymentCurrency" as "DeferralInPaymentCurrency",
+            "OLD_DeferralInPositionCurrency" as "DeferralInPositionCurrency",
+            "OLD_DeferralPaymentCurrency" as "DeferralPaymentCurrency",
+            "OLD_DeferralPositionCurrency" as "DeferralPositionCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."DeferralCalculationMethod",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."_SettlementItem.IDSystem",
+                        "OLD"."_SettlementItem.ItemNumber",
+                        "OLD"."_SettlementItem.SettlementID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."DeferralCalculationMethod" as "OLD_DeferralCalculationMethod",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."_SettlementItem.IDSystem" as "OLD__SettlementItem.IDSystem",
+                                "OLD"."_SettlementItem.ItemNumber" as "OLD__SettlementItem.ItemNumber",
+                                "OLD"."_SettlementItem.SettlementID" as "OLD__SettlementItem.SettlementID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Deferral1TimeInPaymentCurrency" as "OLD_Deferral1TimeInPaymentCurrency",
+                                "OLD"."Deferral1TimeInPositionCurrency" as "OLD_Deferral1TimeInPositionCurrency",
+                                "OLD"."Deferral1TimePaymentCurrency" as "OLD_Deferral1TimePaymentCurrency",
+                                "OLD"."Deferral1TimePositionCurrency" as "OLD_Deferral1TimePositionCurrency",
+                                "OLD"."DeferralInPaymentCurrency" as "OLD_DeferralInPaymentCurrency",
+                                "OLD"."DeferralInPositionCurrency" as "OLD_DeferralInPositionCurrency",
+                                "OLD"."DeferralPaymentCurrency" as "OLD_DeferralPaymentCurrency",
+                                "OLD"."DeferralPositionCurrency" as "OLD_DeferralPositionCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::DeferralCalculatedResult" as "OLD"
+            on
+               ( "IN"."DeferralCalculationMethod" = "OLD"."DeferralCalculationMethod" or "IN"."DeferralCalculationMethod" is null ) and
+               ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+               ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+               ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+               ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+               ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) and
+               ( "IN"."_SettlementItem.IDSystem" = "OLD"."_SettlementItem.IDSystem" or "IN"."_SettlementItem.IDSystem" is null ) and
+               ( "IN"."_SettlementItem.ItemNumber" = "OLD"."_SettlementItem.ItemNumber" or "IN"."_SettlementItem.ItemNumber" is null ) and
+               ( "IN"."_SettlementItem.SettlementID" = "OLD"."_SettlementItem.SettlementID" or "IN"."_SettlementItem.SettlementID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

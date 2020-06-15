@@ -1,0 +1,24 @@
+view "sap.fsdm.Views::NursingInsuranceBenefit_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "NursingCareLevel" as "NursingCareLevel",
+      "_AnnuityCoverage.ID" as "_AnnuityCoverage_ID",
+      "_AnnuityCoverage._InsuranceContract.FinancialContractID" as "_AnnuityCoverage__InsuranceContract_FinancialContractID",
+      "_AnnuityCoverage._InsuranceContract.IDSystem" as "_AnnuityCoverage__InsuranceContract_IDSystem",
+      "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_AnnuityCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "_AnnuityCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_AnnuityCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "InpatientBenefitPercent" as "InpatientBenefitPercent",
+      "OutpatientBenefitPercent" as "OutpatientBenefitPercent",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::NursingInsuranceBenefit"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

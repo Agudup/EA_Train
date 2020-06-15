@@ -1,0 +1,114 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskExpectedLossErase" (IN ROW "sap.fsdm.tabletypes::CreditRiskExpectedLossTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "BestEstimateELMethod" is null and
+                         "BestEstimateELTimeHorizon" is null and
+                         "BestEstimateELTimeUnit" is null and
+                         "ASSOC_CollateralPortion.PortionNumber" is null and
+                         "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null and
+                         "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "_Collection.CollectionID" is null and
+                         "_Collection.IDSystem" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CreditRiskExpectedLoss" WHERE
+("BestEstimateELMethod" ,
+"BestEstimateELTimeHorizon" ,
+"BestEstimateELTimeUnit" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_Collection.CollectionID" ,
+"_Collection.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."BestEstimateELMethod" ,
+"OLD"."BestEstimateELTimeHorizon" ,
+"OLD"."BestEstimateELTimeUnit" ,
+"OLD"."ASSOC_CollateralPortion.PortionNumber" ,
+"OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."_Collection.CollectionID" ,
+"OLD"."_Collection.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CreditRiskExpectedLoss" "OLD"
+on
+  ( "IN"."BestEstimateELMethod" = "OLD"."BestEstimateELMethod" or "IN"."BestEstimateELMethod" is null ) and
+  ( "IN"."BestEstimateELTimeHorizon" = "OLD"."BestEstimateELTimeHorizon" or "IN"."BestEstimateELTimeHorizon" is null ) and
+  ( "IN"."BestEstimateELTimeUnit" = "OLD"."BestEstimateELTimeUnit" or "IN"."BestEstimateELTimeUnit" is null ) and
+  ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+  ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+  ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CreditRiskExpectedLoss_Historical" WHERE
+("BestEstimateELMethod" ,
+"BestEstimateELTimeHorizon" ,
+"BestEstimateELTimeUnit" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_Collection.CollectionID" ,
+"_Collection.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."BestEstimateELMethod" ,
+"OLD"."BestEstimateELTimeHorizon" ,
+"OLD"."BestEstimateELTimeUnit" ,
+"OLD"."ASSOC_CollateralPortion.PortionNumber" ,
+"OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."_Collection.CollectionID" ,
+"OLD"."_Collection.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::CreditRiskExpectedLoss_Historical" "OLD"
+on
+  ( "IN"."BestEstimateELMethod" = "OLD"."BestEstimateELMethod" or "IN"."BestEstimateELMethod" is null ) and
+  ( "IN"."BestEstimateELTimeHorizon" = "OLD"."BestEstimateELTimeHorizon" or "IN"."BestEstimateELTimeHorizon" is null ) and
+  ( "IN"."BestEstimateELTimeUnit" = "OLD"."BestEstimateELTimeUnit" or "IN"."BestEstimateELTimeUnit" is null ) and
+  ( "IN"."ASSOC_CollateralPortion.PortionNumber" = "OLD"."ASSOC_CollateralPortion.PortionNumber" or "IN"."ASSOC_CollateralPortion.PortionNumber" is null ) and
+  ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" or "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+  ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+);
+
+END

@@ -1,0 +1,28 @@
+view "sap.fsdm.Views::CollateralPoolAssetAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_CollateralPool.CollectionID" as "_CollateralPool_CollectionID",
+      "_CollateralPool.IDSystem" as "_CollateralPool_IDSystem",
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount_FinancialContractID",
+      "_SecuritiesAccount.IDSystem" as "_SecuritiesAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AmountAssignedToPool" as "AmountAssignedToPool",
+      "AssetAssignmentCategory" as "AssetAssignmentCategory",
+      "CurrencyOfAmountAssignedToPool" as "CurrencyOfAmountAssignedToPool",
+      "LongShort" as "LongShort",
+      "PoolCoverageType" as "PoolCoverageType",
+      "ShareAssignedToPool" as "ShareAssignedToPool",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CollateralPoolAssetAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,31 @@
+view "sap.fsdm.SQLViews::Representation_View" 
+as select
+      "TypeOfContact" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_ContactPerson.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PowerOfAttorney" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Representation"
+with associations
+(
+	join "sap.fsdm.SQLViews::AgreedLimit_View" as "_AgreedLimit_ASSOC_ContactWithLimitedPowerOfAttorney"
+	  on "ASSOC_BusinessPartner.BusinessPartnerID" = "_AgreedLimit_ASSOC_ContactWithLimitedPowerOfAttorney"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" AND 
+	     "ASSOC_ContactPerson.BusinessPartnerID" = "_AgreedLimit_ASSOC_ContactWithLimitedPowerOfAttorney"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" AND 
+	     "TypeOfContact" = "_AgreedLimit_ASSOC_ContactWithLimitedPowerOfAttorney"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_ContactPerson"
+	  on "ASSOC_ContactPerson"."BusinessPartnerID" = "ASSOC_ContactPerson.BusinessPartnerID"
+	     
+);

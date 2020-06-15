@@ -1,0 +1,71 @@
+PROCEDURE "sap.fsdm.procedures::CommoditySwapCalculationPeriodEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::CommoditySwapCalculationPeriodTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::CommoditySwapCalculationPeriodTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::CommoditySwapCalculationPeriodTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "IntervalEndDate" is null and
+                         "IntervalStartDate" is null and
+                         "RoleOfPayer" is null and
+                         "_Swap.FinancialContractID" is null and
+                         "_Swap.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"IntervalEndDate",
+"IntervalStartDate",
+"RoleOfPayer",
+"_Swap.FinancialContractID",
+"_Swap.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::CommoditySwapCalculationPeriod" WHERE("IntervalEndDate" ,
+"IntervalStartDate" ,
+"RoleOfPayer" ,
+"_Swap.FinancialContractID" ,
+"_Swap.IDSystem" 
+)in ( select "IntervalEndDate" ,
+"IntervalStartDate" ,
+"RoleOfPayer" ,
+"_Swap.FinancialContractID" ,
+"_Swap.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"IntervalEndDate",
+"IntervalStartDate",
+"RoleOfPayer",
+"_Swap.FinancialContractID",
+"_Swap.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::CommoditySwapCalculationPeriod_Historical" WHERE("IntervalEndDate" ,
+"IntervalStartDate" ,
+"RoleOfPayer" ,
+"_Swap.FinancialContractID" ,
+"_Swap.IDSystem" 
+)in ( select "IntervalEndDate" ,
+"IntervalStartDate" ,
+"RoleOfPayer" ,
+"_Swap.FinancialContractID" ,
+"_Swap.IDSystem" 
+from :ROW );
+
+END

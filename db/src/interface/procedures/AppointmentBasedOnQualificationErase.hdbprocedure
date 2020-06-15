@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::AppointmentBasedOnQualificationErase" (IN ROW "sap.fsdm.tabletypes::AppointmentBasedOnQualificationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_Appointment.SequenceNumber" is null and
+                         "_Appointment._IndividualPerson.BusinessPartnerID" is null and
+                         "_ProofOfQualification.IDSystem" is null and
+                         "_ProofOfQualification.IssuingOrganization" is null and
+                         "_ProofOfQualification.QualificationIdentifier" is null and
+                         "_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::AppointmentBasedOnQualification" WHERE
+("_Appointment.SequenceNumber" ,
+"_Appointment._IndividualPerson.BusinessPartnerID" ,
+"_ProofOfQualification.IDSystem" ,
+"_ProofOfQualification.IssuingOrganization" ,
+"_ProofOfQualification.QualificationIdentifier" ,
+"_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+)in ( select "OLD"."_Appointment.SequenceNumber" ,
+"OLD"."_Appointment._IndividualPerson.BusinessPartnerID" ,
+"OLD"."_ProofOfQualification.IDSystem" ,
+"OLD"."_ProofOfQualification.IssuingOrganization" ,
+"OLD"."_ProofOfQualification.QualificationIdentifier" ,
+"OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::AppointmentBasedOnQualification" "OLD"
+on
+  ( "IN"."_Appointment.SequenceNumber" = "OLD"."_Appointment.SequenceNumber" or "IN"."_Appointment.SequenceNumber" is null ) and
+  ( "IN"."_Appointment._IndividualPerson.BusinessPartnerID" = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" or "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null ) and
+  ( "IN"."_ProofOfQualification.IDSystem" = "OLD"."_ProofOfQualification.IDSystem" or "IN"."_ProofOfQualification.IDSystem" is null ) and
+  ( "IN"."_ProofOfQualification.IssuingOrganization" = "OLD"."_ProofOfQualification.IssuingOrganization" or "IN"."_ProofOfQualification.IssuingOrganization" is null ) and
+  ( "IN"."_ProofOfQualification.QualificationIdentifier" = "OLD"."_ProofOfQualification.QualificationIdentifier" or "IN"."_ProofOfQualification.QualificationIdentifier" is null ) and
+  ( "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" = "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" or "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::AppointmentBasedOnQualification_Historical" WHERE
+("_Appointment.SequenceNumber" ,
+"_Appointment._IndividualPerson.BusinessPartnerID" ,
+"_ProofOfQualification.IDSystem" ,
+"_ProofOfQualification.IssuingOrganization" ,
+"_ProofOfQualification.QualificationIdentifier" ,
+"_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+)in ( select "OLD"."_Appointment.SequenceNumber" ,
+"OLD"."_Appointment._IndividualPerson.BusinessPartnerID" ,
+"OLD"."_ProofOfQualification.IDSystem" ,
+"OLD"."_ProofOfQualification.IssuingOrganization" ,
+"OLD"."_ProofOfQualification.QualificationIdentifier" ,
+"OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::AppointmentBasedOnQualification_Historical" "OLD"
+on
+  ( "IN"."_Appointment.SequenceNumber" = "OLD"."_Appointment.SequenceNumber" or "IN"."_Appointment.SequenceNumber" is null ) and
+  ( "IN"."_Appointment._IndividualPerson.BusinessPartnerID" = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" or "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null ) and
+  ( "IN"."_ProofOfQualification.IDSystem" = "OLD"."_ProofOfQualification.IDSystem" or "IN"."_ProofOfQualification.IDSystem" is null ) and
+  ( "IN"."_ProofOfQualification.IssuingOrganization" = "OLD"."_ProofOfQualification.IssuingOrganization" or "IN"."_ProofOfQualification.IssuingOrganization" is null ) and
+  ( "IN"."_ProofOfQualification.QualificationIdentifier" = "OLD"."_ProofOfQualification.QualificationIdentifier" or "IN"."_ProofOfQualification.QualificationIdentifier" is null ) and
+  ( "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" = "OLD"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" or "IN"."_ProofOfQualification._IndividualPerson.BusinessPartnerID" is null ) 
+);
+
+END

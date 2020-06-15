@@ -1,0 +1,118 @@
+PROCEDURE "sap.fsdm.procedures::DueSettlementListErase" (IN ROW "sap.fsdm.tabletypes::DueSettlementTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "_Collection.IDSystem" is null and
+                         "_Collection.CollectionID" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null and
+                         "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_PositionCurrencyForAccount.PositionCurrency" is null and
+                         "DueDate" is null and
+                         "DueSettlementsDeterminationMethod" is null and
+                         "Scenario" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::DueSettlement" WHERE
+("DueDate" ,
+"DueSettlementsDeterminationMethod" ,
+"ItemNumber" ,
+"Scenario" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_Collection.CollectionID" ,
+"_Collection.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."DueDate" ,
+"OLD"."DueSettlementsDeterminationMethod" ,
+"OLD"."ItemNumber" ,
+"OLD"."Scenario" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_Collection.CollectionID" ,
+"OLD"."_Collection.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::DueSettlement" "OLD"
+on
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+  ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+  ( "IN"."DueDate" = "OLD"."DueDate" or "IN"."DueDate" is null ) and
+  ( "IN"."DueSettlementsDeterminationMethod" = "OLD"."DueSettlementsDeterminationMethod" or "IN"."DueSettlementsDeterminationMethod" is null ) and
+  ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::DueSettlement_Historical" WHERE
+("DueDate" ,
+"DueSettlementsDeterminationMethod" ,
+"ItemNumber" ,
+"Scenario" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_Collection.CollectionID" ,
+"_Collection.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "OLD"."DueDate" ,
+"OLD"."DueSettlementsDeterminationMethod" ,
+"OLD"."ItemNumber" ,
+"OLD"."Scenario" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_Collection.CollectionID" ,
+"OLD"."_Collection.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::DueSettlement_Historical" "OLD"
+on
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+  ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+  ( "IN"."DueDate" = "OLD"."DueDate" or "IN"."DueDate" is null ) and
+  ( "IN"."DueSettlementsDeterminationMethod" = "OLD"."DueSettlementsDeterminationMethod" or "IN"."DueSettlementsDeterminationMethod" is null ) and
+  ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) 
+);
+
+END

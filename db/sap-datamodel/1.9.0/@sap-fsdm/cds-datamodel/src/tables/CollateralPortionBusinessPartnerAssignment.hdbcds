@@ -1,0 +1,48 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"CollateralPortion";
+
+entity "CollateralPortionBusinessPartnerAssignment" {
+    key "_BusinessPartner"                                : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_CollateralPortion"                              : association to CollateralPortion {
+                                                                                               PortionNumber,
+                                                                                               ASSOC_CollateralAgreement
+                                                                                             }                   not null;
+    key "BusinessValidFrom"                               : LocalDate;
+    key "BusinessValidTo"                                 : LocalDate;
+        "SystemValidFrom"                                 : UTCTimestamp                                         not null;
+        "SystemValidTo"                                   : UTCTimestamp                                         not null;
+        "RankAmongBusinessPartnersCoveredByTheCollateral" : Integer;
+        "RankAmongCollateralsCoveringTheBusinessPartner"  : Integer;
+        "SourceSystemID"                                  : String(128);
+        "ChangeTimestampInSourceSystem"                   : UTCTimestamp;
+        "ChangingUserInSourceSystem"                      : String(128);
+        "ChangingProcessType"                             : String(40);
+        "ChangingProcessID"                               : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CollateralPortionBusinessPartnerAssignment_Historical" {
+    "_BusinessPartner"                                : association to BusinessPartner { BusinessPartnerID } not null;
+    "_CollateralPortion"                              : association to CollateralPortion {
+                                                                                           PortionNumber,
+                                                                                           ASSOC_CollateralAgreement
+                                                                                         }                   not null;
+    "BusinessValidFrom"                               : LocalDate                                            not null;
+    "BusinessValidTo"                                 : LocalDate                                            not null;
+    "SystemValidFrom"                                 : UTCTimestamp                                         not null;
+    "SystemValidTo"                                   : UTCTimestamp                                         not null;
+    "RankAmongBusinessPartnersCoveredByTheCollateral" : Integer;
+    "RankAmongCollateralsCoveringTheBusinessPartner"  : Integer;
+    "SourceSystemID"                                  : String(128);
+    "ChangeTimestampInSourceSystem"                   : UTCTimestamp;
+    "ChangingUserInSourceSystem"                      : String(128);
+    "ChangingProcessType"                             : String(40);
+    "ChangingProcessID"                               : String(128);
+}
+technical configuration {
+    column store;
+};

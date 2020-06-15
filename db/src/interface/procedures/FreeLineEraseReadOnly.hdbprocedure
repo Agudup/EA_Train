@@ -1,0 +1,323 @@
+PROCEDURE "sap.fsdm.procedures::FreeLineEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::FreeLineTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::FreeLineTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::FreeLineTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_AgreedLimit.SequenceNumber" is null and
+                         "ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null and
+                         "ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem" is null and
+                         "ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" is null and
+                         "ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" is null and
+                         "ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber" is null and
+                         "ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null and
+                         "ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem" is null and
+                         "ASSOC_EffectiveLimit.LimitType" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"ASSOC_AgreedLimit.SequenceNumber",
+"ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID",
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact",
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber",
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem",
+"ASSOC_EffectiveLimit.LimitType",
+"ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::FreeLine" WHERE("ASSOC_AgreedLimit.SequenceNumber" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.LimitType" ,
+"ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+)in ( select "ASSOC_AgreedLimit.SequenceNumber" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.LimitType" ,
+"ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"ASSOC_AgreedLimit.SequenceNumber",
+"ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID",
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact",
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem",
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber",
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem",
+"ASSOC_EffectiveLimit.LimitType",
+"ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem",
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::FreeLine_Historical" WHERE("ASSOC_AgreedLimit.SequenceNumber" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.LimitType" ,
+"ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+)in ( select "ASSOC_AgreedLimit.SequenceNumber" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_AgreedLimit.ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_AgreedLimit._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_AgreedLimit._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.LimitType" ,
+"ASSOC_EffectiveLimit.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_EffectiveLimit.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_EffectiveLimit.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" 
+from :ROW );
+
+END

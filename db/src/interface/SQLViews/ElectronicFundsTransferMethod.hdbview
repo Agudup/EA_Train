@@ -1,0 +1,36 @@
+view "sap.fsdm.SQLViews::ElectronicFundsTransferMethod_View" 
+as select
+      "ElectronicFundsTransferMethodName" ,
+      "ElectronicFundsTransferMethodType" ,
+      "_BusinessPartner.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AccountBasedElectronicFundsTransterCategory" ,
+      "BankAccountID" ,
+      "BankAccountIdentificationSystem" ,
+      "BankID" ,
+      "BankIdentificationSystem" ,
+      "ElectronicFundsTransferMethodCategory" ,
+      "IBAN" ,
+      "MandateGiven" ,
+      "SWIFT" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ElectronicFundsTransferMethod"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::SettlementAccountAssignment_View" as "_SettlementAccountAssignment__ElectronicFundsTransferMethod"
+	  on "_BusinessPartner.BusinessPartnerID" = "_SettlementAccountAssignment__ElectronicFundsTransferMethod"."_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" AND 
+	     "ElectronicFundsTransferMethodType" = "_SettlementAccountAssignment__ElectronicFundsTransferMethod"."_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" AND 
+	     "ElectronicFundsTransferMethodName" = "_SettlementAccountAssignment__ElectronicFundsTransferMethod"."_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName"
+	     
+);

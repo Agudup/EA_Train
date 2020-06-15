@@ -1,0 +1,93 @@
+PROCEDURE "sap.fsdm.procedures::MasterRatingMapErase" (IN ROW "sap.fsdm.tabletypes::MasterRatingMapTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "IsFxRating" is null and
+                         "MasterRating" is null and
+                         "MasterRatingScale" is null and
+                         "Rating" is null and
+                         "RatingAgency" is null and
+                         "RatingCategory" is null and
+                         "RatingMethod" is null and
+                         "TimeHorizon" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::MasterRatingMap" WHERE
+("IsFxRating" ,
+"MasterRating" ,
+"MasterRatingScale" ,
+"Rating" ,
+"RatingAgency" ,
+"RatingCategory" ,
+"RatingMethod" ,
+"TimeHorizon" 
+)in ( select "OLD"."IsFxRating" ,
+"OLD"."MasterRating" ,
+"OLD"."MasterRatingScale" ,
+"OLD"."Rating" ,
+"OLD"."RatingAgency" ,
+"OLD"."RatingCategory" ,
+"OLD"."RatingMethod" ,
+"OLD"."TimeHorizon" 
+from :ROW "IN"
+inner join "sap.fsdm::MasterRatingMap" "OLD"
+on
+  ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+  ( "IN"."MasterRating" = "OLD"."MasterRating" or "IN"."MasterRating" is null ) and
+  ( "IN"."MasterRatingScale" = "OLD"."MasterRatingScale" or "IN"."MasterRatingScale" is null ) and
+  ( "IN"."Rating" = "OLD"."Rating" or "IN"."Rating" is null ) and
+  ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+  ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+  ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+  ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::MasterRatingMap_Historical" WHERE
+("IsFxRating" ,
+"MasterRating" ,
+"MasterRatingScale" ,
+"Rating" ,
+"RatingAgency" ,
+"RatingCategory" ,
+"RatingMethod" ,
+"TimeHorizon" 
+)in ( select "OLD"."IsFxRating" ,
+"OLD"."MasterRating" ,
+"OLD"."MasterRatingScale" ,
+"OLD"."Rating" ,
+"OLD"."RatingAgency" ,
+"OLD"."RatingCategory" ,
+"OLD"."RatingMethod" ,
+"OLD"."TimeHorizon" 
+from :ROW "IN"
+inner join "sap.fsdm::MasterRatingMap_Historical" "OLD"
+on
+  ( "IN"."IsFxRating" = "OLD"."IsFxRating" or "IN"."IsFxRating" is null ) and
+  ( "IN"."MasterRating" = "OLD"."MasterRating" or "IN"."MasterRating" is null ) and
+  ( "IN"."MasterRatingScale" = "OLD"."MasterRatingScale" or "IN"."MasterRatingScale" is null ) and
+  ( "IN"."Rating" = "OLD"."Rating" or "IN"."Rating" is null ) and
+  ( "IN"."RatingAgency" = "OLD"."RatingAgency" or "IN"."RatingAgency" is null ) and
+  ( "IN"."RatingCategory" = "OLD"."RatingCategory" or "IN"."RatingCategory" is null ) and
+  ( "IN"."RatingMethod" = "OLD"."RatingMethod" or "IN"."RatingMethod" is null ) and
+  ( "IN"."TimeHorizon" = "OLD"."TimeHorizon" or "IN"."TimeHorizon" is null ) 
+);
+
+END

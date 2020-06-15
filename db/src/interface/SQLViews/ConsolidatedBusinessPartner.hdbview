@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::ConsolidatedBusinessPartner_View" 
+as select
+      "ConsolidationSystem" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_MotherCompany.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "MethodOfConsolidation" ,
+      "ProportionOfConsolidation" ,
+      "ReasonOfConsolidation" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ConsolidatedBusinessPartner"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_MotherCompany"
+	  on "ASSOC_MotherCompany"."BusinessPartnerID" = "ASSOC_MotherCompany.BusinessPartnerID"
+	     
+);

@@ -1,0 +1,136 @@
+view "sap.fsdm.SQLViews::OrganizationalUnit_View" 
+as select
+      "OrganizationalUnitID" ,
+      "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "OrganisationalUnitType" ,
+      "OrganizationalUnitCategory" ,
+      "OrganizationalUnitName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::OrganizationalUnit"
+with associations
+(
+	join "sap.fsdm.SQLViews::Address_View" as "_Address_ASSOC_OrganizationalUnit"
+	  on "OrganizationalUnitID" = "_Address_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_Address_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "_BankingChannel_ASSOC_OrgUnitManagingChannel"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_BankingChannel_ASSOC_OrgUnitManagingChannel"."ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_BankingChannel_ASSOC_OrgUnitManagingChannel"."ASSOC_OrgUnitManagingChannel.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerOrganizationalUnitAssignment_View" as "_BusinessPartnerOrganizationalUnitAssignment_ASSOC_OrganizationalUnit"
+	  on "OrganizationalUnitID" = "_BusinessPartnerOrganizationalUnitAssignment_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_BusinessPartnerOrganizationalUnitAssignment_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_Collection__OrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_Collection__OrganizationalUnit"."_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_Collection__OrganizationalUnit"."_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_CommunicationEvent_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_CommunicationEvent_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveLimit_View" as "_EffectiveLimit_ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_EffectiveLimit_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_EffectiveLimit_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__OrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_FSSubledgerDocument__OrganizationalUnit"."_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_FSSubledgerDocument__OrganizationalUnit"."_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__ProfitCenter"
+	  on "OrganizationalUnitID" = "_FSSubledgerDocument__ProfitCenter"."_ProfitCenter.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_FSSubledgerDocument__ProfitCenter"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__ProfitCenterAtCounterparty"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_FSSubledgerDocument__ProfitCenterAtCounterparty"."_ProfitCenterAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_FSSubledgerDocument__ProfitCenterAtCounterparty"."_ProfitCenterAtCounterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "_FinancialStandardProduct_ASSOC_OrgUnit"
+	  on "OrganizationalUnitID" = "_FinancialStandardProduct_ASSOC_OrgUnit"."ASSOC_OrgUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_FinancialStandardProduct_ASSOC_OrgUnit"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::GLDocument_View" as "_GLDocument__ProfitCenter"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_GLDocument__ProfitCenter"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_GLDocument__ProfitCenter"."_ProfitCenter.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GLDocument_View" as "_GLDocument__ProfitCenterAtCounterparty"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_GLDocument__ProfitCenterAtCounterparty"."_ProfitCenterAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_GLDocument__ProfitCenterAtCounterparty"."_ProfitCenterAtCounterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__BusinessSegment"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_GeneralLedgerAccountBalance__BusinessSegment"."_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_GeneralLedgerAccountBalance__BusinessSegment"."_BusinessSegment.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__BusinessSegmentAtCounterparty"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_GeneralLedgerAccountBalance__BusinessSegmentAtCounterparty"."_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_GeneralLedgerAccountBalance__BusinessSegmentAtCounterparty"."_BusinessSegmentAtCounterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__ProfitCenter"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_GeneralLedgerAccountBalance__ProfitCenter"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_GeneralLedgerAccountBalance__ProfitCenter"."_ProfitCenter.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeneralLedgerAccountBalance_View" as "_GeneralLedgerAccountBalance__ProftCenterAtCouterparty"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_GeneralLedgerAccountBalance__ProftCenterAtCouterparty"."_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_GeneralLedgerAccountBalance__ProftCenterAtCouterparty"."_ProftCenterAtCouterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrgUnitGeographicalUnitResponsibility_View" as "_OrgUnitGeographicalUnitResponsibility_ASSOC_OrgUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrgUnitGeographicalUnitResponsibility_ASSOC_OrgUnit"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_OrgUnitGeographicalUnitResponsibility_ASSOC_OrgUnit"."ASSOC_OrgUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_OrganizationHostingOrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit"."BusinessPartnerID" = "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnitContractAssignment_View" as "_OrganizationalUnitContractAssignment_ASSOC_OrgUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrganizationalUnitContractAssignment_ASSOC_OrgUnit"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_OrganizationalUnitContractAssignment_ASSOC_OrgUnit"."ASSOC_OrgUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnitHierarchyRelation_View" as "_OrganizationalUnitHierarchyRelation_ASSOC_Child"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrganizationalUnitHierarchyRelation_ASSOC_Child"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_OrganizationalUnitHierarchyRelation_ASSOC_Child"."ASSOC_Child.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnitHierarchyRelation_View" as "_OrganizationalUnitHierarchyRelation_ASSOC_Parent"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrganizationalUnitHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_OrganizationalUnitHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnitTradeAssignment_View" as "_OrganizationalUnitTradeAssignment__OrgUnit"
+	  on "OrganizationalUnitID" = "_OrganizationalUnitTradeAssignment__OrgUnit"."_OrgUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrganizationalUnitTradeAssignment__OrgUnit"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhoneNumber_View" as "_PhoneNumber_ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_PhoneNumber_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_PhoneNumber_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "_Receivable_ASSOC_OrganizationUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_Receivable_ASSOC_OrganizationUnit"."ASSOC_OrganizationUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_Receivable_ASSOC_OrganizationUnit"."ASSOC_OrganizationUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__BusinessSegment"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_SubledgerAccountbalance__BusinessSegment"."_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_SubledgerAccountbalance__BusinessSegment"."_BusinessSegment.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__BusinessSegmentAtCounterparty"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_SubledgerAccountbalance__BusinessSegmentAtCounterparty"."_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_SubledgerAccountbalance__BusinessSegmentAtCounterparty"."_BusinessSegmentAtCounterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__ProfitCenter"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_SubledgerAccountbalance__ProfitCenter"."_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_SubledgerAccountbalance__ProfitCenter"."_ProfitCenter.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::SubledgerAccountbalance_View" as "_SubledgerAccountbalance__ProftCenterAtCouterparty"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_SubledgerAccountbalance__ProftCenterAtCouterparty"."_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_SubledgerAccountbalance__ProftCenterAtCouterparty"."_ProftCenterAtCouterparty.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder_ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_TransferOrder_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "OrganizationalUnitID" = "_TransferOrder_ASSOC_OrganizationalUnit"."ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     
+);

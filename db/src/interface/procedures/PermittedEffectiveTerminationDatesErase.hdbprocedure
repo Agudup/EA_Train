@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::PermittedEffectiveTerminationDatesErase" (IN ROW "sap.fsdm.tabletypes::PermittedEffectiveTerminationDatesTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "SequenceNumber" is null and
+                         "ASSOC_TerminationOption.SequenceNumber" is null and
+                         "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_TerminationOption._Trade.IDSystem" is null and
+                         "ASSOC_TerminationOption._Trade.TradeID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::PermittedEffectiveTerminationDates" WHERE
+("SequenceNumber" ,
+"ASSOC_TerminationOption.SequenceNumber" ,
+"ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_TerminationOption._Trade.IDSystem" ,
+"ASSOC_TerminationOption._Trade.TradeID" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_TerminationOption.SequenceNumber" ,
+"OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_TerminationOption._Trade.IDSystem" ,
+"OLD"."ASSOC_TerminationOption._Trade.TradeID" 
+from :ROW "IN"
+inner join "sap.fsdm::PermittedEffectiveTerminationDates" "OLD"
+on
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_TerminationOption.SequenceNumber" = "OLD"."ASSOC_TerminationOption.SequenceNumber" or "IN"."ASSOC_TerminationOption.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_TerminationOption._Trade.IDSystem" = "OLD"."ASSOC_TerminationOption._Trade.IDSystem" or "IN"."ASSOC_TerminationOption._Trade.IDSystem" is null ) and
+  ( "IN"."ASSOC_TerminationOption._Trade.TradeID" = "OLD"."ASSOC_TerminationOption._Trade.TradeID" or "IN"."ASSOC_TerminationOption._Trade.TradeID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::PermittedEffectiveTerminationDates_Historical" WHERE
+("SequenceNumber" ,
+"ASSOC_TerminationOption.SequenceNumber" ,
+"ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_TerminationOption._Trade.IDSystem" ,
+"ASSOC_TerminationOption._Trade.TradeID" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_TerminationOption.SequenceNumber" ,
+"OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_TerminationOption._Trade.IDSystem" ,
+"OLD"."ASSOC_TerminationOption._Trade.TradeID" 
+from :ROW "IN"
+inner join "sap.fsdm::PermittedEffectiveTerminationDates_Historical" "OLD"
+on
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_TerminationOption.SequenceNumber" = "OLD"."ASSOC_TerminationOption.SequenceNumber" or "IN"."ASSOC_TerminationOption.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_TerminationOption._Trade.IDSystem" = "OLD"."ASSOC_TerminationOption._Trade.IDSystem" or "IN"."ASSOC_TerminationOption._Trade.IDSystem" is null ) and
+  ( "IN"."ASSOC_TerminationOption._Trade.TradeID" = "OLD"."ASSOC_TerminationOption._Trade.TradeID" or "IN"."ASSOC_TerminationOption._Trade.TradeID" is null ) 
+);
+
+END

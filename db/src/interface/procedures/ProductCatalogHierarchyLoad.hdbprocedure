@@ -1,0 +1,264 @@
+PROCEDURE "sap.fsdm.procedures::ProductCatalogHierarchyLoad" (IN ROW "sap.fsdm.tabletypes::ProductCatalogHierarchyTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_Child.ProductCatalogItem=' || TO_VARCHAR("_Child.ProductCatalogItem") || ' ' ||
+                '_Child._ProductCatalog.CatalogID=' || TO_VARCHAR("_Child._ProductCatalog.CatalogID") || ' ' ||
+                '_Parent.ProductCatalogItem=' || TO_VARCHAR("_Parent.ProductCatalogItem") || ' ' ||
+                '_Parent._ProductCatalog.CatalogID=' || TO_VARCHAR("_Parent._ProductCatalog.CatalogID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_Child.ProductCatalogItem",
+                        "IN"."_Child._ProductCatalog.CatalogID",
+                        "IN"."_Parent.ProductCatalogItem",
+                        "IN"."_Parent._ProductCatalog.CatalogID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_Child.ProductCatalogItem",
+                        "IN"."_Child._ProductCatalog.CatalogID",
+                        "IN"."_Parent.ProductCatalogItem",
+                        "IN"."_Parent._ProductCatalog.CatalogID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_Child.ProductCatalogItem",
+                        "_Child._ProductCatalog.CatalogID",
+                        "_Parent.ProductCatalogItem",
+                        "_Parent._ProductCatalog.CatalogID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_Child.ProductCatalogItem",
+                                    "IN"."_Child._ProductCatalog.CatalogID",
+                                    "IN"."_Parent.ProductCatalogItem",
+                                    "IN"."_Parent._ProductCatalog.CatalogID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_Child.ProductCatalogItem",
+                                    "IN"."_Child._ProductCatalog.CatalogID",
+                                    "IN"."_Parent.ProductCatalogItem",
+                                    "IN"."_Parent._ProductCatalog.CatalogID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ProductCatalogHierarchy" (
+        "_Child.ProductCatalogItem",
+        "_Child._ProductCatalog.CatalogID",
+        "_Parent.ProductCatalogItem",
+        "_Parent._ProductCatalog.CatalogID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Child.ProductCatalogItem" as "_Child.ProductCatalogItem" ,
+            "OLD__Child._ProductCatalog.CatalogID" as "_Child._ProductCatalog.CatalogID" ,
+            "OLD__Parent.ProductCatalogItem" as "_Parent.ProductCatalogItem" ,
+            "OLD__Parent._ProductCatalog.CatalogID" as "_Parent._ProductCatalog.CatalogID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_Child.ProductCatalogItem",
+                        "IN"."_Child._ProductCatalog.CatalogID",
+                        "IN"."_Parent.ProductCatalogItem",
+                        "IN"."_Parent._ProductCatalog.CatalogID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_Child.ProductCatalogItem" as "OLD__Child.ProductCatalogItem",
+                                "OLD"."_Child._ProductCatalog.CatalogID" as "OLD__Child._ProductCatalog.CatalogID",
+                                "OLD"."_Parent.ProductCatalogItem" as "OLD__Parent.ProductCatalogItem",
+                                "OLD"."_Parent._ProductCatalog.CatalogID" as "OLD__Parent._ProductCatalog.CatalogID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ProductCatalogHierarchy" as "OLD"
+            on
+                ( case when "IN"."_Child.ProductCatalogItem" is null then '' else "IN"."_Child.ProductCatalogItem" end ) = "OLD"."_Child.ProductCatalogItem" and
+                ( case when "IN"."_Child._ProductCatalog.CatalogID" is null then '' else "IN"."_Child._ProductCatalog.CatalogID" end ) = "OLD"."_Child._ProductCatalog.CatalogID" and
+                ( case when "IN"."_Parent.ProductCatalogItem" is null then '' else "IN"."_Parent.ProductCatalogItem" end ) = "OLD"."_Parent.ProductCatalogItem" and
+                ( case when "IN"."_Parent._ProductCatalog.CatalogID" is null then '' else "IN"."_Parent._ProductCatalog.CatalogID" end ) = "OLD"."_Parent._ProductCatalog.CatalogID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ProductCatalogHierarchy" (
+        "_Child.ProductCatalogItem",
+        "_Child._ProductCatalog.CatalogID",
+        "_Parent.ProductCatalogItem",
+        "_Parent._ProductCatalog.CatalogID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Child.ProductCatalogItem" as "_Child.ProductCatalogItem",
+            "OLD__Child._ProductCatalog.CatalogID" as "_Child._ProductCatalog.CatalogID",
+            "OLD__Parent.ProductCatalogItem" as "_Parent.ProductCatalogItem",
+            "OLD__Parent._ProductCatalog.CatalogID" as "_Parent._ProductCatalog.CatalogID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_Child.ProductCatalogItem",
+                        "IN"."_Child._ProductCatalog.CatalogID",
+                        "IN"."_Parent.ProductCatalogItem",
+                        "IN"."_Parent._ProductCatalog.CatalogID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_Child.ProductCatalogItem" as "OLD__Child.ProductCatalogItem",
+                        "OLD"."_Child._ProductCatalog.CatalogID" as "OLD__Child._ProductCatalog.CatalogID",
+                        "OLD"."_Parent.ProductCatalogItem" as "OLD__Parent.ProductCatalogItem",
+                        "OLD"."_Parent._ProductCatalog.CatalogID" as "OLD__Parent._ProductCatalog.CatalogID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ProductCatalogHierarchy" as "OLD"
+            on
+                ( case when "IN"."_Child.ProductCatalogItem" is null then '' else "IN"."_Child.ProductCatalogItem" end ) = "OLD"."_Child.ProductCatalogItem" and
+                ( case when "IN"."_Child._ProductCatalog.CatalogID" is null then '' else "IN"."_Child._ProductCatalog.CatalogID" end ) = "OLD"."_Child._ProductCatalog.CatalogID" and
+                ( case when "IN"."_Parent.ProductCatalogItem" is null then '' else "IN"."_Parent.ProductCatalogItem" end ) = "OLD"."_Parent.ProductCatalogItem" and
+                ( case when "IN"."_Parent._ProductCatalog.CatalogID" is null then '' else "IN"."_Parent._ProductCatalog.CatalogID" end ) = "OLD"."_Parent._ProductCatalog.CatalogID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ProductCatalogHierarchy"
+    where (
+        "_Child.ProductCatalogItem",
+        "_Child._ProductCatalog.CatalogID",
+        "_Parent.ProductCatalogItem",
+        "_Parent._ProductCatalog.CatalogID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_Child.ProductCatalogItem",
+            "OLD"."_Child._ProductCatalog.CatalogID",
+            "OLD"."_Parent.ProductCatalogItem",
+            "OLD"."_Parent._ProductCatalog.CatalogID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ProductCatalogHierarchy" as "OLD"
+        on
+           ( case when "IN"."_Child.ProductCatalogItem" is null then '' else "IN"."_Child.ProductCatalogItem" end ) = "OLD"."_Child.ProductCatalogItem" and
+           ( case when "IN"."_Child._ProductCatalog.CatalogID" is null then '' else "IN"."_Child._ProductCatalog.CatalogID" end ) = "OLD"."_Child._ProductCatalog.CatalogID" and
+           ( case when "IN"."_Parent.ProductCatalogItem" is null then '' else "IN"."_Parent.ProductCatalogItem" end ) = "OLD"."_Parent.ProductCatalogItem" and
+           ( case when "IN"."_Parent._ProductCatalog.CatalogID" is null then '' else "IN"."_Parent._ProductCatalog.CatalogID" end ) = "OLD"."_Parent._ProductCatalog.CatalogID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::ProductCatalogHierarchy" (
+        "_Child.ProductCatalogItem",
+        "_Child._ProductCatalog.CatalogID",
+        "_Parent.ProductCatalogItem",
+        "_Parent._ProductCatalog.CatalogID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "_Child.ProductCatalogItem" is null then '' else "_Child.ProductCatalogItem" end ) as "_Child.ProductCatalogItem",
+            ( case when "_Child._ProductCatalog.CatalogID" is null then '' else "_Child._ProductCatalog.CatalogID" end ) as "_Child._ProductCatalog.CatalogID",
+            ( case when "_Parent.ProductCatalogItem" is null then '' else "_Parent.ProductCatalogItem" end ) as "_Parent.ProductCatalogItem",
+            ( case when "_Parent._ProductCatalog.CatalogID" is null then '' else "_Parent._ProductCatalog.CatalogID" end ) as "_Parent._ProductCatalog.CatalogID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

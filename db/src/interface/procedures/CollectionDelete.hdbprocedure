@@ -1,0 +1,301 @@
+PROCEDURE "sap.fsdm.procedures::CollectionDelete" (IN ROW "sap.fsdm.tabletypes::CollectionTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CollectionID=' || TO_VARCHAR("CollectionID") || ' ' ||
+                'IDSystem=' || TO_VARCHAR("IDSystem") || ' ' ||
+                '_Client.BusinessPartnerID=' || TO_VARCHAR("_Client.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CollectionID",
+                        "IN"."IDSystem",
+                        "IN"."_Client.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CollectionID",
+                        "IN"."IDSystem",
+                        "IN"."_Client.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CollectionID",
+                        "IDSystem",
+                        "_Client.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CollectionID",
+                                    "IN"."IDSystem",
+                                    "IN"."_Client.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CollectionID",
+                                    "IN"."IDSystem",
+                                    "IN"."_Client.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Collection" (
+        "CollectionID",
+        "IDSystem",
+        "_Client.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_EmployeeResponsibleForPortfolio.BusinessPartnerID",
+        "_OrganizationalUnit.OrganizationalUnitID",
+        "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "CollateralPoolCoveringType",
+        "CollateralPoolType",
+        "CollectionCategory",
+        "CollectionName",
+        "CountryOfCollateralPoolCovering",
+        "Distributed",
+        "FinancialInstrumentPortfolioType",
+        "InvestmentObjective",
+        "ManagingUnit",
+        "PortfolioCategory",
+        "TradingDeskType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_CollectionID" as "CollectionID" ,
+            "OLD_IDSystem" as "IDSystem" ,
+            "OLD__Client.BusinessPartnerID" as "_Client.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__EmployeeResponsibleForPortfolio.BusinessPartnerID" as "_EmployeeResponsibleForPortfolio.BusinessPartnerID" ,
+            "OLD__OrganizationalUnit.OrganizationalUnitID" as "_OrganizationalUnit.OrganizationalUnitID" ,
+            "OLD__OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "OLD_CollateralPoolCoveringType" as "CollateralPoolCoveringType" ,
+            "OLD_CollateralPoolType" as "CollateralPoolType" ,
+            "OLD_CollectionCategory" as "CollectionCategory" ,
+            "OLD_CollectionName" as "CollectionName" ,
+            "OLD_CountryOfCollateralPoolCovering" as "CountryOfCollateralPoolCovering" ,
+            "OLD_Distributed" as "Distributed" ,
+            "OLD_FinancialInstrumentPortfolioType" as "FinancialInstrumentPortfolioType" ,
+            "OLD_InvestmentObjective" as "InvestmentObjective" ,
+            "OLD_ManagingUnit" as "ManagingUnit" ,
+            "OLD_PortfolioCategory" as "PortfolioCategory" ,
+            "OLD_TradingDeskType" as "TradingDeskType" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."CollectionID",
+                        "OLD"."IDSystem",
+                        "OLD"."_Client.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."CollectionID" as "OLD_CollectionID",
+                "OLD"."IDSystem" as "OLD_IDSystem",
+                "OLD"."_Client.BusinessPartnerID" as "OLD__Client.BusinessPartnerID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_EmployeeResponsibleForPortfolio.BusinessPartnerID" as "OLD__EmployeeResponsibleForPortfolio.BusinessPartnerID",
+                "OLD"."_OrganizationalUnit.OrganizationalUnitID" as "OLD__OrganizationalUnit.OrganizationalUnitID",
+                "OLD"."_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                "OLD"."CollateralPoolCoveringType" as "OLD_CollateralPoolCoveringType",
+                "OLD"."CollateralPoolType" as "OLD_CollateralPoolType",
+                "OLD"."CollectionCategory" as "OLD_CollectionCategory",
+                "OLD"."CollectionName" as "OLD_CollectionName",
+                "OLD"."CountryOfCollateralPoolCovering" as "OLD_CountryOfCollateralPoolCovering",
+                "OLD"."Distributed" as "OLD_Distributed",
+                "OLD"."FinancialInstrumentPortfolioType" as "OLD_FinancialInstrumentPortfolioType",
+                "OLD"."InvestmentObjective" as "OLD_InvestmentObjective",
+                "OLD"."ManagingUnit" as "OLD_ManagingUnit",
+                "OLD"."PortfolioCategory" as "OLD_PortfolioCategory",
+                "OLD"."TradingDeskType" as "OLD_TradingDeskType",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Collection" as "OLD"
+            on
+                      ( "IN"."CollectionID" = "OLD"."CollectionID" or "IN"."CollectionID" is null ) and
+                      ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+                      ( "IN"."_Client.BusinessPartnerID" = "OLD"."_Client.BusinessPartnerID" or "IN"."_Client.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Collection" (
+        "CollectionID",
+        "IDSystem",
+        "_Client.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_EmployeeResponsibleForPortfolio.BusinessPartnerID",
+        "_OrganizationalUnit.OrganizationalUnitID",
+        "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "CollateralPoolCoveringType",
+        "CollateralPoolType",
+        "CollectionCategory",
+        "CollectionName",
+        "CountryOfCollateralPoolCovering",
+        "Distributed",
+        "FinancialInstrumentPortfolioType",
+        "InvestmentObjective",
+        "ManagingUnit",
+        "PortfolioCategory",
+        "TradingDeskType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_CollectionID" as "CollectionID",
+            "OLD_IDSystem" as "IDSystem",
+            "OLD__Client.BusinessPartnerID" as "_Client.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__EmployeeResponsibleForPortfolio.BusinessPartnerID" as "_EmployeeResponsibleForPortfolio.BusinessPartnerID",
+            "OLD__OrganizationalUnit.OrganizationalUnitID" as "_OrganizationalUnit.OrganizationalUnitID",
+            "OLD__OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD_CollateralPoolCoveringType" as "CollateralPoolCoveringType",
+            "OLD_CollateralPoolType" as "CollateralPoolType",
+            "OLD_CollectionCategory" as "CollectionCategory",
+            "OLD_CollectionName" as "CollectionName",
+            "OLD_CountryOfCollateralPoolCovering" as "CountryOfCollateralPoolCovering",
+            "OLD_Distributed" as "Distributed",
+            "OLD_FinancialInstrumentPortfolioType" as "FinancialInstrumentPortfolioType",
+            "OLD_InvestmentObjective" as "InvestmentObjective",
+            "OLD_ManagingUnit" as "ManagingUnit",
+            "OLD_PortfolioCategory" as "PortfolioCategory",
+            "OLD_TradingDeskType" as "TradingDeskType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."CollectionID",
+                        "OLD"."IDSystem",
+                        "OLD"."_Client.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."CollectionID" as "OLD_CollectionID",
+                "OLD"."IDSystem" as "OLD_IDSystem",
+                "OLD"."_Client.BusinessPartnerID" as "OLD__Client.BusinessPartnerID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_EmployeeResponsibleForPortfolio.BusinessPartnerID" as "OLD__EmployeeResponsibleForPortfolio.BusinessPartnerID",
+                "OLD"."_OrganizationalUnit.OrganizationalUnitID" as "OLD__OrganizationalUnit.OrganizationalUnitID",
+                "OLD"."_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                "OLD"."CollateralPoolCoveringType" as "OLD_CollateralPoolCoveringType",
+                "OLD"."CollateralPoolType" as "OLD_CollateralPoolType",
+                "OLD"."CollectionCategory" as "OLD_CollectionCategory",
+                "OLD"."CollectionName" as "OLD_CollectionName",
+                "OLD"."CountryOfCollateralPoolCovering" as "OLD_CountryOfCollateralPoolCovering",
+                "OLD"."Distributed" as "OLD_Distributed",
+                "OLD"."FinancialInstrumentPortfolioType" as "OLD_FinancialInstrumentPortfolioType",
+                "OLD"."InvestmentObjective" as "OLD_InvestmentObjective",
+                "OLD"."ManagingUnit" as "OLD_ManagingUnit",
+                "OLD"."PortfolioCategory" as "OLD_PortfolioCategory",
+                "OLD"."TradingDeskType" as "OLD_TradingDeskType",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Collection" as "OLD"
+            on
+                                                ( "IN"."CollectionID" = "OLD"."CollectionID" or "IN"."CollectionID" is null ) and
+                                                ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+                                                ( "IN"."_Client.BusinessPartnerID" = "OLD"."_Client.BusinessPartnerID" or "IN"."_Client.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Collection"
+    where (
+        "CollectionID",
+        "IDSystem",
+        "_Client.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."CollectionID",
+            "OLD"."IDSystem",
+            "OLD"."_Client.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Collection" as "OLD"
+        on
+                                       ( "IN"."CollectionID" = "OLD"."CollectionID" or "IN"."CollectionID" is null ) and
+                                       ( "IN"."IDSystem" = "OLD"."IDSystem" or "IN"."IDSystem" is null ) and
+                                       ( "IN"."_Client.BusinessPartnerID" = "OLD"."_Client.BusinessPartnerID" or "IN"."_Client.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

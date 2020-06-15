@@ -1,0 +1,47 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"PhysicalAsset";
+using "sap"."fsdm"::"BankingChannel";
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "PhysicalAssetLiquidationEvent" {
+    key "LiquidationEventDate"              : LocalDate;
+    key "LiquidationEventType"              : String(40);
+    key "ASSOC_PhysicalAsset"               : association to PhysicalAsset { PhysicalAssetID }      not null;
+        "SystemValidFrom"                   : UTCTimestamp                                          not null;
+        "SystemValidTo"                     : UTCTimestamp                                          not null;
+        "ASSOC_BankingChannel"              : association to BankingChannel { BankingChannelID };
+        "ASSOC_BusinessEventDataOwner"      : association to BusinessPartner { BusinessPartnerID };
+        "LiquidationEventOutcome"           : String(40);
+        "RealizedLiquidationAmount"         : Decimal(34, 6);
+        "RealizedLiquidationAmountCurrency" : String(3);
+        "SourceSystemID"                    : String(128);
+        "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+        "ChangingUserInSourceSystem"        : String(128);
+        "ChangingProcessType"               : String(40);
+        "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PhysicalAssetLiquidationEvent_Historical" {
+    "LiquidationEventDate"              : LocalDate                                             not null;
+    "LiquidationEventType"              : String(40)                                            not null;
+    "ASSOC_PhysicalAsset"               : association to PhysicalAsset { PhysicalAssetID }      not null;
+    "SystemValidFrom"                   : UTCTimestamp                                          not null;
+    "SystemValidTo"                     : UTCTimestamp                                          not null;
+    "ASSOC_BankingChannel"              : association to BankingChannel { BankingChannelID };
+    "ASSOC_BusinessEventDataOwner"      : association to BusinessPartner { BusinessPartnerID };
+    "LiquidationEventOutcome"           : String(40);
+    "RealizedLiquidationAmount"         : Decimal(34, 6);
+    "RealizedLiquidationAmountCurrency" : String(3);
+    "SourceSystemID"                    : String(128);
+    "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+    "ChangingUserInSourceSystem"        : String(128);
+    "ChangingProcessType"               : String(40);
+    "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};

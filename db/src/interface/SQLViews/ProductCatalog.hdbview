@@ -1,0 +1,21 @@
+view "sap.fsdm.SQLViews::ProductCatalog_View" 
+as select
+      "CatalogID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CatalogName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProductCatalog"
+with associations
+(
+	join "sap.fsdm.SQLViews::ProductCatalogItem_View" as "_ProductCatalogItem__ProductCatalog"
+	  on "CatalogID" = "_ProductCatalogItem__ProductCatalog"."_ProductCatalog.CatalogID"
+	     
+);

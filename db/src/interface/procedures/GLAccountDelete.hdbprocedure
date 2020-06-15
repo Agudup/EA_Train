@@ -1,0 +1,228 @@
+PROCEDURE "sap.fsdm.procedures::GLAccountDelete" (IN ROW "sap.fsdm.tabletypes::GLAccountTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'GLAccount=' || TO_VARCHAR("GLAccount") || ' ' ||
+                '_ChartOfAccounts.ChartOfAccountId=' || TO_VARCHAR("_ChartOfAccounts.ChartOfAccountId") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."GLAccount",
+                        "IN"."_ChartOfAccounts.ChartOfAccountId"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."GLAccount",
+                        "IN"."_ChartOfAccounts.ChartOfAccountId"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "GLAccount",
+                        "_ChartOfAccounts.ChartOfAccountId"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."GLAccount",
+                                    "IN"."_ChartOfAccounts.ChartOfAccountId"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."GLAccount",
+                                    "IN"."_ChartOfAccounts.ChartOfAccountId"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::GLAccount" (
+        "GLAccount",
+        "_ChartOfAccounts.ChartOfAccountId",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_GLAccountGroup.GLAccountGroupID",
+        "AssetLiabilityAssignment",
+        "GLAccountCurrency",
+        "GLAccountDescription",
+        "GLAccountType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_GLAccount" as "GLAccount" ,
+            "OLD__ChartOfAccounts.ChartOfAccountId" as "_ChartOfAccounts.ChartOfAccountId" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__GLAccountGroup.GLAccountGroupID" as "_GLAccountGroup.GLAccountGroupID" ,
+            "OLD_AssetLiabilityAssignment" as "AssetLiabilityAssignment" ,
+            "OLD_GLAccountCurrency" as "GLAccountCurrency" ,
+            "OLD_GLAccountDescription" as "GLAccountDescription" ,
+            "OLD_GLAccountType" as "GLAccountType" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."GLAccount",
+                        "OLD"."_ChartOfAccounts.ChartOfAccountId",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."GLAccount" as "OLD_GLAccount",
+                "OLD"."_ChartOfAccounts.ChartOfAccountId" as "OLD__ChartOfAccounts.ChartOfAccountId",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_GLAccountGroup.GLAccountGroupID" as "OLD__GLAccountGroup.GLAccountGroupID",
+                "OLD"."AssetLiabilityAssignment" as "OLD_AssetLiabilityAssignment",
+                "OLD"."GLAccountCurrency" as "OLD_GLAccountCurrency",
+                "OLD"."GLAccountDescription" as "OLD_GLAccountDescription",
+                "OLD"."GLAccountType" as "OLD_GLAccountType",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GLAccount" as "OLD"
+            on
+                      ( "IN"."GLAccount" = "OLD"."GLAccount" or "IN"."GLAccount" is null ) and
+                      ( "IN"."_ChartOfAccounts.ChartOfAccountId" = "OLD"."_ChartOfAccounts.ChartOfAccountId" or "IN"."_ChartOfAccounts.ChartOfAccountId" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::GLAccount" (
+        "GLAccount",
+        "_ChartOfAccounts.ChartOfAccountId",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_GLAccountGroup.GLAccountGroupID",
+        "AssetLiabilityAssignment",
+        "GLAccountCurrency",
+        "GLAccountDescription",
+        "GLAccountType",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_GLAccount" as "GLAccount",
+            "OLD__ChartOfAccounts.ChartOfAccountId" as "_ChartOfAccounts.ChartOfAccountId",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__GLAccountGroup.GLAccountGroupID" as "_GLAccountGroup.GLAccountGroupID",
+            "OLD_AssetLiabilityAssignment" as "AssetLiabilityAssignment",
+            "OLD_GLAccountCurrency" as "GLAccountCurrency",
+            "OLD_GLAccountDescription" as "GLAccountDescription",
+            "OLD_GLAccountType" as "GLAccountType",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."GLAccount",
+                        "OLD"."_ChartOfAccounts.ChartOfAccountId",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."GLAccount" as "OLD_GLAccount",
+                "OLD"."_ChartOfAccounts.ChartOfAccountId" as "OLD__ChartOfAccounts.ChartOfAccountId",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_GLAccountGroup.GLAccountGroupID" as "OLD__GLAccountGroup.GLAccountGroupID",
+                "OLD"."AssetLiabilityAssignment" as "OLD_AssetLiabilityAssignment",
+                "OLD"."GLAccountCurrency" as "OLD_GLAccountCurrency",
+                "OLD"."GLAccountDescription" as "OLD_GLAccountDescription",
+                "OLD"."GLAccountType" as "OLD_GLAccountType",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GLAccount" as "OLD"
+            on
+                                                ( "IN"."GLAccount" = "OLD"."GLAccount" or "IN"."GLAccount" is null ) and
+                                                ( "IN"."_ChartOfAccounts.ChartOfAccountId" = "OLD"."_ChartOfAccounts.ChartOfAccountId" or "IN"."_ChartOfAccounts.ChartOfAccountId" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::GLAccount"
+    where (
+        "GLAccount",
+        "_ChartOfAccounts.ChartOfAccountId",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."GLAccount",
+            "OLD"."_ChartOfAccounts.ChartOfAccountId",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::GLAccount" as "OLD"
+        on
+                                       ( "IN"."GLAccount" = "OLD"."GLAccount" or "IN"."GLAccount" is null ) and
+                                       ( "IN"."_ChartOfAccounts.ChartOfAccountId" = "OLD"."_ChartOfAccounts.ChartOfAccountId" or "IN"."_ChartOfAccounts.ChartOfAccountId" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

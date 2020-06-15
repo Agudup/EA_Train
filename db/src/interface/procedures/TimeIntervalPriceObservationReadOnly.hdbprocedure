@@ -1,0 +1,93 @@
+PROCEDURE "sap.fsdm.procedures::TimeIntervalPriceObservationReadOnly" (IN ROW "sap.fsdm.tabletypes::TimeIntervalPriceObservationTT" , OUT CURR_DEL "sap.fsdm.tabletypes::TimeIntervalPriceObservationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::TimeIntervalPriceObservationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"PriceDataProvider",
+"PriceSeriesType",
+"TimeIntervalEnd",
+"TimeIntervalStart",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID"
+from "sap.fsdm::TimeIntervalPriceObservation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"TimeIntervalEnd" ,
+"TimeIntervalStart" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select     ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+    ( case when "PriceSeriesType" is null then '' else "PriceSeriesType" end ) as "PriceSeriesType",
+    ( case when "TimeIntervalEnd" is null then '0001-01-01 01:01:01' else "TimeIntervalEnd" end ) as "TimeIntervalEnd",
+    ( case when "TimeIntervalStart" is null then '0001-01-01 01:01:01' else "TimeIntervalStart" end ) as "TimeIntervalStart",
+    ( case when "_Exchange.MarketIdentifierCode" is null then '' else "_Exchange.MarketIdentifierCode" end ) as "_Exchange.MarketIdentifierCode",
+    ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"PriceDataProvider",
+"PriceSeriesType",
+"TimeIntervalEnd",
+"TimeIntervalStart",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID",
+"AdjustedClosePrice",
+"AdjustmentFactor",
+"CleanDirtyIndicator",
+"Close",
+"Currency",
+"High",
+"Low",
+"NumberOfTrades",
+"Open",
+"PriceNotationForm",
+"PriceType",
+"TimeIntervalPriceObservationCategory",
+"TradedNominalAmount",
+"TradedNominalAmountCurrency",
+"TradedQuantity",
+"Unit",
+"Volume",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+    ( case when "PriceSeriesType" is null then '' else "PriceSeriesType" end ) as "PriceSeriesType",
+    ( case when "TimeIntervalEnd" is null then '0001-01-01 01:01:01' else "TimeIntervalEnd" end ) as "TimeIntervalEnd",
+    ( case when "TimeIntervalStart" is null then '0001-01-01 01:01:01' else "TimeIntervalStart" end ) as "TimeIntervalStart",
+    ( case when "_Exchange.MarketIdentifierCode" is null then '' else "_Exchange.MarketIdentifierCode" end ) as "_Exchange.MarketIdentifierCode",
+    ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+  "AdjustedClosePrice"  ,
+  "AdjustmentFactor"  ,
+  "CleanDirtyIndicator"  ,
+  "Close"  ,
+  "Currency"  ,
+  "High"  ,
+  "Low"  ,
+  "NumberOfTrades"  ,
+  "Open"  ,
+  "PriceNotationForm"  ,
+  "PriceType"  ,
+  "TimeIntervalPriceObservationCategory"  ,
+  "TradedNominalAmount"  ,
+  "TradedNominalAmountCurrency"  ,
+  "TradedQuantity"  ,
+  "Unit"  ,
+  "Volume"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

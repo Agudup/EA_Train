@@ -1,0 +1,29 @@
+view "sap.fsdm.Views::IdentifyingDocument_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "IdentifyingDocumentID" as "IdentifyingDocumentID",
+      "IdentifyingDocumentType" as "IdentifyingDocumentType",
+      "IssuingAuthority" as "IssuingAuthority",
+      "IssuingCountry" as "IssuingCountry",
+      "ASSOC_IndividualPerson.BusinessPartnerID" as "ASSOC_IndividualPerson_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "DateOfIssue" as "DateOfIssue",
+      "DateofExpiry" as "DateofExpiry",
+      "IdentifyingDocumentPreferredFlag" as "IdentifyingDocumentPreferredFlag",
+      "IdentifyingDocumentSubmittedDate" as "IdentifyingDocumentSubmittedDate",
+      "IdentifyingDocumentVerificationDate" as "IdentifyingDocumentVerificationDate",
+      "IdentifyingDocumentVerificationFlag" as "IdentifyingDocumentVerificationFlag",
+      "NameOnPassport" as "NameOnPassport",
+      "Nationality" as "Nationality",
+      "PlaceOfIssue" as "PlaceOfIssue",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::IdentifyingDocument"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

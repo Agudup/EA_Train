@@ -1,0 +1,350 @@
+PROCEDURE "sap.fsdm.procedures::BuildingCertificateLoad" (IN ROW "sap.fsdm.tabletypes::BuildingCertificateTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'BuildingCertificateName=' || TO_VARCHAR("BuildingCertificateName") || ' ' ||
+                '_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."BuildingCertificateName",
+                        "IN"."_PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."BuildingCertificateName",
+                        "IN"."_PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "BuildingCertificateName",
+                        "_PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."BuildingCertificateName",
+                                    "IN"."_PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."BuildingCertificateName",
+                                    "IN"."_PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::BuildingCertificate" (
+        "BuildingCertificateName",
+        "_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BuildingCertificateCategory",
+        "BuildingCertificateClass",
+        "BuildingCertificateCountry",
+        "BuildingCertificateDescription",
+        "BuildingCertificateUsageType",
+        "EnergyCertificateType",
+        "HeatingEnergy",
+        "HeatingEnergyBenchmark",
+        "HeatingEnergySource",
+        "HeatingEnergyUnit",
+        "PowerEnergy",
+        "PowerEnergyBenchmark",
+        "PowerEnergyUnit",
+        "PrimaryEnergy",
+        "PrimaryEnergyBenchmark",
+        "PrimaryEnergyUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_BuildingCertificateName" as "BuildingCertificateName" ,
+            "OLD__PhysicalAsset.PhysicalAssetID" as "_PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BuildingCertificateCategory" as "BuildingCertificateCategory" ,
+            "OLD_BuildingCertificateClass" as "BuildingCertificateClass" ,
+            "OLD_BuildingCertificateCountry" as "BuildingCertificateCountry" ,
+            "OLD_BuildingCertificateDescription" as "BuildingCertificateDescription" ,
+            "OLD_BuildingCertificateUsageType" as "BuildingCertificateUsageType" ,
+            "OLD_EnergyCertificateType" as "EnergyCertificateType" ,
+            "OLD_HeatingEnergy" as "HeatingEnergy" ,
+            "OLD_HeatingEnergyBenchmark" as "HeatingEnergyBenchmark" ,
+            "OLD_HeatingEnergySource" as "HeatingEnergySource" ,
+            "OLD_HeatingEnergyUnit" as "HeatingEnergyUnit" ,
+            "OLD_PowerEnergy" as "PowerEnergy" ,
+            "OLD_PowerEnergyBenchmark" as "PowerEnergyBenchmark" ,
+            "OLD_PowerEnergyUnit" as "PowerEnergyUnit" ,
+            "OLD_PrimaryEnergy" as "PrimaryEnergy" ,
+            "OLD_PrimaryEnergyBenchmark" as "PrimaryEnergyBenchmark" ,
+            "OLD_PrimaryEnergyUnit" as "PrimaryEnergyUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."BuildingCertificateName",
+                        "IN"."_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."BuildingCertificateName" as "OLD_BuildingCertificateName",
+                                "OLD"."_PhysicalAsset.PhysicalAssetID" as "OLD__PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BuildingCertificateCategory" as "OLD_BuildingCertificateCategory",
+                                "OLD"."BuildingCertificateClass" as "OLD_BuildingCertificateClass",
+                                "OLD"."BuildingCertificateCountry" as "OLD_BuildingCertificateCountry",
+                                "OLD"."BuildingCertificateDescription" as "OLD_BuildingCertificateDescription",
+                                "OLD"."BuildingCertificateUsageType" as "OLD_BuildingCertificateUsageType",
+                                "OLD"."EnergyCertificateType" as "OLD_EnergyCertificateType",
+                                "OLD"."HeatingEnergy" as "OLD_HeatingEnergy",
+                                "OLD"."HeatingEnergyBenchmark" as "OLD_HeatingEnergyBenchmark",
+                                "OLD"."HeatingEnergySource" as "OLD_HeatingEnergySource",
+                                "OLD"."HeatingEnergyUnit" as "OLD_HeatingEnergyUnit",
+                                "OLD"."PowerEnergy" as "OLD_PowerEnergy",
+                                "OLD"."PowerEnergyBenchmark" as "OLD_PowerEnergyBenchmark",
+                                "OLD"."PowerEnergyUnit" as "OLD_PowerEnergyUnit",
+                                "OLD"."PrimaryEnergy" as "OLD_PrimaryEnergy",
+                                "OLD"."PrimaryEnergyBenchmark" as "OLD_PrimaryEnergyBenchmark",
+                                "OLD"."PrimaryEnergyUnit" as "OLD_PrimaryEnergyUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BuildingCertificate" as "OLD"
+            on
+                ( case when "IN"."BuildingCertificateName" is null then '' else "IN"."BuildingCertificateName" end ) = "OLD"."BuildingCertificateName" and
+                ( case when "IN"."_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::BuildingCertificate" (
+        "BuildingCertificateName",
+        "_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BuildingCertificateCategory",
+        "BuildingCertificateClass",
+        "BuildingCertificateCountry",
+        "BuildingCertificateDescription",
+        "BuildingCertificateUsageType",
+        "EnergyCertificateType",
+        "HeatingEnergy",
+        "HeatingEnergyBenchmark",
+        "HeatingEnergySource",
+        "HeatingEnergyUnit",
+        "PowerEnergy",
+        "PowerEnergyBenchmark",
+        "PowerEnergyUnit",
+        "PrimaryEnergy",
+        "PrimaryEnergyBenchmark",
+        "PrimaryEnergyUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_BuildingCertificateName" as "BuildingCertificateName",
+            "OLD__PhysicalAsset.PhysicalAssetID" as "_PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BuildingCertificateCategory" as "BuildingCertificateCategory",
+            "OLD_BuildingCertificateClass" as "BuildingCertificateClass",
+            "OLD_BuildingCertificateCountry" as "BuildingCertificateCountry",
+            "OLD_BuildingCertificateDescription" as "BuildingCertificateDescription",
+            "OLD_BuildingCertificateUsageType" as "BuildingCertificateUsageType",
+            "OLD_EnergyCertificateType" as "EnergyCertificateType",
+            "OLD_HeatingEnergy" as "HeatingEnergy",
+            "OLD_HeatingEnergyBenchmark" as "HeatingEnergyBenchmark",
+            "OLD_HeatingEnergySource" as "HeatingEnergySource",
+            "OLD_HeatingEnergyUnit" as "HeatingEnergyUnit",
+            "OLD_PowerEnergy" as "PowerEnergy",
+            "OLD_PowerEnergyBenchmark" as "PowerEnergyBenchmark",
+            "OLD_PowerEnergyUnit" as "PowerEnergyUnit",
+            "OLD_PrimaryEnergy" as "PrimaryEnergy",
+            "OLD_PrimaryEnergyBenchmark" as "PrimaryEnergyBenchmark",
+            "OLD_PrimaryEnergyUnit" as "PrimaryEnergyUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."BuildingCertificateName",
+                        "IN"."_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."BuildingCertificateName" as "OLD_BuildingCertificateName",
+                        "OLD"."_PhysicalAsset.PhysicalAssetID" as "OLD__PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."BuildingCertificateCategory" as "OLD_BuildingCertificateCategory",
+                        "OLD"."BuildingCertificateClass" as "OLD_BuildingCertificateClass",
+                        "OLD"."BuildingCertificateCountry" as "OLD_BuildingCertificateCountry",
+                        "OLD"."BuildingCertificateDescription" as "OLD_BuildingCertificateDescription",
+                        "OLD"."BuildingCertificateUsageType" as "OLD_BuildingCertificateUsageType",
+                        "OLD"."EnergyCertificateType" as "OLD_EnergyCertificateType",
+                        "OLD"."HeatingEnergy" as "OLD_HeatingEnergy",
+                        "OLD"."HeatingEnergyBenchmark" as "OLD_HeatingEnergyBenchmark",
+                        "OLD"."HeatingEnergySource" as "OLD_HeatingEnergySource",
+                        "OLD"."HeatingEnergyUnit" as "OLD_HeatingEnergyUnit",
+                        "OLD"."PowerEnergy" as "OLD_PowerEnergy",
+                        "OLD"."PowerEnergyBenchmark" as "OLD_PowerEnergyBenchmark",
+                        "OLD"."PowerEnergyUnit" as "OLD_PowerEnergyUnit",
+                        "OLD"."PrimaryEnergy" as "OLD_PrimaryEnergy",
+                        "OLD"."PrimaryEnergyBenchmark" as "OLD_PrimaryEnergyBenchmark",
+                        "OLD"."PrimaryEnergyUnit" as "OLD_PrimaryEnergyUnit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BuildingCertificate" as "OLD"
+            on
+                ( case when "IN"."BuildingCertificateName" is null then '' else "IN"."BuildingCertificateName" end ) = "OLD"."BuildingCertificateName" and
+                ( case when "IN"."_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::BuildingCertificate"
+    where (
+        "BuildingCertificateName",
+        "_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."BuildingCertificateName",
+            "OLD"."_PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::BuildingCertificate" as "OLD"
+        on
+           ( case when "IN"."BuildingCertificateName" is null then '' else "IN"."BuildingCertificateName" end ) = "OLD"."BuildingCertificateName" and
+           ( case when "IN"."_PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_PhysicalAsset.PhysicalAssetID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::BuildingCertificate" (
+        "BuildingCertificateName",
+        "_PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BuildingCertificateCategory",
+        "BuildingCertificateClass",
+        "BuildingCertificateCountry",
+        "BuildingCertificateDescription",
+        "BuildingCertificateUsageType",
+        "EnergyCertificateType",
+        "HeatingEnergy",
+        "HeatingEnergyBenchmark",
+        "HeatingEnergySource",
+        "HeatingEnergyUnit",
+        "PowerEnergy",
+        "PowerEnergyBenchmark",
+        "PowerEnergyUnit",
+        "PrimaryEnergy",
+        "PrimaryEnergyBenchmark",
+        "PrimaryEnergyUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "BuildingCertificateName" is null then '' else "BuildingCertificateName" end ) as "BuildingCertificateName",
+            ( case when "_PhysicalAsset.PhysicalAssetID" is null then '' else "_PhysicalAsset.PhysicalAssetID" end ) as "_PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "BuildingCertificateCategory"  ,
+            "BuildingCertificateClass"  ,
+            "BuildingCertificateCountry"  ,
+            "BuildingCertificateDescription"  ,
+            "BuildingCertificateUsageType"  ,
+            "EnergyCertificateType"  ,
+            "HeatingEnergy"  ,
+            "HeatingEnergyBenchmark"  ,
+            "HeatingEnergySource"  ,
+            "HeatingEnergyUnit"  ,
+            "PowerEnergy"  ,
+            "PowerEnergyBenchmark"  ,
+            "PowerEnergyUnit"  ,
+            "PrimaryEnergy"  ,
+            "PrimaryEnergyBenchmark"  ,
+            "PrimaryEnergyUnit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

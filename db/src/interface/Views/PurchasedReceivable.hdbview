@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::PurchasedReceivable_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_ReceivablePurchaseAgreement.FinancialContractID" as "_ReceivablePurchaseAgreement_FinancialContractID",
+      "_ReceivablePurchaseAgreement.IDSystem" as "_ReceivablePurchaseAgreement_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_Receivable.ReceivableID" as "_Receivable_ReceivableID",
+      "IsDisclosed" as "IsDisclosed",
+      "LifecycleStatus" as "LifecycleStatus",
+      "PaidOutAmount" as "PaidOutAmount",
+      "PaidOutAmountCurrency" as "PaidOutAmountCurrency",
+      "PurchasedPercentage" as "PurchasedPercentage",
+      "PurchasedReceivableAmount" as "PurchasedReceivableAmount",
+      "PurchasedReceivableAmountCurrency" as "PurchasedReceivableAmountCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PurchasedReceivable"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

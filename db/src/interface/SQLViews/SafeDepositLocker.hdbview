@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::SafeDepositLocker_View" 
+as select
+      "LockerID" ,
+      "_SafeDepositLockerBranch.BankingChannelID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Description" ,
+      "LockerType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SafeDepositLocker"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__SafeDepositLocker"
+	  on "LockerID" = "_FinancialContract__SafeDepositLocker"."_SafeDepositLocker.LockerID" AND 
+	     "_SafeDepositLockerBranch.BankingChannelID" = "_FinancialContract__SafeDepositLocker"."_SafeDepositLocker._SafeDepositLockerBranch.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "_SafeDepositLockerBranch"
+	  on "_SafeDepositLockerBranch"."BankingChannelID" = "_SafeDepositLockerBranch.BankingChannelID"
+	     
+);

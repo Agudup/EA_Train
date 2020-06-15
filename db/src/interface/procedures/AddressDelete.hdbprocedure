@@ -1,0 +1,439 @@
+PROCEDURE "sap.fsdm.procedures::AddressDelete" (IN ROW "sap.fsdm.tabletypes::AddressTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'AddressType=' || TO_VARCHAR("AddressType") || ' ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_BankingChannel.BankingChannelID=' || TO_VARCHAR("ASSOC_BankingChannel.BankingChannelID") || ' ' ||
+                'ASSOC_BusinessPartnerID.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessPartnerID.BusinessPartnerID") || ' ' ||
+                'ASSOC_OrganizationalUnit.OrganizationalUnitID=' || TO_VARCHAR("ASSOC_OrganizationalUnit.OrganizationalUnitID") || ' ' ||
+                'ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID=' || TO_VARCHAR("ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID") || ' ' ||
+                'ASSOC_PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("ASSOC_PhysicalAsset.PhysicalAssetID") || ' ' ||
+                '_Claim.ID=' || TO_VARCHAR("_Claim.ID") || ' ' ||
+                '_Claim.IDSystem=' || TO_VARCHAR("_Claim.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."AddressType",
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_BankingChannel.BankingChannelID",
+                        "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."_Claim.ID",
+                        "IN"."_Claim.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."AddressType",
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_BankingChannel.BankingChannelID",
+                        "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "IN"."_Claim.ID",
+                        "IN"."_Claim.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "AddressType",
+                        "SequenceNumber",
+                        "ASSOC_BankingChannel.BankingChannelID",
+                        "ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "_Claim.ID",
+                        "_Claim.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."AddressType",
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_BankingChannel.BankingChannelID",
+                                    "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                    "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                    "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."_Claim.ID",
+                                    "IN"."_Claim.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."AddressType",
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_BankingChannel.BankingChannelID",
+                                    "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                    "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                    "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                    "IN"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                                    "IN"."_Claim.ID",
+                                    "IN"."_Claim.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Address" (
+        "AddressType",
+        "SequenceNumber",
+        "ASSOC_BankingChannel.BankingChannelID",
+        "ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Claim.ID",
+        "_Claim.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdditionalAddressLine",
+        "AddressCategory",
+        "Building",
+        "City",
+        "Country",
+        "District",
+        "Floor",
+        "HouseNumber",
+        "Latitude",
+        "Longitude",
+        "MainCorrespondenceAddress",
+        "MainResidence",
+        "PostalCode",
+        "PostboxNumber",
+        "PreferredCorrespondenceLanguage",
+        "Region",
+        "RepresentsRegisteredOffice",
+        "Street",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_AddressType" as "AddressType" ,
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_BankingChannel.BankingChannelID" as "ASSOC_BankingChannel.BankingChannelID" ,
+            "OLD_ASSOC_BusinessPartnerID.BusinessPartnerID" as "ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+            "OLD_ASSOC_OrganizationalUnit.OrganizationalUnitID" as "ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+            "OLD_ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "OLD__Claim.ID" as "_Claim.ID" ,
+            "OLD__Claim.IDSystem" as "_Claim.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AdditionalAddressLine" as "AdditionalAddressLine" ,
+            "OLD_AddressCategory" as "AddressCategory" ,
+            "OLD_Building" as "Building" ,
+            "OLD_City" as "City" ,
+            "OLD_Country" as "Country" ,
+            "OLD_District" as "District" ,
+            "OLD_Floor" as "Floor" ,
+            "OLD_HouseNumber" as "HouseNumber" ,
+            "OLD_Latitude" as "Latitude" ,
+            "OLD_Longitude" as "Longitude" ,
+            "OLD_MainCorrespondenceAddress" as "MainCorrespondenceAddress" ,
+            "OLD_MainResidence" as "MainResidence" ,
+            "OLD_PostalCode" as "PostalCode" ,
+            "OLD_PostboxNumber" as "PostboxNumber" ,
+            "OLD_PreferredCorrespondenceLanguage" as "PreferredCorrespondenceLanguage" ,
+            "OLD_Region" as "Region" ,
+            "OLD_RepresentsRegisteredOffice" as "RepresentsRegisteredOffice" ,
+            "OLD_Street" as "Street" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."AddressType",
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_BankingChannel.BankingChannelID",
+                        "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."_Claim.ID",
+                        "OLD"."_Claim.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."AddressType" as "OLD_AddressType",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_BankingChannel.BankingChannelID" as "OLD_ASSOC_BankingChannel.BankingChannelID",
+                "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD_ASSOC_BusinessPartnerID.BusinessPartnerID",
+                "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD_ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                "OLD"."_Claim.ID" as "OLD__Claim.ID",
+                "OLD"."_Claim.IDSystem" as "OLD__Claim.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."AdditionalAddressLine" as "OLD_AdditionalAddressLine",
+                "OLD"."AddressCategory" as "OLD_AddressCategory",
+                "OLD"."Building" as "OLD_Building",
+                "OLD"."City" as "OLD_City",
+                "OLD"."Country" as "OLD_Country",
+                "OLD"."District" as "OLD_District",
+                "OLD"."Floor" as "OLD_Floor",
+                "OLD"."HouseNumber" as "OLD_HouseNumber",
+                "OLD"."Latitude" as "OLD_Latitude",
+                "OLD"."Longitude" as "OLD_Longitude",
+                "OLD"."MainCorrespondenceAddress" as "OLD_MainCorrespondenceAddress",
+                "OLD"."MainResidence" as "OLD_MainResidence",
+                "OLD"."PostalCode" as "OLD_PostalCode",
+                "OLD"."PostboxNumber" as "OLD_PostboxNumber",
+                "OLD"."PreferredCorrespondenceLanguage" as "OLD_PreferredCorrespondenceLanguage",
+                "OLD"."Region" as "OLD_Region",
+                "OLD"."RepresentsRegisteredOffice" as "OLD_RepresentsRegisteredOffice",
+                "OLD"."Street" as "OLD_Street",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Address" as "OLD"
+            on
+                      ( "IN"."AddressType" = "OLD"."AddressType" or "IN"."AddressType" is null ) and
+                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_BankingChannel.BankingChannelID" = "OLD"."ASSOC_BankingChannel.BankingChannelID" or "IN"."ASSOC_BankingChannel.BankingChannelID" is null ) and
+                      ( "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID" or "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID" or "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID" is null ) and
+                      ( "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                      ( "IN"."_Claim.ID" = "OLD"."_Claim.ID" or "IN"."_Claim.ID" is null ) and
+                      ( "IN"."_Claim.IDSystem" = "OLD"."_Claim.IDSystem" or "IN"."_Claim.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Address" (
+        "AddressType",
+        "SequenceNumber",
+        "ASSOC_BankingChannel.BankingChannelID",
+        "ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Claim.ID",
+        "_Claim.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdditionalAddressLine",
+        "AddressCategory",
+        "Building",
+        "City",
+        "Country",
+        "District",
+        "Floor",
+        "HouseNumber",
+        "Latitude",
+        "Longitude",
+        "MainCorrespondenceAddress",
+        "MainResidence",
+        "PostalCode",
+        "PostboxNumber",
+        "PreferredCorrespondenceLanguage",
+        "Region",
+        "RepresentsRegisteredOffice",
+        "Street",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_AddressType" as "AddressType",
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_BankingChannel.BankingChannelID" as "ASSOC_BankingChannel.BankingChannelID",
+            "OLD_ASSOC_BusinessPartnerID.BusinessPartnerID" as "ASSOC_BusinessPartnerID.BusinessPartnerID",
+            "OLD_ASSOC_OrganizationalUnit.OrganizationalUnitID" as "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+            "OLD_ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD_ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD__Claim.ID" as "_Claim.ID",
+            "OLD__Claim.IDSystem" as "_Claim.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AdditionalAddressLine" as "AdditionalAddressLine",
+            "OLD_AddressCategory" as "AddressCategory",
+            "OLD_Building" as "Building",
+            "OLD_City" as "City",
+            "OLD_Country" as "Country",
+            "OLD_District" as "District",
+            "OLD_Floor" as "Floor",
+            "OLD_HouseNumber" as "HouseNumber",
+            "OLD_Latitude" as "Latitude",
+            "OLD_Longitude" as "Longitude",
+            "OLD_MainCorrespondenceAddress" as "MainCorrespondenceAddress",
+            "OLD_MainResidence" as "MainResidence",
+            "OLD_PostalCode" as "PostalCode",
+            "OLD_PostboxNumber" as "PostboxNumber",
+            "OLD_PreferredCorrespondenceLanguage" as "PreferredCorrespondenceLanguage",
+            "OLD_Region" as "Region",
+            "OLD_RepresentsRegisteredOffice" as "RepresentsRegisteredOffice",
+            "OLD_Street" as "Street",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."AddressType",
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_BankingChannel.BankingChannelID",
+                        "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."_Claim.ID",
+                        "OLD"."_Claim.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."AddressType" as "OLD_AddressType",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_BankingChannel.BankingChannelID" as "OLD_ASSOC_BankingChannel.BankingChannelID",
+                "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD_ASSOC_BusinessPartnerID.BusinessPartnerID",
+                "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD_ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PhysicalAsset.PhysicalAssetID",
+                "OLD"."_Claim.ID" as "OLD__Claim.ID",
+                "OLD"."_Claim.IDSystem" as "OLD__Claim.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."AdditionalAddressLine" as "OLD_AdditionalAddressLine",
+                "OLD"."AddressCategory" as "OLD_AddressCategory",
+                "OLD"."Building" as "OLD_Building",
+                "OLD"."City" as "OLD_City",
+                "OLD"."Country" as "OLD_Country",
+                "OLD"."District" as "OLD_District",
+                "OLD"."Floor" as "OLD_Floor",
+                "OLD"."HouseNumber" as "OLD_HouseNumber",
+                "OLD"."Latitude" as "OLD_Latitude",
+                "OLD"."Longitude" as "OLD_Longitude",
+                "OLD"."MainCorrespondenceAddress" as "OLD_MainCorrespondenceAddress",
+                "OLD"."MainResidence" as "OLD_MainResidence",
+                "OLD"."PostalCode" as "OLD_PostalCode",
+                "OLD"."PostboxNumber" as "OLD_PostboxNumber",
+                "OLD"."PreferredCorrespondenceLanguage" as "OLD_PreferredCorrespondenceLanguage",
+                "OLD"."Region" as "OLD_Region",
+                "OLD"."RepresentsRegisteredOffice" as "OLD_RepresentsRegisteredOffice",
+                "OLD"."Street" as "OLD_Street",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Address" as "OLD"
+            on
+                                                ( "IN"."AddressType" = "OLD"."AddressType" or "IN"."AddressType" is null ) and
+                                                ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_BankingChannel.BankingChannelID" = "OLD"."ASSOC_BankingChannel.BankingChannelID" or "IN"."ASSOC_BankingChannel.BankingChannelID" is null ) and
+                                                ( "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID" or "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID" or "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID" is null ) and
+                                                ( "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                                                ( "IN"."_Claim.ID" = "OLD"."_Claim.ID" or "IN"."_Claim.ID" is null ) and
+                                                ( "IN"."_Claim.IDSystem" = "OLD"."_Claim.IDSystem" or "IN"."_Claim.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Address"
+    where (
+        "AddressType",
+        "SequenceNumber",
+        "ASSOC_BankingChannel.BankingChannelID",
+        "ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Claim.ID",
+        "_Claim.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."AddressType",
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_BankingChannel.BankingChannelID",
+            "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID",
+            "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID",
+            "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD"."_Claim.ID",
+            "OLD"."_Claim.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Address" as "OLD"
+        on
+                                       ( "IN"."AddressType" = "OLD"."AddressType" or "IN"."AddressType" is null ) and
+                                       ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_BankingChannel.BankingChannelID" = "OLD"."ASSOC_BankingChannel.BankingChannelID" or "IN"."ASSOC_BankingChannel.BankingChannelID" is null ) and
+                                       ( "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartnerID.BusinessPartnerID" or "IN"."ASSOC_BusinessPartnerID.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrganizationalUnit.OrganizationalUnitID" or "IN"."ASSOC_OrganizationalUnit.OrganizationalUnitID" is null ) and
+                                       ( "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+                                       ( "IN"."_Claim.ID" = "OLD"."_Claim.ID" or "IN"."_Claim.ID" is null ) and
+                                       ( "IN"."_Claim.IDSystem" = "OLD"."_Claim.IDSystem" or "IN"."_Claim.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

@@ -1,0 +1,71 @@
+view "sap.fsdm.SQLViews::InsuranceOption_View" 
+as select
+      "Type" ,
+      "_InsuranceContract.FinancialContractID" ,
+      "_InsuranceContract.IDSystem" ,
+      "_InsuranceCoverage.ID" ,
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AccelerationPercent" ,
+      "AnnualChargeAmount" ,
+      "AnnualPremiumDueLimitAmount" ,
+      "Basis" ,
+      "BenefitAnnuityOptionPhaseEndDate" ,
+      "BenefitAnnuityOptionPhaseStartDate" ,
+      "BenefitDuration" ,
+      "BenefitDurationUnit" ,
+      "Enddate" ,
+      "Frequency" ,
+      "InceptionIndexLevel" ,
+      "IndexParticipationPercent" ,
+      "InstallmentRefundIndicator" ,
+      "InsuranceContractOptionCategory" ,
+      "InsuranceCoverOption" ,
+      "InsurancePolicyStructureLevel" ,
+      "LifecycleStatus" ,
+      "LiquidityPeriodDuration" ,
+      "LiquidityPeriodTimeUnit" ,
+      "MainCoverageOnlyIndicator" ,
+      "MaximumPercent" ,
+      "Method" ,
+      "MinimumPercent" ,
+      "NextGuarateddInsurabiltyOptionDate" ,
+      "Number" ,
+      "PaymentFrequency" ,
+      "Percent" ,
+      "PeriodChargeAmount" ,
+      "PeriodMaximumBenefitAmount" ,
+      "StartDate" ,
+      "TermConversionEndDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InsuranceOption"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_InsuranceContract"
+	  on "_InsuranceContract"."FinancialContractID" = "_InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract"."IDSystem" = "_InsuranceContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_InsuranceCoverage"
+	  on "_InsuranceCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.IDSystem" = "_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.FinancialContractID" = "_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."ID" = "_InsuranceCoverage.ID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceSurcharge_View" as "_InsuranceSurcharge__InsuranceCoverOption"
+	  on "Type" = "_InsuranceSurcharge__InsuranceCoverOption"."_InsuranceCoverOption.Type"
+	     
+);

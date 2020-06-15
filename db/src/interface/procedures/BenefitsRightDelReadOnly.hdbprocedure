@@ -1,0 +1,352 @@
+PROCEDURE "sap.fsdm.procedures::BenefitsRightDelReadOnly" (IN ROW "sap.fsdm.tabletypes::BenefitsRightTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::BenefitsRightTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::BenefitsRightTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceOrdinalNumber=' || TO_VARCHAR("SequenceOrdinalNumber") || ' ' ||
+                'Type=' || TO_VARCHAR("Type") || ' ' ||
+                '_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("_BusinessPartner.BusinessPartnerID") || ' ' ||
+                '_InsuranceCoverage.ID=' || TO_VARCHAR("_InsuranceCoverage.ID") || ' ' ||
+                '_InsuranceCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_InsuranceCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_InsuranceCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_InsuranceCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceOrdinalNumber",
+                        "IN"."Type",
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "IN"."_InsuranceCoverage.ID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceOrdinalNumber",
+                        "IN"."Type",
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "IN"."_InsuranceCoverage.ID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceOrdinalNumber",
+                        "Type",
+                        "_BusinessPartner.BusinessPartnerID",
+                        "_InsuranceCoverage.ID",
+                        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceOrdinalNumber",
+                                    "IN"."Type",
+                                    "IN"."_BusinessPartner.BusinessPartnerID",
+                                    "IN"."_InsuranceCoverage.ID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceOrdinalNumber",
+                                    "IN"."Type",
+                                    "IN"."_BusinessPartner.BusinessPartnerID",
+                                    "IN"."_InsuranceCoverage.ID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "SequenceOrdinalNumber",
+            "Type",
+            "_BusinessPartner.BusinessPartnerID",
+            "_InsuranceCoverage.ID",
+            "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "_InsuranceCoverage._InsuranceContract.IDSystem",
+            "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::BenefitsRight" WHERE
+            (
+            "SequenceOrdinalNumber" ,
+            "Type" ,
+            "_BusinessPartner.BusinessPartnerID" ,
+            "_InsuranceCoverage.ID" ,
+            "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+            "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."SequenceOrdinalNumber",
+            "OLD"."Type",
+            "OLD"."_BusinessPartner.BusinessPartnerID",
+            "OLD"."_InsuranceCoverage.ID",
+            "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::BenefitsRight" as "OLD"
+        on
+                              ( "IN"."SequenceOrdinalNumber" = "OLD"."SequenceOrdinalNumber" or "IN"."SequenceOrdinalNumber" is null ) and
+                              ( "IN"."Type" = "OLD"."Type" or "IN"."Type" is null ) and
+                              ( "IN"."_BusinessPartner.BusinessPartnerID" = "OLD"."_BusinessPartner.BusinessPartnerID" or "IN"."_BusinessPartner.BusinessPartnerID" is null ) and
+                              ( "IN"."_InsuranceCoverage.ID" = "OLD"."_InsuranceCoverage.ID" or "IN"."_InsuranceCoverage.ID" is null ) and
+                              ( "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                              ( "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                              ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "SequenceOrdinalNumber",
+        "Type",
+        "_BusinessPartner.BusinessPartnerID",
+        "_InsuranceCoverage.ID",
+        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "EndDate",
+        "QualifiedBeneficaryIndicator",
+        "RevocationIndicator",
+        "SharePercent",
+        "StartDate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_SequenceOrdinalNumber" as "SequenceOrdinalNumber" ,
+            "OLD_Type" as "Type" ,
+            "OLD__BusinessPartner.BusinessPartnerID" as "_BusinessPartner.BusinessPartnerID" ,
+            "OLD__InsuranceCoverage.ID" as "_InsuranceCoverage.ID" ,
+            "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_EndDate" as "EndDate" ,
+            "OLD_QualifiedBeneficaryIndicator" as "QualifiedBeneficaryIndicator" ,
+            "OLD_RevocationIndicator" as "RevocationIndicator" ,
+            "OLD_SharePercent" as "SharePercent" ,
+            "OLD_StartDate" as "StartDate" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceOrdinalNumber",
+                        "OLD"."Type",
+                        "OLD"."_BusinessPartner.BusinessPartnerID",
+                        "OLD"."_InsuranceCoverage.ID",
+                        "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceOrdinalNumber" as "OLD_SequenceOrdinalNumber",
+                                "OLD"."Type" as "OLD_Type",
+                                "OLD"."_BusinessPartner.BusinessPartnerID" as "OLD__BusinessPartner.BusinessPartnerID",
+                                "OLD"."_InsuranceCoverage.ID" as "OLD__InsuranceCoverage.ID",
+                                "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__InsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."EndDate" as "OLD_EndDate",
+                                "OLD"."QualifiedBeneficaryIndicator" as "OLD_QualifiedBeneficaryIndicator",
+                                "OLD"."RevocationIndicator" as "OLD_RevocationIndicator",
+                                "OLD"."SharePercent" as "OLD_SharePercent",
+                                "OLD"."StartDate" as "OLD_StartDate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BenefitsRight" as "OLD"
+            on
+                                      ( "IN"."SequenceOrdinalNumber" = "OLD"."SequenceOrdinalNumber" or "IN"."SequenceOrdinalNumber" is null ) and
+                                      ( "IN"."Type" = "OLD"."Type" or "IN"."Type" is null ) and
+                                      ( "IN"."_BusinessPartner.BusinessPartnerID" = "OLD"."_BusinessPartner.BusinessPartnerID" or "IN"."_BusinessPartner.BusinessPartnerID" is null ) and
+                                      ( "IN"."_InsuranceCoverage.ID" = "OLD"."_InsuranceCoverage.ID" or "IN"."_InsuranceCoverage.ID" is null ) and
+                                      ( "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                                      ( "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                                      ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_SequenceOrdinalNumber" as "SequenceOrdinalNumber",
+            "OLD_Type" as "Type",
+            "OLD__BusinessPartner.BusinessPartnerID" as "_BusinessPartner.BusinessPartnerID",
+            "OLD__InsuranceCoverage.ID" as "_InsuranceCoverage.ID",
+            "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_EndDate" as "EndDate",
+            "OLD_QualifiedBeneficaryIndicator" as "QualifiedBeneficaryIndicator",
+            "OLD_RevocationIndicator" as "RevocationIndicator",
+            "OLD_SharePercent" as "SharePercent",
+            "OLD_StartDate" as "StartDate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceOrdinalNumber",
+                        "OLD"."Type",
+                        "OLD"."_BusinessPartner.BusinessPartnerID",
+                        "OLD"."_InsuranceCoverage.ID",
+                        "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."SequenceOrdinalNumber" as "OLD_SequenceOrdinalNumber",
+                                "OLD"."Type" as "OLD_Type",
+                                "OLD"."_BusinessPartner.BusinessPartnerID" as "OLD__BusinessPartner.BusinessPartnerID",
+                                "OLD"."_InsuranceCoverage.ID" as "OLD__InsuranceCoverage.ID",
+                                "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__InsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."EndDate" as "OLD_EndDate",
+                                "OLD"."QualifiedBeneficaryIndicator" as "OLD_QualifiedBeneficaryIndicator",
+                                "OLD"."RevocationIndicator" as "OLD_RevocationIndicator",
+                                "OLD"."SharePercent" as "OLD_SharePercent",
+                                "OLD"."StartDate" as "OLD_StartDate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BenefitsRight" as "OLD"
+            on
+               ( "IN"."SequenceOrdinalNumber" = "OLD"."SequenceOrdinalNumber" or "IN"."SequenceOrdinalNumber" is null ) and
+               ( "IN"."Type" = "OLD"."Type" or "IN"."Type" is null ) and
+               ( "IN"."_BusinessPartner.BusinessPartnerID" = "OLD"."_BusinessPartner.BusinessPartnerID" or "IN"."_BusinessPartner.BusinessPartnerID" is null ) and
+               ( "IN"."_InsuranceCoverage.ID" = "OLD"."_InsuranceCoverage.ID" or "IN"."_InsuranceCoverage.ID" is null ) and
+               ( "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+               ( "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+               ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+               ( "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

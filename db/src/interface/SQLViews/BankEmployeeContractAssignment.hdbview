@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::BankEmployeeContractAssignment_View" 
+as select
+      "EmployeeResponsibility" ,
+      "ASSOC_EmployeeResponsibleForContract.BusinessPartnerID" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BankEmployeeContractAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_EmployeeResponsibleForContract"
+	  on "ASSOC_EmployeeResponsibleForContract"."BusinessPartnerID" = "ASSOC_EmployeeResponsibleForContract.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     
+);

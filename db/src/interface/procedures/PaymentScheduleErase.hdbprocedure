@@ -1,0 +1,114 @@
+PROCEDURE "sap.fsdm.procedures::PaymentScheduleErase" (IN ROW "sap.fsdm.tabletypes::PaymentScheduleTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "SequenceNumber" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_Receivable.ReceivableID" is null and
+                         "_CreditCardLoan.ID" is null and
+                         "_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null and
+                         "_CreditCardLoan._CreditCardAgreement.IDSystem" is null and
+                         "_DebtInstrument.FinancialInstrumentID" is null and
+                         "_InterestRateOptionComponent.ComponentNumber" is null and
+                         "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null and
+                         "_InterestRateOptionComponent._InterestRateOption.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::PaymentSchedule" WHERE
+("SequenceNumber" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_Receivable.ReceivableID" ,
+"_CreditCardLoan.ID" ,
+"_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"_DebtInstrument.FinancialInstrumentID" ,
+"_InterestRateOptionComponent.ComponentNumber" ,
+"_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"_InterestRateOptionComponent._InterestRateOption.IDSystem" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_Receivable.ReceivableID" ,
+"OLD"."_CreditCardLoan.ID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"OLD"."_DebtInstrument.FinancialInstrumentID" ,
+"OLD"."_InterestRateOptionComponent.ComponentNumber" ,
+"OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::PaymentSchedule" "OLD"
+on
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_Receivable.ReceivableID" is null ) and
+  ( "IN"."_CreditCardLoan.ID" = "OLD"."_CreditCardLoan.ID" or "IN"."_CreditCardLoan.ID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" or "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" or "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null ) and
+  ( "IN"."_DebtInstrument.FinancialInstrumentID" = "OLD"."_DebtInstrument.FinancialInstrumentID" or "IN"."_DebtInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."_InterestRateOptionComponent.ComponentNumber" = "OLD"."_InterestRateOptionComponent.ComponentNumber" or "IN"."_InterestRateOptionComponent.ComponentNumber" is null ) and
+  ( "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" or "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" = "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" or "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::PaymentSchedule_Historical" WHERE
+("SequenceNumber" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_Receivable.ReceivableID" ,
+"_CreditCardLoan.ID" ,
+"_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"_DebtInstrument.FinancialInstrumentID" ,
+"_InterestRateOptionComponent.ComponentNumber" ,
+"_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"_InterestRateOptionComponent._InterestRateOption.IDSystem" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_Receivable.ReceivableID" ,
+"OLD"."_CreditCardLoan.ID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"OLD"."_DebtInstrument.FinancialInstrumentID" ,
+"OLD"."_InterestRateOptionComponent.ComponentNumber" ,
+"OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::PaymentSchedule_Historical" "OLD"
+on
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_Receivable.ReceivableID" is null ) and
+  ( "IN"."_CreditCardLoan.ID" = "OLD"."_CreditCardLoan.ID" or "IN"."_CreditCardLoan.ID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" or "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" or "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null ) and
+  ( "IN"."_DebtInstrument.FinancialInstrumentID" = "OLD"."_DebtInstrument.FinancialInstrumentID" or "IN"."_DebtInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."_InterestRateOptionComponent.ComponentNumber" = "OLD"."_InterestRateOptionComponent.ComponentNumber" or "IN"."_InterestRateOptionComponent.ComponentNumber" is null ) and
+  ( "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" or "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" = "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" or "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" is null ) 
+);
+
+END

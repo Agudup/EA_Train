@@ -1,0 +1,135 @@
+PROCEDURE "sap.fsdm.procedures::PremiumSplittingErase" (IN ROW "sap.fsdm.tabletypes::PremiumSplittingTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ComponentType" is null and
+                         "_InsuranceCoverage.ID" is null and
+                         "_InsuranceCoverage._InsuranceContract.FinancialContractID" is null and
+                         "_InsuranceCoverage._InsuranceContract.IDSystem" is null and
+                         "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null and
+                         "_InsuranceCoverageOption.Type" is null and
+                         "_InsuranceCoverageOption._InsuranceCoverage.ID" is null and
+                         "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" is null and
+                         "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" is null and
+                         "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::PremiumSplitting" WHERE
+("ComponentType" ,
+"_InsuranceCoverage.ID" ,
+"_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"_InsuranceCoverageOption.Type" ,
+"_InsuranceCoverageOption._InsuranceCoverage.ID" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."ComponentType" ,
+"OLD"."_InsuranceCoverage.ID" ,
+"OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"OLD"."_InsuranceCoverageOption.Type" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage.ID" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::PremiumSplitting" "OLD"
+on
+  ( "IN"."ComponentType" = "OLD"."ComponentType" or "IN"."ComponentType" is null ) and
+  ( "IN"."_InsuranceCoverage.ID" = "OLD"."_InsuranceCoverage.ID" or "IN"."_InsuranceCoverage.ID" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) and
+  ( "IN"."_InsuranceCoverageOption.Type" = "OLD"."_InsuranceCoverageOption.Type" or "IN"."_InsuranceCoverageOption.Type" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage.ID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage.ID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage.ID" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::PremiumSplitting_Historical" WHERE
+("ComponentType" ,
+"_InsuranceCoverage.ID" ,
+"_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"_InsuranceCoverageOption.Type" ,
+"_InsuranceCoverageOption._InsuranceCoverage.ID" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."ComponentType" ,
+"OLD"."_InsuranceCoverage.ID" ,
+"OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"OLD"."_InsuranceCoverageOption.Type" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage.ID" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::PremiumSplitting_Historical" "OLD"
+on
+  ( "IN"."ComponentType" = "OLD"."ComponentType" or "IN"."ComponentType" is null ) and
+  ( "IN"."_InsuranceCoverage.ID" = "OLD"."_InsuranceCoverage.ID" or "IN"."_InsuranceCoverage.ID" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) and
+  ( "IN"."_InsuranceCoverageOption.Type" = "OLD"."_InsuranceCoverageOption.Type" or "IN"."_InsuranceCoverageOption.Type" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage.ID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage.ID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage.ID" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

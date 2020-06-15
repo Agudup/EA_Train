@@ -1,0 +1,21 @@
+view "sap.fsdm.Views::CreditDefaultSwapReferenceEntity_View" ( IN I_BUSINESS_DATE TIMESTAMP, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Basket.FinancialInstrumentID" as "_Basket_FinancialInstrumentID",
+      "_ProtectionLeg._CreditDefaultSwap.FinancialContractID" as "_ProtectionLeg__CreditDefaultSwap_FinancialContractID",
+      "_ProtectionLeg._CreditDefaultSwap.IDSystem" as "_ProtectionLeg__CreditDefaultSwap_IDSystem",
+      "_ReferenceEntity.BusinessPartnerID" as "_ReferenceEntity_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "IsEntityExcluded" as "IsEntityExcluded",
+      "ReferenceEntityPairCode" as "ReferenceEntityPairCode",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CreditDefaultSwapReferenceEntity"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

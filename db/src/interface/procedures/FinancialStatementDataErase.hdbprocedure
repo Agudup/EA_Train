@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::FinancialStatementDataErase" (IN ROW "sap.fsdm.tabletypes::FinancialStatementDataTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ConsolidatedStatement" is null and
+                         "FiscalPeriod" is null and
+                         "ReportedAccountingSystem" is null and
+                         "StatementCurrency" is null and
+                         "ASSOC_BusinessPartner.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::FinancialStatementData" WHERE
+("ConsolidatedStatement" ,
+"FiscalPeriod" ,
+"ReportedAccountingSystem" ,
+"StatementCurrency" ,
+"ASSOC_BusinessPartner.BusinessPartnerID" 
+)in ( select "OLD"."ConsolidatedStatement" ,
+"OLD"."FiscalPeriod" ,
+"OLD"."ReportedAccountingSystem" ,
+"OLD"."StatementCurrency" ,
+"OLD"."ASSOC_BusinessPartner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialStatementData" "OLD"
+on
+  ( "IN"."ConsolidatedStatement" = "OLD"."ConsolidatedStatement" or "IN"."ConsolidatedStatement" is null ) and
+  ( "IN"."FiscalPeriod" = "OLD"."FiscalPeriod" or "IN"."FiscalPeriod" is null ) and
+  ( "IN"."ReportedAccountingSystem" = "OLD"."ReportedAccountingSystem" or "IN"."ReportedAccountingSystem" is null ) and
+  ( "IN"."StatementCurrency" = "OLD"."StatementCurrency" or "IN"."StatementCurrency" is null ) and
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::FinancialStatementData_Historical" WHERE
+("ConsolidatedStatement" ,
+"FiscalPeriod" ,
+"ReportedAccountingSystem" ,
+"StatementCurrency" ,
+"ASSOC_BusinessPartner.BusinessPartnerID" 
+)in ( select "OLD"."ConsolidatedStatement" ,
+"OLD"."FiscalPeriod" ,
+"OLD"."ReportedAccountingSystem" ,
+"OLD"."StatementCurrency" ,
+"OLD"."ASSOC_BusinessPartner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialStatementData_Historical" "OLD"
+on
+  ( "IN"."ConsolidatedStatement" = "OLD"."ConsolidatedStatement" or "IN"."ConsolidatedStatement" is null ) and
+  ( "IN"."FiscalPeriod" = "OLD"."FiscalPeriod" or "IN"."FiscalPeriod" is null ) and
+  ( "IN"."ReportedAccountingSystem" = "OLD"."ReportedAccountingSystem" or "IN"."ReportedAccountingSystem" is null ) and
+  ( "IN"."StatementCurrency" = "OLD"."StatementCurrency" or "IN"."StatementCurrency" is null ) and
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) 
+);
+
+END

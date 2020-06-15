@@ -1,0 +1,82 @@
+PROCEDURE "sap.fsdm.procedures::StatusOfAgeUpdReadOnly" (IN ROW "sap.fsdm.tabletypes::StatusOfAgeTT", OUT CURR_DEL "sap.fsdm.tabletypes::StatusOfAgeTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::StatusOfAgeTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+--Update the existing records 
+
+  --select data matching in current table
+  var_matching = 
+  select    "IN"."Country"  ,
+    "OLD"."Country" AS "OLD_Country" ,
+    "IN"."Status"  ,
+    "OLD"."Status" AS "OLD_Status" ,
+    "IN"."AgeInDays"  ,
+    "OLD"."AgeInDays" AS "OLD_AgeInDays" ,
+    "IN"."AgeInMonths"  ,
+    "OLD"."AgeInMonths" AS "OLD_AgeInMonths" ,
+    "IN"."AgeInYears"  ,
+    "OLD"."AgeInYears" AS "OLD_AgeInYears" ,
+    "IN"."SourceSystemID"  ,
+    "OLD"."SourceSystemID" AS "OLD_SourceSystemID" ,
+    "IN"."ChangeTimestampInSourceSystem"  ,
+    "OLD"."ChangeTimestampInSourceSystem" AS "OLD_ChangeTimestampInSourceSystem" ,
+    "IN"."ChangingUserInSourceSystem"  ,
+    "OLD"."ChangingUserInSourceSystem" AS "OLD_ChangingUserInSourceSystem" ,
+    "IN"."ChangingProcessType"  ,
+    "OLD"."ChangingProcessType" AS "OLD_ChangingProcessType" ,
+    "IN"."ChangingProcessID"  ,
+    "OLD"."ChangingProcessID" AS "OLD_ChangingProcessID" 
+  
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::StatusOfAge" AS "OLD"
+  ON
+  "IN"."Country" = "OLD"."Country" and
+  "IN"."Status" = "OLD"."Status" 
+;
+
+
+
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"Country",
+"Status"
+from "sap.fsdm::StatusOfAge" WHERE("Country" ,
+"Status" 
+)in ( select "OLD_Country" AS "Country" ,
+"OLD_Status" AS "Status" 
+from :var_matching );
+
+
+--Insert ALL the input data 
+
+CURR_INS = select 
+"Country",
+"Status",
+"AgeInDays",
+"AgeInMonths",
+"AgeInYears",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+   "Country"  ,
+  "Status"  ,
+  "AgeInDays"  ,
+  "AgeInMonths"  ,
+  "AgeInYears"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :var_matching );
+
+
+
+END

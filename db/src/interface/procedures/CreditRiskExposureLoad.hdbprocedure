@@ -1,0 +1,897 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskExposureLoad" (IN ROW "sap.fsdm.tabletypes::CreditRiskExposureTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CreditRiskCalculationLevel=' || TO_VARCHAR("CreditRiskCalculationLevel") || ' ' ||
+                'CreditRiskCalculationMethod=' || TO_VARCHAR("CreditRiskCalculationMethod") || ' ' ||
+                'CreditRiskType=' || TO_VARCHAR("CreditRiskType") || ' ' ||
+                'OffBalanceSheet=' || TO_VARCHAR("OffBalanceSheet") || ' ' ||
+                'ASSOC_CollateralPortion.PortionNumber=' || TO_VARCHAR("ASSOC_CollateralPortion.PortionNumber") || ' ' ||
+                'ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem=' || TO_VARCHAR("ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                '_CollectionOfInstruments.CollectionID=' || TO_VARCHAR("_CollectionOfInstruments.CollectionID") || ' ' ||
+                '_CollectionOfInstruments.IDSystem=' || TO_VARCHAR("_CollectionOfInstruments.IDSystem") || ' ' ||
+                '_CombinedCollateralAgreement.FinancialContractID=' || TO_VARCHAR("_CombinedCollateralAgreement.FinancialContractID") || ' ' ||
+                '_CombinedCollateralAgreement.IDSystem=' || TO_VARCHAR("_CombinedCollateralAgreement.IDSystem") || ' ' ||
+                '_FinancialContractUsedAsCollateral.FinancialContractID=' || TO_VARCHAR("_FinancialContractUsedAsCollateral.FinancialContractID") || ' ' ||
+                '_FinancialContractUsedAsCollateral.IDSystem=' || TO_VARCHAR("_FinancialContractUsedAsCollateral.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID") || ' ' ||
+                '_PhysicalAssetUsedAsCollateral.PhysicalAssetID=' || TO_VARCHAR("_PhysicalAssetUsedAsCollateral.PhysicalAssetID") || ' ' ||
+                '_ReceivableUsedAsCollateral.ReceivableID=' || TO_VARCHAR("_ReceivableUsedAsCollateral.ReceivableID") || ' ' ||
+                '_SecuritiesAccount.FinancialContractID=' || TO_VARCHAR("_SecuritiesAccount.FinancialContractID") || ' ' ||
+                '_SecuritiesAccount.IDSystem=' || TO_VARCHAR("_SecuritiesAccount.IDSystem") || ' ' ||
+                '_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID=' || TO_VARCHAR("_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID") || ' ' ||
+                '_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem=' || TO_VARCHAR("_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem") || ' ' ||
+                '_SimpleCollateralAgreement.FinancialContractID=' || TO_VARCHAR("_SimpleCollateralAgreement.FinancialContractID") || ' ' ||
+                '_SimpleCollateralAgreement.IDSystem=' || TO_VARCHAR("_SimpleCollateralAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CreditRiskCalculationLevel",
+                        "IN"."CreditRiskCalculationMethod",
+                        "IN"."CreditRiskType",
+                        "IN"."OffBalanceSheet",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_CollectionOfInstruments.CollectionID",
+                        "IN"."_CollectionOfInstruments.IDSystem",
+                        "IN"."_CombinedCollateralAgreement.FinancialContractID",
+                        "IN"."_CombinedCollateralAgreement.IDSystem",
+                        "IN"."_FinancialContractUsedAsCollateral.FinancialContractID",
+                        "IN"."_FinancialContractUsedAsCollateral.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                        "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                        "IN"."_ReceivableUsedAsCollateral.ReceivableID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                        "IN"."_SimpleCollateralAgreement.FinancialContractID",
+                        "IN"."_SimpleCollateralAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CreditRiskCalculationLevel",
+                        "IN"."CreditRiskCalculationMethod",
+                        "IN"."CreditRiskType",
+                        "IN"."OffBalanceSheet",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_CollectionOfInstruments.CollectionID",
+                        "IN"."_CollectionOfInstruments.IDSystem",
+                        "IN"."_CombinedCollateralAgreement.FinancialContractID",
+                        "IN"."_CombinedCollateralAgreement.IDSystem",
+                        "IN"."_FinancialContractUsedAsCollateral.FinancialContractID",
+                        "IN"."_FinancialContractUsedAsCollateral.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                        "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                        "IN"."_ReceivableUsedAsCollateral.ReceivableID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                        "IN"."_SimpleCollateralAgreement.FinancialContractID",
+                        "IN"."_SimpleCollateralAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CreditRiskCalculationLevel",
+                        "CreditRiskCalculationMethod",
+                        "CreditRiskType",
+                        "OffBalanceSheet",
+                        "ASSOC_CollateralPortion.PortionNumber",
+                        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "_CollectionOfInstruments.CollectionID",
+                        "_CollectionOfInstruments.IDSystem",
+                        "_CombinedCollateralAgreement.FinancialContractID",
+                        "_CombinedCollateralAgreement.IDSystem",
+                        "_FinancialContractUsedAsCollateral.FinancialContractID",
+                        "_FinancialContractUsedAsCollateral.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                        "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                        "_ReceivableUsedAsCollateral.ReceivableID",
+                        "_SecuritiesAccount.FinancialContractID",
+                        "_SecuritiesAccount.IDSystem",
+                        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                        "_SimpleCollateralAgreement.FinancialContractID",
+                        "_SimpleCollateralAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CreditRiskCalculationLevel",
+                                    "IN"."CreditRiskCalculationMethod",
+                                    "IN"."CreditRiskType",
+                                    "IN"."OffBalanceSheet",
+                                    "IN"."ASSOC_CollateralPortion.PortionNumber",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_CollectionOfInstruments.CollectionID",
+                                    "IN"."_CollectionOfInstruments.IDSystem",
+                                    "IN"."_CombinedCollateralAgreement.FinancialContractID",
+                                    "IN"."_CombinedCollateralAgreement.IDSystem",
+                                    "IN"."_FinancialContractUsedAsCollateral.FinancialContractID",
+                                    "IN"."_FinancialContractUsedAsCollateral.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                                    "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                                    "IN"."_ReceivableUsedAsCollateral.ReceivableID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem",
+                                    "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                                    "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                                    "IN"."_SimpleCollateralAgreement.FinancialContractID",
+                                    "IN"."_SimpleCollateralAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CreditRiskCalculationLevel",
+                                    "IN"."CreditRiskCalculationMethod",
+                                    "IN"."CreditRiskType",
+                                    "IN"."OffBalanceSheet",
+                                    "IN"."ASSOC_CollateralPortion.PortionNumber",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_CollectionOfInstruments.CollectionID",
+                                    "IN"."_CollectionOfInstruments.IDSystem",
+                                    "IN"."_CombinedCollateralAgreement.FinancialContractID",
+                                    "IN"."_CombinedCollateralAgreement.IDSystem",
+                                    "IN"."_FinancialContractUsedAsCollateral.FinancialContractID",
+                                    "IN"."_FinancialContractUsedAsCollateral.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                                    "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                                    "IN"."_ReceivableUsedAsCollateral.ReceivableID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem",
+                                    "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                                    "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                                    "IN"."_SimpleCollateralAgreement.FinancialContractID",
+                                    "IN"."_SimpleCollateralAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::CreditRiskExposure" (
+        "CreditRiskCalculationLevel",
+        "CreditRiskCalculationMethod",
+        "CreditRiskType",
+        "OffBalanceSheet",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_CollectionOfInstruments.CollectionID",
+        "_CollectionOfInstruments.IDSystem",
+        "_CombinedCollateralAgreement.FinancialContractID",
+        "_CombinedCollateralAgreement.IDSystem",
+        "_FinancialContractUsedAsCollateral.FinancialContractID",
+        "_FinancialContractUsedAsCollateral.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+        "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+        "_ReceivableUsedAsCollateral.ReceivableID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+        "_SimpleCollateralAgreement.FinancialContractID",
+        "_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ApplicableMasterRating",
+        "CalculationApproach",
+        "CalculationSubApproach",
+        "Currency",
+        "CurrentExposure",
+        "DeductionFromCapital",
+        "ExpectedLoss",
+        "ExposureAtDefault",
+        "ExposureClass",
+        "LGDClass",
+        "LossGivenDefault",
+        "Maturity",
+        "MaturityPeriodTimeUnit",
+        "MaximumExposure",
+        "NominalAmount",
+        "ProbabilityOfDefault",
+        "Quantity",
+        "RegulatoryCapitalRequirements",
+        "RiskWeight",
+        "RiskWeightedAssets",
+        "RiskWeightedAssetsBeforeCreditRiskMitigation",
+        "Unit",
+        "UsedProtectionAmount",
+        "UsedProtectionAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_CreditRiskCalculationLevel" as "CreditRiskCalculationLevel" ,
+            "OLD_CreditRiskCalculationMethod" as "CreditRiskCalculationMethod" ,
+            "OLD_CreditRiskType" as "CreditRiskType" ,
+            "OLD_OffBalanceSheet" as "OffBalanceSheet" ,
+            "OLD_ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion.PortionNumber" ,
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD__CollectionOfInstruments.CollectionID" as "_CollectionOfInstruments.CollectionID" ,
+            "OLD__CollectionOfInstruments.IDSystem" as "_CollectionOfInstruments.IDSystem" ,
+            "OLD__CombinedCollateralAgreement.FinancialContractID" as "_CombinedCollateralAgreement.FinancialContractID" ,
+            "OLD__CombinedCollateralAgreement.IDSystem" as "_CombinedCollateralAgreement.IDSystem" ,
+            "OLD__FinancialContractUsedAsCollateral.FinancialContractID" as "_FinancialContractUsedAsCollateral.FinancialContractID" ,
+            "OLD__FinancialContractUsedAsCollateral.IDSystem" as "_FinancialContractUsedAsCollateral.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" as "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" ,
+            "OLD__PhysicalAssetUsedAsCollateral.PhysicalAssetID" as "_PhysicalAssetUsedAsCollateral.PhysicalAssetID" ,
+            "OLD__ReceivableUsedAsCollateral.ReceivableID" as "_ReceivableUsedAsCollateral.ReceivableID" ,
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID" ,
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem" ,
+            "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" ,
+            "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" ,
+            "OLD__SimpleCollateralAgreement.FinancialContractID" as "_SimpleCollateralAgreement.FinancialContractID" ,
+            "OLD__SimpleCollateralAgreement.IDSystem" as "_SimpleCollateralAgreement.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ApplicableMasterRating" as "ApplicableMasterRating" ,
+            "OLD_CalculationApproach" as "CalculationApproach" ,
+            "OLD_CalculationSubApproach" as "CalculationSubApproach" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_CurrentExposure" as "CurrentExposure" ,
+            "OLD_DeductionFromCapital" as "DeductionFromCapital" ,
+            "OLD_ExpectedLoss" as "ExpectedLoss" ,
+            "OLD_ExposureAtDefault" as "ExposureAtDefault" ,
+            "OLD_ExposureClass" as "ExposureClass" ,
+            "OLD_LGDClass" as "LGDClass" ,
+            "OLD_LossGivenDefault" as "LossGivenDefault" ,
+            "OLD_Maturity" as "Maturity" ,
+            "OLD_MaturityPeriodTimeUnit" as "MaturityPeriodTimeUnit" ,
+            "OLD_MaximumExposure" as "MaximumExposure" ,
+            "OLD_NominalAmount" as "NominalAmount" ,
+            "OLD_ProbabilityOfDefault" as "ProbabilityOfDefault" ,
+            "OLD_Quantity" as "Quantity" ,
+            "OLD_RegulatoryCapitalRequirements" as "RegulatoryCapitalRequirements" ,
+            "OLD_RiskWeight" as "RiskWeight" ,
+            "OLD_RiskWeightedAssets" as "RiskWeightedAssets" ,
+            "OLD_RiskWeightedAssetsBeforeCreditRiskMitigation" as "RiskWeightedAssetsBeforeCreditRiskMitigation" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_UsedProtectionAmount" as "UsedProtectionAmount" ,
+            "OLD_UsedProtectionAmountCurrency" as "UsedProtectionAmountCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."CreditRiskCalculationLevel",
+                        "IN"."CreditRiskCalculationMethod",
+                        "IN"."CreditRiskType",
+                        "IN"."OffBalanceSheet",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_CollectionOfInstruments.CollectionID",
+                        "IN"."_CollectionOfInstruments.IDSystem",
+                        "IN"."_CombinedCollateralAgreement.FinancialContractID",
+                        "IN"."_CombinedCollateralAgreement.IDSystem",
+                        "IN"."_FinancialContractUsedAsCollateral.FinancialContractID",
+                        "IN"."_FinancialContractUsedAsCollateral.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                        "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                        "IN"."_ReceivableUsedAsCollateral.ReceivableID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                        "IN"."_SimpleCollateralAgreement.FinancialContractID",
+                        "IN"."_SimpleCollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."CreditRiskCalculationLevel" as "OLD_CreditRiskCalculationLevel",
+                                "OLD"."CreditRiskCalculationMethod" as "OLD_CreditRiskCalculationMethod",
+                                "OLD"."CreditRiskType" as "OLD_CreditRiskType",
+                                "OLD"."OffBalanceSheet" as "OLD_OffBalanceSheet",
+                                "OLD"."ASSOC_CollateralPortion.PortionNumber" as "OLD_ASSOC_CollateralPortion.PortionNumber",
+                                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                                "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_CollectionOfInstruments.CollectionID" as "OLD__CollectionOfInstruments.CollectionID",
+                                "OLD"."_CollectionOfInstruments.IDSystem" as "OLD__CollectionOfInstruments.IDSystem",
+                                "OLD"."_CombinedCollateralAgreement.FinancialContractID" as "OLD__CombinedCollateralAgreement.FinancialContractID",
+                                "OLD"."_CombinedCollateralAgreement.IDSystem" as "OLD__CombinedCollateralAgreement.IDSystem",
+                                "OLD"."_FinancialContractUsedAsCollateral.FinancialContractID" as "OLD__FinancialContractUsedAsCollateral.FinancialContractID",
+                                "OLD"."_FinancialContractUsedAsCollateral.IDSystem" as "OLD__FinancialContractUsedAsCollateral.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" as "OLD__FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                                "OLD"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" as "OLD__PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                                "OLD"."_ReceivableUsedAsCollateral.ReceivableID" as "OLD__ReceivableUsedAsCollateral.ReceivableID",
+                                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                                "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" as "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                                "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" as "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                                "OLD"."_SimpleCollateralAgreement.FinancialContractID" as "OLD__SimpleCollateralAgreement.FinancialContractID",
+                                "OLD"."_SimpleCollateralAgreement.IDSystem" as "OLD__SimpleCollateralAgreement.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ApplicableMasterRating" as "OLD_ApplicableMasterRating",
+                                "OLD"."CalculationApproach" as "OLD_CalculationApproach",
+                                "OLD"."CalculationSubApproach" as "OLD_CalculationSubApproach",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."CurrentExposure" as "OLD_CurrentExposure",
+                                "OLD"."DeductionFromCapital" as "OLD_DeductionFromCapital",
+                                "OLD"."ExpectedLoss" as "OLD_ExpectedLoss",
+                                "OLD"."ExposureAtDefault" as "OLD_ExposureAtDefault",
+                                "OLD"."ExposureClass" as "OLD_ExposureClass",
+                                "OLD"."LGDClass" as "OLD_LGDClass",
+                                "OLD"."LossGivenDefault" as "OLD_LossGivenDefault",
+                                "OLD"."Maturity" as "OLD_Maturity",
+                                "OLD"."MaturityPeriodTimeUnit" as "OLD_MaturityPeriodTimeUnit",
+                                "OLD"."MaximumExposure" as "OLD_MaximumExposure",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."ProbabilityOfDefault" as "OLD_ProbabilityOfDefault",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."RegulatoryCapitalRequirements" as "OLD_RegulatoryCapitalRequirements",
+                                "OLD"."RiskWeight" as "OLD_RiskWeight",
+                                "OLD"."RiskWeightedAssets" as "OLD_RiskWeightedAssets",
+                                "OLD"."RiskWeightedAssetsBeforeCreditRiskMitigation" as "OLD_RiskWeightedAssetsBeforeCreditRiskMitigation",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."UsedProtectionAmount" as "OLD_UsedProtectionAmount",
+                                "OLD"."UsedProtectionAmountCurrency" as "OLD_UsedProtectionAmountCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskExposure" as "OLD"
+            on
+                ( case when "IN"."CreditRiskCalculationLevel" is null then '' else "IN"."CreditRiskCalculationLevel" end ) = "OLD"."CreditRiskCalculationLevel" and
+                ( case when "IN"."CreditRiskCalculationMethod" is null then '' else "IN"."CreditRiskCalculationMethod" end ) = "OLD"."CreditRiskCalculationMethod" and
+                ( case when "IN"."CreditRiskType" is null then '' else "IN"."CreditRiskType" end ) = "OLD"."CreditRiskType" and
+                ( case when "IN"."OffBalanceSheet" is null then false else "IN"."OffBalanceSheet" end ) = "OLD"."OffBalanceSheet" and
+                ( case when "IN"."ASSOC_CollateralPortion.PortionNumber" is null then -1 else "IN"."ASSOC_CollateralPortion.PortionNumber" end ) = "OLD"."ASSOC_CollateralPortion.PortionNumber" and
+                ( case when "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null then '' else "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" end ) = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_CollectionOfInstruments.CollectionID" is null then '' else "IN"."_CollectionOfInstruments.CollectionID" end ) = "OLD"."_CollectionOfInstruments.CollectionID" and
+                ( case when "IN"."_CollectionOfInstruments.IDSystem" is null then '' else "IN"."_CollectionOfInstruments.IDSystem" end ) = "OLD"."_CollectionOfInstruments.IDSystem" and
+                ( case when "IN"."_CombinedCollateralAgreement.FinancialContractID" is null then '' else "IN"."_CombinedCollateralAgreement.FinancialContractID" end ) = "OLD"."_CombinedCollateralAgreement.FinancialContractID" and
+                ( case when "IN"."_CombinedCollateralAgreement.IDSystem" is null then '' else "IN"."_CombinedCollateralAgreement.IDSystem" end ) = "OLD"."_CombinedCollateralAgreement.IDSystem" and
+                ( case when "IN"."_FinancialContractUsedAsCollateral.FinancialContractID" is null then '' else "IN"."_FinancialContractUsedAsCollateral.FinancialContractID" end ) = "OLD"."_FinancialContractUsedAsCollateral.FinancialContractID" and
+                ( case when "IN"."_FinancialContractUsedAsCollateral.IDSystem" is null then '' else "IN"."_FinancialContractUsedAsCollateral.IDSystem" end ) = "OLD"."_FinancialContractUsedAsCollateral.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" and
+                ( case when "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" is null then '' else "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" end ) = "OLD"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" and
+                ( case when "IN"."_ReceivableUsedAsCollateral.ReceivableID" is null then '' else "IN"."_ReceivableUsedAsCollateral.ReceivableID" end ) = "OLD"."_ReceivableUsedAsCollateral.ReceivableID" and
+                ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" and
+                ( case when "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" is null then '' else "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" end ) = "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" is null then '' else "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" end ) = "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" and
+                ( case when "IN"."_SimpleCollateralAgreement.FinancialContractID" is null then '' else "IN"."_SimpleCollateralAgreement.FinancialContractID" end ) = "OLD"."_SimpleCollateralAgreement.FinancialContractID" and
+                ( case when "IN"."_SimpleCollateralAgreement.IDSystem" is null then '' else "IN"."_SimpleCollateralAgreement.IDSystem" end ) = "OLD"."_SimpleCollateralAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::CreditRiskExposure" (
+        "CreditRiskCalculationLevel",
+        "CreditRiskCalculationMethod",
+        "CreditRiskType",
+        "OffBalanceSheet",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_CollectionOfInstruments.CollectionID",
+        "_CollectionOfInstruments.IDSystem",
+        "_CombinedCollateralAgreement.FinancialContractID",
+        "_CombinedCollateralAgreement.IDSystem",
+        "_FinancialContractUsedAsCollateral.FinancialContractID",
+        "_FinancialContractUsedAsCollateral.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+        "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+        "_ReceivableUsedAsCollateral.ReceivableID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+        "_SimpleCollateralAgreement.FinancialContractID",
+        "_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ApplicableMasterRating",
+        "CalculationApproach",
+        "CalculationSubApproach",
+        "Currency",
+        "CurrentExposure",
+        "DeductionFromCapital",
+        "ExpectedLoss",
+        "ExposureAtDefault",
+        "ExposureClass",
+        "LGDClass",
+        "LossGivenDefault",
+        "Maturity",
+        "MaturityPeriodTimeUnit",
+        "MaximumExposure",
+        "NominalAmount",
+        "ProbabilityOfDefault",
+        "Quantity",
+        "RegulatoryCapitalRequirements",
+        "RiskWeight",
+        "RiskWeightedAssets",
+        "RiskWeightedAssetsBeforeCreditRiskMitigation",
+        "Unit",
+        "UsedProtectionAmount",
+        "UsedProtectionAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_CreditRiskCalculationLevel" as "CreditRiskCalculationLevel",
+            "OLD_CreditRiskCalculationMethod" as "CreditRiskCalculationMethod",
+            "OLD_CreditRiskType" as "CreditRiskType",
+            "OLD_OffBalanceSheet" as "OffBalanceSheet",
+            "OLD_ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion.PortionNumber",
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD__CollectionOfInstruments.CollectionID" as "_CollectionOfInstruments.CollectionID",
+            "OLD__CollectionOfInstruments.IDSystem" as "_CollectionOfInstruments.IDSystem",
+            "OLD__CombinedCollateralAgreement.FinancialContractID" as "_CombinedCollateralAgreement.FinancialContractID",
+            "OLD__CombinedCollateralAgreement.IDSystem" as "_CombinedCollateralAgreement.IDSystem",
+            "OLD__FinancialContractUsedAsCollateral.FinancialContractID" as "_FinancialContractUsedAsCollateral.FinancialContractID",
+            "OLD__FinancialContractUsedAsCollateral.IDSystem" as "_FinancialContractUsedAsCollateral.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" as "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+            "OLD__PhysicalAssetUsedAsCollateral.PhysicalAssetID" as "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+            "OLD__ReceivableUsedAsCollateral.ReceivableID" as "_ReceivableUsedAsCollateral.ReceivableID",
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID",
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem",
+            "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+            "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+            "OLD__SimpleCollateralAgreement.FinancialContractID" as "_SimpleCollateralAgreement.FinancialContractID",
+            "OLD__SimpleCollateralAgreement.IDSystem" as "_SimpleCollateralAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ApplicableMasterRating" as "ApplicableMasterRating",
+            "OLD_CalculationApproach" as "CalculationApproach",
+            "OLD_CalculationSubApproach" as "CalculationSubApproach",
+            "OLD_Currency" as "Currency",
+            "OLD_CurrentExposure" as "CurrentExposure",
+            "OLD_DeductionFromCapital" as "DeductionFromCapital",
+            "OLD_ExpectedLoss" as "ExpectedLoss",
+            "OLD_ExposureAtDefault" as "ExposureAtDefault",
+            "OLD_ExposureClass" as "ExposureClass",
+            "OLD_LGDClass" as "LGDClass",
+            "OLD_LossGivenDefault" as "LossGivenDefault",
+            "OLD_Maturity" as "Maturity",
+            "OLD_MaturityPeriodTimeUnit" as "MaturityPeriodTimeUnit",
+            "OLD_MaximumExposure" as "MaximumExposure",
+            "OLD_NominalAmount" as "NominalAmount",
+            "OLD_ProbabilityOfDefault" as "ProbabilityOfDefault",
+            "OLD_Quantity" as "Quantity",
+            "OLD_RegulatoryCapitalRequirements" as "RegulatoryCapitalRequirements",
+            "OLD_RiskWeight" as "RiskWeight",
+            "OLD_RiskWeightedAssets" as "RiskWeightedAssets",
+            "OLD_RiskWeightedAssetsBeforeCreditRiskMitigation" as "RiskWeightedAssetsBeforeCreditRiskMitigation",
+            "OLD_Unit" as "Unit",
+            "OLD_UsedProtectionAmount" as "UsedProtectionAmount",
+            "OLD_UsedProtectionAmountCurrency" as "UsedProtectionAmountCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."CreditRiskCalculationLevel",
+                        "IN"."CreditRiskCalculationMethod",
+                        "IN"."CreditRiskType",
+                        "IN"."OffBalanceSheet",
+                        "IN"."ASSOC_CollateralPortion.PortionNumber",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_CollectionOfInstruments.CollectionID",
+                        "IN"."_CollectionOfInstruments.IDSystem",
+                        "IN"."_CombinedCollateralAgreement.FinancialContractID",
+                        "IN"."_CombinedCollateralAgreement.IDSystem",
+                        "IN"."_FinancialContractUsedAsCollateral.FinancialContractID",
+                        "IN"."_FinancialContractUsedAsCollateral.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                        "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                        "IN"."_ReceivableUsedAsCollateral.ReceivableID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                        "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                        "IN"."_SimpleCollateralAgreement.FinancialContractID",
+                        "IN"."_SimpleCollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."CreditRiskCalculationLevel" as "OLD_CreditRiskCalculationLevel",
+                        "OLD"."CreditRiskCalculationMethod" as "OLD_CreditRiskCalculationMethod",
+                        "OLD"."CreditRiskType" as "OLD_CreditRiskType",
+                        "OLD"."OffBalanceSheet" as "OLD_OffBalanceSheet",
+                        "OLD"."ASSOC_CollateralPortion.PortionNumber" as "OLD_ASSOC_CollateralPortion.PortionNumber",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_CollectionOfInstruments.CollectionID" as "OLD__CollectionOfInstruments.CollectionID",
+                        "OLD"."_CollectionOfInstruments.IDSystem" as "OLD__CollectionOfInstruments.IDSystem",
+                        "OLD"."_CombinedCollateralAgreement.FinancialContractID" as "OLD__CombinedCollateralAgreement.FinancialContractID",
+                        "OLD"."_CombinedCollateralAgreement.IDSystem" as "OLD__CombinedCollateralAgreement.IDSystem",
+                        "OLD"."_FinancialContractUsedAsCollateral.FinancialContractID" as "OLD__FinancialContractUsedAsCollateral.FinancialContractID",
+                        "OLD"."_FinancialContractUsedAsCollateral.IDSystem" as "OLD__FinancialContractUsedAsCollateral.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" as "OLD__FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+                        "OLD"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" as "OLD__PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+                        "OLD"."_ReceivableUsedAsCollateral.ReceivableID" as "OLD__ReceivableUsedAsCollateral.ReceivableID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                        "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" as "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+                        "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" as "OLD__SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+                        "OLD"."_SimpleCollateralAgreement.FinancialContractID" as "OLD__SimpleCollateralAgreement.FinancialContractID",
+                        "OLD"."_SimpleCollateralAgreement.IDSystem" as "OLD__SimpleCollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ApplicableMasterRating" as "OLD_ApplicableMasterRating",
+                        "OLD"."CalculationApproach" as "OLD_CalculationApproach",
+                        "OLD"."CalculationSubApproach" as "OLD_CalculationSubApproach",
+                        "OLD"."Currency" as "OLD_Currency",
+                        "OLD"."CurrentExposure" as "OLD_CurrentExposure",
+                        "OLD"."DeductionFromCapital" as "OLD_DeductionFromCapital",
+                        "OLD"."ExpectedLoss" as "OLD_ExpectedLoss",
+                        "OLD"."ExposureAtDefault" as "OLD_ExposureAtDefault",
+                        "OLD"."ExposureClass" as "OLD_ExposureClass",
+                        "OLD"."LGDClass" as "OLD_LGDClass",
+                        "OLD"."LossGivenDefault" as "OLD_LossGivenDefault",
+                        "OLD"."Maturity" as "OLD_Maturity",
+                        "OLD"."MaturityPeriodTimeUnit" as "OLD_MaturityPeriodTimeUnit",
+                        "OLD"."MaximumExposure" as "OLD_MaximumExposure",
+                        "OLD"."NominalAmount" as "OLD_NominalAmount",
+                        "OLD"."ProbabilityOfDefault" as "OLD_ProbabilityOfDefault",
+                        "OLD"."Quantity" as "OLD_Quantity",
+                        "OLD"."RegulatoryCapitalRequirements" as "OLD_RegulatoryCapitalRequirements",
+                        "OLD"."RiskWeight" as "OLD_RiskWeight",
+                        "OLD"."RiskWeightedAssets" as "OLD_RiskWeightedAssets",
+                        "OLD"."RiskWeightedAssetsBeforeCreditRiskMitigation" as "OLD_RiskWeightedAssetsBeforeCreditRiskMitigation",
+                        "OLD"."Unit" as "OLD_Unit",
+                        "OLD"."UsedProtectionAmount" as "OLD_UsedProtectionAmount",
+                        "OLD"."UsedProtectionAmountCurrency" as "OLD_UsedProtectionAmountCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskExposure" as "OLD"
+            on
+                ( case when "IN"."CreditRiskCalculationLevel" is null then '' else "IN"."CreditRiskCalculationLevel" end ) = "OLD"."CreditRiskCalculationLevel" and
+                ( case when "IN"."CreditRiskCalculationMethod" is null then '' else "IN"."CreditRiskCalculationMethod" end ) = "OLD"."CreditRiskCalculationMethod" and
+                ( case when "IN"."CreditRiskType" is null then '' else "IN"."CreditRiskType" end ) = "OLD"."CreditRiskType" and
+                ( case when "IN"."OffBalanceSheet" is null then false else "IN"."OffBalanceSheet" end ) = "OLD"."OffBalanceSheet" and
+                ( case when "IN"."ASSOC_CollateralPortion.PortionNumber" is null then -1 else "IN"."ASSOC_CollateralPortion.PortionNumber" end ) = "OLD"."ASSOC_CollateralPortion.PortionNumber" and
+                ( case when "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null then '' else "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" end ) = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_CollectionOfInstruments.CollectionID" is null then '' else "IN"."_CollectionOfInstruments.CollectionID" end ) = "OLD"."_CollectionOfInstruments.CollectionID" and
+                ( case when "IN"."_CollectionOfInstruments.IDSystem" is null then '' else "IN"."_CollectionOfInstruments.IDSystem" end ) = "OLD"."_CollectionOfInstruments.IDSystem" and
+                ( case when "IN"."_CombinedCollateralAgreement.FinancialContractID" is null then '' else "IN"."_CombinedCollateralAgreement.FinancialContractID" end ) = "OLD"."_CombinedCollateralAgreement.FinancialContractID" and
+                ( case when "IN"."_CombinedCollateralAgreement.IDSystem" is null then '' else "IN"."_CombinedCollateralAgreement.IDSystem" end ) = "OLD"."_CombinedCollateralAgreement.IDSystem" and
+                ( case when "IN"."_FinancialContractUsedAsCollateral.FinancialContractID" is null then '' else "IN"."_FinancialContractUsedAsCollateral.FinancialContractID" end ) = "OLD"."_FinancialContractUsedAsCollateral.FinancialContractID" and
+                ( case when "IN"."_FinancialContractUsedAsCollateral.IDSystem" is null then '' else "IN"."_FinancialContractUsedAsCollateral.IDSystem" end ) = "OLD"."_FinancialContractUsedAsCollateral.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" and
+                ( case when "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" is null then '' else "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" end ) = "OLD"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" and
+                ( case when "IN"."_ReceivableUsedAsCollateral.ReceivableID" is null then '' else "IN"."_ReceivableUsedAsCollateral.ReceivableID" end ) = "OLD"."_ReceivableUsedAsCollateral.ReceivableID" and
+                ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" and
+                ( case when "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" is null then '' else "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" end ) = "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" is null then '' else "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" end ) = "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" and
+                ( case when "IN"."_SimpleCollateralAgreement.FinancialContractID" is null then '' else "IN"."_SimpleCollateralAgreement.FinancialContractID" end ) = "OLD"."_SimpleCollateralAgreement.FinancialContractID" and
+                ( case when "IN"."_SimpleCollateralAgreement.IDSystem" is null then '' else "IN"."_SimpleCollateralAgreement.IDSystem" end ) = "OLD"."_SimpleCollateralAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::CreditRiskExposure"
+    where (
+        "CreditRiskCalculationLevel",
+        "CreditRiskCalculationMethod",
+        "CreditRiskType",
+        "OffBalanceSheet",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_CollectionOfInstruments.CollectionID",
+        "_CollectionOfInstruments.IDSystem",
+        "_CombinedCollateralAgreement.FinancialContractID",
+        "_CombinedCollateralAgreement.IDSystem",
+        "_FinancialContractUsedAsCollateral.FinancialContractID",
+        "_FinancialContractUsedAsCollateral.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+        "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+        "_ReceivableUsedAsCollateral.ReceivableID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+        "_SimpleCollateralAgreement.FinancialContractID",
+        "_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."CreditRiskCalculationLevel",
+            "OLD"."CreditRiskCalculationMethod",
+            "OLD"."CreditRiskType",
+            "OLD"."OffBalanceSheet",
+            "OLD"."ASSOC_CollateralPortion.PortionNumber",
+            "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."_CollectionOfInstruments.CollectionID",
+            "OLD"."_CollectionOfInstruments.IDSystem",
+            "OLD"."_CombinedCollateralAgreement.FinancialContractID",
+            "OLD"."_CombinedCollateralAgreement.IDSystem",
+            "OLD"."_FinancialContractUsedAsCollateral.FinancialContractID",
+            "OLD"."_FinancialContractUsedAsCollateral.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+            "OLD"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+            "OLD"."_ReceivableUsedAsCollateral.ReceivableID",
+            "OLD"."_SecuritiesAccount.FinancialContractID",
+            "OLD"."_SecuritiesAccount.IDSystem",
+            "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+            "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+            "OLD"."_SimpleCollateralAgreement.FinancialContractID",
+            "OLD"."_SimpleCollateralAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CreditRiskExposure" as "OLD"
+        on
+           ( case when "IN"."CreditRiskCalculationLevel" is null then '' else "IN"."CreditRiskCalculationLevel" end ) = "OLD"."CreditRiskCalculationLevel" and
+           ( case when "IN"."CreditRiskCalculationMethod" is null then '' else "IN"."CreditRiskCalculationMethod" end ) = "OLD"."CreditRiskCalculationMethod" and
+           ( case when "IN"."CreditRiskType" is null then '' else "IN"."CreditRiskType" end ) = "OLD"."CreditRiskType" and
+           ( case when "IN"."OffBalanceSheet" is null then false else "IN"."OffBalanceSheet" end ) = "OLD"."OffBalanceSheet" and
+           ( case when "IN"."ASSOC_CollateralPortion.PortionNumber" is null then -1 else "IN"."ASSOC_CollateralPortion.PortionNumber" end ) = "OLD"."ASSOC_CollateralPortion.PortionNumber" and
+           ( case when "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" and
+           ( case when "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null then '' else "IN"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" end ) = "OLD"."ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" and
+           ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+           ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+           ( case when "IN"."_CollectionOfInstruments.CollectionID" is null then '' else "IN"."_CollectionOfInstruments.CollectionID" end ) = "OLD"."_CollectionOfInstruments.CollectionID" and
+           ( case when "IN"."_CollectionOfInstruments.IDSystem" is null then '' else "IN"."_CollectionOfInstruments.IDSystem" end ) = "OLD"."_CollectionOfInstruments.IDSystem" and
+           ( case when "IN"."_CombinedCollateralAgreement.FinancialContractID" is null then '' else "IN"."_CombinedCollateralAgreement.FinancialContractID" end ) = "OLD"."_CombinedCollateralAgreement.FinancialContractID" and
+           ( case when "IN"."_CombinedCollateralAgreement.IDSystem" is null then '' else "IN"."_CombinedCollateralAgreement.IDSystem" end ) = "OLD"."_CombinedCollateralAgreement.IDSystem" and
+           ( case when "IN"."_FinancialContractUsedAsCollateral.FinancialContractID" is null then '' else "IN"."_FinancialContractUsedAsCollateral.FinancialContractID" end ) = "OLD"."_FinancialContractUsedAsCollateral.FinancialContractID" and
+           ( case when "IN"."_FinancialContractUsedAsCollateral.IDSystem" is null then '' else "IN"."_FinancialContractUsedAsCollateral.IDSystem" end ) = "OLD"."_FinancialContractUsedAsCollateral.IDSystem" and
+           ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+           ( case when "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" and
+           ( case when "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" is null then '' else "IN"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" end ) = "OLD"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID" and
+           ( case when "IN"."_ReceivableUsedAsCollateral.ReceivableID" is null then '' else "IN"."_ReceivableUsedAsCollateral.ReceivableID" end ) = "OLD"."_ReceivableUsedAsCollateral.ReceivableID" and
+           ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+           ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" and
+           ( case when "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" is null then '' else "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" end ) = "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" and
+           ( case when "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" is null then '' else "IN"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" end ) = "OLD"."_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" and
+           ( case when "IN"."_SimpleCollateralAgreement.FinancialContractID" is null then '' else "IN"."_SimpleCollateralAgreement.FinancialContractID" end ) = "OLD"."_SimpleCollateralAgreement.FinancialContractID" and
+           ( case when "IN"."_SimpleCollateralAgreement.IDSystem" is null then '' else "IN"."_SimpleCollateralAgreement.IDSystem" end ) = "OLD"."_SimpleCollateralAgreement.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::CreditRiskExposure" (
+        "CreditRiskCalculationLevel",
+        "CreditRiskCalculationMethod",
+        "CreditRiskType",
+        "OffBalanceSheet",
+        "ASSOC_CollateralPortion.PortionNumber",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_CollectionOfInstruments.CollectionID",
+        "_CollectionOfInstruments.IDSystem",
+        "_CombinedCollateralAgreement.FinancialContractID",
+        "_CombinedCollateralAgreement.IDSystem",
+        "_FinancialContractUsedAsCollateral.FinancialContractID",
+        "_FinancialContractUsedAsCollateral.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+        "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+        "_ReceivableUsedAsCollateral.ReceivableID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+        "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+        "_SimpleCollateralAgreement.FinancialContractID",
+        "_SimpleCollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ApplicableMasterRating",
+        "CalculationApproach",
+        "CalculationSubApproach",
+        "Currency",
+        "CurrentExposure",
+        "DeductionFromCapital",
+        "ExpectedLoss",
+        "ExposureAtDefault",
+        "ExposureClass",
+        "LGDClass",
+        "LossGivenDefault",
+        "Maturity",
+        "MaturityPeriodTimeUnit",
+        "MaximumExposure",
+        "NominalAmount",
+        "ProbabilityOfDefault",
+        "Quantity",
+        "RegulatoryCapitalRequirements",
+        "RiskWeight",
+        "RiskWeightedAssets",
+        "RiskWeightedAssetsBeforeCreditRiskMitigation",
+        "Unit",
+        "UsedProtectionAmount",
+        "UsedProtectionAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "CreditRiskCalculationLevel" is null then '' else "CreditRiskCalculationLevel" end ) as "CreditRiskCalculationLevel",
+            ( case when "CreditRiskCalculationMethod" is null then '' else "CreditRiskCalculationMethod" end ) as "CreditRiskCalculationMethod",
+            ( case when "CreditRiskType" is null then '' else "CreditRiskType" end ) as "CreditRiskType",
+            ( case when "OffBalanceSheet" is null then false else "OffBalanceSheet" end ) as "OffBalanceSheet",
+            ( case when "ASSOC_CollateralPortion.PortionNumber" is null then -1 else "ASSOC_CollateralPortion.PortionNumber" end ) as "ASSOC_CollateralPortion.PortionNumber",
+            ( case when "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" end ) as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+            ( case when "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null then '' else "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" end ) as "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+            ( case when "ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_FinancialContract.FinancialContractID",
+            ( case when "ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_FinancialContract.IDSystem",
+            ( case when "_CollectionOfInstruments.CollectionID" is null then '' else "_CollectionOfInstruments.CollectionID" end ) as "_CollectionOfInstruments.CollectionID",
+            ( case when "_CollectionOfInstruments.IDSystem" is null then '' else "_CollectionOfInstruments.IDSystem" end ) as "_CollectionOfInstruments.IDSystem",
+            ( case when "_CombinedCollateralAgreement.FinancialContractID" is null then '' else "_CombinedCollateralAgreement.FinancialContractID" end ) as "_CombinedCollateralAgreement.FinancialContractID",
+            ( case when "_CombinedCollateralAgreement.IDSystem" is null then '' else "_CombinedCollateralAgreement.IDSystem" end ) as "_CombinedCollateralAgreement.IDSystem",
+            ( case when "_FinancialContractUsedAsCollateral.FinancialContractID" is null then '' else "_FinancialContractUsedAsCollateral.FinancialContractID" end ) as "_FinancialContractUsedAsCollateral.FinancialContractID",
+            ( case when "_FinancialContractUsedAsCollateral.IDSystem" is null then '' else "_FinancialContractUsedAsCollateral.IDSystem" end ) as "_FinancialContractUsedAsCollateral.IDSystem",
+            ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+            ( case when "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" is null then '' else "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" end ) as "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID",
+            ( case when "_PhysicalAssetUsedAsCollateral.PhysicalAssetID" is null then '' else "_PhysicalAssetUsedAsCollateral.PhysicalAssetID" end ) as "_PhysicalAssetUsedAsCollateral.PhysicalAssetID",
+            ( case when "_ReceivableUsedAsCollateral.ReceivableID" is null then '' else "_ReceivableUsedAsCollateral.ReceivableID" end ) as "_ReceivableUsedAsCollateral.ReceivableID",
+            ( case when "_SecuritiesAccount.FinancialContractID" is null then '' else "_SecuritiesAccount.FinancialContractID" end ) as "_SecuritiesAccount.FinancialContractID",
+            ( case when "_SecuritiesAccount.IDSystem" is null then '' else "_SecuritiesAccount.IDSystem" end ) as "_SecuritiesAccount.IDSystem",
+            ( case when "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" is null then '' else "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" end ) as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID",
+            ( case when "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" is null then '' else "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" end ) as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem",
+            ( case when "_SimpleCollateralAgreement.FinancialContractID" is null then '' else "_SimpleCollateralAgreement.FinancialContractID" end ) as "_SimpleCollateralAgreement.FinancialContractID",
+            ( case when "_SimpleCollateralAgreement.IDSystem" is null then '' else "_SimpleCollateralAgreement.IDSystem" end ) as "_SimpleCollateralAgreement.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "ApplicableMasterRating"  ,
+            "CalculationApproach"  ,
+            "CalculationSubApproach"  ,
+            "Currency"  ,
+            "CurrentExposure"  ,
+            "DeductionFromCapital"  ,
+            "ExpectedLoss"  ,
+            "ExposureAtDefault"  ,
+            "ExposureClass"  ,
+            "LGDClass"  ,
+            "LossGivenDefault"  ,
+            "Maturity"  ,
+            "MaturityPeriodTimeUnit"  ,
+            "MaximumExposure"  ,
+            "NominalAmount"  ,
+            "ProbabilityOfDefault"  ,
+            "Quantity"  ,
+            "RegulatoryCapitalRequirements"  ,
+            "RiskWeight"  ,
+            "RiskWeightedAssets"  ,
+            "RiskWeightedAssetsBeforeCreditRiskMitigation"  ,
+            "Unit"  ,
+            "UsedProtectionAmount"  ,
+            "UsedProtectionAmountCurrency"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

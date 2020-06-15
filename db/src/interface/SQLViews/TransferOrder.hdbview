@@ -1,0 +1,144 @@
+view "sap.fsdm.SQLViews::TransferOrder_View" 
+as select
+      "IDSystem" ,
+      "ItemNumber" ,
+      "TransferOrderID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_BusinessEventDataOwner.BusinessPartnerID" ,
+      "ASSOC_DestinationAccount.FinancialContractID" ,
+      "ASSOC_DestinationAccount.IDSystem" ,
+      "ASSOC_InitiatingAccount.FinancialContractID" ,
+      "ASSOC_InitiatingAccount.IDSystem" ,
+      "ASSOC_Initiator.BusinessPartnerID" ,
+      "ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "_ClaimPaymentRequestItem.ID" ,
+      "_ClaimPaymentRequestItem.ItemNumber" ,
+      "_ClaimPaymentRequestItem._Claim.ID" ,
+      "_ClaimPaymentRequestItem._Claim.IDSystem" ,
+      "_ClaimPaymentRequestItem._Subclaim._Claimant._BusinessPartner.BusinessPartnerID" ,
+      "_ClaimPaymentRequestItem._Subclaim._Claimant._Claim.ID" ,
+      "_ClaimPaymentRequestItem._Subclaim._Claimant._Claim.IDSystem" ,
+      "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage.ID" ,
+      "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "_Security.FinancialInstrumentID" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DestinationAccountIdentificationSystem" ,
+      "DestinationBankAccountCurrency" ,
+      "DestinationBankAccountHolderName" ,
+      "DestinationBankAccountID" ,
+      "DestinationBankID" ,
+      "DestinationBankIdentificationSystem" ,
+      "DestinationBankName" ,
+      "DestinationCountry" ,
+      "DestinationIBAN" ,
+      "DestinationSWIFT" ,
+      "DirectionOfTransfer" ,
+      "FeeBillingMethod" ,
+      "LifecycleStatus" ,
+      "RecurringTransferOrderEndOfExecution" ,
+      "RecurringTransferOrderPeriodLength" ,
+      "RecurringTransferOrderPeriodTimeUnit" ,
+      "TransferAgreementCategory" ,
+      "TransferAmount" ,
+      "TransferAmountCurrency" ,
+      "TransferOrderFirstExecutionDate" ,
+      "TransferOrderIsRecurring" ,
+      "TransferOrderReceivedDate" ,
+      "TransferOrderType" ,
+      "TransferableNominalAmount" ,
+      "TransferableNominalAmountCurrency" ,
+      "TransferableQuantity" ,
+      "TransferableUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TransferOrder"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClassificationOfTransferOrder_View" as "_ClassificationOfTransferOrder_ASSOC_TransferOrder"
+	  on "IDSystem" = "_ClassificationOfTransferOrder_ASSOC_TransferOrder"."ASSOC_TransferOrder.IDSystem" AND 
+	     "TransferOrderID" = "_ClassificationOfTransferOrder_ASSOC_TransferOrder"."ASSOC_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::ExecutionResult_View" as "_ExecutionResult__TransferOrder"
+	  on "IDSystem" = "_ExecutionResult__TransferOrder"."_TransferOrder.IDSystem" AND 
+	     "TransferOrderID" = "_ExecutionResult__TransferOrder"."_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::Fee_View" as "_Fee_ASSOC_TransferOrder"
+	  on "IDSystem" = "_Fee_ASSOC_TransferOrder"."ASSOC_TransferOrder.IDSystem" AND 
+	     "TransferOrderID" = "_Fee_ASSOC_TransferOrder"."ASSOC_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_TransferOrder"
+	  on "IDSystem" = "_Settlement_ASSOC_TransferOrder"."ASSOC_TransferOrder.IDSystem" AND 
+	     "ItemNumber" = "_Settlement_ASSOC_TransferOrder"."ASSOC_TransferOrder.ItemNumber" AND 
+	     "TransferOrderID" = "_Settlement_ASSOC_TransferOrder"."ASSOC_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessEventDataOwner"
+	  on "ASSOC_BusinessEventDataOwner"."BusinessPartnerID" = "ASSOC_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_DestinationAccount"
+	  on "ASSOC_DestinationAccount"."IDSystem" = "ASSOC_DestinationAccount.IDSystem" AND 
+	     "ASSOC_DestinationAccount"."FinancialContractID" = "ASSOC_DestinationAccount.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_InitiatingAccount"
+	  on "ASSOC_InitiatingAccount"."FinancialContractID" = "ASSOC_InitiatingAccount.FinancialContractID" AND 
+	     "ASSOC_InitiatingAccount"."IDSystem" = "ASSOC_InitiatingAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Initiator"
+	  on "ASSOC_Initiator"."BusinessPartnerID" = "ASSOC_Initiator.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit"."OrganizationalUnitID" = "ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract"."PositionCurrency" = "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::ClaimPaymentRequest_View" as "_ClaimPaymentRequestItem"
+	  on "_ClaimPaymentRequestItem"."_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" = "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" = "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._InsuranceCoverage.ID" = "_ClaimPaymentRequestItem._Subclaim._InsuranceCoverage.ID" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._Claimant._Claim.IDSystem" = "_ClaimPaymentRequestItem._Subclaim._Claimant._Claim.IDSystem" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._Claimant._Claim.ID" = "_ClaimPaymentRequestItem._Subclaim._Claimant._Claim.ID" AND 
+	     "_ClaimPaymentRequestItem"."_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" = "_ClaimPaymentRequestItem._Subclaim._Claimant._BusinessPartner.BusinessPartnerID" AND 
+	     "_ClaimPaymentRequestItem"."_Claim.IDSystem" = "_ClaimPaymentRequestItem._Claim.IDSystem" AND 
+	     "_ClaimPaymentRequestItem"."_Claim.ID" = "_ClaimPaymentRequestItem._Claim.ID" AND 
+	     "_ClaimPaymentRequestItem"."ItemNumber" = "_ClaimPaymentRequestItem.ItemNumber" AND 
+	     "_ClaimPaymentRequestItem"."ID" = "_ClaimPaymentRequestItem.ID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Security"
+	  on "_Security"."FinancialInstrumentID" = "_Security.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrderPaymentNote_View" as "_TransferOrderPaymentNote_ASSOC_TransferOrderItem"
+	  on "IDSystem" = "_TransferOrderPaymentNote_ASSOC_TransferOrderItem"."ASSOC_TransferOrderItem.IDSystem" AND 
+	     "ItemNumber" = "_TransferOrderPaymentNote_ASSOC_TransferOrderItem"."ASSOC_TransferOrderItem.ItemNumber" AND 
+	     "TransferOrderID" = "_TransferOrderPaymentNote_ASSOC_TransferOrderItem"."ASSOC_TransferOrderItem.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrderStatus_View" as "_TransferOrderStatus_ASSOC_TransferOrder"
+	  on "TransferOrderID" = "_TransferOrderStatus_ASSOC_TransferOrder"."ASSOC_TransferOrder.TransferOrderID" AND 
+	     "IDSystem" = "_TransferOrderStatus_ASSOC_TransferOrder"."ASSOC_TransferOrder.IDSystem"
+	     
+);

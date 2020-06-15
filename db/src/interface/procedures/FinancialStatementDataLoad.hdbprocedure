@@ -1,0 +1,653 @@
+PROCEDURE "sap.fsdm.procedures::FinancialStatementDataLoad" (IN ROW "sap.fsdm.tabletypes::FinancialStatementDataTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ConsolidatedStatement=' || TO_VARCHAR("ConsolidatedStatement") || ' ' ||
+                'FiscalPeriod=' || TO_VARCHAR("FiscalPeriod") || ' ' ||
+                'ReportedAccountingSystem=' || TO_VARCHAR("ReportedAccountingSystem") || ' ' ||
+                'StatementCurrency=' || TO_VARCHAR("StatementCurrency") || ' ' ||
+                'ASSOC_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessPartner.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ConsolidatedStatement",
+                        "IN"."FiscalPeriod",
+                        "IN"."ReportedAccountingSystem",
+                        "IN"."StatementCurrency",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ConsolidatedStatement",
+                        "IN"."FiscalPeriod",
+                        "IN"."ReportedAccountingSystem",
+                        "IN"."StatementCurrency",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ConsolidatedStatement",
+                        "FiscalPeriod",
+                        "ReportedAccountingSystem",
+                        "StatementCurrency",
+                        "ASSOC_BusinessPartner.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ConsolidatedStatement",
+                                    "IN"."FiscalPeriod",
+                                    "IN"."ReportedAccountingSystem",
+                                    "IN"."StatementCurrency",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ConsolidatedStatement",
+                                    "IN"."FiscalPeriod",
+                                    "IN"."ReportedAccountingSystem",
+                                    "IN"."StatementCurrency",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::FinancialStatementData" (
+        "ConsolidatedStatement",
+        "FiscalPeriod",
+        "ReportedAccountingSystem",
+        "StatementCurrency",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccountsPayable",
+        "AccountsReceivable",
+        "AnnualSales",
+        "Cash",
+        "CashFlowFromFinancing",
+        "CashFlowFromInvestments",
+        "CashFlowFromOperations",
+        "CostIncomeRatio",
+        "CostOfGoodsSold",
+        "CurrentAssets",
+        "Deposits",
+        "DepreciationAndAmortization",
+        "EBIT",
+        "EBITDA",
+        "FeeIncome",
+        "FiscalPeriodEndDate",
+        "FiscalPeriodStartDate",
+        "IntangibleAssets",
+        "Inventory",
+        "InvestmentAssets",
+        "LoansAdvances",
+        "LongTermLiabilities",
+        "NetCashFlow",
+        "NetIncome",
+        "NetInterestIncome",
+        "NumberOfEmployees",
+        "OtherAssets",
+        "OtherIncome",
+        "OtherLiabilities",
+        "PropertyPlantEquipment",
+        "RegulatoryAdditionalTier1Capital",
+        "RegulatoryCapitalRatio",
+        "RegulatoryCommonEquityTier1Capital",
+        "RegulatoryCommonEquityTier1CapitalFromInstruments",
+        "RegulatoryCommonEquityTier1CapitalRatio",
+        "RegulatoryLeverageRatio",
+        "RegulatoryTier1CapitalRatio",
+        "RegulatoryTier2Capital",
+        "ResearchDevelopmentExpense",
+        "SellingGeneralAdministrativeExpense",
+        "ShareholdersEquity",
+        "ShortTermLiabilities",
+        "StaffExpense",
+        "TaxExpense",
+        "TotalAssets",
+        "TreasuryStock",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ConsolidatedStatement" as "ConsolidatedStatement" ,
+            "OLD_FiscalPeriod" as "FiscalPeriod" ,
+            "OLD_ReportedAccountingSystem" as "ReportedAccountingSystem" ,
+            "OLD_StatementCurrency" as "StatementCurrency" ,
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AccountsPayable" as "AccountsPayable" ,
+            "OLD_AccountsReceivable" as "AccountsReceivable" ,
+            "OLD_AnnualSales" as "AnnualSales" ,
+            "OLD_Cash" as "Cash" ,
+            "OLD_CashFlowFromFinancing" as "CashFlowFromFinancing" ,
+            "OLD_CashFlowFromInvestments" as "CashFlowFromInvestments" ,
+            "OLD_CashFlowFromOperations" as "CashFlowFromOperations" ,
+            "OLD_CostIncomeRatio" as "CostIncomeRatio" ,
+            "OLD_CostOfGoodsSold" as "CostOfGoodsSold" ,
+            "OLD_CurrentAssets" as "CurrentAssets" ,
+            "OLD_Deposits" as "Deposits" ,
+            "OLD_DepreciationAndAmortization" as "DepreciationAndAmortization" ,
+            "OLD_EBIT" as "EBIT" ,
+            "OLD_EBITDA" as "EBITDA" ,
+            "OLD_FeeIncome" as "FeeIncome" ,
+            "OLD_FiscalPeriodEndDate" as "FiscalPeriodEndDate" ,
+            "OLD_FiscalPeriodStartDate" as "FiscalPeriodStartDate" ,
+            "OLD_IntangibleAssets" as "IntangibleAssets" ,
+            "OLD_Inventory" as "Inventory" ,
+            "OLD_InvestmentAssets" as "InvestmentAssets" ,
+            "OLD_LoansAdvances" as "LoansAdvances" ,
+            "OLD_LongTermLiabilities" as "LongTermLiabilities" ,
+            "OLD_NetCashFlow" as "NetCashFlow" ,
+            "OLD_NetIncome" as "NetIncome" ,
+            "OLD_NetInterestIncome" as "NetInterestIncome" ,
+            "OLD_NumberOfEmployees" as "NumberOfEmployees" ,
+            "OLD_OtherAssets" as "OtherAssets" ,
+            "OLD_OtherIncome" as "OtherIncome" ,
+            "OLD_OtherLiabilities" as "OtherLiabilities" ,
+            "OLD_PropertyPlantEquipment" as "PropertyPlantEquipment" ,
+            "OLD_RegulatoryAdditionalTier1Capital" as "RegulatoryAdditionalTier1Capital" ,
+            "OLD_RegulatoryCapitalRatio" as "RegulatoryCapitalRatio" ,
+            "OLD_RegulatoryCommonEquityTier1Capital" as "RegulatoryCommonEquityTier1Capital" ,
+            "OLD_RegulatoryCommonEquityTier1CapitalFromInstruments" as "RegulatoryCommonEquityTier1CapitalFromInstruments" ,
+            "OLD_RegulatoryCommonEquityTier1CapitalRatio" as "RegulatoryCommonEquityTier1CapitalRatio" ,
+            "OLD_RegulatoryLeverageRatio" as "RegulatoryLeverageRatio" ,
+            "OLD_RegulatoryTier1CapitalRatio" as "RegulatoryTier1CapitalRatio" ,
+            "OLD_RegulatoryTier2Capital" as "RegulatoryTier2Capital" ,
+            "OLD_ResearchDevelopmentExpense" as "ResearchDevelopmentExpense" ,
+            "OLD_SellingGeneralAdministrativeExpense" as "SellingGeneralAdministrativeExpense" ,
+            "OLD_ShareholdersEquity" as "ShareholdersEquity" ,
+            "OLD_ShortTermLiabilities" as "ShortTermLiabilities" ,
+            "OLD_StaffExpense" as "StaffExpense" ,
+            "OLD_TaxExpense" as "TaxExpense" ,
+            "OLD_TotalAssets" as "TotalAssets" ,
+            "OLD_TreasuryStock" as "TreasuryStock" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ConsolidatedStatement",
+                        "IN"."FiscalPeriod",
+                        "IN"."ReportedAccountingSystem",
+                        "IN"."StatementCurrency",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ConsolidatedStatement" as "OLD_ConsolidatedStatement",
+                                "OLD"."FiscalPeriod" as "OLD_FiscalPeriod",
+                                "OLD"."ReportedAccountingSystem" as "OLD_ReportedAccountingSystem",
+                                "OLD"."StatementCurrency" as "OLD_StatementCurrency",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AccountsPayable" as "OLD_AccountsPayable",
+                                "OLD"."AccountsReceivable" as "OLD_AccountsReceivable",
+                                "OLD"."AnnualSales" as "OLD_AnnualSales",
+                                "OLD"."Cash" as "OLD_Cash",
+                                "OLD"."CashFlowFromFinancing" as "OLD_CashFlowFromFinancing",
+                                "OLD"."CashFlowFromInvestments" as "OLD_CashFlowFromInvestments",
+                                "OLD"."CashFlowFromOperations" as "OLD_CashFlowFromOperations",
+                                "OLD"."CostIncomeRatio" as "OLD_CostIncomeRatio",
+                                "OLD"."CostOfGoodsSold" as "OLD_CostOfGoodsSold",
+                                "OLD"."CurrentAssets" as "OLD_CurrentAssets",
+                                "OLD"."Deposits" as "OLD_Deposits",
+                                "OLD"."DepreciationAndAmortization" as "OLD_DepreciationAndAmortization",
+                                "OLD"."EBIT" as "OLD_EBIT",
+                                "OLD"."EBITDA" as "OLD_EBITDA",
+                                "OLD"."FeeIncome" as "OLD_FeeIncome",
+                                "OLD"."FiscalPeriodEndDate" as "OLD_FiscalPeriodEndDate",
+                                "OLD"."FiscalPeriodStartDate" as "OLD_FiscalPeriodStartDate",
+                                "OLD"."IntangibleAssets" as "OLD_IntangibleAssets",
+                                "OLD"."Inventory" as "OLD_Inventory",
+                                "OLD"."InvestmentAssets" as "OLD_InvestmentAssets",
+                                "OLD"."LoansAdvances" as "OLD_LoansAdvances",
+                                "OLD"."LongTermLiabilities" as "OLD_LongTermLiabilities",
+                                "OLD"."NetCashFlow" as "OLD_NetCashFlow",
+                                "OLD"."NetIncome" as "OLD_NetIncome",
+                                "OLD"."NetInterestIncome" as "OLD_NetInterestIncome",
+                                "OLD"."NumberOfEmployees" as "OLD_NumberOfEmployees",
+                                "OLD"."OtherAssets" as "OLD_OtherAssets",
+                                "OLD"."OtherIncome" as "OLD_OtherIncome",
+                                "OLD"."OtherLiabilities" as "OLD_OtherLiabilities",
+                                "OLD"."PropertyPlantEquipment" as "OLD_PropertyPlantEquipment",
+                                "OLD"."RegulatoryAdditionalTier1Capital" as "OLD_RegulatoryAdditionalTier1Capital",
+                                "OLD"."RegulatoryCapitalRatio" as "OLD_RegulatoryCapitalRatio",
+                                "OLD"."RegulatoryCommonEquityTier1Capital" as "OLD_RegulatoryCommonEquityTier1Capital",
+                                "OLD"."RegulatoryCommonEquityTier1CapitalFromInstruments" as "OLD_RegulatoryCommonEquityTier1CapitalFromInstruments",
+                                "OLD"."RegulatoryCommonEquityTier1CapitalRatio" as "OLD_RegulatoryCommonEquityTier1CapitalRatio",
+                                "OLD"."RegulatoryLeverageRatio" as "OLD_RegulatoryLeverageRatio",
+                                "OLD"."RegulatoryTier1CapitalRatio" as "OLD_RegulatoryTier1CapitalRatio",
+                                "OLD"."RegulatoryTier2Capital" as "OLD_RegulatoryTier2Capital",
+                                "OLD"."ResearchDevelopmentExpense" as "OLD_ResearchDevelopmentExpense",
+                                "OLD"."SellingGeneralAdministrativeExpense" as "OLD_SellingGeneralAdministrativeExpense",
+                                "OLD"."ShareholdersEquity" as "OLD_ShareholdersEquity",
+                                "OLD"."ShortTermLiabilities" as "OLD_ShortTermLiabilities",
+                                "OLD"."StaffExpense" as "OLD_StaffExpense",
+                                "OLD"."TaxExpense" as "OLD_TaxExpense",
+                                "OLD"."TotalAssets" as "OLD_TotalAssets",
+                                "OLD"."TreasuryStock" as "OLD_TreasuryStock",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialStatementData" as "OLD"
+            on
+                ( case when "IN"."ConsolidatedStatement" is null then false else "IN"."ConsolidatedStatement" end ) = "OLD"."ConsolidatedStatement" and
+                ( case when "IN"."FiscalPeriod" is null then '' else "IN"."FiscalPeriod" end ) = "OLD"."FiscalPeriod" and
+                ( case when "IN"."ReportedAccountingSystem" is null then '' else "IN"."ReportedAccountingSystem" end ) = "OLD"."ReportedAccountingSystem" and
+                ( case when "IN"."StatementCurrency" is null then '' else "IN"."StatementCurrency" end ) = "OLD"."StatementCurrency" and
+                ( case when "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."ASSOC_BusinessPartner.BusinessPartnerID" end ) = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::FinancialStatementData" (
+        "ConsolidatedStatement",
+        "FiscalPeriod",
+        "ReportedAccountingSystem",
+        "StatementCurrency",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccountsPayable",
+        "AccountsReceivable",
+        "AnnualSales",
+        "Cash",
+        "CashFlowFromFinancing",
+        "CashFlowFromInvestments",
+        "CashFlowFromOperations",
+        "CostIncomeRatio",
+        "CostOfGoodsSold",
+        "CurrentAssets",
+        "Deposits",
+        "DepreciationAndAmortization",
+        "EBIT",
+        "EBITDA",
+        "FeeIncome",
+        "FiscalPeriodEndDate",
+        "FiscalPeriodStartDate",
+        "IntangibleAssets",
+        "Inventory",
+        "InvestmentAssets",
+        "LoansAdvances",
+        "LongTermLiabilities",
+        "NetCashFlow",
+        "NetIncome",
+        "NetInterestIncome",
+        "NumberOfEmployees",
+        "OtherAssets",
+        "OtherIncome",
+        "OtherLiabilities",
+        "PropertyPlantEquipment",
+        "RegulatoryAdditionalTier1Capital",
+        "RegulatoryCapitalRatio",
+        "RegulatoryCommonEquityTier1Capital",
+        "RegulatoryCommonEquityTier1CapitalFromInstruments",
+        "RegulatoryCommonEquityTier1CapitalRatio",
+        "RegulatoryLeverageRatio",
+        "RegulatoryTier1CapitalRatio",
+        "RegulatoryTier2Capital",
+        "ResearchDevelopmentExpense",
+        "SellingGeneralAdministrativeExpense",
+        "ShareholdersEquity",
+        "ShortTermLiabilities",
+        "StaffExpense",
+        "TaxExpense",
+        "TotalAssets",
+        "TreasuryStock",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ConsolidatedStatement" as "ConsolidatedStatement",
+            "OLD_FiscalPeriod" as "FiscalPeriod",
+            "OLD_ReportedAccountingSystem" as "ReportedAccountingSystem",
+            "OLD_StatementCurrency" as "StatementCurrency",
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AccountsPayable" as "AccountsPayable",
+            "OLD_AccountsReceivable" as "AccountsReceivable",
+            "OLD_AnnualSales" as "AnnualSales",
+            "OLD_Cash" as "Cash",
+            "OLD_CashFlowFromFinancing" as "CashFlowFromFinancing",
+            "OLD_CashFlowFromInvestments" as "CashFlowFromInvestments",
+            "OLD_CashFlowFromOperations" as "CashFlowFromOperations",
+            "OLD_CostIncomeRatio" as "CostIncomeRatio",
+            "OLD_CostOfGoodsSold" as "CostOfGoodsSold",
+            "OLD_CurrentAssets" as "CurrentAssets",
+            "OLD_Deposits" as "Deposits",
+            "OLD_DepreciationAndAmortization" as "DepreciationAndAmortization",
+            "OLD_EBIT" as "EBIT",
+            "OLD_EBITDA" as "EBITDA",
+            "OLD_FeeIncome" as "FeeIncome",
+            "OLD_FiscalPeriodEndDate" as "FiscalPeriodEndDate",
+            "OLD_FiscalPeriodStartDate" as "FiscalPeriodStartDate",
+            "OLD_IntangibleAssets" as "IntangibleAssets",
+            "OLD_Inventory" as "Inventory",
+            "OLD_InvestmentAssets" as "InvestmentAssets",
+            "OLD_LoansAdvances" as "LoansAdvances",
+            "OLD_LongTermLiabilities" as "LongTermLiabilities",
+            "OLD_NetCashFlow" as "NetCashFlow",
+            "OLD_NetIncome" as "NetIncome",
+            "OLD_NetInterestIncome" as "NetInterestIncome",
+            "OLD_NumberOfEmployees" as "NumberOfEmployees",
+            "OLD_OtherAssets" as "OtherAssets",
+            "OLD_OtherIncome" as "OtherIncome",
+            "OLD_OtherLiabilities" as "OtherLiabilities",
+            "OLD_PropertyPlantEquipment" as "PropertyPlantEquipment",
+            "OLD_RegulatoryAdditionalTier1Capital" as "RegulatoryAdditionalTier1Capital",
+            "OLD_RegulatoryCapitalRatio" as "RegulatoryCapitalRatio",
+            "OLD_RegulatoryCommonEquityTier1Capital" as "RegulatoryCommonEquityTier1Capital",
+            "OLD_RegulatoryCommonEquityTier1CapitalFromInstruments" as "RegulatoryCommonEquityTier1CapitalFromInstruments",
+            "OLD_RegulatoryCommonEquityTier1CapitalRatio" as "RegulatoryCommonEquityTier1CapitalRatio",
+            "OLD_RegulatoryLeverageRatio" as "RegulatoryLeverageRatio",
+            "OLD_RegulatoryTier1CapitalRatio" as "RegulatoryTier1CapitalRatio",
+            "OLD_RegulatoryTier2Capital" as "RegulatoryTier2Capital",
+            "OLD_ResearchDevelopmentExpense" as "ResearchDevelopmentExpense",
+            "OLD_SellingGeneralAdministrativeExpense" as "SellingGeneralAdministrativeExpense",
+            "OLD_ShareholdersEquity" as "ShareholdersEquity",
+            "OLD_ShortTermLiabilities" as "ShortTermLiabilities",
+            "OLD_StaffExpense" as "StaffExpense",
+            "OLD_TaxExpense" as "TaxExpense",
+            "OLD_TotalAssets" as "TotalAssets",
+            "OLD_TreasuryStock" as "TreasuryStock",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ConsolidatedStatement",
+                        "IN"."FiscalPeriod",
+                        "IN"."ReportedAccountingSystem",
+                        "IN"."StatementCurrency",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."ConsolidatedStatement" as "OLD_ConsolidatedStatement",
+                        "OLD"."FiscalPeriod" as "OLD_FiscalPeriod",
+                        "OLD"."ReportedAccountingSystem" as "OLD_ReportedAccountingSystem",
+                        "OLD"."StatementCurrency" as "OLD_StatementCurrency",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."AccountsPayable" as "OLD_AccountsPayable",
+                        "OLD"."AccountsReceivable" as "OLD_AccountsReceivable",
+                        "OLD"."AnnualSales" as "OLD_AnnualSales",
+                        "OLD"."Cash" as "OLD_Cash",
+                        "OLD"."CashFlowFromFinancing" as "OLD_CashFlowFromFinancing",
+                        "OLD"."CashFlowFromInvestments" as "OLD_CashFlowFromInvestments",
+                        "OLD"."CashFlowFromOperations" as "OLD_CashFlowFromOperations",
+                        "OLD"."CostIncomeRatio" as "OLD_CostIncomeRatio",
+                        "OLD"."CostOfGoodsSold" as "OLD_CostOfGoodsSold",
+                        "OLD"."CurrentAssets" as "OLD_CurrentAssets",
+                        "OLD"."Deposits" as "OLD_Deposits",
+                        "OLD"."DepreciationAndAmortization" as "OLD_DepreciationAndAmortization",
+                        "OLD"."EBIT" as "OLD_EBIT",
+                        "OLD"."EBITDA" as "OLD_EBITDA",
+                        "OLD"."FeeIncome" as "OLD_FeeIncome",
+                        "OLD"."FiscalPeriodEndDate" as "OLD_FiscalPeriodEndDate",
+                        "OLD"."FiscalPeriodStartDate" as "OLD_FiscalPeriodStartDate",
+                        "OLD"."IntangibleAssets" as "OLD_IntangibleAssets",
+                        "OLD"."Inventory" as "OLD_Inventory",
+                        "OLD"."InvestmentAssets" as "OLD_InvestmentAssets",
+                        "OLD"."LoansAdvances" as "OLD_LoansAdvances",
+                        "OLD"."LongTermLiabilities" as "OLD_LongTermLiabilities",
+                        "OLD"."NetCashFlow" as "OLD_NetCashFlow",
+                        "OLD"."NetIncome" as "OLD_NetIncome",
+                        "OLD"."NetInterestIncome" as "OLD_NetInterestIncome",
+                        "OLD"."NumberOfEmployees" as "OLD_NumberOfEmployees",
+                        "OLD"."OtherAssets" as "OLD_OtherAssets",
+                        "OLD"."OtherIncome" as "OLD_OtherIncome",
+                        "OLD"."OtherLiabilities" as "OLD_OtherLiabilities",
+                        "OLD"."PropertyPlantEquipment" as "OLD_PropertyPlantEquipment",
+                        "OLD"."RegulatoryAdditionalTier1Capital" as "OLD_RegulatoryAdditionalTier1Capital",
+                        "OLD"."RegulatoryCapitalRatio" as "OLD_RegulatoryCapitalRatio",
+                        "OLD"."RegulatoryCommonEquityTier1Capital" as "OLD_RegulatoryCommonEquityTier1Capital",
+                        "OLD"."RegulatoryCommonEquityTier1CapitalFromInstruments" as "OLD_RegulatoryCommonEquityTier1CapitalFromInstruments",
+                        "OLD"."RegulatoryCommonEquityTier1CapitalRatio" as "OLD_RegulatoryCommonEquityTier1CapitalRatio",
+                        "OLD"."RegulatoryLeverageRatio" as "OLD_RegulatoryLeverageRatio",
+                        "OLD"."RegulatoryTier1CapitalRatio" as "OLD_RegulatoryTier1CapitalRatio",
+                        "OLD"."RegulatoryTier2Capital" as "OLD_RegulatoryTier2Capital",
+                        "OLD"."ResearchDevelopmentExpense" as "OLD_ResearchDevelopmentExpense",
+                        "OLD"."SellingGeneralAdministrativeExpense" as "OLD_SellingGeneralAdministrativeExpense",
+                        "OLD"."ShareholdersEquity" as "OLD_ShareholdersEquity",
+                        "OLD"."ShortTermLiabilities" as "OLD_ShortTermLiabilities",
+                        "OLD"."StaffExpense" as "OLD_StaffExpense",
+                        "OLD"."TaxExpense" as "OLD_TaxExpense",
+                        "OLD"."TotalAssets" as "OLD_TotalAssets",
+                        "OLD"."TreasuryStock" as "OLD_TreasuryStock",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialStatementData" as "OLD"
+            on
+                ( case when "IN"."ConsolidatedStatement" is null then false else "IN"."ConsolidatedStatement" end ) = "OLD"."ConsolidatedStatement" and
+                ( case when "IN"."FiscalPeriod" is null then '' else "IN"."FiscalPeriod" end ) = "OLD"."FiscalPeriod" and
+                ( case when "IN"."ReportedAccountingSystem" is null then '' else "IN"."ReportedAccountingSystem" end ) = "OLD"."ReportedAccountingSystem" and
+                ( case when "IN"."StatementCurrency" is null then '' else "IN"."StatementCurrency" end ) = "OLD"."StatementCurrency" and
+                ( case when "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."ASSOC_BusinessPartner.BusinessPartnerID" end ) = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::FinancialStatementData"
+    where (
+        "ConsolidatedStatement",
+        "FiscalPeriod",
+        "ReportedAccountingSystem",
+        "StatementCurrency",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ConsolidatedStatement",
+            "OLD"."FiscalPeriod",
+            "OLD"."ReportedAccountingSystem",
+            "OLD"."StatementCurrency",
+            "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FinancialStatementData" as "OLD"
+        on
+           ( case when "IN"."ConsolidatedStatement" is null then false else "IN"."ConsolidatedStatement" end ) = "OLD"."ConsolidatedStatement" and
+           ( case when "IN"."FiscalPeriod" is null then '' else "IN"."FiscalPeriod" end ) = "OLD"."FiscalPeriod" and
+           ( case when "IN"."ReportedAccountingSystem" is null then '' else "IN"."ReportedAccountingSystem" end ) = "OLD"."ReportedAccountingSystem" and
+           ( case when "IN"."StatementCurrency" is null then '' else "IN"."StatementCurrency" end ) = "OLD"."StatementCurrency" and
+           ( case when "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."ASSOC_BusinessPartner.BusinessPartnerID" end ) = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::FinancialStatementData" (
+        "ConsolidatedStatement",
+        "FiscalPeriod",
+        "ReportedAccountingSystem",
+        "StatementCurrency",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccountsPayable",
+        "AccountsReceivable",
+        "AnnualSales",
+        "Cash",
+        "CashFlowFromFinancing",
+        "CashFlowFromInvestments",
+        "CashFlowFromOperations",
+        "CostIncomeRatio",
+        "CostOfGoodsSold",
+        "CurrentAssets",
+        "Deposits",
+        "DepreciationAndAmortization",
+        "EBIT",
+        "EBITDA",
+        "FeeIncome",
+        "FiscalPeriodEndDate",
+        "FiscalPeriodStartDate",
+        "IntangibleAssets",
+        "Inventory",
+        "InvestmentAssets",
+        "LoansAdvances",
+        "LongTermLiabilities",
+        "NetCashFlow",
+        "NetIncome",
+        "NetInterestIncome",
+        "NumberOfEmployees",
+        "OtherAssets",
+        "OtherIncome",
+        "OtherLiabilities",
+        "PropertyPlantEquipment",
+        "RegulatoryAdditionalTier1Capital",
+        "RegulatoryCapitalRatio",
+        "RegulatoryCommonEquityTier1Capital",
+        "RegulatoryCommonEquityTier1CapitalFromInstruments",
+        "RegulatoryCommonEquityTier1CapitalRatio",
+        "RegulatoryLeverageRatio",
+        "RegulatoryTier1CapitalRatio",
+        "RegulatoryTier2Capital",
+        "ResearchDevelopmentExpense",
+        "SellingGeneralAdministrativeExpense",
+        "ShareholdersEquity",
+        "ShortTermLiabilities",
+        "StaffExpense",
+        "TaxExpense",
+        "TotalAssets",
+        "TreasuryStock",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "ConsolidatedStatement" is null then false else "ConsolidatedStatement" end ) as "ConsolidatedStatement",
+            ( case when "FiscalPeriod" is null then '' else "FiscalPeriod" end ) as "FiscalPeriod",
+            ( case when "ReportedAccountingSystem" is null then '' else "ReportedAccountingSystem" end ) as "ReportedAccountingSystem",
+            ( case when "StatementCurrency" is null then '' else "StatementCurrency" end ) as "StatementCurrency",
+            ( case when "ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "ASSOC_BusinessPartner.BusinessPartnerID" end ) as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "AccountsPayable"  ,
+            "AccountsReceivable"  ,
+            "AnnualSales"  ,
+            "Cash"  ,
+            "CashFlowFromFinancing"  ,
+            "CashFlowFromInvestments"  ,
+            "CashFlowFromOperations"  ,
+            "CostIncomeRatio"  ,
+            "CostOfGoodsSold"  ,
+            "CurrentAssets"  ,
+            "Deposits"  ,
+            "DepreciationAndAmortization"  ,
+            "EBIT"  ,
+            "EBITDA"  ,
+            "FeeIncome"  ,
+            "FiscalPeriodEndDate"  ,
+            "FiscalPeriodStartDate"  ,
+            "IntangibleAssets"  ,
+            "Inventory"  ,
+            "InvestmentAssets"  ,
+            "LoansAdvances"  ,
+            "LongTermLiabilities"  ,
+            "NetCashFlow"  ,
+            "NetIncome"  ,
+            "NetInterestIncome"  ,
+            "NumberOfEmployees"  ,
+            "OtherAssets"  ,
+            "OtherIncome"  ,
+            "OtherLiabilities"  ,
+            "PropertyPlantEquipment"  ,
+            "RegulatoryAdditionalTier1Capital"  ,
+            "RegulatoryCapitalRatio"  ,
+            "RegulatoryCommonEquityTier1Capital"  ,
+            "RegulatoryCommonEquityTier1CapitalFromInstruments"  ,
+            "RegulatoryCommonEquityTier1CapitalRatio"  ,
+            "RegulatoryLeverageRatio"  ,
+            "RegulatoryTier1CapitalRatio"  ,
+            "RegulatoryTier2Capital"  ,
+            "ResearchDevelopmentExpense"  ,
+            "SellingGeneralAdministrativeExpense"  ,
+            "ShareholdersEquity"  ,
+            "ShortTermLiabilities"  ,
+            "StaffExpense"  ,
+            "TaxExpense"  ,
+            "TotalAssets"  ,
+            "TreasuryStock"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

@@ -1,0 +1,27 @@
+view "sap.fsdm.Views::RedemptionRight_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "_DebtInstrument.FinancialInstrumentID" as "_DebtInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "MaximumRedemptionAmount" as "MaximumRedemptionAmount",
+      "NoticePeriodLength" as "NoticePeriodLength",
+      "NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+      "ProRataRedemption" as "ProRataRedemption",
+      "RedemptionPeriodEnd" as "RedemptionPeriodEnd",
+      "RedemptionPeriodStart" as "RedemptionPeriodStart",
+      "RedemptionPrice" as "RedemptionPrice",
+      "RedemptionPriceCurrency" as "RedemptionPriceCurrency",
+      "RedemptionPriceInPercent" as "RedemptionPriceInPercent",
+      "RedemptionRightHolder" as "RedemptionRightHolder",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::RedemptionRight"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,60 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Address";
+using "sap"."fsdm"::"GeographicalUnit";
+
+entity "AddressAssignedToGeographicalUnit" {
+    key "ASSOC_Address"                 : association to Address {
+                                                                   AddressType,
+                                                                   SequenceNumber,
+                                                                   ASSOC_BankingChannel,
+                                                                   ASSOC_BusinessPartnerID,
+                                                                   ASSOC_OrganizationalUnit,
+                                                                   ASSOC_PhysicalAsset,
+                                                                   _Claim
+                                                                 }          not null;
+    key "ASSOC_GeographicalUnit"        : association to GeographicalUnit {
+                                                                            GeographicalStructureID,
+                                                                            GeographicalUnitID
+                                                                          } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                      not null;
+        "SystemValidTo"                 : UTCTimestamp                      not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "AddressAssignedToGeographicalUnit_Historical" {
+    "ASSOC_Address"                 : association to Address {
+                                                               AddressType,
+                                                               SequenceNumber,
+                                                               ASSOC_BankingChannel,
+                                                               ASSOC_BusinessPartnerID,
+                                                               ASSOC_OrganizationalUnit,
+                                                               ASSOC_PhysicalAsset,
+                                                               _Claim
+                                                             }          not null;
+    "ASSOC_GeographicalUnit"        : association to GeographicalUnit {
+                                                                        GeographicalStructureID,
+                                                                        GeographicalUnitID
+                                                                      } not null;
+    "BusinessValidFrom"             : LocalDate                         not null;
+    "BusinessValidTo"               : LocalDate                         not null;
+    "SystemValidFrom"               : UTCTimestamp                      not null;
+    "SystemValidTo"                 : UTCTimestamp                      not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

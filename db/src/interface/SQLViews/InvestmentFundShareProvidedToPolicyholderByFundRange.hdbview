@@ -1,0 +1,22 @@
+view "sap.fsdm.SQLViews::InvestmentFundShareProvidedToPolicyholderByFundRange_View" 
+as select
+      "_FundRange.ID" ,
+      "_FundRange.IDSystem" ,
+      "_InvestmentFundShare.FinancialInstrumentID" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InvestmentFundShareProvidedToPolicyholderByFundRange"
+with associations
+(
+	join "sap.fsdm.SQLViews::FundRange_View" as "_FundRange"
+	  on "_FundRange"."IDSystem" = "_FundRange.IDSystem" AND 
+	     "_FundRange"."ID" = "_FundRange.ID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_InvestmentFundShare"
+	  on "_InvestmentFundShare"."FinancialInstrumentID" = "_InvestmentFundShare.FinancialInstrumentID"
+	     
+);

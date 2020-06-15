@@ -1,0 +1,57 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"PhysicalAsset";
+
+entity "IncomeInformation" {
+    key "IncomeInformationType"         : String(100)                                      default '';
+    key "RentedPropertyType"            : String(100);
+    key "_PhysicalAsset"                : association to PhysicalAsset { PhysicalAssetID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                     not null;
+        "SystemValidTo"                 : UTCTimestamp                                     not null;
+        "GrossOperatingIncome"          : Decimal(34, 6);
+        "GrossOperatingIncomeCurrency"  : String(3);
+        "IncomePeriodLength"            : Decimal(34, 6);
+        "IncomePeriodTimeUnit"          : String(12);
+        "NetRentIncome"                 : Decimal(34, 6);
+        "NetRentIncomeCurrency"         : String(3);
+        "OperatingExpenses"             : Decimal(34, 6);
+        "OperatingExpensesCurrency"     : String(3);
+        "VacancyRate"                   : Decimal(15, 11);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "IncomeInformation_Historical" {
+    "IncomeInformationType"         : String(100)                                      default '' not null;
+    "RentedPropertyType"            : String(100)                                      not null;
+    "_PhysicalAsset"                : association to PhysicalAsset { PhysicalAssetID } not null;
+    "BusinessValidFrom"             : LocalDate                                        not null;
+    "BusinessValidTo"               : LocalDate                                        not null;
+    "SystemValidFrom"               : UTCTimestamp                                     not null;
+    "SystemValidTo"                 : UTCTimestamp                                     not null;
+    "GrossOperatingIncome"          : Decimal(34, 6);
+    "GrossOperatingIncomeCurrency"  : String(3);
+    "IncomePeriodLength"            : Decimal(34, 6);
+    "IncomePeriodTimeUnit"          : String(12);
+    "NetRentIncome"                 : Decimal(34, 6);
+    "NetRentIncomeCurrency"         : String(3);
+    "OperatingExpenses"             : Decimal(34, 6);
+    "OperatingExpensesCurrency"     : String(3);
+    "VacancyRate"                   : Decimal(15, 11);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

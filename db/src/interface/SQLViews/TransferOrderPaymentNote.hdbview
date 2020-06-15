@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::TransferOrderPaymentNote_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_TransferOrderItem.IDSystem" ,
+      "ASSOC_TransferOrderItem.ItemNumber" ,
+      "ASSOC_TransferOrderItem.TransferOrderID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PaymentNoteContent" ,
+      "PaymentNoteContentType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TransferOrderPaymentNote"
+with associations
+(
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "ASSOC_TransferOrderItem"
+	  on "ASSOC_TransferOrderItem"."IDSystem" = "ASSOC_TransferOrderItem.IDSystem" AND 
+	     "ASSOC_TransferOrderItem"."ItemNumber" = "ASSOC_TransferOrderItem.ItemNumber" AND 
+	     "ASSOC_TransferOrderItem"."TransferOrderID" = "ASSOC_TransferOrderItem.TransferOrderID"
+	     
+);

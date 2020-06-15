@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::WebAccountErase" (IN ROW "sap.fsdm.tabletypes::WebAccountTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "AccountName" is null and
+                         "WebAccountProvider" is null and
+                         "ASSOC_Partner.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::WebAccount" WHERE
+("AccountName" ,
+"WebAccountProvider" ,
+"ASSOC_Partner.BusinessPartnerID" 
+)in ( select "OLD"."AccountName" ,
+"OLD"."WebAccountProvider" ,
+"OLD"."ASSOC_Partner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::WebAccount" "OLD"
+on
+  ( "IN"."AccountName" = "OLD"."AccountName" or "IN"."AccountName" is null ) and
+  ( "IN"."WebAccountProvider" = "OLD"."WebAccountProvider" or "IN"."WebAccountProvider" is null ) and
+  ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::WebAccount_Historical" WHERE
+("AccountName" ,
+"WebAccountProvider" ,
+"ASSOC_Partner.BusinessPartnerID" 
+)in ( select "OLD"."AccountName" ,
+"OLD"."WebAccountProvider" ,
+"OLD"."ASSOC_Partner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::WebAccount_Historical" "OLD"
+on
+  ( "IN"."AccountName" = "OLD"."AccountName" or "IN"."AccountName" is null ) and
+  ( "IN"."WebAccountProvider" = "OLD"."WebAccountProvider" or "IN"."WebAccountProvider" is null ) and
+  ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+);
+
+END

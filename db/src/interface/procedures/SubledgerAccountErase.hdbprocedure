@@ -1,0 +1,44 @@
+PROCEDURE "sap.fsdm.procedures::SubledgerAccountErase" (IN ROW "sap.fsdm.tabletypes::SubledgerAccountTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "SubledgerAccount" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::SubledgerAccount" WHERE
+("SubledgerAccount" 
+)in ( select "OLD"."SubledgerAccount" 
+from :ROW "IN"
+inner join "sap.fsdm::SubledgerAccount" "OLD"
+on
+  ( "IN"."SubledgerAccount" = "OLD"."SubledgerAccount" or "IN"."SubledgerAccount" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::SubledgerAccount_Historical" WHERE
+("SubledgerAccount" 
+)in ( select "OLD"."SubledgerAccount" 
+from :ROW "IN"
+inner join "sap.fsdm::SubledgerAccount_Historical" "OLD"
+on
+  ( "IN"."SubledgerAccount" = "OLD"."SubledgerAccount" or "IN"."SubledgerAccount" is null ) 
+);
+
+END

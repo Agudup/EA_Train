@@ -1,0 +1,35 @@
+view "sap.fsdm.SQLViews::CreditRiskProbabilityOfDefault_View" 
+as select
+      "PDEstimationMethod" ,
+      "PDTimeHorizon" ,
+      "PDTimeHorizonUnit" ,
+      "RiskProvisionScenario" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ProbabilityOfDefault" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CreditRiskProbabilityOfDefault"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

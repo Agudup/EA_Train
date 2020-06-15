@@ -1,0 +1,71 @@
+PROCEDURE "sap.fsdm.procedures::NotionalScheduleEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::NotionalScheduleTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::NotionalScheduleTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::NotionalScheduleTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "NotionalIntervalEndDate" is null and
+                         "NotionalIntervalStartDate" is null and
+                         "RoleOfPayer" is null and
+                         "_SwapForSchedule.FinancialContractID" is null and
+                         "_SwapForSchedule.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"NotionalIntervalEndDate",
+"NotionalIntervalStartDate",
+"RoleOfPayer",
+"_SwapForSchedule.FinancialContractID",
+"_SwapForSchedule.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::NotionalSchedule" WHERE("NotionalIntervalEndDate" ,
+"NotionalIntervalStartDate" ,
+"RoleOfPayer" ,
+"_SwapForSchedule.FinancialContractID" ,
+"_SwapForSchedule.IDSystem" 
+)in ( select "NotionalIntervalEndDate" ,
+"NotionalIntervalStartDate" ,
+"RoleOfPayer" ,
+"_SwapForSchedule.FinancialContractID" ,
+"_SwapForSchedule.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"NotionalIntervalEndDate",
+"NotionalIntervalStartDate",
+"RoleOfPayer",
+"_SwapForSchedule.FinancialContractID",
+"_SwapForSchedule.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::NotionalSchedule_Historical" WHERE("NotionalIntervalEndDate" ,
+"NotionalIntervalStartDate" ,
+"RoleOfPayer" ,
+"_SwapForSchedule.FinancialContractID" ,
+"_SwapForSchedule.IDSystem" 
+)in ( select "NotionalIntervalEndDate" ,
+"NotionalIntervalStartDate" ,
+"RoleOfPayer" ,
+"_SwapForSchedule.FinancialContractID" ,
+"_SwapForSchedule.IDSystem" 
+from :ROW );
+
+END

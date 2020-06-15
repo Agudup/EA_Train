@@ -1,0 +1,34 @@
+view "sap.fsdm.SQLViews::StandardPermittedEffectiveCancellationDates_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_StandardTerminationOption.SequenceNumber" ,
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" ,
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" ,
+      "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EndDay" ,
+      "EndMonth" ,
+      "EndYear" ,
+      "RepetitionPeriodLength" ,
+      "RepetitionPeriodTimeUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardPermittedEffectiveCancellationDates"
+with associations
+(
+	join "sap.fsdm.SQLViews::StandardCancellationOption_View" as "ASSOC_StandardTerminationOption"
+	  on "ASSOC_StandardTerminationOption"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardTerminationOption"."ASSOC_StandardProduct.FinancialStandardProductID" = "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardTerminationOption"."ASSOC_StandardProduct.IDSystem" = "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardTerminationOption"."ASSOC_StandardProduct.PricingScheme" = "ASSOC_StandardTerminationOption.ASSOC_StandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardTerminationOption"."SequenceNumber" = "ASSOC_StandardTerminationOption.SequenceNumber"
+	     
+);

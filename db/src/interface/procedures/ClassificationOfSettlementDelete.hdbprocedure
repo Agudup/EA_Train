@@ -1,0 +1,236 @@
+PROCEDURE "sap.fsdm.procedures::ClassificationOfSettlementDelete" (IN ROW "sap.fsdm.tabletypes::ClassificationOfSettlementTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_Settlement.IDSystem=' || TO_VARCHAR("ASSOC_Settlement.IDSystem") || ' ' ||
+                'ASSOC_Settlement.SettlementID=' || TO_VARCHAR("ASSOC_Settlement.SettlementID") || ' ' ||
+                'ASSOC_SettlementClass.SettlementClass=' || TO_VARCHAR("ASSOC_SettlementClass.SettlementClass") || ' ' ||
+                'ASSOC_SettlementClass.SettlementClassificationSystem=' || TO_VARCHAR("ASSOC_SettlementClass.SettlementClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_Settlement.IDSystem",
+                        "IN"."ASSOC_Settlement.SettlementID",
+                        "IN"."ASSOC_SettlementClass.SettlementClass",
+                        "IN"."ASSOC_SettlementClass.SettlementClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_Settlement.IDSystem",
+                        "IN"."ASSOC_Settlement.SettlementID",
+                        "IN"."ASSOC_SettlementClass.SettlementClass",
+                        "IN"."ASSOC_SettlementClass.SettlementClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_Settlement.IDSystem",
+                        "ASSOC_Settlement.SettlementID",
+                        "ASSOC_SettlementClass.SettlementClass",
+                        "ASSOC_SettlementClass.SettlementClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_Settlement.IDSystem",
+                                    "IN"."ASSOC_Settlement.SettlementID",
+                                    "IN"."ASSOC_SettlementClass.SettlementClass",
+                                    "IN"."ASSOC_SettlementClass.SettlementClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_Settlement.IDSystem",
+                                    "IN"."ASSOC_Settlement.SettlementID",
+                                    "IN"."ASSOC_SettlementClass.SettlementClass",
+                                    "IN"."ASSOC_SettlementClass.SettlementClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ClassificationOfSettlement" (
+        "ASSOC_Settlement.IDSystem",
+        "ASSOC_Settlement.SettlementID",
+        "ASSOC_SettlementClass.SettlementClass",
+        "ASSOC_SettlementClass.SettlementClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_Settlement.IDSystem" as "ASSOC_Settlement.IDSystem" ,
+            "OLD_ASSOC_Settlement.SettlementID" as "ASSOC_Settlement.SettlementID" ,
+            "OLD_ASSOC_SettlementClass.SettlementClass" as "ASSOC_SettlementClass.SettlementClass" ,
+            "OLD_ASSOC_SettlementClass.SettlementClassificationSystem" as "ASSOC_SettlementClass.SettlementClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_Settlement.IDSystem",
+                        "OLD"."ASSOC_Settlement.SettlementID",
+                        "OLD"."ASSOC_SettlementClass.SettlementClass",
+                        "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."ASSOC_Settlement.IDSystem" as "OLD_ASSOC_Settlement.IDSystem",
+                "OLD"."ASSOC_Settlement.SettlementID" as "OLD_ASSOC_Settlement.SettlementID",
+                "OLD"."ASSOC_SettlementClass.SettlementClass" as "OLD_ASSOC_SettlementClass.SettlementClass",
+                "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem" as "OLD_ASSOC_SettlementClass.SettlementClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ClassificationOfSettlement" as "OLD"
+            on
+                      ( "IN"."ASSOC_Settlement.IDSystem" = "OLD"."ASSOC_Settlement.IDSystem" or "IN"."ASSOC_Settlement.IDSystem" is null ) and
+                      ( "IN"."ASSOC_Settlement.SettlementID" = "OLD"."ASSOC_Settlement.SettlementID" or "IN"."ASSOC_Settlement.SettlementID" is null ) and
+                      ( "IN"."ASSOC_SettlementClass.SettlementClass" = "OLD"."ASSOC_SettlementClass.SettlementClass" or "IN"."ASSOC_SettlementClass.SettlementClass" is null ) and
+                      ( "IN"."ASSOC_SettlementClass.SettlementClassificationSystem" = "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem" or "IN"."ASSOC_SettlementClass.SettlementClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ClassificationOfSettlement" (
+        "ASSOC_Settlement.IDSystem",
+        "ASSOC_Settlement.SettlementID",
+        "ASSOC_SettlementClass.SettlementClass",
+        "ASSOC_SettlementClass.SettlementClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_Settlement.IDSystem" as "ASSOC_Settlement.IDSystem",
+            "OLD_ASSOC_Settlement.SettlementID" as "ASSOC_Settlement.SettlementID",
+            "OLD_ASSOC_SettlementClass.SettlementClass" as "ASSOC_SettlementClass.SettlementClass",
+            "OLD_ASSOC_SettlementClass.SettlementClassificationSystem" as "ASSOC_SettlementClass.SettlementClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_Settlement.IDSystem",
+                        "OLD"."ASSOC_Settlement.SettlementID",
+                        "OLD"."ASSOC_SettlementClass.SettlementClass",
+                        "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."ASSOC_Settlement.IDSystem" as "OLD_ASSOC_Settlement.IDSystem",
+                "OLD"."ASSOC_Settlement.SettlementID" as "OLD_ASSOC_Settlement.SettlementID",
+                "OLD"."ASSOC_SettlementClass.SettlementClass" as "OLD_ASSOC_SettlementClass.SettlementClass",
+                "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem" as "OLD_ASSOC_SettlementClass.SettlementClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ClassificationOfSettlement" as "OLD"
+            on
+                                                ( "IN"."ASSOC_Settlement.IDSystem" = "OLD"."ASSOC_Settlement.IDSystem" or "IN"."ASSOC_Settlement.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_Settlement.SettlementID" = "OLD"."ASSOC_Settlement.SettlementID" or "IN"."ASSOC_Settlement.SettlementID" is null ) and
+                                                ( "IN"."ASSOC_SettlementClass.SettlementClass" = "OLD"."ASSOC_SettlementClass.SettlementClass" or "IN"."ASSOC_SettlementClass.SettlementClass" is null ) and
+                                                ( "IN"."ASSOC_SettlementClass.SettlementClassificationSystem" = "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem" or "IN"."ASSOC_SettlementClass.SettlementClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ClassificationOfSettlement"
+    where (
+        "ASSOC_Settlement.IDSystem",
+        "ASSOC_Settlement.SettlementID",
+        "ASSOC_SettlementClass.SettlementClass",
+        "ASSOC_SettlementClass.SettlementClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ASSOC_Settlement.IDSystem",
+            "OLD"."ASSOC_Settlement.SettlementID",
+            "OLD"."ASSOC_SettlementClass.SettlementClass",
+            "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ClassificationOfSettlement" as "OLD"
+        on
+                                       ( "IN"."ASSOC_Settlement.IDSystem" = "OLD"."ASSOC_Settlement.IDSystem" or "IN"."ASSOC_Settlement.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_Settlement.SettlementID" = "OLD"."ASSOC_Settlement.SettlementID" or "IN"."ASSOC_Settlement.SettlementID" is null ) and
+                                       ( "IN"."ASSOC_SettlementClass.SettlementClass" = "OLD"."ASSOC_SettlementClass.SettlementClass" or "IN"."ASSOC_SettlementClass.SettlementClass" is null ) and
+                                       ( "IN"."ASSOC_SettlementClass.SettlementClassificationSystem" = "OLD"."ASSOC_SettlementClass.SettlementClassificationSystem" or "IN"."ASSOC_SettlementClass.SettlementClassificationSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

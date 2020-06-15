@@ -1,0 +1,43 @@
+PROCEDURE "sap.fsdm.procedures::ContractMentionedInCustomerIncidentLoad" (IN ROW "sap.fsdm.tabletypes::ContractMentionedInCustomerIncidentTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+delete from "sap.fsdm::ContractMentionedInCustomerIncident" WHERE("ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"ASSOC_CustomerIncident.CommunicationEventID" ,
+"ASSOC_CustomerIncident.IDSystem" 
+)in ( select     ( case when "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" is null then '' else "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" end ) as "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID",
+    ( case when "ASSOC_ContractMentionedInCustomerIncident.IDSystem" is null then '' else "ASSOC_ContractMentionedInCustomerIncident.IDSystem" end ) as "ASSOC_ContractMentionedInCustomerIncident.IDSystem",
+    ( case when "ASSOC_CustomerIncident.CommunicationEventID" is null then '' else "ASSOC_CustomerIncident.CommunicationEventID" end ) as "ASSOC_CustomerIncident.CommunicationEventID",
+    ( case when "ASSOC_CustomerIncident.IDSystem" is null then '' else "ASSOC_CustomerIncident.IDSystem" end ) as "ASSOC_CustomerIncident.IDSystem"
+from :row );
+
+--Insert ALL the input data
+insert into "sap.fsdm::ContractMentionedInCustomerIncident"  (
+"ASSOC_ContractMentionedInCustomerIncident.FinancialContractID",
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem",
+"ASSOC_CustomerIncident.CommunicationEventID",
+"ASSOC_CustomerIncident.IDSystem",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+     ( case when "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" is null then '' else "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" end ) as "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID",
+    ( case when "ASSOC_ContractMentionedInCustomerIncident.IDSystem" is null then '' else "ASSOC_ContractMentionedInCustomerIncident.IDSystem" end ) as "ASSOC_ContractMentionedInCustomerIncident.IDSystem",
+    ( case when "ASSOC_CustomerIncident.CommunicationEventID" is null then '' else "ASSOC_CustomerIncident.CommunicationEventID" end ) as "ASSOC_CustomerIncident.CommunicationEventID",
+    ( case when "ASSOC_CustomerIncident.IDSystem" is null then '' else "ASSOC_CustomerIncident.IDSystem" end ) as "ASSOC_CustomerIncident.IDSystem",
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

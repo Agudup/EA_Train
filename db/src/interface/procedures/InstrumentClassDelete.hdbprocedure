@@ -1,0 +1,210 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentClassDelete" (IN ROW "sap.fsdm.tabletypes::InstrumentClassTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'InstrumentClass=' || TO_VARCHAR("InstrumentClass") || ' ' ||
+                'InstrumentClassificationSystem=' || TO_VARCHAR("InstrumentClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."InstrumentClass",
+                        "IN"."InstrumentClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."InstrumentClass",
+                        "IN"."InstrumentClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "InstrumentClass",
+                        "InstrumentClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."InstrumentClass",
+                                    "IN"."InstrumentClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."InstrumentClass",
+                                    "IN"."InstrumentClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InstrumentClass" (
+        "InstrumentClass",
+        "InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InstrumentClassDescription",
+        "InstrumentClassificationSystemDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InstrumentClass" as "InstrumentClass" ,
+            "OLD_InstrumentClassificationSystem" as "InstrumentClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_InstrumentClassDescription" as "InstrumentClassDescription" ,
+            "OLD_InstrumentClassificationSystemDescription" as "InstrumentClassificationSystemDescription" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."InstrumentClass",
+                        "OLD"."InstrumentClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."InstrumentClass" as "OLD_InstrumentClass",
+                "OLD"."InstrumentClassificationSystem" as "OLD_InstrumentClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."InstrumentClassDescription" as "OLD_InstrumentClassDescription",
+                "OLD"."InstrumentClassificationSystemDescription" as "OLD_InstrumentClassificationSystemDescription",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InstrumentClass" as "OLD"
+            on
+                      ( "IN"."InstrumentClass" = "OLD"."InstrumentClass" or "IN"."InstrumentClass" is null ) and
+                      ( "IN"."InstrumentClassificationSystem" = "OLD"."InstrumentClassificationSystem" or "IN"."InstrumentClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InstrumentClass" (
+        "InstrumentClass",
+        "InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InstrumentClassDescription",
+        "InstrumentClassificationSystemDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InstrumentClass" as "InstrumentClass",
+            "OLD_InstrumentClassificationSystem" as "InstrumentClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_InstrumentClassDescription" as "InstrumentClassDescription",
+            "OLD_InstrumentClassificationSystemDescription" as "InstrumentClassificationSystemDescription",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."InstrumentClass",
+                        "OLD"."InstrumentClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."InstrumentClass" as "OLD_InstrumentClass",
+                "OLD"."InstrumentClassificationSystem" as "OLD_InstrumentClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."InstrumentClassDescription" as "OLD_InstrumentClassDescription",
+                "OLD"."InstrumentClassificationSystemDescription" as "OLD_InstrumentClassificationSystemDescription",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InstrumentClass" as "OLD"
+            on
+                                                ( "IN"."InstrumentClass" = "OLD"."InstrumentClass" or "IN"."InstrumentClass" is null ) and
+                                                ( "IN"."InstrumentClassificationSystem" = "OLD"."InstrumentClassificationSystem" or "IN"."InstrumentClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InstrumentClass"
+    where (
+        "InstrumentClass",
+        "InstrumentClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."InstrumentClass",
+            "OLD"."InstrumentClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InstrumentClass" as "OLD"
+        on
+                                       ( "IN"."InstrumentClass" = "OLD"."InstrumentClass" or "IN"."InstrumentClass" is null ) and
+                                       ( "IN"."InstrumentClassificationSystem" = "OLD"."InstrumentClassificationSystem" or "IN"."InstrumentClassificationSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

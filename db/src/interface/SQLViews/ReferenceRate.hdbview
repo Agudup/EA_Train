@@ -1,0 +1,52 @@
+view "sap.fsdm.SQLViews::ReferenceRate_View" 
+as select
+      "ReferenceRateID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DayCountConvention" ,
+      "FixingIntervalPeriodLength" ,
+      "FixingIntervalTimeUnit" ,
+      "IsInternallyFixed" ,
+      "ProviderOfReferenceRate" ,
+      "ReferenceRateCurrency" ,
+      "ReferenceRateType" ,
+      "TimeToMaturity" ,
+      "TimeToMaturityUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ReferenceRate"
+with associations
+(
+	join "sap.fsdm.SQLViews::CashFlowStream_View" as "_CashFlowStream_ASSOC_ReferenceRate"
+	  on "ReferenceRateID" = "_CashFlowStream_ASSOC_ReferenceRate"."ASSOC_ReferenceRate.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__ReferenceRate"
+	  on "ReferenceRateID" = "_FinancialContract__ReferenceRate"."_ReferenceRate.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__ReferenceRateWithLongerTenor"
+	  on "ReferenceRateID" = "_FinancialContract__ReferenceRateWithLongerTenor"."_ReferenceRateWithLongerTenor.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__ReferenceRate"
+	  on "ReferenceRateID" = "_FinancialInstrument__ReferenceRate"."_ReferenceRate.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::Interest_View" as "_Interest_ASSOC_ReferenceRateID"
+	  on "ReferenceRateID" = "_Interest_ASSOC_ReferenceRateID"."ASSOC_ReferenceRateID.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::RateObservation_View" as "_RateObservation_ASSOC_ReferenceRateID"
+	  on "ReferenceRateID" = "_RateObservation_ASSOC_ReferenceRateID"."ASSOC_ReferenceRateID.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardInterest_View" as "_StandardInterest_ASSOC_ReferenceRate"
+	  on "ReferenceRateID" = "_StandardInterest_ASSOC_ReferenceRate"."ASSOC_ReferenceRate.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::YieldCurve_View" as "_YieldCurve_ASSOC_ReferenceRate"
+	  on "ReferenceRateID" = "_YieldCurve_ASSOC_ReferenceRate"."ASSOC_ReferenceRate.ReferenceRateID"
+	     
+);

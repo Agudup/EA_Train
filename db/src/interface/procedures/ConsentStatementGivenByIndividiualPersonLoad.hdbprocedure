@@ -1,0 +1,230 @@
+PROCEDURE "sap.fsdm.procedures::ConsentStatementGivenByIndividiualPersonLoad" (IN ROW "sap.fsdm.tabletypes::ConsentStatementGivenByIndividiualPersonTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_ConsentStatement.ConsentStatementID=' || TO_VARCHAR("_ConsentStatement.ConsentStatementID") || ' ' ||
+                '_IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("_IndividualPerson.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_ConsentStatement.ConsentStatementID",
+                        "IN"."_IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_ConsentStatement.ConsentStatementID",
+                        "IN"."_IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_ConsentStatement.ConsentStatementID",
+                        "_IndividualPerson.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_ConsentStatement.ConsentStatementID",
+                                    "IN"."_IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_ConsentStatement.ConsentStatementID",
+                                    "IN"."_IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ConsentStatementGivenByIndividiualPerson" (
+        "_ConsentStatement.ConsentStatementID",
+        "_IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ConsentGiven",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__ConsentStatement.ConsentStatementID" as "_ConsentStatement.ConsentStatementID" ,
+            "OLD__IndividualPerson.BusinessPartnerID" as "_IndividualPerson.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ConsentGiven" as "ConsentGiven" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_ConsentStatement.ConsentStatementID",
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_ConsentStatement.ConsentStatementID" as "OLD__ConsentStatement.ConsentStatementID",
+                                "OLD"."_IndividualPerson.BusinessPartnerID" as "OLD__IndividualPerson.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ConsentGiven" as "OLD_ConsentGiven",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ConsentStatementGivenByIndividiualPerson" as "OLD"
+            on
+                ( case when "IN"."_ConsentStatement.ConsentStatementID" is null then '' else "IN"."_ConsentStatement.ConsentStatementID" end ) = "OLD"."_ConsentStatement.ConsentStatementID" and
+                ( case when "IN"."_IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_IndividualPerson.BusinessPartnerID" end ) = "OLD"."_IndividualPerson.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ConsentStatementGivenByIndividiualPerson" (
+        "_ConsentStatement.ConsentStatementID",
+        "_IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ConsentGiven",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__ConsentStatement.ConsentStatementID" as "_ConsentStatement.ConsentStatementID",
+            "OLD__IndividualPerson.BusinessPartnerID" as "_IndividualPerson.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ConsentGiven" as "ConsentGiven",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_ConsentStatement.ConsentStatementID",
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_ConsentStatement.ConsentStatementID" as "OLD__ConsentStatement.ConsentStatementID",
+                        "OLD"."_IndividualPerson.BusinessPartnerID" as "OLD__IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ConsentGiven" as "OLD_ConsentGiven",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ConsentStatementGivenByIndividiualPerson" as "OLD"
+            on
+                ( case when "IN"."_ConsentStatement.ConsentStatementID" is null then '' else "IN"."_ConsentStatement.ConsentStatementID" end ) = "OLD"."_ConsentStatement.ConsentStatementID" and
+                ( case when "IN"."_IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_IndividualPerson.BusinessPartnerID" end ) = "OLD"."_IndividualPerson.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ConsentStatementGivenByIndividiualPerson"
+    where (
+        "_ConsentStatement.ConsentStatementID",
+        "_IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_ConsentStatement.ConsentStatementID",
+            "OLD"."_IndividualPerson.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ConsentStatementGivenByIndividiualPerson" as "OLD"
+        on
+           ( case when "IN"."_ConsentStatement.ConsentStatementID" is null then '' else "IN"."_ConsentStatement.ConsentStatementID" end ) = "OLD"."_ConsentStatement.ConsentStatementID" and
+           ( case when "IN"."_IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_IndividualPerson.BusinessPartnerID" end ) = "OLD"."_IndividualPerson.BusinessPartnerID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::ConsentStatementGivenByIndividiualPerson" (
+        "_ConsentStatement.ConsentStatementID",
+        "_IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ConsentGiven",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "_ConsentStatement.ConsentStatementID" is null then '' else "_ConsentStatement.ConsentStatementID" end ) as "_ConsentStatement.ConsentStatementID",
+            ( case when "_IndividualPerson.BusinessPartnerID" is null then '' else "_IndividualPerson.BusinessPartnerID" end ) as "_IndividualPerson.BusinessPartnerID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "ConsentGiven"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

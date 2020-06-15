@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::AppointmentBasedOnLicense_View" 
+as select
+      "_Appointment.SequenceNumber" ,
+      "_Appointment._IndividualPerson.BusinessPartnerID" ,
+      "_License.Authority" ,
+      "_License.IDSystem" ,
+      "_License.SubjectOfLicenseIdentifier" ,
+      "_License._BusinessPartner.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AppointmentBasedOnLicense"
+with associations
+(
+	join "sap.fsdm.SQLViews::Appointment_View" as "_Appointment"
+	  on "_Appointment"."SequenceNumber" = "_Appointment.SequenceNumber" AND 
+	     "_Appointment"."_IndividualPerson.BusinessPartnerID" = "_Appointment._IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::License_View" as "_License"
+	  on "_License"."_BusinessPartner.BusinessPartnerID" = "_License._BusinessPartner.BusinessPartnerID" AND 
+	     "_License"."SubjectOfLicenseIdentifier" = "_License.SubjectOfLicenseIdentifier" AND 
+	     "_License"."IDSystem" = "_License.IDSystem" AND 
+	     "_License"."Authority" = "_License.Authority"
+	     
+);

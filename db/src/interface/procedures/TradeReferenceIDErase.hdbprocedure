@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::TradeReferenceIDErase" (IN ROW "sap.fsdm.tabletypes::TradeReferenceIDTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ReferenceIDType" is null and
+                         "SystemID" is null and
+                         "_Trade.IDSystem" is null and
+                         "_Trade.TradeID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::TradeReferenceID" WHERE
+("ReferenceIDType" ,
+"SystemID" ,
+"_Trade.IDSystem" ,
+"_Trade.TradeID" 
+)in ( select "OLD"."ReferenceIDType" ,
+"OLD"."SystemID" ,
+"OLD"."_Trade.IDSystem" ,
+"OLD"."_Trade.TradeID" 
+from :ROW "IN"
+inner join "sap.fsdm::TradeReferenceID" "OLD"
+on
+  ( "IN"."ReferenceIDType" = "OLD"."ReferenceIDType" or "IN"."ReferenceIDType" is null ) and
+  ( "IN"."SystemID" = "OLD"."SystemID" or "IN"."SystemID" is null ) and
+  ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+  ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::TradeReferenceID_Historical" WHERE
+("ReferenceIDType" ,
+"SystemID" ,
+"_Trade.IDSystem" ,
+"_Trade.TradeID" 
+)in ( select "OLD"."ReferenceIDType" ,
+"OLD"."SystemID" ,
+"OLD"."_Trade.IDSystem" ,
+"OLD"."_Trade.TradeID" 
+from :ROW "IN"
+inner join "sap.fsdm::TradeReferenceID_Historical" "OLD"
+on
+  ( "IN"."ReferenceIDType" = "OLD"."ReferenceIDType" or "IN"."ReferenceIDType" is null ) and
+  ( "IN"."SystemID" = "OLD"."SystemID" or "IN"."SystemID" is null ) and
+  ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+  ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+);
+
+END

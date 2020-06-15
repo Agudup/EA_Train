@@ -1,0 +1,376 @@
+PROCEDURE "sap.fsdm.procedures::StandardCancellationOptionListLoad" (IN ROW "sap.fsdm.tabletypes::StandardCancellationOptionTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_StandardProduct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_StandardProduct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_StandardProduct.IDSystem=' || TO_VARCHAR("ASSOC_StandardProduct.IDSystem") || ' ' ||
+                'ASSOC_StandardProduct.PricingScheme=' || TO_VARCHAR("ASSOC_StandardProduct.PricingScheme") || ' ' ||
+                'ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_StandardProduct.FinancialStandardProductID",
+                        "ASSOC_StandardProduct.IDSystem",
+                        "ASSOC_StandardProduct.PricingScheme",
+                        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardProduct.IDSystem",
+                                    "IN"."ASSOC_StandardProduct.PricingScheme",
+                                    "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::StandardCancellationOption" (
+        "SequenceNumber",
+        "ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardProduct.IDSystem",
+        "ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "CancellationOptionType",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "OpportunityCostCompensation",
+        "OptionHolder",
+        "PartialCancellationAllowed",
+        "PeriodUntilExercisePeriodEnd",
+        "PeriodUntilExercisePeriodStart",
+        "StandardCancellationOptionCategory",
+        "TimeUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardProduct.FinancialStandardProductID" ,
+            "OLD_ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardProduct.IDSystem" ,
+            "OLD_ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardProduct.PricingScheme" ,
+            "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BusinessCalendar" as "BusinessCalendar" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_CancellationOptionType" as "CancellationOptionType" ,
+            "OLD_NoticePeriodLength" as "NoticePeriodLength" ,
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit" ,
+            "OLD_OpportunityCostCompensation" as "OpportunityCostCompensation" ,
+            "OLD_OptionHolder" as "OptionHolder" ,
+            "OLD_PartialCancellationAllowed" as "PartialCancellationAllowed" ,
+            "OLD_PeriodUntilExercisePeriodEnd" as "PeriodUntilExercisePeriodEnd" ,
+            "OLD_PeriodUntilExercisePeriodStart" as "PeriodUntilExercisePeriodStart" ,
+            "OLD_StandardCancellationOptionCategory" as "StandardCancellationOptionCategory" ,
+            "OLD_TimeUnit" as "TimeUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_StandardProduct.FinancialStandardProductID",
+                                "OLD"."ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_StandardProduct.IDSystem",
+                                "OLD"."ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_StandardProduct.PricingScheme",
+                                "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."CancellationOptionType" as "OLD_CancellationOptionType",
+                                "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                                "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                                "OLD"."OpportunityCostCompensation" as "OLD_OpportunityCostCompensation",
+                                "OLD"."OptionHolder" as "OLD_OptionHolder",
+                                "OLD"."PartialCancellationAllowed" as "OLD_PartialCancellationAllowed",
+                                "OLD"."PeriodUntilExercisePeriodEnd" as "OLD_PeriodUntilExercisePeriodEnd",
+                                "OLD"."PeriodUntilExercisePeriodStart" as "OLD_PeriodUntilExercisePeriodStart",
+                                "OLD"."StandardCancellationOptionCategory" as "OLD_StandardCancellationOptionCategory",
+                                "OLD"."TimeUnit" as "OLD_TimeUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardCancellationOption" as "OLD"
+            on
+                ( case when "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_StandardProduct.IDSystem" is null then '' else "IN"."ASSOC_StandardProduct.IDSystem" end ) = "OLD"."ASSOC_StandardProduct.IDSystem" and
+                ( case when "IN"."ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardProduct.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_StandardProduct.PricingScheme" is null then '' else "IN"."ASSOC_StandardProduct.PricingScheme" end ) = "OLD"."ASSOC_StandardProduct.PricingScheme" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::StandardCancellationOption" (
+        "SequenceNumber",
+        "ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardProduct.IDSystem",
+        "ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "CancellationOptionType",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "OpportunityCostCompensation",
+        "OptionHolder",
+        "PartialCancellationAllowed",
+        "PeriodUntilExercisePeriodEnd",
+        "PeriodUntilExercisePeriodStart",
+        "StandardCancellationOptionCategory",
+        "TimeUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD_ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardProduct.IDSystem",
+            "OLD_ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardProduct.PricingScheme",
+            "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_CancellationOptionType" as "CancellationOptionType",
+            "OLD_NoticePeriodLength" as "NoticePeriodLength",
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+            "OLD_OpportunityCostCompensation" as "OpportunityCostCompensation",
+            "OLD_OptionHolder" as "OptionHolder",
+            "OLD_PartialCancellationAllowed" as "PartialCancellationAllowed",
+            "OLD_PeriodUntilExercisePeriodEnd" as "PeriodUntilExercisePeriodEnd",
+            "OLD_PeriodUntilExercisePeriodStart" as "PeriodUntilExercisePeriodStart",
+            "OLD_StandardCancellationOptionCategory" as "StandardCancellationOptionCategory",
+            "OLD_TimeUnit" as "TimeUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "IN"."ASSOC_StandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" as "OLD_ASSOC_StandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_StandardProduct.IDSystem" as "OLD_ASSOC_StandardProduct.IDSystem",
+                        "OLD"."ASSOC_StandardProduct.PricingScheme" as "OLD_ASSOC_StandardProduct.PricingScheme",
+                        "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                        "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                        "OLD"."CancellationOptionType" as "OLD_CancellationOptionType",
+                        "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                        "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                        "OLD"."OpportunityCostCompensation" as "OLD_OpportunityCostCompensation",
+                        "OLD"."OptionHolder" as "OLD_OptionHolder",
+                        "OLD"."PartialCancellationAllowed" as "OLD_PartialCancellationAllowed",
+                        "OLD"."PeriodUntilExercisePeriodEnd" as "OLD_PeriodUntilExercisePeriodEnd",
+                        "OLD"."PeriodUntilExercisePeriodStart" as "OLD_PeriodUntilExercisePeriodStart",
+                        "OLD"."StandardCancellationOptionCategory" as "OLD_StandardCancellationOptionCategory",
+                        "OLD"."TimeUnit" as "OLD_TimeUnit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardCancellationOption" as "OLD"
+            on
+                ( case when "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_StandardProduct.IDSystem" is null then '' else "IN"."ASSOC_StandardProduct.IDSystem" end ) = "OLD"."ASSOC_StandardProduct.IDSystem" and
+                ( case when "IN"."ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardProduct.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_StandardProduct.PricingScheme" is null then '' else "IN"."ASSOC_StandardProduct.PricingScheme" end ) = "OLD"."ASSOC_StandardProduct.PricingScheme" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::StandardCancellationOption"
+    where (
+        "SequenceNumber",
+        "ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardProduct.IDSystem",
+        "ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_StandardProduct.FinancialStandardProductID",
+            "OLD"."ASSOC_StandardProduct.IDSystem",
+            "OLD"."ASSOC_StandardProduct.PricingScheme",
+            "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::StandardCancellationOption" as "OLD"
+        on
+           ( case when "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" and
+           ( case when "IN"."ASSOC_StandardProduct.IDSystem" is null then '' else "IN"."ASSOC_StandardProduct.IDSystem" end ) = "OLD"."ASSOC_StandardProduct.IDSystem" and
+           ( case when "IN"."ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardProduct.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardProduct.FinancialStandardProductID" and
+           ( case when "IN"."ASSOC_StandardProduct.PricingScheme" is null then '' else "IN"."ASSOC_StandardProduct.PricingScheme" end ) = "OLD"."ASSOC_StandardProduct.PricingScheme" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::StandardCancellationOption" (
+        "SequenceNumber",
+        "ASSOC_StandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardProduct.IDSystem",
+        "ASSOC_StandardProduct.PricingScheme",
+        "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "CancellationOptionType",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "OpportunityCostCompensation",
+        "OptionHolder",
+        "PartialCancellationAllowed",
+        "PeriodUntilExercisePeriodEnd",
+        "PeriodUntilExercisePeriodStart",
+        "StandardCancellationOptionCategory",
+        "TimeUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "ASSOC_StandardProduct.FinancialStandardProductID" is null then '' else "ASSOC_StandardProduct.FinancialStandardProductID" end ) as "ASSOC_StandardProduct.FinancialStandardProductID",
+            ( case when "ASSOC_StandardProduct.IDSystem" is null then '' else "ASSOC_StandardProduct.IDSystem" end ) as "ASSOC_StandardProduct.IDSystem",
+            ( case when "ASSOC_StandardProduct.PricingScheme" is null then '' else "ASSOC_StandardProduct.PricingScheme" end ) as "ASSOC_StandardProduct.PricingScheme",
+            ( case when "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null then '' else "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" end ) as "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "BusinessCalendar"  ,
+            "BusinessDayConvention"  ,
+            "CancellationOptionType"  ,
+            "NoticePeriodLength"  ,
+            "NoticePeriodTimeUnit"  ,
+            "OpportunityCostCompensation"  ,
+            "OptionHolder"  ,
+            "PartialCancellationAllowed"  ,
+            "PeriodUntilExercisePeriodEnd"  ,
+            "PeriodUntilExercisePeriodStart"  ,
+            "StandardCancellationOptionCategory"  ,
+            "TimeUnit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

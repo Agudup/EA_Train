@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentClassInNonweightedBasketErase" (IN ROW "sap.fsdm.tabletypes::InstrumentClassInNonweightedBasketTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_Basket.FinancialInstrumentID" is null and
+                         "_InstrumentClass.InstrumentClass" is null and
+                         "_InstrumentClass.InstrumentClassificationSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::InstrumentClassInNonweightedBasket" WHERE
+("_Basket.FinancialInstrumentID" ,
+"_InstrumentClass.InstrumentClass" ,
+"_InstrumentClass.InstrumentClassificationSystem" 
+)in ( select "OLD"."_Basket.FinancialInstrumentID" ,
+"OLD"."_InstrumentClass.InstrumentClass" ,
+"OLD"."_InstrumentClass.InstrumentClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::InstrumentClassInNonweightedBasket" "OLD"
+on
+  ( "IN"."_Basket.FinancialInstrumentID" = "OLD"."_Basket.FinancialInstrumentID" or "IN"."_Basket.FinancialInstrumentID" is null ) and
+  ( "IN"."_InstrumentClass.InstrumentClass" = "OLD"."_InstrumentClass.InstrumentClass" or "IN"."_InstrumentClass.InstrumentClass" is null ) and
+  ( "IN"."_InstrumentClass.InstrumentClassificationSystem" = "OLD"."_InstrumentClass.InstrumentClassificationSystem" or "IN"."_InstrumentClass.InstrumentClassificationSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::InstrumentClassInNonweightedBasket_Historical" WHERE
+("_Basket.FinancialInstrumentID" ,
+"_InstrumentClass.InstrumentClass" ,
+"_InstrumentClass.InstrumentClassificationSystem" 
+)in ( select "OLD"."_Basket.FinancialInstrumentID" ,
+"OLD"."_InstrumentClass.InstrumentClass" ,
+"OLD"."_InstrumentClass.InstrumentClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::InstrumentClassInNonweightedBasket_Historical" "OLD"
+on
+  ( "IN"."_Basket.FinancialInstrumentID" = "OLD"."_Basket.FinancialInstrumentID" or "IN"."_Basket.FinancialInstrumentID" is null ) and
+  ( "IN"."_InstrumentClass.InstrumentClass" = "OLD"."_InstrumentClass.InstrumentClass" or "IN"."_InstrumentClass.InstrumentClass" is null ) and
+  ( "IN"."_InstrumentClass.InstrumentClassificationSystem" = "OLD"."_InstrumentClass.InstrumentClassificationSystem" or "IN"."_InstrumentClass.InstrumentClassificationSystem" is null ) 
+);
+
+END

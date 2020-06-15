@@ -1,0 +1,60 @@
+PROCEDURE "sap.fsdm.procedures::ContractMentionedInCustomerIncidentEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::ContractMentionedInCustomerIncidentTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::ContractMentionedInCustomerIncidentTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::ContractMentionedInCustomerIncidentTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" is null and
+                         "ASSOC_ContractMentionedInCustomerIncident.IDSystem" is null and
+                         "ASSOC_CustomerIncident.CommunicationEventID" is null and
+                         "ASSOC_CustomerIncident.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"ASSOC_ContractMentionedInCustomerIncident.FinancialContractID",
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem",
+"ASSOC_CustomerIncident.CommunicationEventID",
+"ASSOC_CustomerIncident.IDSystem"
+from "sap.fsdm::ContractMentionedInCustomerIncident" WHERE("ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"ASSOC_CustomerIncident.CommunicationEventID" ,
+"ASSOC_CustomerIncident.IDSystem" 
+)in ( select "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"ASSOC_CustomerIncident.CommunicationEventID" ,
+"ASSOC_CustomerIncident.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"ASSOC_ContractMentionedInCustomerIncident.FinancialContractID",
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem",
+"ASSOC_CustomerIncident.CommunicationEventID",
+"ASSOC_CustomerIncident.IDSystem"
+from "sap.fsdm::ContractMentionedInCustomerIncident_Historical" WHERE("ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"ASSOC_CustomerIncident.CommunicationEventID" ,
+"ASSOC_CustomerIncident.IDSystem" 
+)in ( select "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+"ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+"ASSOC_CustomerIncident.CommunicationEventID" ,
+"ASSOC_CustomerIncident.IDSystem" 
+from :ROW );
+
+END

@@ -1,0 +1,57 @@
+view "sap.fsdm.SQLViews::SettlementAccountAssignment_View" 
+as select
+      "SettlementAccountRole" ,
+      "ASSOC_BaseContract.FinancialContractID" ,
+      "ASSOC_BaseContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_SettlementAccount.FinancialContractID" ,
+      "ASSOC_SettlementAccount.IDSystem" ,
+      "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName" ,
+      "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" ,
+      "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" ,
+      "DayOfMonthOfSettlement" ,
+      "DirectSettlement" ,
+      "ExternalSettlementAccountIdentificationSystem" ,
+      "ExternalSettlementBankAccountCurrency" ,
+      "ExternalSettlementBankAccountHolderName" ,
+      "ExternalSettlementBankAccountID" ,
+      "ExternalSettlementBankID" ,
+      "ExternalSettlementBankIdentificationSystem" ,
+      "ExternalSettlementBankName" ,
+      "ExternalSettlementIBAN" ,
+      "ExternalSettlementSWIFT" ,
+      "SettlementContractAssignmentCategory" ,
+      "SettlementMethod" ,
+      "SettlementPeriodLength" ,
+      "SettlementPeriodTimeUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SettlementAccountAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountHolderOfExternalSettlementAccount_View" as "_AccountHolderOfExternalSettlementAccount__ExternalSettlementAccountOfAccountHolder"
+	  on "ASSOC_BaseContract.FinancialContractID" = "_AccountHolderOfExternalSettlementAccount__ExternalSettlementAccountOfAccountHolder"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" AND 
+	     "ASSOC_BaseContract.IDSystem" = "_AccountHolderOfExternalSettlementAccount__ExternalSettlementAccountOfAccountHolder"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" AND 
+	     "SettlementAccountRole" = "_AccountHolderOfExternalSettlementAccount__ExternalSettlementAccountOfAccountHolder"."_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_BaseContract"
+	  on "ASSOC_BaseContract"."FinancialContractID" = "ASSOC_BaseContract.FinancialContractID" AND 
+	     "ASSOC_BaseContract"."IDSystem" = "ASSOC_BaseContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_SettlementAccount"
+	  on "ASSOC_SettlementAccount"."FinancialContractID" = "ASSOC_SettlementAccount.FinancialContractID" AND 
+	     "ASSOC_SettlementAccount"."IDSystem" = "ASSOC_SettlementAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ElectronicFundsTransferMethod_View" as "_ElectronicFundsTransferMethod"
+	  on "_ElectronicFundsTransferMethod"."_BusinessPartner.BusinessPartnerID" = "_ElectronicFundsTransferMethod._BusinessPartner.BusinessPartnerID" AND 
+	     "_ElectronicFundsTransferMethod"."ElectronicFundsTransferMethodType" = "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodType" AND 
+	     "_ElectronicFundsTransferMethod"."ElectronicFundsTransferMethodName" = "_ElectronicFundsTransferMethod.ElectronicFundsTransferMethodName"
+	     
+);

@@ -1,0 +1,522 @@
+PROCEDURE "sap.fsdm.procedures::PaymentScheduleListReadOnly" (IN ROW "sap.fsdm.tabletypes::PaymentScheduleTT", OUT CURR_DEL "sap.fsdm.tabletypes::PaymentScheduleTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::PaymentScheduleTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_Receivable.ReceivableID=' || TO_VARCHAR("ASSOC_Receivable.ReceivableID") || ' ' ||
+                '_CreditCardLoan.ID=' || TO_VARCHAR("_CreditCardLoan.ID") || ' ' ||
+                '_CreditCardLoan._CreditCardAgreement.FinancialContractID=' || TO_VARCHAR("_CreditCardLoan._CreditCardAgreement.FinancialContractID") || ' ' ||
+                '_CreditCardLoan._CreditCardAgreement.IDSystem=' || TO_VARCHAR("_CreditCardLoan._CreditCardAgreement.IDSystem") || ' ' ||
+                '_DebtInstrument.FinancialInstrumentID=' || TO_VARCHAR("_DebtInstrument.FinancialInstrumentID") || ' ' ||
+                '_InterestRateOptionComponent.ComponentNumber=' || TO_VARCHAR("_InterestRateOptionComponent.ComponentNumber") || ' ' ||
+                '_InterestRateOptionComponent._InterestRateOption.FinancialContractID=' || TO_VARCHAR("_InterestRateOptionComponent._InterestRateOption.FinancialContractID") || ' ' ||
+                '_InterestRateOptionComponent._InterestRateOption.IDSystem=' || TO_VARCHAR("_InterestRateOptionComponent._InterestRateOption.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_Receivable.ReceivableID",
+                        "IN"."_CreditCardLoan.ID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "IN"."_DebtInstrument.FinancialInstrumentID",
+                        "IN"."_InterestRateOptionComponent.ComponentNumber",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_Receivable.ReceivableID",
+                        "IN"."_CreditCardLoan.ID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "IN"."_DebtInstrument.FinancialInstrumentID",
+                        "IN"."_InterestRateOptionComponent.ComponentNumber",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_Receivable.ReceivableID",
+                        "_CreditCardLoan.ID",
+                        "_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "_CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "_DebtInstrument.FinancialInstrumentID",
+                        "_InterestRateOptionComponent.ComponentNumber",
+                        "_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "_InterestRateOptionComponent._InterestRateOption.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_Receivable.ReceivableID",
+                                    "IN"."_CreditCardLoan.ID",
+                                    "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                                    "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+                                    "IN"."_DebtInstrument.FinancialInstrumentID",
+                                    "IN"."_InterestRateOptionComponent.ComponentNumber",
+                                    "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                                    "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_Receivable.ReceivableID",
+                                    "IN"."_CreditCardLoan.ID",
+                                    "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                                    "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+                                    "IN"."_DebtInstrument.FinancialInstrumentID",
+                                    "IN"."_InterestRateOptionComponent.ComponentNumber",
+                                    "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                                    "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_Receivable.ReceivableID",
+        "_CreditCardLoan.ID",
+        "_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+        "_CreditCardLoan._CreditCardAgreement.IDSystem",
+        "_DebtInstrument.FinancialInstrumentID",
+        "_InterestRateOptionComponent.ComponentNumber",
+        "_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+        "_InterestRateOptionComponent._InterestRateOption.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::PaymentSchedule" WHERE
+        (            "SequenceNumber" ,
+            "ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_FinancialContract.IDSystem" ,
+            "ASSOC_Receivable.ReceivableID" ,
+            "_CreditCardLoan.ID" ,
+            "_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+            "_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+            "_DebtInstrument.FinancialInstrumentID" ,
+            "_InterestRateOptionComponent.ComponentNumber" ,
+            "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+            "_InterestRateOptionComponent._InterestRateOption.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_Receivable.ReceivableID",
+            "OLD"."_CreditCardLoan.ID",
+            "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+            "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+            "OLD"."_DebtInstrument.FinancialInstrumentID",
+            "OLD"."_InterestRateOptionComponent.ComponentNumber",
+            "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+            "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::PaymentSchedule" as "OLD"
+            on
+               ( case when "IN"."ASSOC_Receivable.ReceivableID" is null then '' else "IN"."ASSOC_Receivable.ReceivableID" end ) = "OLD"."ASSOC_Receivable.ReceivableID" and
+               ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+               ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+               ( case when "IN"."_DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."_DebtInstrument.FinancialInstrumentID" end ) = "OLD"."_DebtInstrument.FinancialInstrumentID" and
+               ( case when "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" end ) = "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" and
+               ( case when "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) = "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" and
+               ( case when "IN"."_CreditCardLoan.ID" is null then '' else "IN"."_CreditCardLoan.ID" end ) = "OLD"."_CreditCardLoan.ID" and
+               ( case when "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" and
+               ( case when "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" end ) = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_Receivable.ReceivableID",
+        "_CreditCardLoan.ID",
+        "_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+        "_CreditCardLoan._CreditCardAgreement.IDSystem",
+        "_DebtInstrument.FinancialInstrumentID",
+        "_InterestRateOptionComponent.ComponentNumber",
+        "_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+        "_InterestRateOptionComponent._InterestRateOption.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BulletPaymentAmount",
+        "BulletPaymentCurrency",
+        "BulletPaymentDate",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "DayOfMonthOfPayment",
+        "FirstPaymentDate",
+        "InstallmentAmount",
+        "InstallmentCurrency",
+        "InstallmentLagPeriodLength",
+        "InstallmentLagTimeUnit",
+        "InstallmentPeriodLength",
+        "InstallmentPeriodTimeUnit",
+        "InstallmentsRelativeToInterestPaymentDates",
+        "LastPaymentDate",
+        "PartialPaymentRequestsPermitted",
+        "PaymentScheduleCategory",
+        "PaymentScheduleRole",
+        "PaymentScheduleStartDate",
+        "PaymentScheduleType",
+        "PaymentToBeRequested",
+        "ProRataSinking",
+        "RepaymentBySinking",
+        "RoleOfPayer",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+                    ( case when "ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_FinancialContract.FinancialContractID",
+                    ( case when "ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_FinancialContract.IDSystem",
+                    ( case when "ASSOC_Receivable.ReceivableID" is null then '' else "ASSOC_Receivable.ReceivableID" end ) as "ASSOC_Receivable.ReceivableID",
+                    ( case when "_CreditCardLoan.ID" is null then '' else "_CreditCardLoan.ID" end ) as "_CreditCardLoan.ID",
+                    ( case when "_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "_CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) as "_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                    ( case when "_CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "_CreditCardLoan._CreditCardAgreement.IDSystem" end ) as "_CreditCardLoan._CreditCardAgreement.IDSystem",
+                    ( case when "_DebtInstrument.FinancialInstrumentID" is null then '' else "_DebtInstrument.FinancialInstrumentID" end ) as "_DebtInstrument.FinancialInstrumentID",
+                    ( case when "_InterestRateOptionComponent.ComponentNumber" is null then -1 else "_InterestRateOptionComponent.ComponentNumber" end ) as "_InterestRateOptionComponent.ComponentNumber",
+                    ( case when "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) as "_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                    ( case when "_InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "_InterestRateOptionComponent._InterestRateOption.IDSystem" end ) as "_InterestRateOptionComponent._InterestRateOption.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "BulletPaymentAmount"  ,
+                    "BulletPaymentCurrency"  ,
+                    "BulletPaymentDate"  ,
+                    "BusinessCalendar"  ,
+                    "BusinessDayConvention"  ,
+                    "DayOfMonthOfPayment"  ,
+                    "FirstPaymentDate"  ,
+                    "InstallmentAmount"  ,
+                    "InstallmentCurrency"  ,
+                    "InstallmentLagPeriodLength"  ,
+                    "InstallmentLagTimeUnit"  ,
+                    "InstallmentPeriodLength"  ,
+                    "InstallmentPeriodTimeUnit"  ,
+                    "InstallmentsRelativeToInterestPaymentDates"  ,
+                    "LastPaymentDate"  ,
+                    "PartialPaymentRequestsPermitted"  ,
+                    "PaymentScheduleCategory"  ,
+                    "PaymentScheduleRole"  ,
+                    "PaymentScheduleStartDate"  ,
+                    "PaymentScheduleType"  ,
+                    "PaymentToBeRequested"  ,
+                    "ProRataSinking"  ,
+                    "RepaymentBySinking"  ,
+                    "RoleOfPayer"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_SequenceNumber" as "SequenceNumber" ,
+                    "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+                    "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+                    "OLD_ASSOC_Receivable.ReceivableID" as "ASSOC_Receivable.ReceivableID" ,
+                    "OLD__CreditCardLoan.ID" as "_CreditCardLoan.ID" ,
+                    "OLD__CreditCardLoan._CreditCardAgreement.FinancialContractID" as "_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+                    "OLD__CreditCardLoan._CreditCardAgreement.IDSystem" as "_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+                    "OLD__DebtInstrument.FinancialInstrumentID" as "_DebtInstrument.FinancialInstrumentID" ,
+                    "OLD__InterestRateOptionComponent.ComponentNumber" as "_InterestRateOptionComponent.ComponentNumber" ,
+                    "OLD__InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+                    "OLD__InterestRateOptionComponent._InterestRateOption.IDSystem" as "_InterestRateOptionComponent._InterestRateOption.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_BulletPaymentAmount" as "BulletPaymentAmount" ,
+                    "OLD_BulletPaymentCurrency" as "BulletPaymentCurrency" ,
+                    "OLD_BulletPaymentDate" as "BulletPaymentDate" ,
+                    "OLD_BusinessCalendar" as "BusinessCalendar" ,
+                    "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+                    "OLD_DayOfMonthOfPayment" as "DayOfMonthOfPayment" ,
+                    "OLD_FirstPaymentDate" as "FirstPaymentDate" ,
+                    "OLD_InstallmentAmount" as "InstallmentAmount" ,
+                    "OLD_InstallmentCurrency" as "InstallmentCurrency" ,
+                    "OLD_InstallmentLagPeriodLength" as "InstallmentLagPeriodLength" ,
+                    "OLD_InstallmentLagTimeUnit" as "InstallmentLagTimeUnit" ,
+                    "OLD_InstallmentPeriodLength" as "InstallmentPeriodLength" ,
+                    "OLD_InstallmentPeriodTimeUnit" as "InstallmentPeriodTimeUnit" ,
+                    "OLD_InstallmentsRelativeToInterestPaymentDates" as "InstallmentsRelativeToInterestPaymentDates" ,
+                    "OLD_LastPaymentDate" as "LastPaymentDate" ,
+                    "OLD_PartialPaymentRequestsPermitted" as "PartialPaymentRequestsPermitted" ,
+                    "OLD_PaymentScheduleCategory" as "PaymentScheduleCategory" ,
+                    "OLD_PaymentScheduleRole" as "PaymentScheduleRole" ,
+                    "OLD_PaymentScheduleStartDate" as "PaymentScheduleStartDate" ,
+                    "OLD_PaymentScheduleType" as "PaymentScheduleType" ,
+                    "OLD_PaymentToBeRequested" as "PaymentToBeRequested" ,
+                    "OLD_ProRataSinking" as "ProRataSinking" ,
+                    "OLD_RepaymentBySinking" as "RepaymentBySinking" ,
+                    "OLD_RoleOfPayer" as "RoleOfPayer" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_Receivable.ReceivableID",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_DebtInstrument.FinancialInstrumentID",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."_CreditCardLoan.ID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_Receivable.ReceivableID" as "OLD_ASSOC_Receivable.ReceivableID",
+                                "OLD"."_CreditCardLoan.ID" as "OLD__CreditCardLoan.ID",
+                                "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" as "OLD__CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                                "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" as "OLD__CreditCardLoan._CreditCardAgreement.IDSystem",
+                                "OLD"."_DebtInstrument.FinancialInstrumentID" as "OLD__DebtInstrument.FinancialInstrumentID",
+                                "OLD"."_InterestRateOptionComponent.ComponentNumber" as "OLD__InterestRateOptionComponent.ComponentNumber",
+                                "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "OLD__InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                                "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" as "OLD__InterestRateOptionComponent._InterestRateOption.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BulletPaymentAmount" as "OLD_BulletPaymentAmount",
+                                "OLD"."BulletPaymentCurrency" as "OLD_BulletPaymentCurrency",
+                                "OLD"."BulletPaymentDate" as "OLD_BulletPaymentDate",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."DayOfMonthOfPayment" as "OLD_DayOfMonthOfPayment",
+                                "OLD"."FirstPaymentDate" as "OLD_FirstPaymentDate",
+                                "OLD"."InstallmentAmount" as "OLD_InstallmentAmount",
+                                "OLD"."InstallmentCurrency" as "OLD_InstallmentCurrency",
+                                "OLD"."InstallmentLagPeriodLength" as "OLD_InstallmentLagPeriodLength",
+                                "OLD"."InstallmentLagTimeUnit" as "OLD_InstallmentLagTimeUnit",
+                                "OLD"."InstallmentPeriodLength" as "OLD_InstallmentPeriodLength",
+                                "OLD"."InstallmentPeriodTimeUnit" as "OLD_InstallmentPeriodTimeUnit",
+                                "OLD"."InstallmentsRelativeToInterestPaymentDates" as "OLD_InstallmentsRelativeToInterestPaymentDates",
+                                "OLD"."LastPaymentDate" as "OLD_LastPaymentDate",
+                                "OLD"."PartialPaymentRequestsPermitted" as "OLD_PartialPaymentRequestsPermitted",
+                                "OLD"."PaymentScheduleCategory" as "OLD_PaymentScheduleCategory",
+                                "OLD"."PaymentScheduleRole" as "OLD_PaymentScheduleRole",
+                                "OLD"."PaymentScheduleStartDate" as "OLD_PaymentScheduleStartDate",
+                                "OLD"."PaymentScheduleType" as "OLD_PaymentScheduleType",
+                                "OLD"."PaymentToBeRequested" as "OLD_PaymentToBeRequested",
+                                "OLD"."ProRataSinking" as "OLD_ProRataSinking",
+                                "OLD"."RepaymentBySinking" as "OLD_RepaymentBySinking",
+                                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PaymentSchedule" as "OLD"
+            on
+                ( case when "IN"."ASSOC_Receivable.ReceivableID" is null then '' else "IN"."ASSOC_Receivable.ReceivableID" end ) = "OLD"."ASSOC_Receivable.ReceivableID" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."_DebtInstrument.FinancialInstrumentID" end ) = "OLD"."_DebtInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" end ) = "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" and
+                ( case when "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) = "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."_CreditCardLoan.ID" is null then '' else "IN"."_CreditCardLoan.ID" end ) = "OLD"."_CreditCardLoan.ID" and
+                ( case when "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" and
+                ( case when "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" end ) = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_Receivable.ReceivableID" as "ASSOC_Receivable.ReceivableID",
+            "OLD__CreditCardLoan.ID" as "_CreditCardLoan.ID",
+            "OLD__CreditCardLoan._CreditCardAgreement.FinancialContractID" as "_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+            "OLD__CreditCardLoan._CreditCardAgreement.IDSystem" as "_CreditCardLoan._CreditCardAgreement.IDSystem",
+            "OLD__DebtInstrument.FinancialInstrumentID" as "_DebtInstrument.FinancialInstrumentID",
+            "OLD__InterestRateOptionComponent.ComponentNumber" as "_InterestRateOptionComponent.ComponentNumber",
+            "OLD__InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+            "OLD__InterestRateOptionComponent._InterestRateOption.IDSystem" as "_InterestRateOptionComponent._InterestRateOption.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BulletPaymentAmount" as "BulletPaymentAmount",
+            "OLD_BulletPaymentCurrency" as "BulletPaymentCurrency",
+            "OLD_BulletPaymentDate" as "BulletPaymentDate",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_DayOfMonthOfPayment" as "DayOfMonthOfPayment",
+            "OLD_FirstPaymentDate" as "FirstPaymentDate",
+            "OLD_InstallmentAmount" as "InstallmentAmount",
+            "OLD_InstallmentCurrency" as "InstallmentCurrency",
+            "OLD_InstallmentLagPeriodLength" as "InstallmentLagPeriodLength",
+            "OLD_InstallmentLagTimeUnit" as "InstallmentLagTimeUnit",
+            "OLD_InstallmentPeriodLength" as "InstallmentPeriodLength",
+            "OLD_InstallmentPeriodTimeUnit" as "InstallmentPeriodTimeUnit",
+            "OLD_InstallmentsRelativeToInterestPaymentDates" as "InstallmentsRelativeToInterestPaymentDates",
+            "OLD_LastPaymentDate" as "LastPaymentDate",
+            "OLD_PartialPaymentRequestsPermitted" as "PartialPaymentRequestsPermitted",
+            "OLD_PaymentScheduleCategory" as "PaymentScheduleCategory",
+            "OLD_PaymentScheduleRole" as "PaymentScheduleRole",
+            "OLD_PaymentScheduleStartDate" as "PaymentScheduleStartDate",
+            "OLD_PaymentScheduleType" as "PaymentScheduleType",
+            "OLD_PaymentToBeRequested" as "PaymentToBeRequested",
+            "OLD_ProRataSinking" as "ProRataSinking",
+            "OLD_RepaymentBySinking" as "RepaymentBySinking",
+            "OLD_RoleOfPayer" as "RoleOfPayer",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_Receivable.ReceivableID",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_DebtInstrument.FinancialInstrumentID",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem",
+                        "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "IN"."_CreditCardLoan.ID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_Receivable.ReceivableID" as "OLD_ASSOC_Receivable.ReceivableID",
+                        "OLD"."_CreditCardLoan.ID" as "OLD__CreditCardLoan.ID",
+                        "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" as "OLD__CreditCardLoan._CreditCardAgreement.FinancialContractID",
+                        "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" as "OLD__CreditCardLoan._CreditCardAgreement.IDSystem",
+                        "OLD"."_DebtInstrument.FinancialInstrumentID" as "OLD__DebtInstrument.FinancialInstrumentID",
+                        "OLD"."_InterestRateOptionComponent.ComponentNumber" as "OLD__InterestRateOptionComponent.ComponentNumber",
+                        "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "OLD__InterestRateOptionComponent._InterestRateOption.FinancialContractID",
+                        "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" as "OLD__InterestRateOptionComponent._InterestRateOption.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."BulletPaymentAmount" as "OLD_BulletPaymentAmount",
+                        "OLD"."BulletPaymentCurrency" as "OLD_BulletPaymentCurrency",
+                        "OLD"."BulletPaymentDate" as "OLD_BulletPaymentDate",
+                        "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                        "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                        "OLD"."DayOfMonthOfPayment" as "OLD_DayOfMonthOfPayment",
+                        "OLD"."FirstPaymentDate" as "OLD_FirstPaymentDate",
+                        "OLD"."InstallmentAmount" as "OLD_InstallmentAmount",
+                        "OLD"."InstallmentCurrency" as "OLD_InstallmentCurrency",
+                        "OLD"."InstallmentLagPeriodLength" as "OLD_InstallmentLagPeriodLength",
+                        "OLD"."InstallmentLagTimeUnit" as "OLD_InstallmentLagTimeUnit",
+                        "OLD"."InstallmentPeriodLength" as "OLD_InstallmentPeriodLength",
+                        "OLD"."InstallmentPeriodTimeUnit" as "OLD_InstallmentPeriodTimeUnit",
+                        "OLD"."InstallmentsRelativeToInterestPaymentDates" as "OLD_InstallmentsRelativeToInterestPaymentDates",
+                        "OLD"."LastPaymentDate" as "OLD_LastPaymentDate",
+                        "OLD"."PartialPaymentRequestsPermitted" as "OLD_PartialPaymentRequestsPermitted",
+                        "OLD"."PaymentScheduleCategory" as "OLD_PaymentScheduleCategory",
+                        "OLD"."PaymentScheduleRole" as "OLD_PaymentScheduleRole",
+                        "OLD"."PaymentScheduleStartDate" as "OLD_PaymentScheduleStartDate",
+                        "OLD"."PaymentScheduleType" as "OLD_PaymentScheduleType",
+                        "OLD"."PaymentToBeRequested" as "OLD_PaymentToBeRequested",
+                        "OLD"."ProRataSinking" as "OLD_ProRataSinking",
+                        "OLD"."RepaymentBySinking" as "OLD_RepaymentBySinking",
+                        "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PaymentSchedule" as "OLD"
+            on
+                ( case when "IN"."ASSOC_Receivable.ReceivableID" is null then '' else "IN"."ASSOC_Receivable.ReceivableID" end ) = "OLD"."ASSOC_Receivable.ReceivableID" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."_DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."_DebtInstrument.FinancialInstrumentID" end ) = "OLD"."_DebtInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" is null then '' else "IN"."_InterestRateOptionComponent._InterestRateOption.IDSystem" end ) = "OLD"."_InterestRateOptionComponent._InterestRateOption.IDSystem" and
+                ( case when "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null then '' else "IN"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" end ) = "OLD"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."_CreditCardLoan.ID" is null then '' else "IN"."_CreditCardLoan.ID" end ) = "OLD"."_CreditCardLoan.ID" and
+                ( case when "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null then '' else "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" end ) = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" and
+                ( case when "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null then '' else "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" end ) = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

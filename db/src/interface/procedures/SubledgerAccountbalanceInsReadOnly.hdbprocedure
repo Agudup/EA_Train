@@ -1,0 +1,100 @@
+PROCEDURE "sap.fsdm.procedures::SubledgerAccountbalanceInsReadOnly" (IN ROW "sap.fsdm.tabletypes::SubledgerAccountbalanceTT", OUT CURR_INS "sap.fsdm.tabletypes::SubledgerAccountbalanceTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+
+declare in_tt "sap.fsdm.tabletypes::SubledgerAccountbalanceTT" default select    ( case when "AccountingBalanceType" is null then '' else "AccountingBalanceType" end ) as "AccountingBalanceType",
+    ( case when "FiscalYear" is null then '' else "FiscalYear" end ) as "FiscalYear",
+    ( case when "PostingDate" is null then '0001-01-01' else "PostingDate" end ) as "PostingDate",
+    ( case when "_AccountingSystem.AccountingSystemID" is null then '' else "_AccountingSystem.AccountingSystemID" end ) as "_AccountingSystem.AccountingSystemID",
+    ( case when "_BusinessPartner.BusinessPartnerID" is null then '' else "_BusinessPartner.BusinessPartnerID" end ) as "_BusinessPartner.BusinessPartnerID",
+    ( case when "_BusinessSegment.OrganizationalUnitID" is null then '' else "_BusinessSegment.OrganizationalUnitID" end ) as "_BusinessSegment.OrganizationalUnitID",
+    ( case when "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) as "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+    ( case when "_BusinessSegmentAtCounterparty.OrganizationalUnitID" is null then '' else "_BusinessSegmentAtCounterparty.OrganizationalUnitID" end ) as "_BusinessSegmentAtCounterparty.OrganizationalUnitID",
+    ( case when "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) as "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+    ( case when "_CompanyCode.CompanyCode" is null then '' else "_CompanyCode.CompanyCode" end ) as "_CompanyCode.CompanyCode",
+    ( case when "_CompanyCode.ASSOC_Company.BusinessPartnerID" is null then '' else "_CompanyCode.ASSOC_Company.BusinessPartnerID" end ) as "_CompanyCode.ASSOC_Company.BusinessPartnerID",
+    ( case when "_FinancialContract.FinancialContractID" is null then '' else "_FinancialContract.FinancialContractID" end ) as "_FinancialContract.FinancialContractID",
+    ( case when "_FinancialContract.IDSystem" is null then '' else "_FinancialContract.IDSystem" end ) as "_FinancialContract.IDSystem",
+    ( case when "_GLAccount.GLAccount" is null then '' else "_GLAccount.GLAccount" end ) as "_GLAccount.GLAccount",
+    ( case when "_GLAccount._ChartOfAccounts.ChartOfAccountId" is null then '' else "_GLAccount._ChartOfAccounts.ChartOfAccountId" end ) as "_GLAccount._ChartOfAccounts.ChartOfAccountId",
+    ( case when "_ProductClass.ProductClass" is null then '' else "_ProductClass.ProductClass" end ) as "_ProductClass.ProductClass",
+    ( case when "_ProductClass.ProductClassificationSystem" is null then '' else "_ProductClass.ProductClassificationSystem" end ) as "_ProductClass.ProductClassificationSystem",
+    ( case when "_ProfitCenter.OrganizationalUnitID" is null then '' else "_ProfitCenter.OrganizationalUnitID" end ) as "_ProfitCenter.OrganizationalUnitID",
+    ( case when "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) as "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+    ( case when "_ProftCenterAtCouterparty.OrganizationalUnitID" is null then '' else "_ProftCenterAtCouterparty.OrganizationalUnitID" end ) as "_ProftCenterAtCouterparty.OrganizationalUnitID",
+    ( case when "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) as "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+    ( case when "_SubledgerAccount.SubledgerAccount" is null then '' else "_SubledgerAccount.SubledgerAccount" end ) as "_SubledgerAccount.SubledgerAccount",
+    "AmountInFunctionalCurrency",
+    "AmountInGroupCurrency",
+    "AmountInHardCurrency",
+    "AmountInIndexCurrency",
+    "AmountInLocalCurrency",
+    "AmountInTransactionCurrency",
+    "FiscalPeriodEnd",
+    "FiscalPeriodStart",
+    "FunctionalCurrency",
+    "GroupCurrency",
+    "HardCurrency",
+    "IndexCurrency",
+    "LocalCurrency",
+    "TransactionCurrency",
+    "SourceSystemID",
+    "ChangeTimestampInSourceSystem",
+    "ChangingUserInSourceSystem",
+    "ChangingProcessType",
+    "ChangingProcessID"
+from :ROW;
+
+--Insert ALL the input data
+
+CURR_INS = select 
+   "AccountingBalanceType"  ,
+  "FiscalYear"  ,
+  "PostingDate"  ,
+  "_AccountingSystem.AccountingSystemID"  ,
+  "_BusinessPartner.BusinessPartnerID"  ,
+  "_BusinessSegment.OrganizationalUnitID"  ,
+  "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+  "_BusinessSegmentAtCounterparty.OrganizationalUnitID"  ,
+  "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+  "_CompanyCode.CompanyCode"  ,
+  "_CompanyCode.ASSOC_Company.BusinessPartnerID"  ,
+  "_FinancialContract.FinancialContractID"  ,
+  "_FinancialContract.IDSystem"  ,
+  "_GLAccount.GLAccount"  ,
+  "_GLAccount._ChartOfAccounts.ChartOfAccountId"  ,
+  "_ProductClass.ProductClass"  ,
+  "_ProductClass.ProductClassificationSystem"  ,
+  "_ProfitCenter.OrganizationalUnitID"  ,
+  "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+  "_ProftCenterAtCouterparty.OrganizationalUnitID"  ,
+  "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+  "_SubledgerAccount.SubledgerAccount"  ,
+  "AmountInFunctionalCurrency"  ,
+  "AmountInGroupCurrency"  ,
+  "AmountInHardCurrency"  ,
+  "AmountInIndexCurrency"  ,
+  "AmountInLocalCurrency"  ,
+  "AmountInTransactionCurrency"  ,
+  "FiscalPeriodEnd"  ,
+  "FiscalPeriodStart"  ,
+  "FunctionalCurrency"  ,
+  "GroupCurrency"  ,
+  "HardCurrency"  ,
+  "IndexCurrency"  ,
+  "LocalCurrency"  ,
+  "TransactionCurrency"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW;
+
+
+
+END

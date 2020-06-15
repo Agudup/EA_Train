@@ -1,0 +1,43 @@
+view "sap.fsdm.SQLViews::TimeIntervalPriceObservation_View" 
+as select
+      "PriceDataProvider" ,
+      "PriceSeriesType" ,
+      "TimeIntervalEnd" ,
+      "TimeIntervalStart" ,
+      "_Exchange.MarketIdentifierCode" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AdjustedClosePrice" ,
+      "AdjustmentFactor" ,
+      "CleanDirtyIndicator" ,
+      "Close" ,
+      "Currency" ,
+      "High" ,
+      "Low" ,
+      "NumberOfTrades" ,
+      "Open" ,
+      "PriceNotationForm" ,
+      "PriceType" ,
+      "TimeIntervalPriceObservationCategory" ,
+      "TradedNominalAmount" ,
+      "TradedNominalAmountCurrency" ,
+      "TradedQuantity" ,
+      "Unit" ,
+      "Volume" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TimeIntervalPriceObservation"
+with associations
+(
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     
+);

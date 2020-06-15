@@ -1,0 +1,18 @@
+PROCEDURE "sap.fsdm.procedures::IndexOfferedToIndexedInsuranceContractByIndexRangeDelete" (IN ROW "sap.fsdm.tabletypes::IndexOfferedToIndexedInsuranceContractByIndexRangeTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::IndexOfferedToIndexedInsuranceContractByIndexRange" WHERE("_Index.IndexID" ,
+"_IndexRange.ID" ,
+"_IndexRange.IDSystem" 
+)in ( select "_Index.IndexID" ,
+"_IndexRange.ID" ,
+"_IndexRange.IDSystem" 
+from :ROW );
+
+
+END

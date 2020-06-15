@@ -1,0 +1,255 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"InsuredObject";
+using "sap"."fsdm"::"FinancialStandardProduct";
+using "sap"."fsdm"::"FundRange";
+using "sap"."fsdm"::"IndexRange";
+
+entity "InsuranceCoverage" {
+    key "ID"                                          : String(128)                                default '';
+    key "_InsuranceContract"                          : association to FinancialContract {
+                                                                                           FinancialContractID,
+                                                                                           IDSystem
+                                                                                         }         not null;
+    key "_InsuredObject"                              : association to InsuredObject {
+                                                                                       _FinancialContract,
+                                                                                       _PhysicalAsset
+                                                                                     }             not null;
+    key "BusinessValidFrom"                           : LocalDate;
+    key "BusinessValidTo"                             : LocalDate;
+        "SystemValidFrom"                             : UTCTimestamp                               not null;
+        "SystemValidTo"                               : UTCTimestamp                               not null;
+        "_ElementaryInsuranceProduct"                 : association to FinancialStandardProduct {
+                                                                                                  FinancialStandardProductID,
+                                                                                                  IDSystem,
+                                                                                                  PricingScheme,
+                                                                                                  ASSOC_Company
+                                                                                                };
+        "_FundRange"                                  : association to FundRange {
+                                                                                   ID,
+                                                                                   IDSystem
+                                                                                 };
+        "_IndexRange"                                 : association to IndexRange {
+                                                                                    ID,
+                                                                                    IDSystem
+                                                                                  };
+        "AccumulationPercent"                         : Decimal(15, 11);
+        "AnnualActuarialAnnuityAmount"                : Decimal(34, 6);
+        "AnnuityAdvancePaymentIndicator"              : Boolean;
+        "AnnuityCategory"                             : String(40);
+        "AnnuityEndDate"                              : LocalDate;
+        "AnnuityPaymentFrequency"                     : String(40);
+        "AnnuityPeriodAmount"                         : Decimal(34, 6);
+        "AnnuityStartDate"                            : LocalDate;
+        "AnnuitySubcategory"                          : String(40);
+        "BenefitAmount"                               : Decimal(34, 6);
+        "BenefitDuration"                             : Decimal(4, 0);
+        "BenefitDurationUnit"                         : String(12);
+        "BenefitPhaseProfitSharingMethod"             : String(40);
+        "BodilyInjuryLiabilityLimitPerPersonAmount"   : Decimal(34, 6);
+        "BodilyInjuryliabilityLimitperAccidentAmount" : Decimal(34, 6);
+        "BusinessClass"                               : String(40);
+        "Category"                                    : String(40);
+        "ChildTermRiderAmount"                        : Decimal(34, 6);
+        "ClassOfInsurance"                            : String(40);
+        "DeathBenefitAmount"                          : Decimal(34, 6);
+        "DeductibleAmount"                            : Decimal(34, 6);
+        "EliminationPeriod"                           : Decimal(3, 0);
+        "EliminationPeriodUnit"                       : String(12);
+        "EndDate"                                     : LocalDate;
+        "EndTime"                                     : LocalTime;
+        "EndTimeZone"                                 : String(5);
+        "EndowmentBenefitAmount"                      : Decimal(34, 6);
+        "ExtendedBenefitAmount"                       : Decimal(34, 6);
+        "FirstAvailableAnnuitizationDate"             : LocalDate;
+        "FixedInterestRate"                           : Decimal(15, 11);
+        "FreeofChargeIndicator"                       : Boolean;
+        "GMDBBaseWithdrawalRatePercent"               : Decimal(15, 11);
+        "GMDBRollupRatePercent"                       : Decimal(15, 11);
+        "GMIBBaseWithdrawalRatePercent"               : Decimal(15, 11);
+        "GMIBRollupRatePercent"                       : Decimal(15, 11);
+        "GMWBBaseWithdrawalRatePercent"               : Decimal(15, 11);
+        "GMWBRollupRatePercent"                       : Decimal(15, 11);
+        "GuaranteeCertainPeriodDuration"              : Decimal(4, 0);
+        "GuaranteeCertainPeriodIndicator"             : Boolean;
+        "GuaranteeCertainPeriodTimeUnit"              : String(12);
+        "GuaranteedPaymentEndDate"                    : LocalDate;
+        "JointAndSurvivorAnnuityIndicator"            : Boolean;
+        "JointSurvivorAnnuityReductionPercent"        : Decimal(15, 11);
+        "JumboRate"                                   : Decimal(15, 11);
+        "LastAvailableAnnuitizationDate"              : LocalDate;
+        "LifeAndAnnuityCoverageCategory"              : String(40);
+        "LifecycleStatus"                             : String(40);
+        "LifetimeWithdrawalGuaranteeIndicator"        : Boolean;
+        "LimitAmount"                                 : Decimal(34, 6);
+        "MainAnnuityCoverageCategory"                 : String(40);
+        "MainCoverageBenefitPercent"                  : Decimal(15, 11);
+        "MainLifeInsuranceCoverageCategoryCode"       : String(40);
+        "MaximumAnnuityAmount"                        : Decimal(34, 6);
+        "NoClaimsClass"                               : String(40);
+        "NursingCareAssessmentSystem"                 : String(40);
+        "NursingCareClassificationSystem"             : String(40);
+        "PaymentFrequency"                            : String(40);
+        "PeriodDeductableAmount"                      : Decimal(34, 6);
+        "PeriodMaximumBenefitAmount"                  : Decimal(34, 6);
+        "PortfolioGroup"                              : String(40);
+        "PremiumBenefitPhase"                         : String(40);
+        "PremiumExemptPhaseProfitSharingMethod"       : String(40);
+        "PremiumGrossAnnualAmount"                    : Decimal(34, 6);
+        "PremiumGrossPeriodAmount"                    : Decimal(34, 6);
+        "PremiumObligationPhaseProfitSharingMethod"   : String(40);
+        "PrimarySurvivorAnnuityReductionPercent"      : Decimal(15, 11);
+        "ProfitClass"                                 : String(40);
+        "ProfitSharingIndicator"                      : Boolean;
+        "PropertyDamageLiabilityLimitAmount"          : Decimal(34, 6);
+        "PropertyandCasualtyCoverageCategory"         : String(40);
+        "RegionalClass"                               : String(40);
+        "RiskCode"                                    : String(40);
+        "StartDate"                                   : LocalDate;
+        "StartTime"                                   : LocalTime;
+        "StartTimeZone"                               : String(5);
+        "SubClassOfInsurance"                         : String(40);
+        "SubSubClassOfInsurance"                      : String(40);
+        "SupplementaryAnnuityInsuranceCoverage"       : String(40);
+        "SupplementaryLifeCoverageCategory"           : String(40);
+        "TariffAnnualAmount"                          : Decimal(34, 6);
+        "TariffPeriodAmount"                          : Decimal(34, 6);
+        "TotalLimitPerAccidentAmount"                 : Decimal(34, 6);
+        "Type"                                        : String(40);
+        "TypeClass"                                   : String(40);
+        "WaitingPeriod"                               : Decimal(4, 0);
+        "WaitingPeriodUnit"                           : String(12);
+        "SourceSystemID"                              : String(128);
+        "ChangeTimestampInSourceSystem"               : UTCTimestamp;
+        "ChangingUserInSourceSystem"                  : String(128);
+        "ChangingProcessType"                         : String(40);
+        "ChangingProcessID"                           : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InsuranceCoverage_Historical" {
+    "ID"                                          : String(128)                                default '' not null;
+    "_InsuranceContract"                          : association to FinancialContract {
+                                                                                       FinancialContractID,
+                                                                                       IDSystem
+                                                                                     }         not null;
+    "_InsuredObject"                              : association to InsuredObject {
+                                                                                   _FinancialContract,
+                                                                                   _PhysicalAsset
+                                                                                 }             not null;
+    "BusinessValidFrom"                           : LocalDate                                  not null;
+    "BusinessValidTo"                             : LocalDate                                  not null;
+    "SystemValidFrom"                             : UTCTimestamp                               not null;
+    "SystemValidTo"                               : UTCTimestamp                               not null;
+    "_ElementaryInsuranceProduct"                 : association to FinancialStandardProduct {
+                                                                                              FinancialStandardProductID,
+                                                                                              IDSystem,
+                                                                                              PricingScheme,
+                                                                                              ASSOC_Company
+                                                                                            };
+    "_FundRange"                                  : association to FundRange {
+                                                                               ID,
+                                                                               IDSystem
+                                                                             };
+    "_IndexRange"                                 : association to IndexRange {
+                                                                                ID,
+                                                                                IDSystem
+                                                                              };
+    "AccumulationPercent"                         : Decimal(15, 11);
+    "AnnualActuarialAnnuityAmount"                : Decimal(34, 6);
+    "AnnuityAdvancePaymentIndicator"              : Boolean;
+    "AnnuityCategory"                             : String(40);
+    "AnnuityEndDate"                              : LocalDate;
+    "AnnuityPaymentFrequency"                     : String(40);
+    "AnnuityPeriodAmount"                         : Decimal(34, 6);
+    "AnnuityStartDate"                            : LocalDate;
+    "AnnuitySubcategory"                          : String(40);
+    "BenefitAmount"                               : Decimal(34, 6);
+    "BenefitDuration"                             : Decimal(4, 0);
+    "BenefitDurationUnit"                         : String(12);
+    "BenefitPhaseProfitSharingMethod"             : String(40);
+    "BodilyInjuryLiabilityLimitPerPersonAmount"   : Decimal(34, 6);
+    "BodilyInjuryliabilityLimitperAccidentAmount" : Decimal(34, 6);
+    "BusinessClass"                               : String(40);
+    "Category"                                    : String(40);
+    "ChildTermRiderAmount"                        : Decimal(34, 6);
+    "ClassOfInsurance"                            : String(40);
+    "DeathBenefitAmount"                          : Decimal(34, 6);
+    "DeductibleAmount"                            : Decimal(34, 6);
+    "EliminationPeriod"                           : Decimal(3, 0);
+    "EliminationPeriodUnit"                       : String(12);
+    "EndDate"                                     : LocalDate;
+    "EndTime"                                     : LocalTime;
+    "EndTimeZone"                                 : String(5);
+    "EndowmentBenefitAmount"                      : Decimal(34, 6);
+    "ExtendedBenefitAmount"                       : Decimal(34, 6);
+    "FirstAvailableAnnuitizationDate"             : LocalDate;
+    "FixedInterestRate"                           : Decimal(15, 11);
+    "FreeofChargeIndicator"                       : Boolean;
+    "GMDBBaseWithdrawalRatePercent"               : Decimal(15, 11);
+    "GMDBRollupRatePercent"                       : Decimal(15, 11);
+    "GMIBBaseWithdrawalRatePercent"               : Decimal(15, 11);
+    "GMIBRollupRatePercent"                       : Decimal(15, 11);
+    "GMWBBaseWithdrawalRatePercent"               : Decimal(15, 11);
+    "GMWBRollupRatePercent"                       : Decimal(15, 11);
+    "GuaranteeCertainPeriodDuration"              : Decimal(4, 0);
+    "GuaranteeCertainPeriodIndicator"             : Boolean;
+    "GuaranteeCertainPeriodTimeUnit"              : String(12);
+    "GuaranteedPaymentEndDate"                    : LocalDate;
+    "JointAndSurvivorAnnuityIndicator"            : Boolean;
+    "JointSurvivorAnnuityReductionPercent"        : Decimal(15, 11);
+    "JumboRate"                                   : Decimal(15, 11);
+    "LastAvailableAnnuitizationDate"              : LocalDate;
+    "LifeAndAnnuityCoverageCategory"              : String(40);
+    "LifecycleStatus"                             : String(40);
+    "LifetimeWithdrawalGuaranteeIndicator"        : Boolean;
+    "LimitAmount"                                 : Decimal(34, 6);
+    "MainAnnuityCoverageCategory"                 : String(40);
+    "MainCoverageBenefitPercent"                  : Decimal(15, 11);
+    "MainLifeInsuranceCoverageCategoryCode"       : String(40);
+    "MaximumAnnuityAmount"                        : Decimal(34, 6);
+    "NoClaimsClass"                               : String(40);
+    "NursingCareAssessmentSystem"                 : String(40);
+    "NursingCareClassificationSystem"             : String(40);
+    "PaymentFrequency"                            : String(40);
+    "PeriodDeductableAmount"                      : Decimal(34, 6);
+    "PeriodMaximumBenefitAmount"                  : Decimal(34, 6);
+    "PortfolioGroup"                              : String(40);
+    "PremiumBenefitPhase"                         : String(40);
+    "PremiumExemptPhaseProfitSharingMethod"       : String(40);
+    "PremiumGrossAnnualAmount"                    : Decimal(34, 6);
+    "PremiumGrossPeriodAmount"                    : Decimal(34, 6);
+    "PremiumObligationPhaseProfitSharingMethod"   : String(40);
+    "PrimarySurvivorAnnuityReductionPercent"      : Decimal(15, 11);
+    "ProfitClass"                                 : String(40);
+    "ProfitSharingIndicator"                      : Boolean;
+    "PropertyDamageLiabilityLimitAmount"          : Decimal(34, 6);
+    "PropertyandCasualtyCoverageCategory"         : String(40);
+    "RegionalClass"                               : String(40);
+    "RiskCode"                                    : String(40);
+    "StartDate"                                   : LocalDate;
+    "StartTime"                                   : LocalTime;
+    "StartTimeZone"                               : String(5);
+    "SubClassOfInsurance"                         : String(40);
+    "SubSubClassOfInsurance"                      : String(40);
+    "SupplementaryAnnuityInsuranceCoverage"       : String(40);
+    "SupplementaryLifeCoverageCategory"           : String(40);
+    "TariffAnnualAmount"                          : Decimal(34, 6);
+    "TariffPeriodAmount"                          : Decimal(34, 6);
+    "TotalLimitPerAccidentAmount"                 : Decimal(34, 6);
+    "Type"                                        : String(40);
+    "TypeClass"                                   : String(40);
+    "WaitingPeriod"                               : Decimal(4, 0);
+    "WaitingPeriodUnit"                           : String(12);
+    "SourceSystemID"                              : String(128);
+    "ChangeTimestampInSourceSystem"               : UTCTimestamp;
+    "ChangingUserInSourceSystem"                  : String(128);
+    "ChangingProcessType"                         : String(40);
+    "ChangingProcessID"                           : String(128);
+}
+technical configuration {
+    column store;
+};

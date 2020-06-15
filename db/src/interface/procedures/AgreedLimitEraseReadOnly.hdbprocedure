@@ -1,0 +1,190 @@
+PROCEDURE "sap.fsdm.procedures::AgreedLimitEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::AgreedLimitTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::AgreedLimitTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::AgreedLimitTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "SequenceNumber" is null and
+                         "ASSOC_CardIssue.CardIssueID" is null and
+                         "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null and
+                         "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null and
+                         "ASSOC_CardIssue._BankAccount.FinancialContractID" is null and
+                         "ASSOC_CardIssue._BankAccount.IDSystem" is null and
+                         "ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" is null and
+                         "ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_FinancialContractDelegation.DelegatedRole" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" is null and
+                         "ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "_TrancheInSyndication.TrancheSequenceNumber" is null and
+                         "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null and
+                         "_TrancheInSyndication._SyndicationAgreement.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"SequenceNumber",
+"ASSOC_CardIssue.CardIssueID",
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+"ASSOC_CardIssue._BankAccount.FinancialContractID",
+"ASSOC_CardIssue._BankAccount.IDSystem",
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact",
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID",
+"ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContract.IDSystem",
+"ASSOC_FinancialContractDelegation.DelegatedRole",
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID",
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem",
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"_TrancheInSyndication.TrancheSequenceNumber",
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+"_TrancheInSyndication._SyndicationAgreement.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::AgreedLimit" WHERE("SequenceNumber" ,
+"ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_TrancheInSyndication.TrancheSequenceNumber" ,
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+)in ( select "SequenceNumber" ,
+"ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_TrancheInSyndication.TrancheSequenceNumber" ,
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"SequenceNumber",
+"ASSOC_CardIssue.CardIssueID",
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID",
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem",
+"ASSOC_CardIssue._BankAccount.FinancialContractID",
+"ASSOC_CardIssue._BankAccount.IDSystem",
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact",
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID",
+"ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContract.IDSystem",
+"ASSOC_FinancialContractDelegation.DelegatedRole",
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID",
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID",
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem",
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"_TrancheInSyndication.TrancheSequenceNumber",
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+"_TrancheInSyndication._SyndicationAgreement.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::AgreedLimit_Historical" WHERE("SequenceNumber" ,
+"ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_TrancheInSyndication.TrancheSequenceNumber" ,
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+)in ( select "SequenceNumber" ,
+"ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_TrancheInSyndication.TrancheSequenceNumber" ,
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+from :ROW );
+
+END

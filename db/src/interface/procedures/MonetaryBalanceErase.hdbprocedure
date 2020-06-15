@@ -1,0 +1,107 @@
+PROCEDURE "sap.fsdm.procedures::MonetaryBalanceErase" (IN ROW "sap.fsdm.tabletypes::MonetaryBalanceTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PostingOrValueDateCutoff" is null and
+                         "RoleOfCurrency" is null and
+                         "ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" is null and
+                         "ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "_CreditCardLoan.ID" is null and
+                         "_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null and
+                         "_CreditCardLoan._CreditCardAgreement.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::MonetaryBalance" WHERE
+("PostingOrValueDateCutoff" ,
+"RoleOfCurrency" ,
+"ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" ,
+"ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_CreditCardLoan.ID" ,
+"_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"_CreditCardLoan._CreditCardAgreement.IDSystem" 
+)in ( select "OLD"."PostingOrValueDateCutoff" ,
+"OLD"."RoleOfCurrency" ,
+"OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" ,
+"OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."_CreditCardLoan.ID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::MonetaryBalance" "OLD"
+on
+  ( "IN"."PostingOrValueDateCutoff" = "OLD"."PostingOrValueDateCutoff" or "IN"."PostingOrValueDateCutoff" is null ) and
+  ( "IN"."RoleOfCurrency" = "OLD"."RoleOfCurrency" or "IN"."RoleOfCurrency" is null ) and
+  ( "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" = "OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" or "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_CreditCardLoan.ID" = "OLD"."_CreditCardLoan.ID" or "IN"."_CreditCardLoan.ID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" or "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" or "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::MonetaryBalance_Historical" WHERE
+("PostingOrValueDateCutoff" ,
+"RoleOfCurrency" ,
+"ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" ,
+"ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"_CreditCardLoan.ID" ,
+"_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"_CreditCardLoan._CreditCardAgreement.IDSystem" 
+)in ( select "OLD"."PostingOrValueDateCutoff" ,
+"OLD"."RoleOfCurrency" ,
+"OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" ,
+"OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."_CreditCardLoan.ID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::MonetaryBalance_Historical" "OLD"
+on
+  ( "IN"."PostingOrValueDateCutoff" = "OLD"."PostingOrValueDateCutoff" or "IN"."PostingOrValueDateCutoff" is null ) and
+  ( "IN"."RoleOfCurrency" = "OLD"."RoleOfCurrency" or "IN"."RoleOfCurrency" is null ) and
+  ( "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" = "OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" or "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_BalanceForCcyOfMultiCcyAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_CreditCardLoan.ID" = "OLD"."_CreditCardLoan.ID" or "IN"."_CreditCardLoan.ID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "OLD"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" or "IN"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" is null ) and
+  ( "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" = "OLD"."_CreditCardLoan._CreditCardAgreement.IDSystem" or "IN"."_CreditCardLoan._CreditCardAgreement.IDSystem" is null ) 
+);
+
+END

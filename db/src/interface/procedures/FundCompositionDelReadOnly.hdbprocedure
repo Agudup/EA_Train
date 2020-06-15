@@ -1,0 +1,233 @@
+PROCEDURE "sap.fsdm.procedures::FundCompositionDelReadOnly" (IN ROW "sap.fsdm.tabletypes::FundCompositionTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::FundCompositionTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::FundCompositionTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'AssetClass=' || TO_VARCHAR("AssetClass") || ' ' ||
+                '_Fund.FundID=' || TO_VARCHAR("_Fund.FundID") || ' ' ||
+                '_Fund._InvestmentCorporation.BusinessPartnerID=' || TO_VARCHAR("_Fund._InvestmentCorporation.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."AssetClass",
+                        "IN"."_Fund.FundID",
+                        "IN"."_Fund._InvestmentCorporation.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."AssetClass",
+                        "IN"."_Fund.FundID",
+                        "IN"."_Fund._InvestmentCorporation.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "AssetClass",
+                        "_Fund.FundID",
+                        "_Fund._InvestmentCorporation.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."AssetClass",
+                                    "IN"."_Fund.FundID",
+                                    "IN"."_Fund._InvestmentCorporation.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."AssetClass",
+                                    "IN"."_Fund.FundID",
+                                    "IN"."_Fund._InvestmentCorporation.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "AssetClass",
+            "_Fund.FundID",
+            "_Fund._InvestmentCorporation.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::FundComposition" WHERE
+            (
+            "AssetClass" ,
+            "_Fund.FundID" ,
+            "_Fund._InvestmentCorporation.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."AssetClass",
+            "OLD"."_Fund.FundID",
+            "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FundComposition" as "OLD"
+        on
+                              ( "IN"."AssetClass" = "OLD"."AssetClass" or "IN"."AssetClass" is null ) and
+                              ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+                              ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "AssetClass",
+        "_Fund.FundID",
+        "_Fund._InvestmentCorporation.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AssetClassAmount",
+        "AssetClassAmountCurrency",
+        "AssetClassPercentage",
+        "DifferentiationCriterion",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_AssetClass" as "AssetClass" ,
+            "OLD__Fund.FundID" as "_Fund.FundID" ,
+            "OLD__Fund._InvestmentCorporation.BusinessPartnerID" as "_Fund._InvestmentCorporation.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AssetClassAmount" as "AssetClassAmount" ,
+            "OLD_AssetClassAmountCurrency" as "AssetClassAmountCurrency" ,
+            "OLD_AssetClassPercentage" as "AssetClassPercentage" ,
+            "OLD_DifferentiationCriterion" as "DifferentiationCriterion" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."AssetClass",
+                        "OLD"."_Fund.FundID",
+                        "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."AssetClass" as "OLD_AssetClass",
+                                "OLD"."_Fund.FundID" as "OLD__Fund.FundID",
+                                "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" as "OLD__Fund._InvestmentCorporation.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AssetClassAmount" as "OLD_AssetClassAmount",
+                                "OLD"."AssetClassAmountCurrency" as "OLD_AssetClassAmountCurrency",
+                                "OLD"."AssetClassPercentage" as "OLD_AssetClassPercentage",
+                                "OLD"."DifferentiationCriterion" as "OLD_DifferentiationCriterion",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FundComposition" as "OLD"
+            on
+                                      ( "IN"."AssetClass" = "OLD"."AssetClass" or "IN"."AssetClass" is null ) and
+                                      ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+                                      ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_AssetClass" as "AssetClass",
+            "OLD__Fund.FundID" as "_Fund.FundID",
+            "OLD__Fund._InvestmentCorporation.BusinessPartnerID" as "_Fund._InvestmentCorporation.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AssetClassAmount" as "AssetClassAmount",
+            "OLD_AssetClassAmountCurrency" as "AssetClassAmountCurrency",
+            "OLD_AssetClassPercentage" as "AssetClassPercentage",
+            "OLD_DifferentiationCriterion" as "DifferentiationCriterion",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."AssetClass",
+                        "OLD"."_Fund.FundID",
+                        "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."AssetClass" as "OLD_AssetClass",
+                                "OLD"."_Fund.FundID" as "OLD__Fund.FundID",
+                                "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" as "OLD__Fund._InvestmentCorporation.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AssetClassAmount" as "OLD_AssetClassAmount",
+                                "OLD"."AssetClassAmountCurrency" as "OLD_AssetClassAmountCurrency",
+                                "OLD"."AssetClassPercentage" as "OLD_AssetClassPercentage",
+                                "OLD"."DifferentiationCriterion" as "OLD_DifferentiationCriterion",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FundComposition" as "OLD"
+            on
+               ( "IN"."AssetClass" = "OLD"."AssetClass" or "IN"."AssetClass" is null ) and
+               ( "IN"."_Fund.FundID" = "OLD"."_Fund.FundID" or "IN"."_Fund.FundID" is null ) and
+               ( "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" = "OLD"."_Fund._InvestmentCorporation.BusinessPartnerID" or "IN"."_Fund._InvestmentCorporation.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

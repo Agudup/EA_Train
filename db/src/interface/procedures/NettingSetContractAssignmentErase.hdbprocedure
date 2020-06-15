@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::NettingSetContractAssignmentErase" (IN ROW "sap.fsdm.tabletypes::NettingSetContractAssignmentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_FinancialContract.FinancialContractID" is null and
+                         "_FinancialContract.IDSystem" is null and
+                         "_NettingSet.NettingSetID" is null and
+                         "_NettingSet._MasterAgreement.FinancialContractID" is null and
+                         "_NettingSet._MasterAgreement.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::NettingSetContractAssignment" WHERE
+("_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_NettingSet.NettingSetID" ,
+"_NettingSet._MasterAgreement.FinancialContractID" ,
+"_NettingSet._MasterAgreement.IDSystem" 
+)in ( select "OLD"."_FinancialContract.FinancialContractID" ,
+"OLD"."_FinancialContract.IDSystem" ,
+"OLD"."_NettingSet.NettingSetID" ,
+"OLD"."_NettingSet._MasterAgreement.FinancialContractID" ,
+"OLD"."_NettingSet._MasterAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::NettingSetContractAssignment" "OLD"
+on
+  ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_NettingSet.NettingSetID" = "OLD"."_NettingSet.NettingSetID" or "IN"."_NettingSet.NettingSetID" is null ) and
+  ( "IN"."_NettingSet._MasterAgreement.FinancialContractID" = "OLD"."_NettingSet._MasterAgreement.FinancialContractID" or "IN"."_NettingSet._MasterAgreement.FinancialContractID" is null ) and
+  ( "IN"."_NettingSet._MasterAgreement.IDSystem" = "OLD"."_NettingSet._MasterAgreement.IDSystem" or "IN"."_NettingSet._MasterAgreement.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::NettingSetContractAssignment_Historical" WHERE
+("_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_NettingSet.NettingSetID" ,
+"_NettingSet._MasterAgreement.FinancialContractID" ,
+"_NettingSet._MasterAgreement.IDSystem" 
+)in ( select "OLD"."_FinancialContract.FinancialContractID" ,
+"OLD"."_FinancialContract.IDSystem" ,
+"OLD"."_NettingSet.NettingSetID" ,
+"OLD"."_NettingSet._MasterAgreement.FinancialContractID" ,
+"OLD"."_NettingSet._MasterAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::NettingSetContractAssignment_Historical" "OLD"
+on
+  ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_NettingSet.NettingSetID" = "OLD"."_NettingSet.NettingSetID" or "IN"."_NettingSet.NettingSetID" is null ) and
+  ( "IN"."_NettingSet._MasterAgreement.FinancialContractID" = "OLD"."_NettingSet._MasterAgreement.FinancialContractID" or "IN"."_NettingSet._MasterAgreement.FinancialContractID" is null ) and
+  ( "IN"."_NettingSet._MasterAgreement.IDSystem" = "OLD"."_NettingSet._MasterAgreement.IDSystem" or "IN"."_NettingSet._MasterAgreement.IDSystem" is null ) 
+);
+
+END

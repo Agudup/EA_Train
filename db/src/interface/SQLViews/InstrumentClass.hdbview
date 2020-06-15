@@ -1,0 +1,44 @@
+view "sap.fsdm.SQLViews::InstrumentClass_View" 
+as select
+      "InstrumentClass" ,
+      "InstrumentClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "InstrumentClassDescription" ,
+      "InstrumentClassificationSystemDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentClass"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClassificationOfFinancialInstrument_View" as "_ClassificationOfFinancialInstrument__InstrumentClass"
+	  on "InstrumentClass" = "_ClassificationOfFinancialInstrument__InstrumentClass"."_InstrumentClass.InstrumentClass" AND 
+	     "InstrumentClassificationSystem" = "_ClassificationOfFinancialInstrument__InstrumentClass"."_InstrumentClass.InstrumentClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::EligibleCollateral_View" as "_EligibleCollateral__InstrumentClass"
+	  on "InstrumentClass" = "_EligibleCollateral__InstrumentClass"."_InstrumentClass.InstrumentClass" AND 
+	     "InstrumentClassificationSystem" = "_EligibleCollateral__InstrumentClass"."_InstrumentClass.InstrumentClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClassHierarchyRelation_View" as "_InstrumentClassHierarchyRelation__Child"
+	  on "InstrumentClass" = "_InstrumentClassHierarchyRelation__Child"."_Child.InstrumentClass" AND 
+	     "InstrumentClassificationSystem" = "_InstrumentClassHierarchyRelation__Child"."_Child.InstrumentClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClassHierarchyRelation_View" as "_InstrumentClassHierarchyRelation__Parent"
+	  on "InstrumentClass" = "_InstrumentClassHierarchyRelation__Parent"."_Parent.InstrumentClass" AND 
+	     "InstrumentClassificationSystem" = "_InstrumentClassHierarchyRelation__Parent"."_Parent.InstrumentClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClassInNonweightedBasket_View" as "_InstrumentClassInNonweightedBasket__InstrumentClass"
+	  on "InstrumentClassificationSystem" = "_InstrumentClassInNonweightedBasket__InstrumentClass"."_InstrumentClass.InstrumentClassificationSystem" AND 
+	     "InstrumentClass" = "_InstrumentClassInNonweightedBasket__InstrumentClass"."_InstrumentClass.InstrumentClass"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClassInWeightedBasket_View" as "_InstrumentClassInWeightedBasket__InstrumentClass"
+	  on "InstrumentClass" = "_InstrumentClassInWeightedBasket__InstrumentClass"."_InstrumentClass.InstrumentClass" AND 
+	     "InstrumentClassificationSystem" = "_InstrumentClassInWeightedBasket__InstrumentClass"."_InstrumentClass.InstrumentClassificationSystem"
+	     
+);

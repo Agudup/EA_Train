@@ -1,0 +1,24 @@
+view "sap.fsdm.Views::CreditCardLoan_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ID" as "ID",
+      "_CreditCardAgreement.FinancialContractID" as "_CreditCardAgreement_FinancialContractID",
+      "_CreditCardAgreement.IDSystem" as "_CreditCardAgreement_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "CreationDate" as "CreationDate",
+      "Description" as "Description",
+      "LoanAmount" as "LoanAmount",
+      "LoanAmountCurrency" as "LoanAmountCurrency",
+      "NumberOfInstallments" as "NumberOfInstallments",
+      "Status" as "Status",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CreditCardLoan"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

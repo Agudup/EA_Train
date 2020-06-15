@@ -1,0 +1,30 @@
+view "sap.fsdm.Views::CollateralPortion_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PortionNumber" as "PortionNumber",
+      "ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralAgreement_FinancialContractID",
+      "ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralAgreement_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" as "ASSOC_CoveredObligorInCaseOfFullCoverage_BusinessPartnerID",
+      "_Creditor.BusinessPartnerID" as "_Creditor_BusinessPartnerID",
+      "AgreedCoverageEndDate" as "AgreedCoverageEndDate",
+      "AgreedCoverageStartDate" as "AgreedCoverageStartDate",
+      "CollateralPortionCoverageCategory" as "CollateralPortionCoverageCategory",
+      "CoveredPercentageOfObligations" as "CoveredPercentageOfObligations",
+      "MaximumCollateralPortionAmount" as "MaximumCollateralPortionAmount",
+      "MaximumCollateralPortionAmountCurrency" as "MaximumCollateralPortionAmountCurrency",
+      "PercentageOfTotalCollateralForPortion" as "PercentageOfTotalCollateralForPortion",
+      "PortionName" as "PortionName",
+      "RankAgainstOtherPortions" as "RankAgainstOtherPortions",
+      "RoleOfCreditor" as "RoleOfCreditor",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CollateralPortion"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

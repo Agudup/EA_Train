@@ -1,0 +1,410 @@
+PROCEDURE "sap.fsdm.procedures::AccountingClassificationStatusDelete" (IN ROW "sap.fsdm.tabletypes::AccountingClassificationStatusTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'AccountingClassificationCategory=' || TO_VARCHAR("AccountingClassificationCategory") || ' ' ||
+                'LotID=' || TO_VARCHAR("LotID") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_Collection.CollectionID=' || TO_VARCHAR("_Collection.CollectionID") || ' ' ||
+                '_Collection.IDSystem=' || TO_VARCHAR("_Collection.IDSystem") || ' ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_SecuritiesAccount.FinancialContractID=' || TO_VARCHAR("_SecuritiesAccount.FinancialContractID") || ' ' ||
+                '_SecuritiesAccount.IDSystem=' || TO_VARCHAR("_SecuritiesAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."AccountingClassificationCategory",
+                        "IN"."LotID",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."AccountingClassificationCategory",
+                        "IN"."LotID",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "AccountingClassificationCategory",
+                        "LotID",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_Collection.CollectionID",
+                        "_Collection.IDSystem",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_SecuritiesAccount.FinancialContractID",
+                        "_SecuritiesAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."AccountingClassificationCategory",
+                                    "IN"."LotID",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."AccountingClassificationCategory",
+                                    "IN"."LotID",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::AccountingClassificationStatus" (
+        "AccountingClassificationCategory",
+        "LotID",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccruingStatus",
+        "AssetLiabilityStatus",
+        "CreationTimestamp",
+        "FairValueLevel",
+        "HoldingCategoryStatus",
+        "ImpairmentStatus",
+        "MarketConformityStatus",
+        "SPPIStatus",
+        "TermSegment",
+        "WriteDownStatus",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_AccountingClassificationCategory" as "AccountingClassificationCategory" ,
+            "OLD_LotID" as "LotID" ,
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID" ,
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem" ,
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID" ,
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AccruingStatus" as "AccruingStatus" ,
+            "OLD_AssetLiabilityStatus" as "AssetLiabilityStatus" ,
+            "OLD_CreationTimestamp" as "CreationTimestamp" ,
+            "OLD_FairValueLevel" as "FairValueLevel" ,
+            "OLD_HoldingCategoryStatus" as "HoldingCategoryStatus" ,
+            "OLD_ImpairmentStatus" as "ImpairmentStatus" ,
+            "OLD_MarketConformityStatus" as "MarketConformityStatus" ,
+            "OLD_SPPIStatus" as "SPPIStatus" ,
+            "OLD_TermSegment" as "TermSegment" ,
+            "OLD_WriteDownStatus" as "WriteDownStatus" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."AccountingClassificationCategory",
+                        "OLD"."LotID",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."AccountingClassificationCategory" as "OLD_AccountingClassificationCategory",
+                "OLD"."LotID" as "OLD_LotID",
+                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."AccruingStatus" as "OLD_AccruingStatus",
+                "OLD"."AssetLiabilityStatus" as "OLD_AssetLiabilityStatus",
+                "OLD"."CreationTimestamp" as "OLD_CreationTimestamp",
+                "OLD"."FairValueLevel" as "OLD_FairValueLevel",
+                "OLD"."HoldingCategoryStatus" as "OLD_HoldingCategoryStatus",
+                "OLD"."ImpairmentStatus" as "OLD_ImpairmentStatus",
+                "OLD"."MarketConformityStatus" as "OLD_MarketConformityStatus",
+                "OLD"."SPPIStatus" as "OLD_SPPIStatus",
+                "OLD"."TermSegment" as "OLD_TermSegment",
+                "OLD"."WriteDownStatus" as "OLD_WriteDownStatus",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AccountingClassificationStatus" as "OLD"
+            on
+                      ( "IN"."AccountingClassificationCategory" = "OLD"."AccountingClassificationCategory" or "IN"."AccountingClassificationCategory" is null ) and
+                      ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                      ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                      ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                      ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                      ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                      ( "IN"."_SecuritiesAccount.FinancialContractID" = "OLD"."_SecuritiesAccount.FinancialContractID" or "IN"."_SecuritiesAccount.FinancialContractID" is null ) and
+                      ( "IN"."_SecuritiesAccount.IDSystem" = "OLD"."_SecuritiesAccount.IDSystem" or "IN"."_SecuritiesAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::AccountingClassificationStatus" (
+        "AccountingClassificationCategory",
+        "LotID",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccruingStatus",
+        "AssetLiabilityStatus",
+        "CreationTimestamp",
+        "FairValueLevel",
+        "HoldingCategoryStatus",
+        "ImpairmentStatus",
+        "MarketConformityStatus",
+        "SPPIStatus",
+        "TermSegment",
+        "WriteDownStatus",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_AccountingClassificationCategory" as "AccountingClassificationCategory",
+            "OLD_LotID" as "LotID",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID",
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem",
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID",
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AccruingStatus" as "AccruingStatus",
+            "OLD_AssetLiabilityStatus" as "AssetLiabilityStatus",
+            "OLD_CreationTimestamp" as "CreationTimestamp",
+            "OLD_FairValueLevel" as "FairValueLevel",
+            "OLD_HoldingCategoryStatus" as "HoldingCategoryStatus",
+            "OLD_ImpairmentStatus" as "ImpairmentStatus",
+            "OLD_MarketConformityStatus" as "MarketConformityStatus",
+            "OLD_SPPIStatus" as "SPPIStatus",
+            "OLD_TermSegment" as "TermSegment",
+            "OLD_WriteDownStatus" as "WriteDownStatus",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."AccountingClassificationCategory",
+                        "OLD"."LotID",
+                        "OLD"."_AccountingSystem.AccountingSystemID",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."AccountingClassificationCategory" as "OLD_AccountingClassificationCategory",
+                "OLD"."LotID" as "OLD_LotID",
+                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."AccruingStatus" as "OLD_AccruingStatus",
+                "OLD"."AssetLiabilityStatus" as "OLD_AssetLiabilityStatus",
+                "OLD"."CreationTimestamp" as "OLD_CreationTimestamp",
+                "OLD"."FairValueLevel" as "OLD_FairValueLevel",
+                "OLD"."HoldingCategoryStatus" as "OLD_HoldingCategoryStatus",
+                "OLD"."ImpairmentStatus" as "OLD_ImpairmentStatus",
+                "OLD"."MarketConformityStatus" as "OLD_MarketConformityStatus",
+                "OLD"."SPPIStatus" as "OLD_SPPIStatus",
+                "OLD"."TermSegment" as "OLD_TermSegment",
+                "OLD"."WriteDownStatus" as "OLD_WriteDownStatus",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AccountingClassificationStatus" as "OLD"
+            on
+                                                ( "IN"."AccountingClassificationCategory" = "OLD"."AccountingClassificationCategory" or "IN"."AccountingClassificationCategory" is null ) and
+                                                ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                                                ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                                                ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                                                ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                                                ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                                ( "IN"."_SecuritiesAccount.FinancialContractID" = "OLD"."_SecuritiesAccount.FinancialContractID" or "IN"."_SecuritiesAccount.FinancialContractID" is null ) and
+                                                ( "IN"."_SecuritiesAccount.IDSystem" = "OLD"."_SecuritiesAccount.IDSystem" or "IN"."_SecuritiesAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::AccountingClassificationStatus"
+    where (
+        "AccountingClassificationCategory",
+        "LotID",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."AccountingClassificationCategory",
+            "OLD"."LotID",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_Collection.CollectionID",
+            "OLD"."_Collection.IDSystem",
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_SecuritiesAccount.FinancialContractID",
+            "OLD"."_SecuritiesAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::AccountingClassificationStatus" as "OLD"
+        on
+                                       ( "IN"."AccountingClassificationCategory" = "OLD"."AccountingClassificationCategory" or "IN"."AccountingClassificationCategory" is null ) and
+                                       ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                                       ( "IN"."_AccountingSystem.AccountingSystemID" = "OLD"."_AccountingSystem.AccountingSystemID" or "IN"."_AccountingSystem.AccountingSystemID" is null ) and
+                                       ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                                       ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                                       ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                       ( "IN"."_SecuritiesAccount.FinancialContractID" = "OLD"."_SecuritiesAccount.FinancialContractID" or "IN"."_SecuritiesAccount.FinancialContractID" is null ) and
+                                       ( "IN"."_SecuritiesAccount.IDSystem" = "OLD"."_SecuritiesAccount.IDSystem" or "IN"."_SecuritiesAccount.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

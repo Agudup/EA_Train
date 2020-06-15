@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::InstrumentClassInNonweightedBasket_View" 
+as select
+      "_Basket.FinancialInstrumentID" ,
+      "_InstrumentClass.InstrumentClass" ,
+      "_InstrumentClass.InstrumentClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentClassInNonweightedBasket"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Basket"
+	  on "_Basket"."FinancialInstrumentID" = "_Basket.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClass_View" as "_InstrumentClass"
+	  on "_InstrumentClass"."InstrumentClassificationSystem" = "_InstrumentClass.InstrumentClassificationSystem" AND 
+	     "_InstrumentClass"."InstrumentClass" = "_InstrumentClass.InstrumentClass"
+	     
+);

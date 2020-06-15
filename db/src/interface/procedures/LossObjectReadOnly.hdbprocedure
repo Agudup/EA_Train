@@ -1,0 +1,114 @@
+PROCEDURE "sap.fsdm.procedures::LossObjectReadOnly" (IN ROW "sap.fsdm.tabletypes::LossObjectTT" , OUT CURR_DEL "sap.fsdm.tabletypes::LossObjectTT_Out", OUT CURR_INS "sap.fsdm.tabletypes::LossObjectTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"LossObjectID",
+"_PropertyLoss.LossCategory",
+"_PropertyLoss._Claim.ID",
+"_PropertyLoss._Claim.IDSystem",
+"_LossObject.LossObjectID",
+"_LossObject._PropertyLoss.LossCategory",
+"_LossObject._PropertyLoss._Claim.ID",
+"_LossObject._PropertyLoss._Claim.IDSystem",
+"_PhysicalAsset.PhysicalAssetID",
+"ActualRepairDate",
+"Currency",
+"EstimatedRepairDate",
+"LossCause",
+"LossObjectCategory",
+"LossObjectCurrentMarketValue",
+"LossObjectRepairCost",
+"LossObjectRepairableIndicator",
+"LossObjectReplaceableIndicator",
+"LossObjectReplacementValue",
+"LossObjectType",
+"OdometerReading",
+"SalvageSoldDate",
+"VehicleParkedIndicator",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from "sap.fsdm::LossObject" WHERE("LossObjectID" ,
+"_PropertyLoss.LossCategory" ,
+"_PropertyLoss._Claim.ID" ,
+"_PropertyLoss._Claim.IDSystem" 
+)in ( select "LossObjectID" ,
+"_PropertyLoss.LossCategory" ,
+"_PropertyLoss._Claim.ID" ,
+"_PropertyLoss._Claim.IDSystem" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+CURR_INS = select 
+"LossObjectID",
+"_PropertyLoss.LossCategory",
+"_PropertyLoss._Claim.ID",
+"_PropertyLoss._Claim.IDSystem",
+"_LossObject.LossObjectID",
+"_LossObject._PropertyLoss.LossCategory",
+"_LossObject._PropertyLoss._Claim.ID",
+"_LossObject._PropertyLoss._Claim.IDSystem",
+"_PhysicalAsset.PhysicalAssetID",
+"ActualRepairDate",
+"Currency",
+"EstimatedRepairDate",
+"LossCause",
+"LossObjectCategory",
+"LossObjectCurrentMarketValue",
+"LossObjectRepairCost",
+"LossObjectRepairableIndicator",
+"LossObjectReplaceableIndicator",
+"LossObjectReplacementValue",
+"LossObjectType",
+"OdometerReading",
+"SalvageSoldDate",
+"VehicleParkedIndicator",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from( select 
+   "LossObjectID"  ,
+  "_PropertyLoss.LossCategory"  ,
+  "_PropertyLoss._Claim.ID"  ,
+  "_PropertyLoss._Claim.IDSystem"  ,
+  "_LossObject.LossObjectID"  ,
+  "_LossObject._PropertyLoss.LossCategory"  ,
+  "_LossObject._PropertyLoss._Claim.ID"  ,
+  "_LossObject._PropertyLoss._Claim.IDSystem"  ,
+  "_PhysicalAsset.PhysicalAssetID"  ,
+  "ActualRepairDate"  ,
+  "Currency"  ,
+  "EstimatedRepairDate"  ,
+  "LossCause"  ,
+  "LossObjectCategory"  ,
+  "LossObjectCurrentMarketValue"  ,
+  "LossObjectRepairCost"  ,
+  "LossObjectRepairableIndicator"  ,
+  "LossObjectReplaceableIndicator"  ,
+  "LossObjectReplacementValue"  ,
+  "LossObjectType"  ,
+  "OdometerReading"  ,
+  "SalvageSoldDate"  ,
+  "VehicleParkedIndicator"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

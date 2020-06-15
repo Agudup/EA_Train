@@ -1,0 +1,33 @@
+view "sap.fsdm.SQLViews::Loss_View" 
+as select
+      "LossCategory" ,
+      "_Claim.ID" ,
+      "_Claim.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Loss"
+with associations
+(
+	join "sap.fsdm.SQLViews::InjuredPerson_View" as "_InjuredPerson__PersonalInjury"
+	  on "LossCategory" = "_InjuredPerson__PersonalInjury"."_PersonalInjury.LossCategory" AND 
+	     "_Claim.ID" = "_InjuredPerson__PersonalInjury"."_PersonalInjury._Claim.ID" AND 
+	     "_Claim.IDSystem" = "_InjuredPerson__PersonalInjury"."_PersonalInjury._Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Claim_View" as "_Claim"
+	  on "_Claim"."ID" = "_Claim.ID" AND 
+	     "_Claim"."IDSystem" = "_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::LossObject_View" as "_LossObject__PropertyLoss"
+	  on "LossCategory" = "_LossObject__PropertyLoss"."_PropertyLoss.LossCategory" AND 
+	     "_Claim.ID" = "_LossObject__PropertyLoss"."_PropertyLoss._Claim.ID" AND 
+	     "_Claim.IDSystem" = "_LossObject__PropertyLoss"."_PropertyLoss._Claim.IDSystem"
+	     
+);

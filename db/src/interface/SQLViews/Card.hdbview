@@ -1,0 +1,39 @@
+view "sap.fsdm.SQLViews::Card_View" 
+as select
+      "CardIssueSequenceID" ,
+      "ASSOC_CardIssue.CardIssueID" ,
+      "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+      "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+      "ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+      "ASSOC_CardIssue._BankAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CardDeliveryDate" ,
+      "IssueReason" ,
+      "LifeCycleStatusReason" ,
+      "LifecycleStatus" ,
+      "LifecycleStatusChangeDate" ,
+      "NumberOnCard" ,
+      "PINDeliveryDate" ,
+      "ShippingMethod" ,
+      "ValidFromOnCard" ,
+      "ValidToOnCard" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Card"
+with associations
+(
+	join "sap.fsdm.SQLViews::CardIssue_View" as "ASSOC_CardIssue"
+	  on "ASSOC_CardIssue"."ASSOC_CardAgreement.FinancialContractID" = "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" AND 
+	     "ASSOC_CardIssue"."ASSOC_CardAgreement.IDSystem" = "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "ASSOC_CardIssue"."CardIssueID" = "ASSOC_CardIssue.CardIssueID" AND 
+	     "ASSOC_CardIssue"."_BankAccount.FinancialContractID" = "ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "ASSOC_CardIssue"."_BankAccount.IDSystem" = "ASSOC_CardIssue._BankAccount.IDSystem"
+	     
+);

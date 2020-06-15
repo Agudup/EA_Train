@@ -1,0 +1,304 @@
+PROCEDURE "sap.fsdm.procedures::AccruedPerformanceThresholdDelReadOnly" (IN ROW "sap.fsdm.tabletypes::AccruedPerformanceThresholdTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::AccruedPerformanceThresholdTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::AccruedPerformanceThresholdTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_IndexSpecification._Index.IndexID=' || TO_VARCHAR("_IndexSpecification._Index.IndexID") || ' ' ||
+                '_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID=' || TO_VARCHAR("_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID") || ' ' ||
+                '_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_IndexSpecification._Index.IndexID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_IndexSpecification._Index.IndexID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_IndexSpecification._Index.IndexID",
+                        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_IndexSpecification._Index.IndexID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_IndexSpecification._Index.IndexID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "_IndexSpecification._Index.IndexID",
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::AccruedPerformanceThreshold" WHERE
+            (
+            "_IndexSpecification._Index.IndexID" ,
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" ,
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."_IndexSpecification._Index.IndexID",
+            "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+            "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::AccruedPerformanceThreshold" as "OLD"
+        on
+                              ( "IN"."_IndexSpecification._Index.IndexID" = "OLD"."_IndexSpecification._Index.IndexID" or "IN"."_IndexSpecification._Index.IndexID" is null ) and
+                              ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" is null ) and
+                              ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                              ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                              ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "_IndexSpecification._Index.IndexID",
+        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AccruedCapRate",
+        "AccruedShieldRate",
+        "AccruedStepRate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD__IndexSpecification._Index.IndexID" as "_IndexSpecification._Index.IndexID" ,
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" ,
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AccruedCapRate" as "AccruedCapRate" ,
+            "OLD_AccruedShieldRate" as "AccruedShieldRate" ,
+            "OLD_AccruedStepRate" as "AccruedStepRate" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."_IndexSpecification._Index.IndexID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_IndexSpecification._Index.IndexID" as "OLD__IndexSpecification._Index.IndexID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AccruedCapRate" as "OLD_AccruedCapRate",
+                                "OLD"."AccruedShieldRate" as "OLD_AccruedShieldRate",
+                                "OLD"."AccruedStepRate" as "OLD_AccruedStepRate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AccruedPerformanceThreshold" as "OLD"
+            on
+                                      ( "IN"."_IndexSpecification._Index.IndexID" = "OLD"."_IndexSpecification._Index.IndexID" or "IN"."_IndexSpecification._Index.IndexID" is null ) and
+                                      ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" is null ) and
+                                      ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                                      ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                                      ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD__IndexSpecification._Index.IndexID" as "_IndexSpecification._Index.IndexID",
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AccruedCapRate" as "AccruedCapRate",
+            "OLD_AccruedShieldRate" as "AccruedShieldRate",
+            "OLD_AccruedStepRate" as "AccruedStepRate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."_IndexSpecification._Index.IndexID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."_IndexSpecification._Index.IndexID" as "OLD__IndexSpecification._Index.IndexID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AccruedCapRate" as "OLD_AccruedCapRate",
+                                "OLD"."AccruedShieldRate" as "OLD_AccruedShieldRate",
+                                "OLD"."AccruedStepRate" as "OLD_AccruedStepRate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AccruedPerformanceThreshold" as "OLD"
+            on
+               ( "IN"."_IndexSpecification._Index.IndexID" = "OLD"."_IndexSpecification._Index.IndexID" or "IN"."_IndexSpecification._Index.IndexID" is null ) and
+               ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" is null ) and
+               ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+               ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+               ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+               ( "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,31 @@
+view "sap.fsdm.SQLViews::MarketAdmissionStatus_View" 
+as select
+      "MarketAdmissionLevel" ,
+      "_BusinessPartner.BusinessPartnerID" ,
+      "_Exchange.MarketIdentifierCode" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "MarketAdmissionStatus" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::MarketAdmissionStatus"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::MarketMakerForFinancialInstrument_View" as "_MarketMakerForFinancialInstrument__MarketMaker"
+	  on "MarketAdmissionLevel" = "_MarketMakerForFinancialInstrument__MarketMaker"."_MarketMaker.MarketAdmissionLevel" AND 
+	     "_BusinessPartner.BusinessPartnerID" = "_MarketMakerForFinancialInstrument__MarketMaker"."_MarketMaker._BusinessPartner.BusinessPartnerID" AND 
+	     "_Exchange.MarketIdentifierCode" = "_MarketMakerForFinancialInstrument__MarketMaker"."_MarketMaker._Exchange.MarketIdentifierCode"
+	     
+);

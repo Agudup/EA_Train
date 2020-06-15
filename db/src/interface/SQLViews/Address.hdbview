@@ -1,0 +1,104 @@
+view "sap.fsdm.SQLViews::Address_View" 
+as select
+      "AddressType" ,
+      "SequenceNumber" ,
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+      "ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "_Claim.ID" ,
+      "_Claim.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AdditionalAddressLine" ,
+      "AddressCategory" ,
+      "Building" ,
+      "City" ,
+      "Country" ,
+      "District" ,
+      "Floor" ,
+      "HouseNumber" ,
+      "Latitude" ,
+      "Longitude" ,
+      "MainCorrespondenceAddress" ,
+      "MainResidence" ,
+      "PostalCode" ,
+      "PostboxNumber" ,
+      "PreferredCorrespondenceLanguage" ,
+      "Region" ,
+      "RepresentsRegisteredOffice" ,
+      "Street" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Address"
+with associations
+(
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartnerID"
+	  on "ASSOC_BusinessPartnerID"."BusinessPartnerID" = "ASSOC_BusinessPartnerID.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationalUnit"."OrganizationalUnitID" = "ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PhysicalAsset"
+	  on "ASSOC_PhysicalAsset"."PhysicalAssetID" = "ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Claim_View" as "_Claim"
+	  on "_Claim"."ID" = "_Claim.ID" AND 
+	     "_Claim"."IDSystem" = "_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::AddressAssignedToGeographicalUnit_View" as "_AddressAssignedToGeographicalUnit_ASSOC_Address"
+	  on "ASSOC_BankingChannel.BankingChannelID" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" AND 
+	     "ASSOC_BusinessPartnerID.BusinessPartnerID" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit.OrganizationalUnitID" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_PhysicalAsset.PhysicalAssetID" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "AddressType" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.AddressType" AND 
+	     "SequenceNumber" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address.SequenceNumber" AND 
+	     "_Claim.ID" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address._Claim.ID" AND 
+	     "_Claim.IDSystem" = "_AddressAssignedToGeographicalUnit_ASSOC_Address"."ASSOC_Address._Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerContractAssignment_View" as "_BusinessPartnerContractAssignment__Address"
+	  on "ASSOC_BankingChannel.BankingChannelID" = "_BusinessPartnerContractAssignment__Address"."_Address.ASSOC_BankingChannel.BankingChannelID" AND 
+	     "ASSOC_BusinessPartnerID.BusinessPartnerID" = "_BusinessPartnerContractAssignment__Address"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_BusinessPartnerContractAssignment__Address"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit.OrganizationalUnitID" = "_BusinessPartnerContractAssignment__Address"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_PhysicalAsset.PhysicalAssetID" = "_BusinessPartnerContractAssignment__Address"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "AddressType" = "_BusinessPartnerContractAssignment__Address"."_Address.AddressType" AND 
+	     "SequenceNumber" = "_BusinessPartnerContractAssignment__Address"."_Address.SequenceNumber" AND 
+	     "_Claim.ID" = "_BusinessPartnerContractAssignment__Address"."_Address._Claim.ID" AND 
+	     "_Claim.IDSystem" = "_BusinessPartnerContractAssignment__Address"."_Address._Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredPerson_View" as "_InsuredPerson__Address"
+	  on "_Claim.IDSystem" = "_InsuredPerson__Address"."_Address._Claim.IDSystem" AND 
+	     "_Claim.ID" = "_InsuredPerson__Address"."_Address._Claim.ID" AND 
+	     "SequenceNumber" = "_InsuredPerson__Address"."_Address.SequenceNumber" AND 
+	     "AddressType" = "_InsuredPerson__Address"."_Address.AddressType" AND 
+	     "ASSOC_PhysicalAsset.PhysicalAssetID" = "_InsuredPerson__Address"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "ASSOC_OrganizationalUnit.OrganizationalUnitID" = "_InsuredPerson__Address"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_InsuredPerson__Address"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_BusinessPartnerID.BusinessPartnerID" = "_InsuredPerson__Address"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "ASSOC_BankingChannel.BankingChannelID" = "_InsuredPerson__Address"."_Address.ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement__Address"
+	  on "_Claim.IDSystem" = "_Settlement__Address"."_Address._Claim.IDSystem" AND 
+	     "_Claim.ID" = "_Settlement__Address"."_Address._Claim.ID" AND 
+	     "SequenceNumber" = "_Settlement__Address"."_Address.SequenceNumber" AND 
+	     "AddressType" = "_Settlement__Address"."_Address.AddressType" AND 
+	     "ASSOC_PhysicalAsset.PhysicalAssetID" = "_Settlement__Address"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "ASSOC_OrganizationalUnit.OrganizationalUnitID" = "_Settlement__Address"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_Settlement__Address"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_BusinessPartnerID.BusinessPartnerID" = "_Settlement__Address"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "ASSOC_BankingChannel.BankingChannelID" = "_Settlement__Address"."_Address.ASSOC_BankingChannel.BankingChannelID"
+	     
+);

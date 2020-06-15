@@ -1,0 +1,32 @@
+PROCEDURE "sap.fsdm.procedures::FSSubledgerDocumentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::FSSubledgerDocumentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::FSSubledgerDocumentTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"CompanyCode",
+"DocumentNumber",
+"FiscalYear",
+"ItemNumber",
+"PostingDate",
+"_AccountingSystem.AccountingSystemID"
+from "sap.fsdm::FSSubledgerDocument" WHERE("CompanyCode" ,
+"DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" 
+)in ( select "CompanyCode" ,
+"DocumentNumber" ,
+"FiscalYear" ,
+"ItemNumber" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" 
+from :ROW );
+
+
+END

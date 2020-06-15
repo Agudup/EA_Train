@@ -1,0 +1,114 @@
+PROCEDURE "sap.fsdm.procedures::AddressAssignedToGeographicalUnitErase" (IN ROW "sap.fsdm.tabletypes::AddressAssignedToGeographicalUnitTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_Address.AddressType" is null and
+                         "ASSOC_Address.SequenceNumber" is null and
+                         "ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null and
+                         "ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null and
+                         "ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null and
+                         "ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null and
+                         "ASSOC_Address._Claim.ID" is null and
+                         "ASSOC_Address._Claim.IDSystem" is null and
+                         "ASSOC_GeographicalUnit.GeographicalStructureID" is null and
+                         "ASSOC_GeographicalUnit.GeographicalUnitID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::AddressAssignedToGeographicalUnit" WHERE
+("ASSOC_Address.AddressType" ,
+"ASSOC_Address.SequenceNumber" ,
+"ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+"ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"ASSOC_Address._Claim.ID" ,
+"ASSOC_Address._Claim.IDSystem" ,
+"ASSOC_GeographicalUnit.GeographicalStructureID" ,
+"ASSOC_GeographicalUnit.GeographicalUnitID" 
+)in ( select "OLD"."ASSOC_Address.AddressType" ,
+"OLD"."ASSOC_Address.SequenceNumber" ,
+"OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+"OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"OLD"."ASSOC_Address._Claim.ID" ,
+"OLD"."ASSOC_Address._Claim.IDSystem" ,
+"OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" ,
+"OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" 
+from :ROW "IN"
+inner join "sap.fsdm::AddressAssignedToGeographicalUnit" "OLD"
+on
+  ( "IN"."ASSOC_Address.AddressType" = "OLD"."ASSOC_Address.AddressType" or "IN"."ASSOC_Address.AddressType" is null ) and
+  ( "IN"."ASSOC_Address.SequenceNumber" = "OLD"."ASSOC_Address.SequenceNumber" or "IN"."ASSOC_Address.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" = "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" or "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" = "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" or "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" or "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+  ( "IN"."ASSOC_Address._Claim.ID" = "OLD"."ASSOC_Address._Claim.ID" or "IN"."ASSOC_Address._Claim.ID" is null ) and
+  ( "IN"."ASSOC_Address._Claim.IDSystem" = "OLD"."ASSOC_Address._Claim.IDSystem" or "IN"."ASSOC_Address._Claim.IDSystem" is null ) and
+  ( "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" = "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" or "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" = "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" or "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::AddressAssignedToGeographicalUnit_Historical" WHERE
+("ASSOC_Address.AddressType" ,
+"ASSOC_Address.SequenceNumber" ,
+"ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+"ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"ASSOC_Address._Claim.ID" ,
+"ASSOC_Address._Claim.IDSystem" ,
+"ASSOC_GeographicalUnit.GeographicalStructureID" ,
+"ASSOC_GeographicalUnit.GeographicalUnitID" 
+)in ( select "OLD"."ASSOC_Address.AddressType" ,
+"OLD"."ASSOC_Address.SequenceNumber" ,
+"OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" ,
+"OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+"OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+"OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"OLD"."ASSOC_Address._Claim.ID" ,
+"OLD"."ASSOC_Address._Claim.IDSystem" ,
+"OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" ,
+"OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" 
+from :ROW "IN"
+inner join "sap.fsdm::AddressAssignedToGeographicalUnit_Historical" "OLD"
+on
+  ( "IN"."ASSOC_Address.AddressType" = "OLD"."ASSOC_Address.AddressType" or "IN"."ASSOC_Address.AddressType" is null ) and
+  ( "IN"."ASSOC_Address.SequenceNumber" = "OLD"."ASSOC_Address.SequenceNumber" or "IN"."ASSOC_Address.SequenceNumber" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" = "OLD"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" or "IN"."ASSOC_Address.ASSOC_BankingChannel.BankingChannelID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" = "OLD"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" or "IN"."ASSOC_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" or "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_Address.ASSOC_PhysicalAsset.PhysicalAssetID" is null ) and
+  ( "IN"."ASSOC_Address._Claim.ID" = "OLD"."ASSOC_Address._Claim.ID" or "IN"."ASSOC_Address._Claim.ID" is null ) and
+  ( "IN"."ASSOC_Address._Claim.IDSystem" = "OLD"."ASSOC_Address._Claim.IDSystem" or "IN"."ASSOC_Address._Claim.IDSystem" is null ) and
+  ( "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" = "OLD"."ASSOC_GeographicalUnit.GeographicalStructureID" or "IN"."ASSOC_GeographicalUnit.GeographicalStructureID" is null ) and
+  ( "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" = "OLD"."ASSOC_GeographicalUnit.GeographicalUnitID" or "IN"."ASSOC_GeographicalUnit.GeographicalUnitID" is null ) 
+);
+
+END

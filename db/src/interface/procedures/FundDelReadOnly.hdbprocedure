@@ -1,0 +1,299 @@
+PROCEDURE "sap.fsdm.procedures::FundDelReadOnly" (IN ROW "sap.fsdm.tabletypes::FundTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::FundTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::FundTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'FundID=' || TO_VARCHAR("FundID") || ' ' ||
+                '_InvestmentCorporation.BusinessPartnerID=' || TO_VARCHAR("_InvestmentCorporation.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."FundID",
+                        "IN"."_InvestmentCorporation.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."FundID",
+                        "IN"."_InvestmentCorporation.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "FundID",
+                        "_InvestmentCorporation.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."FundID",
+                                    "IN"."_InvestmentCorporation.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."FundID",
+                                    "IN"."_InvestmentCorporation.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "FundID",
+            "_InvestmentCorporation.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::Fund" WHERE
+            (
+            "FundID" ,
+            "_InvestmentCorporation.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."FundID",
+            "OLD"."_InvestmentCorporation.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Fund" as "OLD"
+        on
+                              ( "IN"."FundID" = "OLD"."FundID" or "IN"."FundID" is null ) and
+                              ( "IN"."_InvestmentCorporation.BusinessPartnerID" = "OLD"."_InvestmentCorporation.BusinessPartnerID" or "IN"."_InvestmentCorporation.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "FundID",
+        "_InvestmentCorporation.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AssetClass",
+        "BaseCurrency",
+        "Benchmark",
+        "CustodianBank",
+        "CutoffTime",
+        "CutoffTimeZone",
+        "Domicile",
+        "FinancialYearEnd",
+        "FundFamily",
+        "FundManagingInstitution",
+        "FundName",
+        "FundType",
+        "InvestmentStyle",
+        "LaunchDate",
+        "NAVCalculationPeriodLength",
+        "NAVCalculationTimeUnit",
+        "NAVDayBeforeCutoffTime",
+        "PortfolioManagingInstitution",
+        "RegulatoryAuthority",
+        "ReplicationType",
+        "SwingPricingMechanism",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_FundID" as "FundID" ,
+            "OLD__InvestmentCorporation.BusinessPartnerID" as "_InvestmentCorporation.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AssetClass" as "AssetClass" ,
+            "OLD_BaseCurrency" as "BaseCurrency" ,
+            "OLD_Benchmark" as "Benchmark" ,
+            "OLD_CustodianBank" as "CustodianBank" ,
+            "OLD_CutoffTime" as "CutoffTime" ,
+            "OLD_CutoffTimeZone" as "CutoffTimeZone" ,
+            "OLD_Domicile" as "Domicile" ,
+            "OLD_FinancialYearEnd" as "FinancialYearEnd" ,
+            "OLD_FundFamily" as "FundFamily" ,
+            "OLD_FundManagingInstitution" as "FundManagingInstitution" ,
+            "OLD_FundName" as "FundName" ,
+            "OLD_FundType" as "FundType" ,
+            "OLD_InvestmentStyle" as "InvestmentStyle" ,
+            "OLD_LaunchDate" as "LaunchDate" ,
+            "OLD_NAVCalculationPeriodLength" as "NAVCalculationPeriodLength" ,
+            "OLD_NAVCalculationTimeUnit" as "NAVCalculationTimeUnit" ,
+            "OLD_NAVDayBeforeCutoffTime" as "NAVDayBeforeCutoffTime" ,
+            "OLD_PortfolioManagingInstitution" as "PortfolioManagingInstitution" ,
+            "OLD_RegulatoryAuthority" as "RegulatoryAuthority" ,
+            "OLD_ReplicationType" as "ReplicationType" ,
+            "OLD_SwingPricingMechanism" as "SwingPricingMechanism" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."FundID",
+                        "OLD"."_InvestmentCorporation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."FundID" as "OLD_FundID",
+                                "OLD"."_InvestmentCorporation.BusinessPartnerID" as "OLD__InvestmentCorporation.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AssetClass" as "OLD_AssetClass",
+                                "OLD"."BaseCurrency" as "OLD_BaseCurrency",
+                                "OLD"."Benchmark" as "OLD_Benchmark",
+                                "OLD"."CustodianBank" as "OLD_CustodianBank",
+                                "OLD"."CutoffTime" as "OLD_CutoffTime",
+                                "OLD"."CutoffTimeZone" as "OLD_CutoffTimeZone",
+                                "OLD"."Domicile" as "OLD_Domicile",
+                                "OLD"."FinancialYearEnd" as "OLD_FinancialYearEnd",
+                                "OLD"."FundFamily" as "OLD_FundFamily",
+                                "OLD"."FundManagingInstitution" as "OLD_FundManagingInstitution",
+                                "OLD"."FundName" as "OLD_FundName",
+                                "OLD"."FundType" as "OLD_FundType",
+                                "OLD"."InvestmentStyle" as "OLD_InvestmentStyle",
+                                "OLD"."LaunchDate" as "OLD_LaunchDate",
+                                "OLD"."NAVCalculationPeriodLength" as "OLD_NAVCalculationPeriodLength",
+                                "OLD"."NAVCalculationTimeUnit" as "OLD_NAVCalculationTimeUnit",
+                                "OLD"."NAVDayBeforeCutoffTime" as "OLD_NAVDayBeforeCutoffTime",
+                                "OLD"."PortfolioManagingInstitution" as "OLD_PortfolioManagingInstitution",
+                                "OLD"."RegulatoryAuthority" as "OLD_RegulatoryAuthority",
+                                "OLD"."ReplicationType" as "OLD_ReplicationType",
+                                "OLD"."SwingPricingMechanism" as "OLD_SwingPricingMechanism",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Fund" as "OLD"
+            on
+                                      ( "IN"."FundID" = "OLD"."FundID" or "IN"."FundID" is null ) and
+                                      ( "IN"."_InvestmentCorporation.BusinessPartnerID" = "OLD"."_InvestmentCorporation.BusinessPartnerID" or "IN"."_InvestmentCorporation.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_FundID" as "FundID",
+            "OLD__InvestmentCorporation.BusinessPartnerID" as "_InvestmentCorporation.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AssetClass" as "AssetClass",
+            "OLD_BaseCurrency" as "BaseCurrency",
+            "OLD_Benchmark" as "Benchmark",
+            "OLD_CustodianBank" as "CustodianBank",
+            "OLD_CutoffTime" as "CutoffTime",
+            "OLD_CutoffTimeZone" as "CutoffTimeZone",
+            "OLD_Domicile" as "Domicile",
+            "OLD_FinancialYearEnd" as "FinancialYearEnd",
+            "OLD_FundFamily" as "FundFamily",
+            "OLD_FundManagingInstitution" as "FundManagingInstitution",
+            "OLD_FundName" as "FundName",
+            "OLD_FundType" as "FundType",
+            "OLD_InvestmentStyle" as "InvestmentStyle",
+            "OLD_LaunchDate" as "LaunchDate",
+            "OLD_NAVCalculationPeriodLength" as "NAVCalculationPeriodLength",
+            "OLD_NAVCalculationTimeUnit" as "NAVCalculationTimeUnit",
+            "OLD_NAVDayBeforeCutoffTime" as "NAVDayBeforeCutoffTime",
+            "OLD_PortfolioManagingInstitution" as "PortfolioManagingInstitution",
+            "OLD_RegulatoryAuthority" as "RegulatoryAuthority",
+            "OLD_ReplicationType" as "ReplicationType",
+            "OLD_SwingPricingMechanism" as "SwingPricingMechanism",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."FundID",
+                        "OLD"."_InvestmentCorporation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."FundID" as "OLD_FundID",
+                                "OLD"."_InvestmentCorporation.BusinessPartnerID" as "OLD__InvestmentCorporation.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AssetClass" as "OLD_AssetClass",
+                                "OLD"."BaseCurrency" as "OLD_BaseCurrency",
+                                "OLD"."Benchmark" as "OLD_Benchmark",
+                                "OLD"."CustodianBank" as "OLD_CustodianBank",
+                                "OLD"."CutoffTime" as "OLD_CutoffTime",
+                                "OLD"."CutoffTimeZone" as "OLD_CutoffTimeZone",
+                                "OLD"."Domicile" as "OLD_Domicile",
+                                "OLD"."FinancialYearEnd" as "OLD_FinancialYearEnd",
+                                "OLD"."FundFamily" as "OLD_FundFamily",
+                                "OLD"."FundManagingInstitution" as "OLD_FundManagingInstitution",
+                                "OLD"."FundName" as "OLD_FundName",
+                                "OLD"."FundType" as "OLD_FundType",
+                                "OLD"."InvestmentStyle" as "OLD_InvestmentStyle",
+                                "OLD"."LaunchDate" as "OLD_LaunchDate",
+                                "OLD"."NAVCalculationPeriodLength" as "OLD_NAVCalculationPeriodLength",
+                                "OLD"."NAVCalculationTimeUnit" as "OLD_NAVCalculationTimeUnit",
+                                "OLD"."NAVDayBeforeCutoffTime" as "OLD_NAVDayBeforeCutoffTime",
+                                "OLD"."PortfolioManagingInstitution" as "OLD_PortfolioManagingInstitution",
+                                "OLD"."RegulatoryAuthority" as "OLD_RegulatoryAuthority",
+                                "OLD"."ReplicationType" as "OLD_ReplicationType",
+                                "OLD"."SwingPricingMechanism" as "OLD_SwingPricingMechanism",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Fund" as "OLD"
+            on
+               ( "IN"."FundID" = "OLD"."FundID" or "IN"."FundID" is null ) and
+               ( "IN"."_InvestmentCorporation.BusinessPartnerID" = "OLD"."_InvestmentCorporation.BusinessPartnerID" or "IN"."_InvestmentCorporation.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

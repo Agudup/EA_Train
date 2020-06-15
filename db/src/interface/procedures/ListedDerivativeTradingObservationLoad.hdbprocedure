@@ -1,0 +1,449 @@
+PROCEDURE "sap.fsdm.procedures::ListedDerivativeTradingObservationLoad" (IN ROW "sap.fsdm.tabletypes::ListedDerivativeTradingObservationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'MaturityDate=' || TO_VARCHAR("MaturityDate") || ' ' ||
+                'PriceDataProvider=' || TO_VARCHAR("PriceDataProvider") || ' ' ||
+                'PriceSeriesType=' || TO_VARCHAR("PriceSeriesType") || ' ' ||
+                'PutOrCall=' || TO_VARCHAR("PutOrCall") || ' ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'StrikePrice=' || TO_VARCHAR("StrikePrice") || ' ' ||
+                'Timestamp=' || TO_VARCHAR("Timestamp") || ' ' ||
+                '_Exchange.MarketIdentifierCode=' || TO_VARCHAR("_Exchange.MarketIdentifierCode") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."MaturityDate",
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."PutOrCall",
+                        "IN"."SequenceNumber",
+                        "IN"."StrikePrice",
+                        "IN"."Timestamp",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."MaturityDate",
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."PutOrCall",
+                        "IN"."SequenceNumber",
+                        "IN"."StrikePrice",
+                        "IN"."Timestamp",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "MaturityDate",
+                        "PriceDataProvider",
+                        "PriceSeriesType",
+                        "PutOrCall",
+                        "SequenceNumber",
+                        "StrikePrice",
+                        "Timestamp",
+                        "_Exchange.MarketIdentifierCode",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."MaturityDate",
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."PutOrCall",
+                                    "IN"."SequenceNumber",
+                                    "IN"."StrikePrice",
+                                    "IN"."Timestamp",
+                                    "IN"."_Exchange.MarketIdentifierCode",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."MaturityDate",
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."PutOrCall",
+                                    "IN"."SequenceNumber",
+                                    "IN"."StrikePrice",
+                                    "IN"."Timestamp",
+                                    "IN"."_Exchange.MarketIdentifierCode",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ListedDerivativeTradingObservation" (
+        "MaturityDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "SequenceNumber",
+        "StrikePrice",
+        "Timestamp",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_CommodityReferencePrice.ReferencePriceID",
+        "Currency",
+        "ListedDerivativeSymbol",
+        "ListedDerivativeTradingObservationCategory",
+        "Price",
+        "PriceNotationForm",
+        "Quantity",
+        "StrikePriceCurrency",
+        "TickID",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_MaturityDate" as "MaturityDate" ,
+            "OLD_PriceDataProvider" as "PriceDataProvider" ,
+            "OLD_PriceSeriesType" as "PriceSeriesType" ,
+            "OLD_PutOrCall" as "PutOrCall" ,
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_StrikePrice" as "StrikePrice" ,
+            "OLD_Timestamp" as "Timestamp" ,
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice.ReferencePriceID" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_ListedDerivativeSymbol" as "ListedDerivativeSymbol" ,
+            "OLD_ListedDerivativeTradingObservationCategory" as "ListedDerivativeTradingObservationCategory" ,
+            "OLD_Price" as "Price" ,
+            "OLD_PriceNotationForm" as "PriceNotationForm" ,
+            "OLD_Quantity" as "Quantity" ,
+            "OLD_StrikePriceCurrency" as "StrikePriceCurrency" ,
+            "OLD_TickID" as "TickID" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."MaturityDate",
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."PutOrCall",
+                        "IN"."SequenceNumber",
+                        "IN"."StrikePrice",
+                        "IN"."Timestamp",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."MaturityDate" as "OLD_MaturityDate",
+                                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                                "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                                "OLD"."PutOrCall" as "OLD_PutOrCall",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."StrikePrice" as "OLD_StrikePrice",
+                                "OLD"."Timestamp" as "OLD_Timestamp",
+                                "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."_CommodityReferencePrice.ReferencePriceID" as "OLD__CommodityReferencePrice.ReferencePriceID",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."ListedDerivativeSymbol" as "OLD_ListedDerivativeSymbol",
+                                "OLD"."ListedDerivativeTradingObservationCategory" as "OLD_ListedDerivativeTradingObservationCategory",
+                                "OLD"."Price" as "OLD_Price",
+                                "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."StrikePriceCurrency" as "OLD_StrikePriceCurrency",
+                                "OLD"."TickID" as "OLD_TickID",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ListedDerivativeTradingObservation" as "OLD"
+            on
+                ( case when "IN"."MaturityDate" is null then '0001-01-01' else "IN"."MaturityDate" end ) = "OLD"."MaturityDate" and
+                ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+                ( case when "IN"."PriceSeriesType" is null then '' else "IN"."PriceSeriesType" end ) = "OLD"."PriceSeriesType" and
+                ( case when "IN"."PutOrCall" is null then '' else "IN"."PutOrCall" end ) = "OLD"."PutOrCall" and
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."StrikePrice" is null then 0 else "IN"."StrikePrice" end ) = "OLD"."StrikePrice" and
+                ( case when "IN"."Timestamp" is null then '0001-01-01 01:01:01' else "IN"."Timestamp" end ) = "OLD"."Timestamp" and
+                ( case when "IN"."_Exchange.MarketIdentifierCode" is null then '' else "IN"."_Exchange.MarketIdentifierCode" end ) = "OLD"."_Exchange.MarketIdentifierCode" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ListedDerivativeTradingObservation" (
+        "MaturityDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "SequenceNumber",
+        "StrikePrice",
+        "Timestamp",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_CommodityReferencePrice.ReferencePriceID",
+        "Currency",
+        "ListedDerivativeSymbol",
+        "ListedDerivativeTradingObservationCategory",
+        "Price",
+        "PriceNotationForm",
+        "Quantity",
+        "StrikePriceCurrency",
+        "TickID",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_MaturityDate" as "MaturityDate",
+            "OLD_PriceDataProvider" as "PriceDataProvider",
+            "OLD_PriceSeriesType" as "PriceSeriesType",
+            "OLD_PutOrCall" as "PutOrCall",
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_StrikePrice" as "StrikePrice",
+            "OLD_Timestamp" as "Timestamp",
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice.ReferencePriceID",
+            "OLD_Currency" as "Currency",
+            "OLD_ListedDerivativeSymbol" as "ListedDerivativeSymbol",
+            "OLD_ListedDerivativeTradingObservationCategory" as "ListedDerivativeTradingObservationCategory",
+            "OLD_Price" as "Price",
+            "OLD_PriceNotationForm" as "PriceNotationForm",
+            "OLD_Quantity" as "Quantity",
+            "OLD_StrikePriceCurrency" as "StrikePriceCurrency",
+            "OLD_TickID" as "TickID",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."MaturityDate",
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."PutOrCall",
+                        "IN"."SequenceNumber",
+                        "IN"."StrikePrice",
+                        "IN"."Timestamp",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."MaturityDate" as "OLD_MaturityDate",
+                        "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                        "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                        "OLD"."PutOrCall" as "OLD_PutOrCall",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."StrikePrice" as "OLD_StrikePrice",
+                        "OLD"."Timestamp" as "OLD_Timestamp",
+                        "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."_CommodityReferencePrice.ReferencePriceID" as "OLD__CommodityReferencePrice.ReferencePriceID",
+                        "OLD"."Currency" as "OLD_Currency",
+                        "OLD"."ListedDerivativeSymbol" as "OLD_ListedDerivativeSymbol",
+                        "OLD"."ListedDerivativeTradingObservationCategory" as "OLD_ListedDerivativeTradingObservationCategory",
+                        "OLD"."Price" as "OLD_Price",
+                        "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                        "OLD"."Quantity" as "OLD_Quantity",
+                        "OLD"."StrikePriceCurrency" as "OLD_StrikePriceCurrency",
+                        "OLD"."TickID" as "OLD_TickID",
+                        "OLD"."Unit" as "OLD_Unit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ListedDerivativeTradingObservation" as "OLD"
+            on
+                ( case when "IN"."MaturityDate" is null then '0001-01-01' else "IN"."MaturityDate" end ) = "OLD"."MaturityDate" and
+                ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+                ( case when "IN"."PriceSeriesType" is null then '' else "IN"."PriceSeriesType" end ) = "OLD"."PriceSeriesType" and
+                ( case when "IN"."PutOrCall" is null then '' else "IN"."PutOrCall" end ) = "OLD"."PutOrCall" and
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."StrikePrice" is null then 0 else "IN"."StrikePrice" end ) = "OLD"."StrikePrice" and
+                ( case when "IN"."Timestamp" is null then '0001-01-01 01:01:01' else "IN"."Timestamp" end ) = "OLD"."Timestamp" and
+                ( case when "IN"."_Exchange.MarketIdentifierCode" is null then '' else "IN"."_Exchange.MarketIdentifierCode" end ) = "OLD"."_Exchange.MarketIdentifierCode" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ListedDerivativeTradingObservation"
+    where (
+        "MaturityDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "SequenceNumber",
+        "StrikePrice",
+        "Timestamp",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."MaturityDate",
+            "OLD"."PriceDataProvider",
+            "OLD"."PriceSeriesType",
+            "OLD"."PutOrCall",
+            "OLD"."SequenceNumber",
+            "OLD"."StrikePrice",
+            "OLD"."Timestamp",
+            "OLD"."_Exchange.MarketIdentifierCode",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ListedDerivativeTradingObservation" as "OLD"
+        on
+           ( case when "IN"."MaturityDate" is null then '0001-01-01' else "IN"."MaturityDate" end ) = "OLD"."MaturityDate" and
+           ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+           ( case when "IN"."PriceSeriesType" is null then '' else "IN"."PriceSeriesType" end ) = "OLD"."PriceSeriesType" and
+           ( case when "IN"."PutOrCall" is null then '' else "IN"."PutOrCall" end ) = "OLD"."PutOrCall" and
+           ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+           ( case when "IN"."StrikePrice" is null then 0 else "IN"."StrikePrice" end ) = "OLD"."StrikePrice" and
+           ( case when "IN"."Timestamp" is null then '0001-01-01 01:01:01' else "IN"."Timestamp" end ) = "OLD"."Timestamp" and
+           ( case when "IN"."_Exchange.MarketIdentifierCode" is null then '' else "IN"."_Exchange.MarketIdentifierCode" end ) = "OLD"."_Exchange.MarketIdentifierCode" and
+           ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::ListedDerivativeTradingObservation" (
+        "MaturityDate",
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "PutOrCall",
+        "SequenceNumber",
+        "StrikePrice",
+        "Timestamp",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_CommodityReferencePrice.ReferencePriceID",
+        "Currency",
+        "ListedDerivativeSymbol",
+        "ListedDerivativeTradingObservationCategory",
+        "Price",
+        "PriceNotationForm",
+        "Quantity",
+        "StrikePriceCurrency",
+        "TickID",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "MaturityDate" is null then '0001-01-01' else "MaturityDate" end ) as "MaturityDate",
+            ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+            ( case when "PriceSeriesType" is null then '' else "PriceSeriesType" end ) as "PriceSeriesType",
+            ( case when "PutOrCall" is null then '' else "PutOrCall" end ) as "PutOrCall",
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "StrikePrice" is null then 0 else "StrikePrice" end ) as "StrikePrice",
+            ( case when "Timestamp" is null then '0001-01-01 01:01:01' else "Timestamp" end ) as "Timestamp",
+            ( case when "_Exchange.MarketIdentifierCode" is null then '' else "_Exchange.MarketIdentifierCode" end ) as "_Exchange.MarketIdentifierCode",
+            ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "_CommodityReferencePrice.ReferencePriceID"  ,
+            "Currency"  ,
+            "ListedDerivativeSymbol"  ,
+            "ListedDerivativeTradingObservationCategory"  ,
+            "Price"  ,
+            "PriceNotationForm"  ,
+            "Quantity"  ,
+            "StrikePriceCurrency"  ,
+            "TickID"  ,
+            "Unit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

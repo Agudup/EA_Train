@@ -1,0 +1,84 @@
+view "sap.fsdm.SQLViews::CardIssue_View" 
+as select
+      "CardIssueID" ,
+      "ASSOC_CardAgreement.FinancialContractID" ,
+      "ASSOC_CardAgreement.IDSystem" ,
+      "_BankAccount.FinancialContractID" ,
+      "_BankAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_CardHolder.BusinessPartnerID" ,
+      "ApplicationDate" ,
+      "ApprovalDate" ,
+      "BusinessNameOnCard" ,
+      "CardBIN" ,
+      "CardStatus" ,
+      "CommonDesignID" ,
+      "EmbossedName" ,
+      "HasChip" ,
+      "HasMagneticStrip" ,
+      "HasPIN" ,
+      "HasPhoto" ,
+      "IndividualDesignID" ,
+      "IsMainCard" ,
+      "IsNFCenabled" ,
+      "IssueDate" ,
+      "PhotoReferenceID" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CardIssue"
+with associations
+(
+	join "sap.fsdm.SQLViews::AgreedLimit_View" as "_AgreedLimit_ASSOC_CardIssue"
+	  on "ASSOC_CardAgreement.FinancialContractID" = "_AgreedLimit_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" AND 
+	     "ASSOC_CardAgreement.IDSystem" = "_AgreedLimit_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "CardIssueID" = "_AgreedLimit_ASSOC_CardIssue"."ASSOC_CardIssue.CardIssueID" AND 
+	     "_BankAccount.FinancialContractID" = "_AgreedLimit_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "_BankAccount.IDSystem" = "_AgreedLimit_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Card_View" as "_Card_ASSOC_CardIssue"
+	  on "ASSOC_CardAgreement.FinancialContractID" = "_Card_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" AND 
+	     "ASSOC_CardAgreement.IDSystem" = "_Card_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "CardIssueID" = "_Card_ASSOC_CardIssue"."ASSOC_CardIssue.CardIssueID" AND 
+	     "_BankAccount.FinancialContractID" = "_Card_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "_BankAccount.IDSystem" = "_Card_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_CardAgreement"
+	  on "ASSOC_CardAgreement"."FinancialContractID" = "ASSOC_CardAgreement.FinancialContractID" AND 
+	     "ASSOC_CardAgreement"."IDSystem" = "ASSOC_CardAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_CardHolder"
+	  on "ASSOC_CardHolder"."BusinessPartnerID" = "ASSOC_CardHolder.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_BankAccount"
+	  on "_BankAccount"."FinancialContractID" = "_BankAccount.FinancialContractID" AND 
+	     "_BankAccount"."IDSystem" = "_BankAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CardProgramParticipation_View" as "_CardProgramParticipation_ASSOC_CardIssue"
+	  on "_BankAccount.IDSystem" = "_CardProgramParticipation_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.IDSystem" AND 
+	     "_BankAccount.FinancialContractID" = "_CardProgramParticipation_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "CardIssueID" = "_CardProgramParticipation_ASSOC_CardIssue"."ASSOC_CardIssue.CardIssueID" AND 
+	     "ASSOC_CardAgreement.IDSystem" = "_CardProgramParticipation_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "ASSOC_CardAgreement.FinancialContractID" = "_CardProgramParticipation_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveLimit_View" as "_EffectiveLimit_ASSOC_CardIssue"
+	  on "_BankAccount.IDSystem" = "_EffectiveLimit_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.IDSystem" AND 
+	     "_BankAccount.FinancialContractID" = "_EffectiveLimit_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "CardIssueID" = "_EffectiveLimit_ASSOC_CardIssue"."ASSOC_CardIssue.CardIssueID" AND 
+	     "ASSOC_CardAgreement.IDSystem" = "_EffectiveLimit_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "ASSOC_CardAgreement.FinancialContractID" = "_EffectiveLimit_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_CardIssue"
+	  on "ASSOC_CardAgreement.FinancialContractID" = "_Settlement_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" AND 
+	     "ASSOC_CardAgreement.IDSystem" = "_Settlement_ASSOC_CardIssue"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" AND 
+	     "CardIssueID" = "_Settlement_ASSOC_CardIssue"."ASSOC_CardIssue.CardIssueID" AND 
+	     "_BankAccount.FinancialContractID" = "_Settlement_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.FinancialContractID" AND 
+	     "_BankAccount.IDSystem" = "_Settlement_ASSOC_CardIssue"."ASSOC_CardIssue._BankAccount.IDSystem"
+	     
+);

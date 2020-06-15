@@ -1,0 +1,86 @@
+PROCEDURE "sap.fsdm.procedures::ClassOfInsuranceErase" (IN ROW "sap.fsdm.tabletypes::ClassOfInsuranceTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ClassOfInsurance" is null and
+                         "SubClassOfInsurance" is null and
+                         "SubSubClassOfInsurance" is null and
+                         "_ReinsuranceCoverage.CoverageID" is null and
+                         "_ReinsuranceCoverage.SectionID" is null and
+                         "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null and
+                         "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ClassOfInsurance" WHERE
+("ClassOfInsurance" ,
+"SubClassOfInsurance" ,
+"SubSubClassOfInsurance" ,
+"_ReinsuranceCoverage.CoverageID" ,
+"_ReinsuranceCoverage.SectionID" ,
+"_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+"_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+)in ( select "OLD"."ClassOfInsurance" ,
+"OLD"."SubClassOfInsurance" ,
+"OLD"."SubSubClassOfInsurance" ,
+"OLD"."_ReinsuranceCoverage.CoverageID" ,
+"OLD"."_ReinsuranceCoverage.SectionID" ,
+"OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+"OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::ClassOfInsurance" "OLD"
+on
+  ( "IN"."ClassOfInsurance" = "OLD"."ClassOfInsurance" or "IN"."ClassOfInsurance" is null ) and
+  ( "IN"."SubClassOfInsurance" = "OLD"."SubClassOfInsurance" or "IN"."SubClassOfInsurance" is null ) and
+  ( "IN"."SubSubClassOfInsurance" = "OLD"."SubSubClassOfInsurance" or "IN"."SubSubClassOfInsurance" is null ) and
+  ( "IN"."_ReinsuranceCoverage.CoverageID" = "OLD"."_ReinsuranceCoverage.CoverageID" or "IN"."_ReinsuranceCoverage.CoverageID" is null ) and
+  ( "IN"."_ReinsuranceCoverage.SectionID" = "OLD"."_ReinsuranceCoverage.SectionID" or "IN"."_ReinsuranceCoverage.SectionID" is null ) and
+  ( "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" or "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" or "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ClassOfInsurance_Historical" WHERE
+("ClassOfInsurance" ,
+"SubClassOfInsurance" ,
+"SubSubClassOfInsurance" ,
+"_ReinsuranceCoverage.CoverageID" ,
+"_ReinsuranceCoverage.SectionID" ,
+"_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+"_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+)in ( select "OLD"."ClassOfInsurance" ,
+"OLD"."SubClassOfInsurance" ,
+"OLD"."SubSubClassOfInsurance" ,
+"OLD"."_ReinsuranceCoverage.CoverageID" ,
+"OLD"."_ReinsuranceCoverage.SectionID" ,
+"OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+"OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::ClassOfInsurance_Historical" "OLD"
+on
+  ( "IN"."ClassOfInsurance" = "OLD"."ClassOfInsurance" or "IN"."ClassOfInsurance" is null ) and
+  ( "IN"."SubClassOfInsurance" = "OLD"."SubClassOfInsurance" or "IN"."SubClassOfInsurance" is null ) and
+  ( "IN"."SubSubClassOfInsurance" = "OLD"."SubSubClassOfInsurance" or "IN"."SubSubClassOfInsurance" is null ) and
+  ( "IN"."_ReinsuranceCoverage.CoverageID" = "OLD"."_ReinsuranceCoverage.CoverageID" or "IN"."_ReinsuranceCoverage.CoverageID" is null ) and
+  ( "IN"."_ReinsuranceCoverage.SectionID" = "OLD"."_ReinsuranceCoverage.SectionID" or "IN"."_ReinsuranceCoverage.SectionID" is null ) and
+  ( "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" or "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" or "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null ) 
+);
+
+END

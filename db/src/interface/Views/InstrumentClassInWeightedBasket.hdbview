@@ -1,0 +1,24 @@
+view "sap.fsdm.Views::InstrumentClassInWeightedBasket_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Basket.FinancialInstrumentID" as "_Basket_FinancialInstrumentID",
+      "_InstrumentClass.InstrumentClass" as "_InstrumentClass_InstrumentClass",
+      "_InstrumentClass.InstrumentClassificationSystem" as "_InstrumentClass_InstrumentClassificationSystem",
+      "_ProductCatalogItem.ProductCatalogItem" as "_ProductCatalogItem_ProductCatalogItem",
+      "_ProductCatalogItem._ProductCatalog.CatalogID" as "_ProductCatalogItem__ProductCatalog_CatalogID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "NominalAmount" as "NominalAmount",
+      "NominalAmountCurrency" as "NominalAmountCurrency",
+      "Quantity" as "Quantity",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::InstrumentClassInWeightedBasket"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

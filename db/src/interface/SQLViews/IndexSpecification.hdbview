@@ -1,0 +1,63 @@
+view "sap.fsdm.SQLViews::IndexSpecification_View" 
+as select
+      "_Index.IndexID" ,
+      "_LifeAndAnnuityInsuranceCoverage.ID" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AllocationAmount" ,
+      "AllocationPercent" ,
+      "CapRatePercent" ,
+      "EndDate" ,
+      "FloorRatePercent" ,
+      "InceptionIndexLevel" ,
+      "ParticipationPercent" ,
+      "ShieldRatePercent" ,
+      "StartDate" ,
+      "StepRatePercent" ,
+      "StepRateSelectedIndicator" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndexSpecification"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccruedPerformanceThreshold_View" as "_AccruedPerformanceThreshold__IndexSpecification"
+	  on "_Index.IndexID" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._Index.IndexID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage.ID" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_AccruedPerformanceThreshold__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__IndexSpecification"
+	  on "_Index.IndexID" = "_FinancialContract__IndexSpecification"."_IndexSpecification._Index.IndexID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage.ID" = "_FinancialContract__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "_FinancialContract__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "_FinancialContract__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_FinancialContract__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_FinancialContract__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_FinancialContract__IndexSpecification"."_IndexSpecification._LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Index_View" as "_Index"
+	  on "_Index"."IndexID" = "_Index.IndexID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_LifeAndAnnuityInsuranceCoverage"
+	  on "_LifeAndAnnuityInsuranceCoverage"."ID" = "_LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuranceContract.FinancialContractID" = "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuranceContract.IDSystem" = "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_LifeAndAnnuityInsuranceCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

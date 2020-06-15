@@ -1,0 +1,45 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "License" {
+    key "Authority"                     : String(128);
+    key "IDSystem"                      : String(40);
+    key "SubjectOfLicenseIdentifier"    : String(128);
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "DateOfIssue"                   : LocalDate;
+        "SubjectOfLicense"              : String(256);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "License_Historical" {
+    "Authority"                     : String(128)                                          not null;
+    "IDSystem"                      : String(40)                                           not null;
+    "SubjectOfLicenseIdentifier"    : String(128)                                          not null;
+    "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "DateOfIssue"                   : LocalDate;
+    "SubjectOfLicense"              : String(256);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

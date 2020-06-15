@@ -1,0 +1,39 @@
+view "sap.fsdm.SQLViews::InterestRateOptionComponent_View" 
+as select
+      "ComponentNumber" ,
+      "_InterestRateOption.FinancialContractID" ,
+      "_InterestRateOption.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CapOrFloor" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InterestRateOptionComponent"
+with associations
+(
+	join "sap.fsdm.SQLViews::Interest_View" as "_Interest__OptionOfReferenceRateSpecification"
+	  on "ComponentNumber" = "_Interest__OptionOfReferenceRateSpecification"."_OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "_InterestRateOption.FinancialContractID" = "_Interest__OptionOfReferenceRateSpecification"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_InterestRateOption.IDSystem" = "_Interest__OptionOfReferenceRateSpecification"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Interest_View" as "_Interest__OptionOfStrikeSpecification"
+	  on "ComponentNumber" = "_Interest__OptionOfStrikeSpecification"."_OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "_InterestRateOption.FinancialContractID" = "_Interest__OptionOfStrikeSpecification"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_InterestRateOption.IDSystem" = "_Interest__OptionOfStrikeSpecification"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_InterestRateOption"
+	  on "_InterestRateOption"."IDSystem" = "_InterestRateOption.IDSystem" AND 
+	     "_InterestRateOption"."FinancialContractID" = "_InterestRateOption.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PaymentSchedule_View" as "_PaymentSchedule__InterestRateOptionComponent"
+	  on "ComponentNumber" = "_PaymentSchedule__InterestRateOptionComponent"."_InterestRateOptionComponent.ComponentNumber" AND 
+	     "_InterestRateOption.FinancialContractID" = "_PaymentSchedule__InterestRateOptionComponent"."_InterestRateOptionComponent._InterestRateOption.FinancialContractID" AND 
+	     "_InterestRateOption.IDSystem" = "_PaymentSchedule__InterestRateOptionComponent"."_InterestRateOptionComponent._InterestRateOption.IDSystem"
+	     
+);

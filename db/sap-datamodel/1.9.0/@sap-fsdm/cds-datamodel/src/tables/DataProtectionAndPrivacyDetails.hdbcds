@@ -1,0 +1,21 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "DataProtectionAndPrivacyDetails" {
+    key "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_FinancialContract"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                   not null;
+        "IsEndOfPurposeBlocked"         : Boolean;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

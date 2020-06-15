@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::IndustryClassHierarchyRelationErase" (IN ROW "sap.fsdm.tabletypes::IndustryClassHierarchyRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "IndustryHierarchy" is null and
+                         "ASSOC_Child.Industry" is null and
+                         "ASSOC_Child.IndustryClassificationSystem" is null and
+                         "ASSOC_Parent.Industry" is null and
+                         "ASSOC_Parent.IndustryClassificationSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::IndustryClassHierarchyRelation" WHERE
+("IndustryHierarchy" ,
+"ASSOC_Child.Industry" ,
+"ASSOC_Child.IndustryClassificationSystem" ,
+"ASSOC_Parent.Industry" ,
+"ASSOC_Parent.IndustryClassificationSystem" 
+)in ( select "OLD"."IndustryHierarchy" ,
+"OLD"."ASSOC_Child.Industry" ,
+"OLD"."ASSOC_Child.IndustryClassificationSystem" ,
+"OLD"."ASSOC_Parent.Industry" ,
+"OLD"."ASSOC_Parent.IndustryClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::IndustryClassHierarchyRelation" "OLD"
+on
+  ( "IN"."IndustryHierarchy" = "OLD"."IndustryHierarchy" or "IN"."IndustryHierarchy" is null ) and
+  ( "IN"."ASSOC_Child.Industry" = "OLD"."ASSOC_Child.Industry" or "IN"."ASSOC_Child.Industry" is null ) and
+  ( "IN"."ASSOC_Child.IndustryClassificationSystem" = "OLD"."ASSOC_Child.IndustryClassificationSystem" or "IN"."ASSOC_Child.IndustryClassificationSystem" is null ) and
+  ( "IN"."ASSOC_Parent.Industry" = "OLD"."ASSOC_Parent.Industry" or "IN"."ASSOC_Parent.Industry" is null ) and
+  ( "IN"."ASSOC_Parent.IndustryClassificationSystem" = "OLD"."ASSOC_Parent.IndustryClassificationSystem" or "IN"."ASSOC_Parent.IndustryClassificationSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::IndustryClassHierarchyRelation_Historical" WHERE
+("IndustryHierarchy" ,
+"ASSOC_Child.Industry" ,
+"ASSOC_Child.IndustryClassificationSystem" ,
+"ASSOC_Parent.Industry" ,
+"ASSOC_Parent.IndustryClassificationSystem" 
+)in ( select "OLD"."IndustryHierarchy" ,
+"OLD"."ASSOC_Child.Industry" ,
+"OLD"."ASSOC_Child.IndustryClassificationSystem" ,
+"OLD"."ASSOC_Parent.Industry" ,
+"OLD"."ASSOC_Parent.IndustryClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::IndustryClassHierarchyRelation_Historical" "OLD"
+on
+  ( "IN"."IndustryHierarchy" = "OLD"."IndustryHierarchy" or "IN"."IndustryHierarchy" is null ) and
+  ( "IN"."ASSOC_Child.Industry" = "OLD"."ASSOC_Child.Industry" or "IN"."ASSOC_Child.Industry" is null ) and
+  ( "IN"."ASSOC_Child.IndustryClassificationSystem" = "OLD"."ASSOC_Child.IndustryClassificationSystem" or "IN"."ASSOC_Child.IndustryClassificationSystem" is null ) and
+  ( "IN"."ASSOC_Parent.Industry" = "OLD"."ASSOC_Parent.Industry" or "IN"."ASSOC_Parent.Industry" is null ) and
+  ( "IN"."ASSOC_Parent.IndustryClassificationSystem" = "OLD"."ASSOC_Parent.IndustryClassificationSystem" or "IN"."ASSOC_Parent.IndustryClassificationSystem" is null ) 
+);
+
+END

@@ -1,0 +1,126 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CancellationOption";
+using "sap"."fsdm"::"Fee";
+using "sap"."fsdm"::"Interest";
+using "sap"."fsdm"::"StandardCancellationOption";
+using "sap"."fsdm"::"StandardFee";
+using "sap"."fsdm"::"StandardInterest";
+using "sap"."fsdm"::"ProfitAndLossParticipation";
+using "sap"."fsdm"::"RedemptionRight";
+
+entity "SetOfPreconditions" {
+    key "PreconditionSetNumber"            : Integer                                     default -1;
+    key "ASSOC_CancellationOption"         : association to CancellationOption {
+                                                                                 SequenceNumber,
+                                                                                 ASSOC_FinancialContract,
+                                                                                 _Trade
+                                                                               }         not null;
+    key "ASSOC_Fee"                        : association to Fee {
+                                                                  SequenceNumber,
+                                                                  ASSOC_FinancialContract,
+                                                                  ASSOC_TransferOrder,
+                                                                  _Trade,
+                                                                  _TrancheInSyndication
+                                                                }                        not null;
+    key "ASSOC_Interest"                   : association to Interest {
+                                                                       SequenceNumber,
+                                                                       ASSOC_CcyOfMultiCcyAccnt,
+                                                                       ASSOC_FinancialContract,
+                                                                       _DebtInstrument,
+                                                                       _OptionOfReferenceRateSpecification,
+                                                                       _OptionOfStrikeSpecification,
+                                                                       _Trade
+                                                                     }                   not null;
+    key "ASSOC_StandardCancellationOption" : association to StandardCancellationOption {
+                                                                                         SequenceNumber,
+                                                                                         ASSOC_StandardProduct
+                                                                                       } not null;
+    key "ASSOC_StandardFee"                : association to StandardFee {
+                                                                          SequenceNumber,
+                                                                          ASSOC_StandardProduct
+                                                                        }                not null;
+    key "ASSOC_StdIntrst"                  : association to StandardInterest {
+                                                                               SequenceNumber,
+                                                                               ASSOC_PosCcyOfStdAcc,
+                                                                               ASSOC_StandardProduct
+                                                                             }           not null;
+    key "_PandLParticipation"              : association to ProfitAndLossParticipation {
+                                                                                         SequenceNumber,
+                                                                                         _ParticipationCert
+                                                                                       } not null;
+    key "_RedemptionRight"                 : association to RedemptionRight {
+                                                                              SequenceNumber,
+                                                                              _DebtInstrument
+                                                                            }            not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                not null;
+        "SystemValidTo"                    : UTCTimestamp                                not null;
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "SetOfPreconditions_Historical" {
+    "PreconditionSetNumber"            : Integer                                     default -1 not null;
+    "ASSOC_CancellationOption"         : association to CancellationOption {
+                                                                             SequenceNumber,
+                                                                             ASSOC_FinancialContract,
+                                                                             _Trade
+                                                                           }         not null;
+    "ASSOC_Fee"                        : association to Fee {
+                                                              SequenceNumber,
+                                                              ASSOC_FinancialContract,
+                                                              ASSOC_TransferOrder,
+                                                              _Trade,
+                                                              _TrancheInSyndication
+                                                            }                        not null;
+    "ASSOC_Interest"                   : association to Interest {
+                                                                   SequenceNumber,
+                                                                   ASSOC_CcyOfMultiCcyAccnt,
+                                                                   ASSOC_FinancialContract,
+                                                                   _DebtInstrument,
+                                                                   _OptionOfReferenceRateSpecification,
+                                                                   _OptionOfStrikeSpecification,
+                                                                   _Trade
+                                                                 }                   not null;
+    "ASSOC_StandardCancellationOption" : association to StandardCancellationOption {
+                                                                                     SequenceNumber,
+                                                                                     ASSOC_StandardProduct
+                                                                                   } not null;
+    "ASSOC_StandardFee"                : association to StandardFee {
+                                                                      SequenceNumber,
+                                                                      ASSOC_StandardProduct
+                                                                    }                not null;
+    "ASSOC_StdIntrst"                  : association to StandardInterest {
+                                                                           SequenceNumber,
+                                                                           ASSOC_PosCcyOfStdAcc,
+                                                                           ASSOC_StandardProduct
+                                                                         }           not null;
+    "_PandLParticipation"              : association to ProfitAndLossParticipation {
+                                                                                     SequenceNumber,
+                                                                                     _ParticipationCert
+                                                                                   } not null;
+    "_RedemptionRight"                 : association to RedemptionRight {
+                                                                          SequenceNumber,
+                                                                          _DebtInstrument
+                                                                        }            not null;
+    "BusinessValidFrom"                : LocalDate                                   not null;
+    "BusinessValidTo"                  : LocalDate                                   not null;
+    "SystemValidFrom"                  : UTCTimestamp                                not null;
+    "SystemValidTo"                    : UTCTimestamp                                not null;
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

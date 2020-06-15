@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::OrganizationalUnitHierarchyRelation_View" 
+as select
+      "OrganizationalUnitHierarchyID" ,
+      "ASSOC_Child.OrganizationalUnitID" ,
+      "ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ASSOC_Parent.OrganizationalUnitID" ,
+      "ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "OrganizationalUnitHierarchyName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::OrganizationalUnitHierarchyRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_Child"
+	  on "ASSOC_Child"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_Child"."OrganizationalUnitID" = "ASSOC_Child.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_Parent"
+	  on "ASSOC_Parent"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_Parent"."OrganizationalUnitID" = "ASSOC_Parent.OrganizationalUnitID"
+	     
+);

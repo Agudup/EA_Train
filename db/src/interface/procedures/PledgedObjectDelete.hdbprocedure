@@ -1,0 +1,361 @@
+PROCEDURE "sap.fsdm.procedures::PledgedObjectDelete" (IN ROW "sap.fsdm.tabletypes::PledgedObjectTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_Pledge.FinancialContractID=' || TO_VARCHAR("ASSOC_Pledge.FinancialContractID") || ' ' ||
+                'ASSOC_Pledge.IDSystem=' || TO_VARCHAR("ASSOC_Pledge.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_Pledge.FinancialContractID",
+                        "IN"."ASSOC_Pledge.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_Pledge.FinancialContractID",
+                        "IN"."ASSOC_Pledge.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_Pledge.FinancialContractID",
+                        "ASSOC_Pledge.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_Pledge.FinancialContractID",
+                                    "IN"."ASSOC_Pledge.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_Pledge.FinancialContractID",
+                                    "IN"."ASSOC_Pledge.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::PledgedObject" (
+        "SequenceNumber",
+        "ASSOC_Pledge.FinancialContractID",
+        "ASSOC_Pledge.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType",
+        "ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_PledgedFinancialContract.FinancialContractID",
+        "ASSOC_PledgedFinancialContract.IDSystem",
+        "ASSOC_PledgedPhysicalAsset.PhysicalAssetID",
+        "ASSOC_PledgedReceivable.ReceivableID",
+        "ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID",
+        "InitialCollateralValue",
+        "InitialCollateralValueCurrency",
+        "PledgeOfFinancialContractCategory",
+        "PledgedAmount",
+        "PledgedAmountCurrency",
+        "PledgedObjectCategory",
+        "PledgedPercentage",
+        "ThirdPartyAccountIdentificationSystem",
+        "ThirdPartyBankAccountCurrency",
+        "ThirdPartyBankAccountHolderName",
+        "ThirdPartyBankAccountID",
+        "ThirdPartyBankID",
+        "ThirdPartyBankIdentificationSystem",
+        "ThirdPartyBankName",
+        "ThirdPartyIBAN",
+        "ThirdPartySWIFT",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_Pledge.FinancialContractID" as "ASSOC_Pledge.FinancialContractID" ,
+            "OLD_ASSOC_Pledge.IDSystem" as "ASSOC_Pledge.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType" as "ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType" ,
+            "OLD_ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+            "OLD_ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+            "OLD_ASSOC_PledgedFinancialContract.FinancialContractID" as "ASSOC_PledgedFinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_PledgedFinancialContract.IDSystem" as "ASSOC_PledgedFinancialContract.IDSystem" ,
+            "OLD_ASSOC_PledgedPhysicalAsset.PhysicalAssetID" as "ASSOC_PledgedPhysicalAsset.PhysicalAssetID" ,
+            "OLD_ASSOC_PledgedReceivable.ReceivableID" as "ASSOC_PledgedReceivable.ReceivableID" ,
+            "OLD_ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID" as "ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID" ,
+            "OLD_InitialCollateralValue" as "InitialCollateralValue" ,
+            "OLD_InitialCollateralValueCurrency" as "InitialCollateralValueCurrency" ,
+            "OLD_PledgeOfFinancialContractCategory" as "PledgeOfFinancialContractCategory" ,
+            "OLD_PledgedAmount" as "PledgedAmount" ,
+            "OLD_PledgedAmountCurrency" as "PledgedAmountCurrency" ,
+            "OLD_PledgedObjectCategory" as "PledgedObjectCategory" ,
+            "OLD_PledgedPercentage" as "PledgedPercentage" ,
+            "OLD_ThirdPartyAccountIdentificationSystem" as "ThirdPartyAccountIdentificationSystem" ,
+            "OLD_ThirdPartyBankAccountCurrency" as "ThirdPartyBankAccountCurrency" ,
+            "OLD_ThirdPartyBankAccountHolderName" as "ThirdPartyBankAccountHolderName" ,
+            "OLD_ThirdPartyBankAccountID" as "ThirdPartyBankAccountID" ,
+            "OLD_ThirdPartyBankID" as "ThirdPartyBankID" ,
+            "OLD_ThirdPartyBankIdentificationSystem" as "ThirdPartyBankIdentificationSystem" ,
+            "OLD_ThirdPartyBankName" as "ThirdPartyBankName" ,
+            "OLD_ThirdPartyIBAN" as "ThirdPartyIBAN" ,
+            "OLD_ThirdPartySWIFT" as "ThirdPartySWIFT" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_Pledge.FinancialContractID",
+                        "OLD"."ASSOC_Pledge.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_Pledge.FinancialContractID" as "OLD_ASSOC_Pledge.FinancialContractID",
+                "OLD"."ASSOC_Pledge.IDSystem" as "OLD_ASSOC_Pledge.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType" as "OLD_ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType",
+                "OLD"."ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_PledgedFinancialContract.FinancialContractID" as "OLD_ASSOC_PledgedFinancialContract.FinancialContractID",
+                "OLD"."ASSOC_PledgedFinancialContract.IDSystem" as "OLD_ASSOC_PledgedFinancialContract.IDSystem",
+                "OLD"."ASSOC_PledgedPhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PledgedPhysicalAsset.PhysicalAssetID",
+                "OLD"."ASSOC_PledgedReceivable.ReceivableID" as "OLD_ASSOC_PledgedReceivable.ReceivableID",
+                "OLD"."ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID" as "OLD_ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID",
+                "OLD"."InitialCollateralValue" as "OLD_InitialCollateralValue",
+                "OLD"."InitialCollateralValueCurrency" as "OLD_InitialCollateralValueCurrency",
+                "OLD"."PledgeOfFinancialContractCategory" as "OLD_PledgeOfFinancialContractCategory",
+                "OLD"."PledgedAmount" as "OLD_PledgedAmount",
+                "OLD"."PledgedAmountCurrency" as "OLD_PledgedAmountCurrency",
+                "OLD"."PledgedObjectCategory" as "OLD_PledgedObjectCategory",
+                "OLD"."PledgedPercentage" as "OLD_PledgedPercentage",
+                "OLD"."ThirdPartyAccountIdentificationSystem" as "OLD_ThirdPartyAccountIdentificationSystem",
+                "OLD"."ThirdPartyBankAccountCurrency" as "OLD_ThirdPartyBankAccountCurrency",
+                "OLD"."ThirdPartyBankAccountHolderName" as "OLD_ThirdPartyBankAccountHolderName",
+                "OLD"."ThirdPartyBankAccountID" as "OLD_ThirdPartyBankAccountID",
+                "OLD"."ThirdPartyBankID" as "OLD_ThirdPartyBankID",
+                "OLD"."ThirdPartyBankIdentificationSystem" as "OLD_ThirdPartyBankIdentificationSystem",
+                "OLD"."ThirdPartyBankName" as "OLD_ThirdPartyBankName",
+                "OLD"."ThirdPartyIBAN" as "OLD_ThirdPartyIBAN",
+                "OLD"."ThirdPartySWIFT" as "OLD_ThirdPartySWIFT",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PledgedObject" as "OLD"
+            on
+                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                      ( "IN"."ASSOC_Pledge.FinancialContractID" = "OLD"."ASSOC_Pledge.FinancialContractID" or "IN"."ASSOC_Pledge.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_Pledge.IDSystem" = "OLD"."ASSOC_Pledge.IDSystem" or "IN"."ASSOC_Pledge.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::PledgedObject" (
+        "SequenceNumber",
+        "ASSOC_Pledge.FinancialContractID",
+        "ASSOC_Pledge.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType",
+        "ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+        "ASSOC_PledgedFinancialContract.FinancialContractID",
+        "ASSOC_PledgedFinancialContract.IDSystem",
+        "ASSOC_PledgedPhysicalAsset.PhysicalAssetID",
+        "ASSOC_PledgedReceivable.ReceivableID",
+        "ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID",
+        "InitialCollateralValue",
+        "InitialCollateralValueCurrency",
+        "PledgeOfFinancialContractCategory",
+        "PledgedAmount",
+        "PledgedAmountCurrency",
+        "PledgedObjectCategory",
+        "PledgedPercentage",
+        "ThirdPartyAccountIdentificationSystem",
+        "ThirdPartyBankAccountCurrency",
+        "ThirdPartyBankAccountHolderName",
+        "ThirdPartyBankAccountID",
+        "ThirdPartyBankID",
+        "ThirdPartyBankIdentificationSystem",
+        "ThirdPartyBankName",
+        "ThirdPartyIBAN",
+        "ThirdPartySWIFT",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_Pledge.FinancialContractID" as "ASSOC_Pledge.FinancialContractID",
+            "OLD_ASSOC_Pledge.IDSystem" as "ASSOC_Pledge.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType" as "ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType",
+            "OLD_ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+            "OLD_ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+            "OLD_ASSOC_PledgedFinancialContract.FinancialContractID" as "ASSOC_PledgedFinancialContract.FinancialContractID",
+            "OLD_ASSOC_PledgedFinancialContract.IDSystem" as "ASSOC_PledgedFinancialContract.IDSystem",
+            "OLD_ASSOC_PledgedPhysicalAsset.PhysicalAssetID" as "ASSOC_PledgedPhysicalAsset.PhysicalAssetID",
+            "OLD_ASSOC_PledgedReceivable.ReceivableID" as "ASSOC_PledgedReceivable.ReceivableID",
+            "OLD_ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID" as "ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID",
+            "OLD_InitialCollateralValue" as "InitialCollateralValue",
+            "OLD_InitialCollateralValueCurrency" as "InitialCollateralValueCurrency",
+            "OLD_PledgeOfFinancialContractCategory" as "PledgeOfFinancialContractCategory",
+            "OLD_PledgedAmount" as "PledgedAmount",
+            "OLD_PledgedAmountCurrency" as "PledgedAmountCurrency",
+            "OLD_PledgedObjectCategory" as "PledgedObjectCategory",
+            "OLD_PledgedPercentage" as "PledgedPercentage",
+            "OLD_ThirdPartyAccountIdentificationSystem" as "ThirdPartyAccountIdentificationSystem",
+            "OLD_ThirdPartyBankAccountCurrency" as "ThirdPartyBankAccountCurrency",
+            "OLD_ThirdPartyBankAccountHolderName" as "ThirdPartyBankAccountHolderName",
+            "OLD_ThirdPartyBankAccountID" as "ThirdPartyBankAccountID",
+            "OLD_ThirdPartyBankID" as "ThirdPartyBankID",
+            "OLD_ThirdPartyBankIdentificationSystem" as "ThirdPartyBankIdentificationSystem",
+            "OLD_ThirdPartyBankName" as "ThirdPartyBankName",
+            "OLD_ThirdPartyIBAN" as "ThirdPartyIBAN",
+            "OLD_ThirdPartySWIFT" as "ThirdPartySWIFT",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_Pledge.FinancialContractID",
+                        "OLD"."ASSOC_Pledge.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."ASSOC_Pledge.FinancialContractID" as "OLD_ASSOC_Pledge.FinancialContractID",
+                "OLD"."ASSOC_Pledge.IDSystem" as "OLD_ASSOC_Pledge.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType" as "OLD_ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType",
+                "OLD"."ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" as "OLD_ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+                "OLD"."ASSOC_PledgedFinancialContract.FinancialContractID" as "OLD_ASSOC_PledgedFinancialContract.FinancialContractID",
+                "OLD"."ASSOC_PledgedFinancialContract.IDSystem" as "OLD_ASSOC_PledgedFinancialContract.IDSystem",
+                "OLD"."ASSOC_PledgedPhysicalAsset.PhysicalAssetID" as "OLD_ASSOC_PledgedPhysicalAsset.PhysicalAssetID",
+                "OLD"."ASSOC_PledgedReceivable.ReceivableID" as "OLD_ASSOC_PledgedReceivable.ReceivableID",
+                "OLD"."ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID" as "OLD_ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID",
+                "OLD"."InitialCollateralValue" as "OLD_InitialCollateralValue",
+                "OLD"."InitialCollateralValueCurrency" as "OLD_InitialCollateralValueCurrency",
+                "OLD"."PledgeOfFinancialContractCategory" as "OLD_PledgeOfFinancialContractCategory",
+                "OLD"."PledgedAmount" as "OLD_PledgedAmount",
+                "OLD"."PledgedAmountCurrency" as "OLD_PledgedAmountCurrency",
+                "OLD"."PledgedObjectCategory" as "OLD_PledgedObjectCategory",
+                "OLD"."PledgedPercentage" as "OLD_PledgedPercentage",
+                "OLD"."ThirdPartyAccountIdentificationSystem" as "OLD_ThirdPartyAccountIdentificationSystem",
+                "OLD"."ThirdPartyBankAccountCurrency" as "OLD_ThirdPartyBankAccountCurrency",
+                "OLD"."ThirdPartyBankAccountHolderName" as "OLD_ThirdPartyBankAccountHolderName",
+                "OLD"."ThirdPartyBankAccountID" as "OLD_ThirdPartyBankAccountID",
+                "OLD"."ThirdPartyBankID" as "OLD_ThirdPartyBankID",
+                "OLD"."ThirdPartyBankIdentificationSystem" as "OLD_ThirdPartyBankIdentificationSystem",
+                "OLD"."ThirdPartyBankName" as "OLD_ThirdPartyBankName",
+                "OLD"."ThirdPartyIBAN" as "OLD_ThirdPartyIBAN",
+                "OLD"."ThirdPartySWIFT" as "OLD_ThirdPartySWIFT",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PledgedObject" as "OLD"
+            on
+                                                ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                                ( "IN"."ASSOC_Pledge.FinancialContractID" = "OLD"."ASSOC_Pledge.FinancialContractID" or "IN"."ASSOC_Pledge.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_Pledge.IDSystem" = "OLD"."ASSOC_Pledge.IDSystem" or "IN"."ASSOC_Pledge.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::PledgedObject"
+    where (
+        "SequenceNumber",
+        "ASSOC_Pledge.FinancialContractID",
+        "ASSOC_Pledge.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_Pledge.FinancialContractID",
+            "OLD"."ASSOC_Pledge.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::PledgedObject" as "OLD"
+        on
+                                       ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                       ( "IN"."ASSOC_Pledge.FinancialContractID" = "OLD"."ASSOC_Pledge.FinancialContractID" or "IN"."ASSOC_Pledge.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_Pledge.IDSystem" = "OLD"."ASSOC_Pledge.IDSystem" or "IN"."ASSOC_Pledge.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

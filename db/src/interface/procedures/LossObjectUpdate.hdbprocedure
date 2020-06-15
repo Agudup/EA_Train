@@ -1,0 +1,157 @@
+PROCEDURE "sap.fsdm.procedures::LossObjectUpdate" (IN ROW "sap.fsdm.tabletypes::LossObjectTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+--Update the existing records 
+
+  --select data matching in current table
+  var_matching = 
+  select    "IN"."LossObjectID"  ,
+    "OLD"."LossObjectID" AS "OLD_LossObjectID" ,
+    "IN"."_PropertyLoss.LossCategory"  ,
+    "OLD"."_PropertyLoss.LossCategory" AS "OLD__PropertyLoss.LossCategory" ,
+    "IN"."_PropertyLoss._Claim.ID"  ,
+    "OLD"."_PropertyLoss._Claim.ID" AS "OLD__PropertyLoss._Claim.ID" ,
+    "IN"."_PropertyLoss._Claim.IDSystem"  ,
+    "OLD"."_PropertyLoss._Claim.IDSystem" AS "OLD__PropertyLoss._Claim.IDSystem" ,
+    "IN"."_LossObject.LossObjectID"  ,
+    "OLD"."_LossObject.LossObjectID" AS "OLD__LossObject.LossObjectID" ,
+    "IN"."_LossObject._PropertyLoss.LossCategory"  ,
+    "OLD"."_LossObject._PropertyLoss.LossCategory" AS "OLD__LossObject._PropertyLoss.LossCategory" ,
+    "IN"."_LossObject._PropertyLoss._Claim.ID"  ,
+    "OLD"."_LossObject._PropertyLoss._Claim.ID" AS "OLD__LossObject._PropertyLoss._Claim.ID" ,
+    "IN"."_LossObject._PropertyLoss._Claim.IDSystem"  ,
+    "OLD"."_LossObject._PropertyLoss._Claim.IDSystem" AS "OLD__LossObject._PropertyLoss._Claim.IDSystem" ,
+    "IN"."_PhysicalAsset.PhysicalAssetID"  ,
+    "OLD"."_PhysicalAsset.PhysicalAssetID" AS "OLD__PhysicalAsset.PhysicalAssetID" ,
+    "IN"."ActualRepairDate"  ,
+    "OLD"."ActualRepairDate" AS "OLD_ActualRepairDate" ,
+    "IN"."Currency"  ,
+    "OLD"."Currency" AS "OLD_Currency" ,
+    "IN"."EstimatedRepairDate"  ,
+    "OLD"."EstimatedRepairDate" AS "OLD_EstimatedRepairDate" ,
+    "IN"."LossCause"  ,
+    "OLD"."LossCause" AS "OLD_LossCause" ,
+    "IN"."LossObjectCategory"  ,
+    "OLD"."LossObjectCategory" AS "OLD_LossObjectCategory" ,
+    "IN"."LossObjectCurrentMarketValue"  ,
+    "OLD"."LossObjectCurrentMarketValue" AS "OLD_LossObjectCurrentMarketValue" ,
+    "IN"."LossObjectRepairCost"  ,
+    "OLD"."LossObjectRepairCost" AS "OLD_LossObjectRepairCost" ,
+    "IN"."LossObjectRepairableIndicator"  ,
+    "OLD"."LossObjectRepairableIndicator" AS "OLD_LossObjectRepairableIndicator" ,
+    "IN"."LossObjectReplaceableIndicator"  ,
+    "OLD"."LossObjectReplaceableIndicator" AS "OLD_LossObjectReplaceableIndicator" ,
+    "IN"."LossObjectReplacementValue"  ,
+    "OLD"."LossObjectReplacementValue" AS "OLD_LossObjectReplacementValue" ,
+    "IN"."LossObjectType"  ,
+    "OLD"."LossObjectType" AS "OLD_LossObjectType" ,
+    "IN"."OdometerReading"  ,
+    "OLD"."OdometerReading" AS "OLD_OdometerReading" ,
+    "IN"."SalvageSoldDate"  ,
+    "OLD"."SalvageSoldDate" AS "OLD_SalvageSoldDate" ,
+    "IN"."VehicleParkedIndicator"  ,
+    "OLD"."VehicleParkedIndicator" AS "OLD_VehicleParkedIndicator" ,
+    "IN"."SourceSystemID"  ,
+    "OLD"."SourceSystemID" AS "OLD_SourceSystemID" ,
+    "IN"."ChangeTimestampInSourceSystem"  ,
+    "OLD"."ChangeTimestampInSourceSystem" AS "OLD_ChangeTimestampInSourceSystem" ,
+    "IN"."ChangingUserInSourceSystem"  ,
+    "OLD"."ChangingUserInSourceSystem" AS "OLD_ChangingUserInSourceSystem" ,
+    "IN"."ChangingProcessType"  ,
+    "OLD"."ChangingProcessType" AS "OLD_ChangingProcessType" ,
+    "IN"."ChangingProcessID"  ,
+    "OLD"."ChangingProcessID" AS "OLD_ChangingProcessID" 
+  
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::LossObject" AS "OLD"
+  ON
+  "IN"."LossObjectID" = "OLD"."LossObjectID" and
+  "IN"."_PropertyLoss.LossCategory" = "OLD"."_PropertyLoss.LossCategory" and
+  "IN"."_PropertyLoss._Claim.ID" = "OLD"."_PropertyLoss._Claim.ID" and
+  "IN"."_PropertyLoss._Claim.IDSystem" = "OLD"."_PropertyLoss._Claim.IDSystem" 
+;
+
+
+
+
+--Delete entries for update from current table
+delete from "sap.fsdm::LossObject" WHERE("LossObjectID" ,
+"_PropertyLoss.LossCategory" ,
+"_PropertyLoss._Claim.ID" ,
+"_PropertyLoss._Claim.IDSystem" 
+)in ( select "OLD_LossObjectID" AS "LossObjectID" ,
+"OLD__PropertyLoss.LossCategory" AS "_PropertyLoss.LossCategory" ,
+"OLD__PropertyLoss._Claim.ID" AS "_PropertyLoss._Claim.ID" ,
+"OLD__PropertyLoss._Claim.IDSystem" AS "_PropertyLoss._Claim.IDSystem" 
+from :var_matching );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::LossObject"  (
+"LossObjectID",
+"_PropertyLoss.LossCategory",
+"_PropertyLoss._Claim.ID",
+"_PropertyLoss._Claim.IDSystem",
+"_LossObject.LossObjectID",
+"_LossObject._PropertyLoss.LossCategory",
+"_LossObject._PropertyLoss._Claim.ID",
+"_LossObject._PropertyLoss._Claim.IDSystem",
+"_PhysicalAsset.PhysicalAssetID",
+"ActualRepairDate",
+"Currency",
+"EstimatedRepairDate",
+"LossCause",
+"LossObjectCategory",
+"LossObjectCurrentMarketValue",
+"LossObjectRepairCost",
+"LossObjectRepairableIndicator",
+"LossObjectReplaceableIndicator",
+"LossObjectReplacementValue",
+"LossObjectType",
+"OdometerReading",
+"SalvageSoldDate",
+"VehicleParkedIndicator",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "LossObjectID"  ,
+  "_PropertyLoss.LossCategory"  ,
+  "_PropertyLoss._Claim.ID"  ,
+  "_PropertyLoss._Claim.IDSystem"  ,
+  "_LossObject.LossObjectID"  ,
+  "_LossObject._PropertyLoss.LossCategory"  ,
+  "_LossObject._PropertyLoss._Claim.ID"  ,
+  "_LossObject._PropertyLoss._Claim.IDSystem"  ,
+  "_PhysicalAsset.PhysicalAssetID"  ,
+  "ActualRepairDate"  ,
+  "Currency"  ,
+  "EstimatedRepairDate"  ,
+  "LossCause"  ,
+  "LossObjectCategory"  ,
+  "LossObjectCurrentMarketValue"  ,
+  "LossObjectRepairCost"  ,
+  "LossObjectRepairableIndicator"  ,
+  "LossObjectReplaceableIndicator"  ,
+  "LossObjectReplacementValue"  ,
+  "LossObjectType"  ,
+  "OdometerReading"  ,
+  "SalvageSoldDate"  ,
+  "VehicleParkedIndicator"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :var_matching );
+
+
+
+END

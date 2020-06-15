@@ -1,0 +1,96 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+
+entity "FinancialContractStatement" {
+    key "StatementID"                              : String(128);
+    key "_FinancialContract"                       : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                       not null;
+    key "_PositionCurrencyOfMultiCurrencyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                              PositionCurrency,
+                                                                                                              ASSOC_MultiCcyAccnt
+                                                                                                            } not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                                             not null;
+        "SystemValidTo"                            : UTCTimestamp                                             not null;
+        "BeginningBalanceAmount"                   : Decimal(34, 6);
+        "CardStatementCategory"                    : String(40);
+        "ClosingBalanceAmount"                     : Decimal(34, 6);
+        "DueAmount"                                : Decimal(34, 6);
+        "FeeAmount"                                : Decimal(34, 6);
+        "FinancialContractStatementCategory"       : String(40);
+        "FinancialStatementCurrency"               : String(3);
+        "InterestAmount"                           : Decimal(34, 6);
+        "MinimumPaymentDueAmount"                  : Decimal(34, 6);
+        "NumberOfCredits"                          : Integer;
+        "NumberOfDebits"                           : Integer;
+        "PaymentDueDate"                           : LocalDate;
+        "PeriodEndDate"                            : LocalDate;
+        "PeriodStartDate"                          : LocalDate;
+        "RewardsAdjusted"                          : Decimal(34, 6);
+        "RewardsBeginningBalance"                  : Decimal(34, 6);
+        "RewardsClosingBalance"                    : Decimal(34, 6);
+        "RewardsEarned"                            : Decimal(34, 6);
+        "RewardsRedeemed"                          : Decimal(34, 6);
+        "RewardsUnit"                              : String(10);
+        "TotalCreditAmount"                        : Decimal(34, 6);
+        "TotalDebitAmount"                         : Decimal(34, 6);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FinancialContractStatement_Historical" {
+    "StatementID"                              : String(128)                                              not null;
+    "_FinancialContract"                       : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                       not null;
+    "_PositionCurrencyOfMultiCurrencyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                          PositionCurrency,
+                                                                                                          ASSOC_MultiCcyAccnt
+                                                                                                        } not null;
+    "BusinessValidFrom"                        : LocalDate                                                not null;
+    "BusinessValidTo"                          : LocalDate                                                not null;
+    "SystemValidFrom"                          : UTCTimestamp                                             not null;
+    "SystemValidTo"                            : UTCTimestamp                                             not null;
+    "BeginningBalanceAmount"                   : Decimal(34, 6);
+    "CardStatementCategory"                    : String(40);
+    "ClosingBalanceAmount"                     : Decimal(34, 6);
+    "DueAmount"                                : Decimal(34, 6);
+    "FeeAmount"                                : Decimal(34, 6);
+    "FinancialContractStatementCategory"       : String(40);
+    "FinancialStatementCurrency"               : String(3);
+    "InterestAmount"                           : Decimal(34, 6);
+    "MinimumPaymentDueAmount"                  : Decimal(34, 6);
+    "NumberOfCredits"                          : Integer;
+    "NumberOfDebits"                           : Integer;
+    "PaymentDueDate"                           : LocalDate;
+    "PeriodEndDate"                            : LocalDate;
+    "PeriodStartDate"                          : LocalDate;
+    "RewardsAdjusted"                          : Decimal(34, 6);
+    "RewardsBeginningBalance"                  : Decimal(34, 6);
+    "RewardsClosingBalance"                    : Decimal(34, 6);
+    "RewardsEarned"                            : Decimal(34, 6);
+    "RewardsRedeemed"                          : Decimal(34, 6);
+    "RewardsUnit"                              : String(10);
+    "TotalCreditAmount"                        : Decimal(34, 6);
+    "TotalDebitAmount"                         : Decimal(34, 6);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

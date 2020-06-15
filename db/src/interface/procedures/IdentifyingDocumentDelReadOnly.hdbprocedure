@@ -1,0 +1,296 @@
+PROCEDURE "sap.fsdm.procedures::IdentifyingDocumentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::IdentifyingDocumentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::IdentifyingDocumentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::IdentifyingDocumentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'IdentifyingDocumentID=' || TO_VARCHAR("IdentifyingDocumentID") || ' ' ||
+                'IdentifyingDocumentType=' || TO_VARCHAR("IdentifyingDocumentType") || ' ' ||
+                'IssuingAuthority=' || TO_VARCHAR("IssuingAuthority") || ' ' ||
+                'IssuingCountry=' || TO_VARCHAR("IssuingCountry") || ' ' ||
+                'ASSOC_IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("ASSOC_IndividualPerson.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."IdentifyingDocumentID",
+                        "IN"."IdentifyingDocumentType",
+                        "IN"."IssuingAuthority",
+                        "IN"."IssuingCountry",
+                        "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."IdentifyingDocumentID",
+                        "IN"."IdentifyingDocumentType",
+                        "IN"."IssuingAuthority",
+                        "IN"."IssuingCountry",
+                        "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "IdentifyingDocumentID",
+                        "IdentifyingDocumentType",
+                        "IssuingAuthority",
+                        "IssuingCountry",
+                        "ASSOC_IndividualPerson.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."IdentifyingDocumentID",
+                                    "IN"."IdentifyingDocumentType",
+                                    "IN"."IssuingAuthority",
+                                    "IN"."IssuingCountry",
+                                    "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."IdentifyingDocumentID",
+                                    "IN"."IdentifyingDocumentType",
+                                    "IN"."IssuingAuthority",
+                                    "IN"."IssuingCountry",
+                                    "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "IdentifyingDocumentID",
+            "IdentifyingDocumentType",
+            "IssuingAuthority",
+            "IssuingCountry",
+            "ASSOC_IndividualPerson.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::IdentifyingDocument" WHERE
+            (
+            "IdentifyingDocumentID" ,
+            "IdentifyingDocumentType" ,
+            "IssuingAuthority" ,
+            "IssuingCountry" ,
+            "ASSOC_IndividualPerson.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."IdentifyingDocumentID",
+            "OLD"."IdentifyingDocumentType",
+            "OLD"."IssuingAuthority",
+            "OLD"."IssuingCountry",
+            "OLD"."ASSOC_IndividualPerson.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::IdentifyingDocument" as "OLD"
+        on
+                              ( "IN"."IdentifyingDocumentID" = "OLD"."IdentifyingDocumentID" or "IN"."IdentifyingDocumentID" is null ) and
+                              ( "IN"."IdentifyingDocumentType" = "OLD"."IdentifyingDocumentType" or "IN"."IdentifyingDocumentType" is null ) and
+                              ( "IN"."IssuingAuthority" = "OLD"."IssuingAuthority" or "IN"."IssuingAuthority" is null ) and
+                              ( "IN"."IssuingCountry" = "OLD"."IssuingCountry" or "IN"."IssuingCountry" is null ) and
+                              ( "IN"."ASSOC_IndividualPerson.BusinessPartnerID" = "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" or "IN"."ASSOC_IndividualPerson.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "IdentifyingDocumentID",
+        "IdentifyingDocumentType",
+        "IssuingAuthority",
+        "IssuingCountry",
+        "ASSOC_IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "DateOfIssue",
+        "DateofExpiry",
+        "IdentifyingDocumentPreferredFlag",
+        "IdentifyingDocumentSubmittedDate",
+        "IdentifyingDocumentVerificationDate",
+        "IdentifyingDocumentVerificationFlag",
+        "NameOnPassport",
+        "Nationality",
+        "PlaceOfIssue",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_IdentifyingDocumentID" as "IdentifyingDocumentID" ,
+            "OLD_IdentifyingDocumentType" as "IdentifyingDocumentType" ,
+            "OLD_IssuingAuthority" as "IssuingAuthority" ,
+            "OLD_IssuingCountry" as "IssuingCountry" ,
+            "OLD_ASSOC_IndividualPerson.BusinessPartnerID" as "ASSOC_IndividualPerson.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_DateOfIssue" as "DateOfIssue" ,
+            "OLD_DateofExpiry" as "DateofExpiry" ,
+            "OLD_IdentifyingDocumentPreferredFlag" as "IdentifyingDocumentPreferredFlag" ,
+            "OLD_IdentifyingDocumentSubmittedDate" as "IdentifyingDocumentSubmittedDate" ,
+            "OLD_IdentifyingDocumentVerificationDate" as "IdentifyingDocumentVerificationDate" ,
+            "OLD_IdentifyingDocumentVerificationFlag" as "IdentifyingDocumentVerificationFlag" ,
+            "OLD_NameOnPassport" as "NameOnPassport" ,
+            "OLD_Nationality" as "Nationality" ,
+            "OLD_PlaceOfIssue" as "PlaceOfIssue" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."IdentifyingDocumentID",
+                        "OLD"."IdentifyingDocumentType",
+                        "OLD"."IssuingAuthority",
+                        "OLD"."IssuingCountry",
+                        "OLD"."ASSOC_IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."IdentifyingDocumentID" as "OLD_IdentifyingDocumentID",
+                                "OLD"."IdentifyingDocumentType" as "OLD_IdentifyingDocumentType",
+                                "OLD"."IssuingAuthority" as "OLD_IssuingAuthority",
+                                "OLD"."IssuingCountry" as "OLD_IssuingCountry",
+                                "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" as "OLD_ASSOC_IndividualPerson.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."DateOfIssue" as "OLD_DateOfIssue",
+                                "OLD"."DateofExpiry" as "OLD_DateofExpiry",
+                                "OLD"."IdentifyingDocumentPreferredFlag" as "OLD_IdentifyingDocumentPreferredFlag",
+                                "OLD"."IdentifyingDocumentSubmittedDate" as "OLD_IdentifyingDocumentSubmittedDate",
+                                "OLD"."IdentifyingDocumentVerificationDate" as "OLD_IdentifyingDocumentVerificationDate",
+                                "OLD"."IdentifyingDocumentVerificationFlag" as "OLD_IdentifyingDocumentVerificationFlag",
+                                "OLD"."NameOnPassport" as "OLD_NameOnPassport",
+                                "OLD"."Nationality" as "OLD_Nationality",
+                                "OLD"."PlaceOfIssue" as "OLD_PlaceOfIssue",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::IdentifyingDocument" as "OLD"
+            on
+                                      ( "IN"."IdentifyingDocumentID" = "OLD"."IdentifyingDocumentID" or "IN"."IdentifyingDocumentID" is null ) and
+                                      ( "IN"."IdentifyingDocumentType" = "OLD"."IdentifyingDocumentType" or "IN"."IdentifyingDocumentType" is null ) and
+                                      ( "IN"."IssuingAuthority" = "OLD"."IssuingAuthority" or "IN"."IssuingAuthority" is null ) and
+                                      ( "IN"."IssuingCountry" = "OLD"."IssuingCountry" or "IN"."IssuingCountry" is null ) and
+                                      ( "IN"."ASSOC_IndividualPerson.BusinessPartnerID" = "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" or "IN"."ASSOC_IndividualPerson.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_IdentifyingDocumentID" as "IdentifyingDocumentID",
+            "OLD_IdentifyingDocumentType" as "IdentifyingDocumentType",
+            "OLD_IssuingAuthority" as "IssuingAuthority",
+            "OLD_IssuingCountry" as "IssuingCountry",
+            "OLD_ASSOC_IndividualPerson.BusinessPartnerID" as "ASSOC_IndividualPerson.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_DateOfIssue" as "DateOfIssue",
+            "OLD_DateofExpiry" as "DateofExpiry",
+            "OLD_IdentifyingDocumentPreferredFlag" as "IdentifyingDocumentPreferredFlag",
+            "OLD_IdentifyingDocumentSubmittedDate" as "IdentifyingDocumentSubmittedDate",
+            "OLD_IdentifyingDocumentVerificationDate" as "IdentifyingDocumentVerificationDate",
+            "OLD_IdentifyingDocumentVerificationFlag" as "IdentifyingDocumentVerificationFlag",
+            "OLD_NameOnPassport" as "NameOnPassport",
+            "OLD_Nationality" as "Nationality",
+            "OLD_PlaceOfIssue" as "PlaceOfIssue",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."IdentifyingDocumentID",
+                        "OLD"."IdentifyingDocumentType",
+                        "OLD"."IssuingAuthority",
+                        "OLD"."IssuingCountry",
+                        "OLD"."ASSOC_IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."IdentifyingDocumentID" as "OLD_IdentifyingDocumentID",
+                                "OLD"."IdentifyingDocumentType" as "OLD_IdentifyingDocumentType",
+                                "OLD"."IssuingAuthority" as "OLD_IssuingAuthority",
+                                "OLD"."IssuingCountry" as "OLD_IssuingCountry",
+                                "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" as "OLD_ASSOC_IndividualPerson.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."DateOfIssue" as "OLD_DateOfIssue",
+                                "OLD"."DateofExpiry" as "OLD_DateofExpiry",
+                                "OLD"."IdentifyingDocumentPreferredFlag" as "OLD_IdentifyingDocumentPreferredFlag",
+                                "OLD"."IdentifyingDocumentSubmittedDate" as "OLD_IdentifyingDocumentSubmittedDate",
+                                "OLD"."IdentifyingDocumentVerificationDate" as "OLD_IdentifyingDocumentVerificationDate",
+                                "OLD"."IdentifyingDocumentVerificationFlag" as "OLD_IdentifyingDocumentVerificationFlag",
+                                "OLD"."NameOnPassport" as "OLD_NameOnPassport",
+                                "OLD"."Nationality" as "OLD_Nationality",
+                                "OLD"."PlaceOfIssue" as "OLD_PlaceOfIssue",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::IdentifyingDocument" as "OLD"
+            on
+               ( "IN"."IdentifyingDocumentID" = "OLD"."IdentifyingDocumentID" or "IN"."IdentifyingDocumentID" is null ) and
+               ( "IN"."IdentifyingDocumentType" = "OLD"."IdentifyingDocumentType" or "IN"."IdentifyingDocumentType" is null ) and
+               ( "IN"."IssuingAuthority" = "OLD"."IssuingAuthority" or "IN"."IssuingAuthority" is null ) and
+               ( "IN"."IssuingCountry" = "OLD"."IssuingCountry" or "IN"."IssuingCountry" is null ) and
+               ( "IN"."ASSOC_IndividualPerson.BusinessPartnerID" = "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" or "IN"."ASSOC_IndividualPerson.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,293 @@
+PROCEDURE "sap.fsdm.procedures::FinancialStatementHierarchyLoad" (IN ROW "sap.fsdm.tabletypes::FinancialStatementHierarchyTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'FinancialStatementHierarchyID=' || TO_VARCHAR("FinancialStatementHierarchyID") || ' ' ||
+                '_Child.FinancialStatementSegmentID=' || TO_VARCHAR("_Child.FinancialStatementSegmentID") || ' ' ||
+                '_Child._FinancialStatementStructure.FinancialStatementStructureID=' || TO_VARCHAR("_Child._FinancialStatementStructure.FinancialStatementStructureID") || ' ' ||
+                '_Parent.FinancialStatementSegmentID=' || TO_VARCHAR("_Parent.FinancialStatementSegmentID") || ' ' ||
+                '_Parent._FinancialStatementStructure.FinancialStatementStructureID=' || TO_VARCHAR("_Parent._FinancialStatementStructure.FinancialStatementStructureID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."FinancialStatementHierarchyID",
+                        "IN"."_Child.FinancialStatementSegmentID",
+                        "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                        "IN"."_Parent.FinancialStatementSegmentID",
+                        "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."FinancialStatementHierarchyID",
+                        "IN"."_Child.FinancialStatementSegmentID",
+                        "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                        "IN"."_Parent.FinancialStatementSegmentID",
+                        "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "FinancialStatementHierarchyID",
+                        "_Child.FinancialStatementSegmentID",
+                        "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                        "_Parent.FinancialStatementSegmentID",
+                        "_Parent._FinancialStatementStructure.FinancialStatementStructureID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."FinancialStatementHierarchyID",
+                                    "IN"."_Child.FinancialStatementSegmentID",
+                                    "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                                    "IN"."_Parent.FinancialStatementSegmentID",
+                                    "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."FinancialStatementHierarchyID",
+                                    "IN"."_Child.FinancialStatementSegmentID",
+                                    "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                                    "IN"."_Parent.FinancialStatementSegmentID",
+                                    "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::FinancialStatementHierarchy" (
+        "FinancialStatementHierarchyID",
+        "_Child.FinancialStatementSegmentID",
+        "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+        "_Parent.FinancialStatementSegmentID",
+        "_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FinancialStatementsHierarchyDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_FinancialStatementHierarchyID" as "FinancialStatementHierarchyID" ,
+            "OLD__Child.FinancialStatementSegmentID" as "_Child.FinancialStatementSegmentID" ,
+            "OLD__Child._FinancialStatementStructure.FinancialStatementStructureID" as "_Child._FinancialStatementStructure.FinancialStatementStructureID" ,
+            "OLD__Parent.FinancialStatementSegmentID" as "_Parent.FinancialStatementSegmentID" ,
+            "OLD__Parent._FinancialStatementStructure.FinancialStatementStructureID" as "_Parent._FinancialStatementStructure.FinancialStatementStructureID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_FinancialStatementsHierarchyDescription" as "FinancialStatementsHierarchyDescription" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."FinancialStatementHierarchyID",
+                        "IN"."_Child.FinancialStatementSegmentID",
+                        "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                        "IN"."_Parent.FinancialStatementSegmentID",
+                        "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."FinancialStatementHierarchyID" as "OLD_FinancialStatementHierarchyID",
+                                "OLD"."_Child.FinancialStatementSegmentID" as "OLD__Child.FinancialStatementSegmentID",
+                                "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" as "OLD__Child._FinancialStatementStructure.FinancialStatementStructureID",
+                                "OLD"."_Parent.FinancialStatementSegmentID" as "OLD__Parent.FinancialStatementSegmentID",
+                                "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" as "OLD__Parent._FinancialStatementStructure.FinancialStatementStructureID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."FinancialStatementsHierarchyDescription" as "OLD_FinancialStatementsHierarchyDescription",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialStatementHierarchy" as "OLD"
+            on
+                ( case when "IN"."FinancialStatementHierarchyID" is null then '' else "IN"."FinancialStatementHierarchyID" end ) = "OLD"."FinancialStatementHierarchyID" and
+                ( case when "IN"."_Child.FinancialStatementSegmentID" is null then '' else "IN"."_Child.FinancialStatementSegmentID" end ) = "OLD"."_Child.FinancialStatementSegmentID" and
+                ( case when "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" end ) = "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" and
+                ( case when "IN"."_Parent.FinancialStatementSegmentID" is null then '' else "IN"."_Parent.FinancialStatementSegmentID" end ) = "OLD"."_Parent.FinancialStatementSegmentID" and
+                ( case when "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" end ) = "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::FinancialStatementHierarchy" (
+        "FinancialStatementHierarchyID",
+        "_Child.FinancialStatementSegmentID",
+        "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+        "_Parent.FinancialStatementSegmentID",
+        "_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FinancialStatementsHierarchyDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_FinancialStatementHierarchyID" as "FinancialStatementHierarchyID",
+            "OLD__Child.FinancialStatementSegmentID" as "_Child.FinancialStatementSegmentID",
+            "OLD__Child._FinancialStatementStructure.FinancialStatementStructureID" as "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+            "OLD__Parent.FinancialStatementSegmentID" as "_Parent.FinancialStatementSegmentID",
+            "OLD__Parent._FinancialStatementStructure.FinancialStatementStructureID" as "_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_FinancialStatementsHierarchyDescription" as "FinancialStatementsHierarchyDescription",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."FinancialStatementHierarchyID",
+                        "IN"."_Child.FinancialStatementSegmentID",
+                        "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+                        "IN"."_Parent.FinancialStatementSegmentID",
+                        "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."FinancialStatementHierarchyID" as "OLD_FinancialStatementHierarchyID",
+                        "OLD"."_Child.FinancialStatementSegmentID" as "OLD__Child.FinancialStatementSegmentID",
+                        "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" as "OLD__Child._FinancialStatementStructure.FinancialStatementStructureID",
+                        "OLD"."_Parent.FinancialStatementSegmentID" as "OLD__Parent.FinancialStatementSegmentID",
+                        "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" as "OLD__Parent._FinancialStatementStructure.FinancialStatementStructureID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."FinancialStatementsHierarchyDescription" as "OLD_FinancialStatementsHierarchyDescription",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialStatementHierarchy" as "OLD"
+            on
+                ( case when "IN"."FinancialStatementHierarchyID" is null then '' else "IN"."FinancialStatementHierarchyID" end ) = "OLD"."FinancialStatementHierarchyID" and
+                ( case when "IN"."_Child.FinancialStatementSegmentID" is null then '' else "IN"."_Child.FinancialStatementSegmentID" end ) = "OLD"."_Child.FinancialStatementSegmentID" and
+                ( case when "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" end ) = "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" and
+                ( case when "IN"."_Parent.FinancialStatementSegmentID" is null then '' else "IN"."_Parent.FinancialStatementSegmentID" end ) = "OLD"."_Parent.FinancialStatementSegmentID" and
+                ( case when "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" end ) = "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::FinancialStatementHierarchy"
+    where (
+        "FinancialStatementHierarchyID",
+        "_Child.FinancialStatementSegmentID",
+        "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+        "_Parent.FinancialStatementSegmentID",
+        "_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."FinancialStatementHierarchyID",
+            "OLD"."_Child.FinancialStatementSegmentID",
+            "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID",
+            "OLD"."_Parent.FinancialStatementSegmentID",
+            "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FinancialStatementHierarchy" as "OLD"
+        on
+           ( case when "IN"."FinancialStatementHierarchyID" is null then '' else "IN"."FinancialStatementHierarchyID" end ) = "OLD"."FinancialStatementHierarchyID" and
+           ( case when "IN"."_Child.FinancialStatementSegmentID" is null then '' else "IN"."_Child.FinancialStatementSegmentID" end ) = "OLD"."_Child.FinancialStatementSegmentID" and
+           ( case when "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" end ) = "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" and
+           ( case when "IN"."_Parent.FinancialStatementSegmentID" is null then '' else "IN"."_Parent.FinancialStatementSegmentID" end ) = "OLD"."_Parent.FinancialStatementSegmentID" and
+           ( case when "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" end ) = "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::FinancialStatementHierarchy" (
+        "FinancialStatementHierarchyID",
+        "_Child.FinancialStatementSegmentID",
+        "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+        "_Parent.FinancialStatementSegmentID",
+        "_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "FinancialStatementsHierarchyDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "FinancialStatementHierarchyID" is null then '' else "FinancialStatementHierarchyID" end ) as "FinancialStatementHierarchyID",
+            ( case when "_Child.FinancialStatementSegmentID" is null then '' else "_Child.FinancialStatementSegmentID" end ) as "_Child.FinancialStatementSegmentID",
+            ( case when "_Child._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "_Child._FinancialStatementStructure.FinancialStatementStructureID" end ) as "_Child._FinancialStatementStructure.FinancialStatementStructureID",
+            ( case when "_Parent.FinancialStatementSegmentID" is null then '' else "_Parent.FinancialStatementSegmentID" end ) as "_Parent.FinancialStatementSegmentID",
+            ( case when "_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null then '' else "_Parent._FinancialStatementStructure.FinancialStatementStructureID" end ) as "_Parent._FinancialStatementStructure.FinancialStatementStructureID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "FinancialStatementsHierarchyDescription"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

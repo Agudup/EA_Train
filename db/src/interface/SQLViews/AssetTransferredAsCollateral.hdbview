@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::AssetTransferredAsCollateral_View" 
+as select
+      "ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "ASSOC_SimpleCollateralAgreement.FinancialContractID" ,
+      "ASSOC_SimpleCollateralAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "InitialCollateralValue" ,
+      "InitialCollateralValueCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AssetTransferredAsCollateral"
+with associations
+(
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PhysicalAsset"
+	  on "ASSOC_PhysicalAsset"."PhysicalAssetID" = "ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_SimpleCollateralAgreement"
+	  on "ASSOC_SimpleCollateralAgreement"."FinancialContractID" = "ASSOC_SimpleCollateralAgreement.FinancialContractID" AND 
+	     "ASSOC_SimpleCollateralAgreement"."IDSystem" = "ASSOC_SimpleCollateralAgreement.IDSystem"
+	     
+);

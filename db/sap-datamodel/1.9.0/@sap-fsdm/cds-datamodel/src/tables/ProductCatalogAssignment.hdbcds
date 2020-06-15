@@ -1,0 +1,77 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"FinancialStandardProduct";
+using "sap"."fsdm"::"ProductCatalogItem";
+using "sap"."fsdm"::"Trade";
+
+entity "ProductCatalogAssignment" {
+    key "_FinancialContract"               : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                           not null;
+    key "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_FinancialStandardProduct"        : association to FinancialStandardProduct {
+                                                                                       FinancialStandardProductID,
+                                                                                       IDSystem,
+                                                                                       PricingScheme,
+                                                                                       ASSOC_Company
+                                                                                     }                    not null;
+    key "_ProductCatalogItem"              : association to ProductCatalogItem {
+                                                                                 ProductCatalogItem,
+                                                                                 _ProductCatalog
+                                                                               }                          not null;
+    key "_Trade"                           : association to Trade {
+                                                                    IDSystem,
+                                                                    TradeID
+                                                                  }                                       not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+        "SystemValidTo"                    : UTCTimestamp                                                 not null;
+        "ProductCatalogAssignmentCategory" : String(50);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ProductCatalogAssignment_Historical" {
+    "_FinancialContract"               : association to FinancialContract {
+                                                                            FinancialContractID,
+                                                                            IDSystem
+                                                                          }                           not null;
+    "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_FinancialStandardProduct"        : association to FinancialStandardProduct {
+                                                                                   FinancialStandardProductID,
+                                                                                   IDSystem,
+                                                                                   PricingScheme,
+                                                                                   ASSOC_Company
+                                                                                 }                    not null;
+    "_ProductCatalogItem"              : association to ProductCatalogItem {
+                                                                             ProductCatalogItem,
+                                                                             _ProductCatalog
+                                                                           }                          not null;
+    "_Trade"                           : association to Trade {
+                                                                IDSystem,
+                                                                TradeID
+                                                              }                                       not null;
+    "BusinessValidFrom"                : LocalDate                                                    not null;
+    "BusinessValidTo"                  : LocalDate                                                    not null;
+    "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+    "SystemValidTo"                    : UTCTimestamp                                                 not null;
+    "ProductCatalogAssignmentCategory" : String(50);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

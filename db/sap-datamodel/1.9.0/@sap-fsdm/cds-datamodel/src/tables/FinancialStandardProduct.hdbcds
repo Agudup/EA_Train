@@ -1,0 +1,95 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"PensionPlan";
+
+entity "FinancialStandardProduct" {
+    key "FinancialStandardProductID"       : String(128);
+    key "IDSystem"                         : String(40)                                           default '';
+    key "PricingScheme"                    : String(128);
+    key "ASSOC_Company"                    : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                         not null;
+        "SystemValidTo"                    : UTCTimestamp                                         not null;
+        "ASSOC_OrgUnit"                    : association to OrganizationalUnit {
+                                                                                 OrganizationalUnitID,
+                                                                                 ASSOC_OrganizationHostingOrganizationalUnit
+                                                                               };
+        "_InsuranceProduct"                : association to FinancialStandardProduct {
+                                                                                       FinancialStandardProductID,
+                                                                                       IDSystem,
+                                                                                       PricingScheme,
+                                                                                       ASSOC_Company
+                                                                                     };
+        "_PensionPlan"                     : association to PensionPlan {
+                                                                          ID,
+                                                                          _RetirementPlan
+                                                                        };
+        "AccountCurrency"                  : String(3);
+        "ContractCurrency"                 : String(3);
+        "DocumentationApproach"            : String(10);
+        "FinancialStandardProductCategory" : String(40);
+        "GoverningLawCountry"              : String(2);
+        "NominalAmountCurrency"            : String(3);
+        "ProductName"                      : String(256);
+        "SettlementCurrency"               : String(3);
+        "SettlementMethod"                 : String(40);
+        "SettlementPeriodLength"           : Integer;
+        "SettlementPeriodTimeUnit"         : String(10);
+        "StandardBankAccountProduct"       : String(40);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FinancialStandardProduct_Historical" {
+    "FinancialStandardProductID"       : String(128)                                          not null;
+    "IDSystem"                         : String(40)                                           default '' not null;
+    "PricingScheme"                    : String(128)                                          not null;
+    "ASSOC_Company"                    : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"                : LocalDate                                            not null;
+    "BusinessValidTo"                  : LocalDate                                            not null;
+    "SystemValidFrom"                  : UTCTimestamp                                         not null;
+    "SystemValidTo"                    : UTCTimestamp                                         not null;
+    "ASSOC_OrgUnit"                    : association to OrganizationalUnit {
+                                                                             OrganizationalUnitID,
+                                                                             ASSOC_OrganizationHostingOrganizationalUnit
+                                                                           };
+    "_InsuranceProduct"                : association to FinancialStandardProduct {
+                                                                                   ASSOC_Company,
+                                                                                   FinancialStandardProductID,
+                                                                                   PricingScheme,
+                                                                                   IDSystem
+                                                                                 };
+    "_PensionPlan"                     : association to PensionPlan {
+                                                                      ID,
+                                                                      _RetirementPlan
+                                                                    };
+    "AccountCurrency"                  : String(3);
+    "ContractCurrency"                 : String(3);
+    "DocumentationApproach"            : String(10);
+    "FinancialStandardProductCategory" : String(40);
+    "GoverningLawCountry"              : String(2);
+    "NominalAmountCurrency"            : String(3);
+    "ProductName"                      : String(256);
+    "SettlementCurrency"               : String(3);
+    "SettlementMethod"                 : String(40);
+    "SettlementPeriodLength"           : Integer;
+    "SettlementPeriodTimeUnit"         : String(10);
+    "StandardBankAccountProduct"       : String(40);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

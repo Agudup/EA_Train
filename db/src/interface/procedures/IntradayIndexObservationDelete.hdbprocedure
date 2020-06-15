@@ -1,0 +1,16 @@
+PROCEDURE "sap.fsdm.procedures::IntradayIndexObservationDelete" (IN ROW "sap.fsdm.tabletypes::IntradayIndexObservationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::IntradayIndexObservation" WHERE("Timestamp" ,
+"_Index.IndexID" 
+)in ( select "Timestamp" ,
+"_Index.IndexID" 
+from :ROW );
+
+
+END

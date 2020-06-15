@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::ReceivableBusinessPatnerAssignment_View" 
+as select
+      "Role" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_Receivable.ReceivableID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ReceivableDataOwner" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ReceivableBusinessPatnerAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_Receivable"
+	  on "ASSOC_Receivable"."ReceivableID" = "ASSOC_Receivable.ReceivableID"
+	     
+);

@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::ProductCatalogHierarchy_View" 
+as select
+      "_Child.ProductCatalogItem" ,
+      "_Child._ProductCatalog.CatalogID" ,
+      "_Parent.ProductCatalogItem" ,
+      "_Parent._ProductCatalog.CatalogID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProductCatalogHierarchy"
+with associations
+(
+	join "sap.fsdm.SQLViews::ProductCatalogItem_View" as "_Child"
+	  on "_Child"."ProductCatalogItem" = "_Child.ProductCatalogItem" AND 
+	     "_Child"."_ProductCatalog.CatalogID" = "_Child._ProductCatalog.CatalogID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogItem_View" as "_Parent"
+	  on "_Parent"."ProductCatalogItem" = "_Parent.ProductCatalogItem" AND 
+	     "_Parent"."_ProductCatalog.CatalogID" = "_Parent._ProductCatalog.CatalogID"
+	     
+);

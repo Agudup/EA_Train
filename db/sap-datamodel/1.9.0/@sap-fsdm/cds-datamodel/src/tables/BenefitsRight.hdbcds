@@ -1,0 +1,60 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"InsuranceCoverage";
+
+entity "BenefitsRight" {
+    key "SequenceOrdinalNumber"         : Decimal(3, 0);
+    key "Type"                          : String(40);
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_InsuranceCoverage"            : association to InsuranceCoverage {
+                                                                             ID,
+                                                                             _InsuranceContract,
+                                                                             _InsuredObject
+                                                                           }                   not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "EndDate"                       : LocalDate;
+        "QualifiedBeneficaryIndicator"  : Boolean;
+        "RevocationIndicator"           : Boolean;
+        "SharePercent"                  : Decimal(15, 11);
+        "StartDate"                     : LocalDate;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BenefitsRight_Historical" {
+    "SequenceOrdinalNumber"         : Decimal(3, 0)                                        not null;
+    "Type"                          : String(40)                                           not null;
+    "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "_InsuranceCoverage"            : association to InsuranceCoverage {
+                                                                         ID,
+                                                                         _InsuranceContract,
+                                                                         _InsuredObject
+                                                                       }                   not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "EndDate"                       : LocalDate;
+    "QualifiedBeneficaryIndicator"  : Boolean;
+    "RevocationIndicator"           : Boolean;
+    "SharePercent"                  : Decimal(15, 11);
+    "StartDate"                     : LocalDate;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

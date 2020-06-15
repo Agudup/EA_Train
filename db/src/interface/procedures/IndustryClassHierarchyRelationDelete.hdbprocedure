@@ -1,0 +1,261 @@
+PROCEDURE "sap.fsdm.procedures::IndustryClassHierarchyRelationDelete" (IN ROW "sap.fsdm.tabletypes::IndustryClassHierarchyRelationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'IndustryHierarchy=' || TO_VARCHAR("IndustryHierarchy") || ' ' ||
+                'ASSOC_Child.Industry=' || TO_VARCHAR("ASSOC_Child.Industry") || ' ' ||
+                'ASSOC_Child.IndustryClassificationSystem=' || TO_VARCHAR("ASSOC_Child.IndustryClassificationSystem") || ' ' ||
+                'ASSOC_Parent.Industry=' || TO_VARCHAR("ASSOC_Parent.Industry") || ' ' ||
+                'ASSOC_Parent.IndustryClassificationSystem=' || TO_VARCHAR("ASSOC_Parent.IndustryClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."IndustryHierarchy",
+                        "IN"."ASSOC_Child.Industry",
+                        "IN"."ASSOC_Child.IndustryClassificationSystem",
+                        "IN"."ASSOC_Parent.Industry",
+                        "IN"."ASSOC_Parent.IndustryClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."IndustryHierarchy",
+                        "IN"."ASSOC_Child.Industry",
+                        "IN"."ASSOC_Child.IndustryClassificationSystem",
+                        "IN"."ASSOC_Parent.Industry",
+                        "IN"."ASSOC_Parent.IndustryClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "IndustryHierarchy",
+                        "ASSOC_Child.Industry",
+                        "ASSOC_Child.IndustryClassificationSystem",
+                        "ASSOC_Parent.Industry",
+                        "ASSOC_Parent.IndustryClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."IndustryHierarchy",
+                                    "IN"."ASSOC_Child.Industry",
+                                    "IN"."ASSOC_Child.IndustryClassificationSystem",
+                                    "IN"."ASSOC_Parent.Industry",
+                                    "IN"."ASSOC_Parent.IndustryClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."IndustryHierarchy",
+                                    "IN"."ASSOC_Child.Industry",
+                                    "IN"."ASSOC_Child.IndustryClassificationSystem",
+                                    "IN"."ASSOC_Parent.Industry",
+                                    "IN"."ASSOC_Parent.IndustryClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::IndustryClassHierarchyRelation" (
+        "IndustryHierarchy",
+        "ASSOC_Child.Industry",
+        "ASSOC_Child.IndustryClassificationSystem",
+        "ASSOC_Parent.Industry",
+        "ASSOC_Parent.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "IndustryHierarchyName",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IndustryHierarchy" as "IndustryHierarchy" ,
+            "OLD_ASSOC_Child.Industry" as "ASSOC_Child.Industry" ,
+            "OLD_ASSOC_Child.IndustryClassificationSystem" as "ASSOC_Child.IndustryClassificationSystem" ,
+            "OLD_ASSOC_Parent.Industry" as "ASSOC_Parent.Industry" ,
+            "OLD_ASSOC_Parent.IndustryClassificationSystem" as "ASSOC_Parent.IndustryClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_IndustryHierarchyName" as "IndustryHierarchyName" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."IndustryHierarchy",
+                        "OLD"."ASSOC_Child.Industry",
+                        "OLD"."ASSOC_Child.IndustryClassificationSystem",
+                        "OLD"."ASSOC_Parent.Industry",
+                        "OLD"."ASSOC_Parent.IndustryClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."IndustryHierarchy" as "OLD_IndustryHierarchy",
+                "OLD"."ASSOC_Child.Industry" as "OLD_ASSOC_Child.Industry",
+                "OLD"."ASSOC_Child.IndustryClassificationSystem" as "OLD_ASSOC_Child.IndustryClassificationSystem",
+                "OLD"."ASSOC_Parent.Industry" as "OLD_ASSOC_Parent.Industry",
+                "OLD"."ASSOC_Parent.IndustryClassificationSystem" as "OLD_ASSOC_Parent.IndustryClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."IndustryHierarchyName" as "OLD_IndustryHierarchyName",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::IndustryClassHierarchyRelation" as "OLD"
+            on
+                      ( "IN"."IndustryHierarchy" = "OLD"."IndustryHierarchy" or "IN"."IndustryHierarchy" is null ) and
+                      ( "IN"."ASSOC_Child.Industry" = "OLD"."ASSOC_Child.Industry" or "IN"."ASSOC_Child.Industry" is null ) and
+                      ( "IN"."ASSOC_Child.IndustryClassificationSystem" = "OLD"."ASSOC_Child.IndustryClassificationSystem" or "IN"."ASSOC_Child.IndustryClassificationSystem" is null ) and
+                      ( "IN"."ASSOC_Parent.Industry" = "OLD"."ASSOC_Parent.Industry" or "IN"."ASSOC_Parent.Industry" is null ) and
+                      ( "IN"."ASSOC_Parent.IndustryClassificationSystem" = "OLD"."ASSOC_Parent.IndustryClassificationSystem" or "IN"."ASSOC_Parent.IndustryClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::IndustryClassHierarchyRelation" (
+        "IndustryHierarchy",
+        "ASSOC_Child.Industry",
+        "ASSOC_Child.IndustryClassificationSystem",
+        "ASSOC_Parent.Industry",
+        "ASSOC_Parent.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "IndustryHierarchyName",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_IndustryHierarchy" as "IndustryHierarchy",
+            "OLD_ASSOC_Child.Industry" as "ASSOC_Child.Industry",
+            "OLD_ASSOC_Child.IndustryClassificationSystem" as "ASSOC_Child.IndustryClassificationSystem",
+            "OLD_ASSOC_Parent.Industry" as "ASSOC_Parent.Industry",
+            "OLD_ASSOC_Parent.IndustryClassificationSystem" as "ASSOC_Parent.IndustryClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_IndustryHierarchyName" as "IndustryHierarchyName",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."IndustryHierarchy",
+                        "OLD"."ASSOC_Child.Industry",
+                        "OLD"."ASSOC_Child.IndustryClassificationSystem",
+                        "OLD"."ASSOC_Parent.Industry",
+                        "OLD"."ASSOC_Parent.IndustryClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."IndustryHierarchy" as "OLD_IndustryHierarchy",
+                "OLD"."ASSOC_Child.Industry" as "OLD_ASSOC_Child.Industry",
+                "OLD"."ASSOC_Child.IndustryClassificationSystem" as "OLD_ASSOC_Child.IndustryClassificationSystem",
+                "OLD"."ASSOC_Parent.Industry" as "OLD_ASSOC_Parent.Industry",
+                "OLD"."ASSOC_Parent.IndustryClassificationSystem" as "OLD_ASSOC_Parent.IndustryClassificationSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."IndustryHierarchyName" as "OLD_IndustryHierarchyName",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::IndustryClassHierarchyRelation" as "OLD"
+            on
+                                                ( "IN"."IndustryHierarchy" = "OLD"."IndustryHierarchy" or "IN"."IndustryHierarchy" is null ) and
+                                                ( "IN"."ASSOC_Child.Industry" = "OLD"."ASSOC_Child.Industry" or "IN"."ASSOC_Child.Industry" is null ) and
+                                                ( "IN"."ASSOC_Child.IndustryClassificationSystem" = "OLD"."ASSOC_Child.IndustryClassificationSystem" or "IN"."ASSOC_Child.IndustryClassificationSystem" is null ) and
+                                                ( "IN"."ASSOC_Parent.Industry" = "OLD"."ASSOC_Parent.Industry" or "IN"."ASSOC_Parent.Industry" is null ) and
+                                                ( "IN"."ASSOC_Parent.IndustryClassificationSystem" = "OLD"."ASSOC_Parent.IndustryClassificationSystem" or "IN"."ASSOC_Parent.IndustryClassificationSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::IndustryClassHierarchyRelation"
+    where (
+        "IndustryHierarchy",
+        "ASSOC_Child.Industry",
+        "ASSOC_Child.IndustryClassificationSystem",
+        "ASSOC_Parent.Industry",
+        "ASSOC_Parent.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."IndustryHierarchy",
+            "OLD"."ASSOC_Child.Industry",
+            "OLD"."ASSOC_Child.IndustryClassificationSystem",
+            "OLD"."ASSOC_Parent.Industry",
+            "OLD"."ASSOC_Parent.IndustryClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::IndustryClassHierarchyRelation" as "OLD"
+        on
+                                       ( "IN"."IndustryHierarchy" = "OLD"."IndustryHierarchy" or "IN"."IndustryHierarchy" is null ) and
+                                       ( "IN"."ASSOC_Child.Industry" = "OLD"."ASSOC_Child.Industry" or "IN"."ASSOC_Child.Industry" is null ) and
+                                       ( "IN"."ASSOC_Child.IndustryClassificationSystem" = "OLD"."ASSOC_Child.IndustryClassificationSystem" or "IN"."ASSOC_Child.IndustryClassificationSystem" is null ) and
+                                       ( "IN"."ASSOC_Parent.Industry" = "OLD"."ASSOC_Parent.Industry" or "IN"."ASSOC_Parent.Industry" is null ) and
+                                       ( "IN"."ASSOC_Parent.IndustryClassificationSystem" = "OLD"."ASSOC_Parent.IndustryClassificationSystem" or "IN"."ASSOC_Parent.IndustryClassificationSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

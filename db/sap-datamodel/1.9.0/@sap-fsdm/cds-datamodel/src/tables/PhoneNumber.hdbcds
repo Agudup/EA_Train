@@ -1,0 +1,60 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "PhoneNumber" {
+    key "PhoneNumberType"               : String(40);
+    key "SequenceNumber"                : Integer;
+    key "ASSOC_OrganizationalUnit"      : association to OrganizationalUnit {
+                                                                              OrganizationalUnitID,
+                                                                              ASSOC_OrganizationHostingOrganizationalUnit
+                                                                            }                  not null;
+    key "ASSOC_Partner"                 : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "AreaCode"                      : String(10);
+        "ContactPersonName"             : String(60);
+        "CountryCallingNumber"          : String(5);
+        "ExtensionNumber"               : String(10);
+        "IsPreferred"                   : Boolean;
+        "PhoneNumber"                   : String(50);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PhoneNumber_Historical" {
+    "PhoneNumberType"               : String(40)                                           not null;
+    "SequenceNumber"                : Integer                                              not null;
+    "ASSOC_OrganizationalUnit"      : association to OrganizationalUnit {
+                                                                          OrganizationalUnitID,
+                                                                          ASSOC_OrganizationHostingOrganizationalUnit
+                                                                        }                  not null;
+    "ASSOC_Partner"                 : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "AreaCode"                      : String(10);
+    "ContactPersonName"             : String(60);
+    "CountryCallingNumber"          : String(5);
+    "ExtensionNumber"               : String(10);
+    "IsPreferred"                   : Boolean;
+    "PhoneNumber"                   : String(50);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

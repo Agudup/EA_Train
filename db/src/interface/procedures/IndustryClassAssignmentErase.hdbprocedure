@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::IndustryClassAssignmentErase" (IN ROW "sap.fsdm.tabletypes::IndustryClassAssignmentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_IndustryClass.Industry" is null and
+                         "ASSOC_IndustryClass.IndustryClassificationSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::IndustryClassAssignment" WHERE
+("ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_IndustryClass.Industry" ,
+"ASSOC_IndustryClass.IndustryClassificationSystem" 
+)in ( select "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_IndustryClass.Industry" ,
+"OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::IndustryClassAssignment" "OLD"
+on
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_IndustryClass.Industry" = "OLD"."ASSOC_IndustryClass.Industry" or "IN"."ASSOC_IndustryClass.Industry" is null ) and
+  ( "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" = "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" or "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::IndustryClassAssignment_Historical" WHERE
+("ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_IndustryClass.Industry" ,
+"ASSOC_IndustryClass.IndustryClassificationSystem" 
+)in ( select "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_IndustryClass.Industry" ,
+"OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::IndustryClassAssignment_Historical" "OLD"
+on
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_IndustryClass.Industry" = "OLD"."ASSOC_IndustryClass.Industry" or "IN"."ASSOC_IndustryClass.Industry" is null ) and
+  ( "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" = "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" or "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" is null ) 
+);
+
+END

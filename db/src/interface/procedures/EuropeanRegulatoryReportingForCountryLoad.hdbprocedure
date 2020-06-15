@@ -1,0 +1,238 @@
+PROCEDURE "sap.fsdm.procedures::EuropeanRegulatoryReportingForCountryLoad" (IN ROW "sap.fsdm.tabletypes::EuropeanRegulatoryReportingForCountryTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_Country.GeographicalStructureID=' || TO_VARCHAR("_Country.GeographicalStructureID") || ' ' ||
+                '_Country.GeographicalUnitID=' || TO_VARCHAR("_Country.GeographicalUnitID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_Country.GeographicalStructureID",
+                        "IN"."_Country.GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_Country.GeographicalStructureID",
+                        "IN"."_Country.GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_Country.GeographicalStructureID",
+                        "_Country.GeographicalUnitID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_Country.GeographicalStructureID",
+                                    "IN"."_Country.GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_Country.GeographicalStructureID",
+                                    "IN"."_Country.GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::EuropeanRegulatoryReportingForCountry" (
+        "_Country.GeographicalStructureID",
+        "_Country.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CREEligibleForReducedRiskWeight",
+        "RREEligibleForReducedRiskWeight",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Country.GeographicalStructureID" as "_Country.GeographicalStructureID" ,
+            "OLD__Country.GeographicalUnitID" as "_Country.GeographicalUnitID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_CREEligibleForReducedRiskWeight" as "CREEligibleForReducedRiskWeight" ,
+            "OLD_RREEligibleForReducedRiskWeight" as "RREEligibleForReducedRiskWeight" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_Country.GeographicalStructureID",
+                        "IN"."_Country.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_Country.GeographicalStructureID" as "OLD__Country.GeographicalStructureID",
+                                "OLD"."_Country.GeographicalUnitID" as "OLD__Country.GeographicalUnitID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."CREEligibleForReducedRiskWeight" as "OLD_CREEligibleForReducedRiskWeight",
+                                "OLD"."RREEligibleForReducedRiskWeight" as "OLD_RREEligibleForReducedRiskWeight",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EuropeanRegulatoryReportingForCountry" as "OLD"
+            on
+                ( case when "IN"."_Country.GeographicalStructureID" is null then '' else "IN"."_Country.GeographicalStructureID" end ) = "OLD"."_Country.GeographicalStructureID" and
+                ( case when "IN"."_Country.GeographicalUnitID" is null then '' else "IN"."_Country.GeographicalUnitID" end ) = "OLD"."_Country.GeographicalUnitID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::EuropeanRegulatoryReportingForCountry" (
+        "_Country.GeographicalStructureID",
+        "_Country.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CREEligibleForReducedRiskWeight",
+        "RREEligibleForReducedRiskWeight",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__Country.GeographicalStructureID" as "_Country.GeographicalStructureID",
+            "OLD__Country.GeographicalUnitID" as "_Country.GeographicalUnitID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_CREEligibleForReducedRiskWeight" as "CREEligibleForReducedRiskWeight",
+            "OLD_RREEligibleForReducedRiskWeight" as "RREEligibleForReducedRiskWeight",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_Country.GeographicalStructureID",
+                        "IN"."_Country.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_Country.GeographicalStructureID" as "OLD__Country.GeographicalStructureID",
+                        "OLD"."_Country.GeographicalUnitID" as "OLD__Country.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."CREEligibleForReducedRiskWeight" as "OLD_CREEligibleForReducedRiskWeight",
+                        "OLD"."RREEligibleForReducedRiskWeight" as "OLD_RREEligibleForReducedRiskWeight",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EuropeanRegulatoryReportingForCountry" as "OLD"
+            on
+                ( case when "IN"."_Country.GeographicalStructureID" is null then '' else "IN"."_Country.GeographicalStructureID" end ) = "OLD"."_Country.GeographicalStructureID" and
+                ( case when "IN"."_Country.GeographicalUnitID" is null then '' else "IN"."_Country.GeographicalUnitID" end ) = "OLD"."_Country.GeographicalUnitID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::EuropeanRegulatoryReportingForCountry"
+    where (
+        "_Country.GeographicalStructureID",
+        "_Country.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_Country.GeographicalStructureID",
+            "OLD"."_Country.GeographicalUnitID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::EuropeanRegulatoryReportingForCountry" as "OLD"
+        on
+           ( case when "IN"."_Country.GeographicalStructureID" is null then '' else "IN"."_Country.GeographicalStructureID" end ) = "OLD"."_Country.GeographicalStructureID" and
+           ( case when "IN"."_Country.GeographicalUnitID" is null then '' else "IN"."_Country.GeographicalUnitID" end ) = "OLD"."_Country.GeographicalUnitID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::EuropeanRegulatoryReportingForCountry" (
+        "_Country.GeographicalStructureID",
+        "_Country.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CREEligibleForReducedRiskWeight",
+        "RREEligibleForReducedRiskWeight",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "_Country.GeographicalStructureID" is null then '' else "_Country.GeographicalStructureID" end ) as "_Country.GeographicalStructureID",
+            ( case when "_Country.GeographicalUnitID" is null then '' else "_Country.GeographicalUnitID" end ) as "_Country.GeographicalUnitID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "CREEligibleForReducedRiskWeight"  ,
+            "RREEligibleForReducedRiskWeight"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

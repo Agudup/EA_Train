@@ -1,0 +1,698 @@
+PROCEDURE "sap.fsdm.procedures::PositionLoad" (IN ROW "sap.fsdm.tabletypes::PositionTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Currency=' || TO_VARCHAR("Currency") || ' ' ||
+                'ExpirationDate=' || TO_VARCHAR("ExpirationDate") || ' ' ||
+                'LotID=' || TO_VARCHAR("LotID") || ' ' ||
+                'PutOrCall=' || TO_VARCHAR("PutOrCall") || ' ' ||
+                'StrikePrice=' || TO_VARCHAR("StrikePrice") || ' ' ||
+                'ValuationMethod=' || TO_VARCHAR("ValuationMethod") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_Collection.CollectionID=' || TO_VARCHAR("_Collection.CollectionID") || ' ' ||
+                '_Collection.IDSystem=' || TO_VARCHAR("_Collection.IDSystem") || ' ' ||
+                '_DerivativesAccount.FinancialContractID=' || TO_VARCHAR("_DerivativesAccount.FinancialContractID") || ' ' ||
+                '_DerivativesAccount.IDSystem=' || TO_VARCHAR("_DerivativesAccount.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_SecuritiesAccount.FinancialContractID=' || TO_VARCHAR("_SecuritiesAccount.FinancialContractID") || ' ' ||
+                '_SecuritiesAccount.IDSystem=' || TO_VARCHAR("_SecuritiesAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Currency",
+                        "IN"."ExpirationDate",
+                        "IN"."LotID",
+                        "IN"."PutOrCall",
+                        "IN"."StrikePrice",
+                        "IN"."ValuationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_DerivativesAccount.FinancialContractID",
+                        "IN"."_DerivativesAccount.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Currency",
+                        "IN"."ExpirationDate",
+                        "IN"."LotID",
+                        "IN"."PutOrCall",
+                        "IN"."StrikePrice",
+                        "IN"."ValuationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_DerivativesAccount.FinancialContractID",
+                        "IN"."_DerivativesAccount.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Currency",
+                        "ExpirationDate",
+                        "LotID",
+                        "PutOrCall",
+                        "StrikePrice",
+                        "ValuationMethod",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_Collection.CollectionID",
+                        "_Collection.IDSystem",
+                        "_DerivativesAccount.FinancialContractID",
+                        "_DerivativesAccount.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_SecuritiesAccount.FinancialContractID",
+                        "_SecuritiesAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Currency",
+                                    "IN"."ExpirationDate",
+                                    "IN"."LotID",
+                                    "IN"."PutOrCall",
+                                    "IN"."StrikePrice",
+                                    "IN"."ValuationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_DerivativesAccount.FinancialContractID",
+                                    "IN"."_DerivativesAccount.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Currency",
+                                    "IN"."ExpirationDate",
+                                    "IN"."LotID",
+                                    "IN"."PutOrCall",
+                                    "IN"."StrikePrice",
+                                    "IN"."ValuationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_DerivativesAccount.FinancialContractID",
+                                    "IN"."_DerivativesAccount.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::Position" (
+        "Currency",
+        "ExpirationDate",
+        "LotID",
+        "PutOrCall",
+        "StrikePrice",
+        "ValuationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_DerivativesAccount.FinancialContractID",
+        "_DerivativesAccount.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Accrual",
+        "AccrualCurrency",
+        "AveragePaidPrice",
+        "AveragePaidPriceCurrency",
+        "FuturesPrice",
+        "FuturesPriceCurrency",
+        "InventoryValuationMethod",
+        "LendingValue",
+        "LendingValueCurrency",
+        "LongPosition",
+        "MarketValue",
+        "MarketValueCurrency",
+        "NetPosition",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "OptionPremium",
+        "OptionPremiumCurrency",
+        "PositionAmount",
+        "PositionCategory",
+        "Price",
+        "PriceCurrency",
+        "PurchasePrice",
+        "PurchasePriceCurrency",
+        "Quantity",
+        "SecurityPositionCategory",
+        "ShortPosition",
+        "StrikePriceCurrency",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Currency" as "Currency" ,
+            "OLD_ExpirationDate" as "ExpirationDate" ,
+            "OLD_LotID" as "LotID" ,
+            "OLD_PutOrCall" as "PutOrCall" ,
+            "OLD_StrikePrice" as "StrikePrice" ,
+            "OLD_ValuationMethod" as "ValuationMethod" ,
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID" ,
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem" ,
+            "OLD__DerivativesAccount.FinancialContractID" as "_DerivativesAccount.FinancialContractID" ,
+            "OLD__DerivativesAccount.IDSystem" as "_DerivativesAccount.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID" ,
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_Accrual" as "Accrual" ,
+            "OLD_AccrualCurrency" as "AccrualCurrency" ,
+            "OLD_AveragePaidPrice" as "AveragePaidPrice" ,
+            "OLD_AveragePaidPriceCurrency" as "AveragePaidPriceCurrency" ,
+            "OLD_FuturesPrice" as "FuturesPrice" ,
+            "OLD_FuturesPriceCurrency" as "FuturesPriceCurrency" ,
+            "OLD_InventoryValuationMethod" as "InventoryValuationMethod" ,
+            "OLD_LendingValue" as "LendingValue" ,
+            "OLD_LendingValueCurrency" as "LendingValueCurrency" ,
+            "OLD_LongPosition" as "LongPosition" ,
+            "OLD_MarketValue" as "MarketValue" ,
+            "OLD_MarketValueCurrency" as "MarketValueCurrency" ,
+            "OLD_NetPosition" as "NetPosition" ,
+            "OLD_NominalAmount" as "NominalAmount" ,
+            "OLD_NominalAmountCurrency" as "NominalAmountCurrency" ,
+            "OLD_OptionPremium" as "OptionPremium" ,
+            "OLD_OptionPremiumCurrency" as "OptionPremiumCurrency" ,
+            "OLD_PositionAmount" as "PositionAmount" ,
+            "OLD_PositionCategory" as "PositionCategory" ,
+            "OLD_Price" as "Price" ,
+            "OLD_PriceCurrency" as "PriceCurrency" ,
+            "OLD_PurchasePrice" as "PurchasePrice" ,
+            "OLD_PurchasePriceCurrency" as "PurchasePriceCurrency" ,
+            "OLD_Quantity" as "Quantity" ,
+            "OLD_SecurityPositionCategory" as "SecurityPositionCategory" ,
+            "OLD_ShortPosition" as "ShortPosition" ,
+            "OLD_StrikePriceCurrency" as "StrikePriceCurrency" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."Currency",
+                        "IN"."ExpirationDate",
+                        "IN"."LotID",
+                        "IN"."PutOrCall",
+                        "IN"."StrikePrice",
+                        "IN"."ValuationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_DerivativesAccount.FinancialContractID",
+                        "IN"."_DerivativesAccount.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."ExpirationDate" as "OLD_ExpirationDate",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."PutOrCall" as "OLD_PutOrCall",
+                                "OLD"."StrikePrice" as "OLD_StrikePrice",
+                                "OLD"."ValuationMethod" as "OLD_ValuationMethod",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                                "OLD"."_DerivativesAccount.FinancialContractID" as "OLD__DerivativesAccount.FinancialContractID",
+                                "OLD"."_DerivativesAccount.IDSystem" as "OLD__DerivativesAccount.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Accrual" as "OLD_Accrual",
+                                "OLD"."AccrualCurrency" as "OLD_AccrualCurrency",
+                                "OLD"."AveragePaidPrice" as "OLD_AveragePaidPrice",
+                                "OLD"."AveragePaidPriceCurrency" as "OLD_AveragePaidPriceCurrency",
+                                "OLD"."FuturesPrice" as "OLD_FuturesPrice",
+                                "OLD"."FuturesPriceCurrency" as "OLD_FuturesPriceCurrency",
+                                "OLD"."InventoryValuationMethod" as "OLD_InventoryValuationMethod",
+                                "OLD"."LendingValue" as "OLD_LendingValue",
+                                "OLD"."LendingValueCurrency" as "OLD_LendingValueCurrency",
+                                "OLD"."LongPosition" as "OLD_LongPosition",
+                                "OLD"."MarketValue" as "OLD_MarketValue",
+                                "OLD"."MarketValueCurrency" as "OLD_MarketValueCurrency",
+                                "OLD"."NetPosition" as "OLD_NetPosition",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."NominalAmountCurrency" as "OLD_NominalAmountCurrency",
+                                "OLD"."OptionPremium" as "OLD_OptionPremium",
+                                "OLD"."OptionPremiumCurrency" as "OLD_OptionPremiumCurrency",
+                                "OLD"."PositionAmount" as "OLD_PositionAmount",
+                                "OLD"."PositionCategory" as "OLD_PositionCategory",
+                                "OLD"."Price" as "OLD_Price",
+                                "OLD"."PriceCurrency" as "OLD_PriceCurrency",
+                                "OLD"."PurchasePrice" as "OLD_PurchasePrice",
+                                "OLD"."PurchasePriceCurrency" as "OLD_PurchasePriceCurrency",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."SecurityPositionCategory" as "OLD_SecurityPositionCategory",
+                                "OLD"."ShortPosition" as "OLD_ShortPosition",
+                                "OLD"."StrikePriceCurrency" as "OLD_StrikePriceCurrency",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Position" as "OLD"
+            on
+                ( case when "IN"."Currency" is null then '' else "IN"."Currency" end ) = "OLD"."Currency" and
+                ( case when "IN"."ExpirationDate" is null then '0001-01-01' else "IN"."ExpirationDate" end ) = "OLD"."ExpirationDate" and
+                ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+                ( case when "IN"."PutOrCall" is null then '' else "IN"."PutOrCall" end ) = "OLD"."PutOrCall" and
+                ( case when "IN"."StrikePrice" is null then 0 else "IN"."StrikePrice" end ) = "OLD"."StrikePrice" and
+                ( case when "IN"."ValuationMethod" is null then '' else "IN"."ValuationMethod" end ) = "OLD"."ValuationMethod" and
+                ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+                ( case when "IN"."_Collection.CollectionID" is null then '' else "IN"."_Collection.CollectionID" end ) = "OLD"."_Collection.CollectionID" and
+                ( case when "IN"."_Collection.IDSystem" is null then '' else "IN"."_Collection.IDSystem" end ) = "OLD"."_Collection.IDSystem" and
+                ( case when "IN"."_DerivativesAccount.FinancialContractID" is null then '' else "IN"."_DerivativesAccount.FinancialContractID" end ) = "OLD"."_DerivativesAccount.FinancialContractID" and
+                ( case when "IN"."_DerivativesAccount.IDSystem" is null then '' else "IN"."_DerivativesAccount.IDSystem" end ) = "OLD"."_DerivativesAccount.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::Position" (
+        "Currency",
+        "ExpirationDate",
+        "LotID",
+        "PutOrCall",
+        "StrikePrice",
+        "ValuationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_DerivativesAccount.FinancialContractID",
+        "_DerivativesAccount.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Accrual",
+        "AccrualCurrency",
+        "AveragePaidPrice",
+        "AveragePaidPriceCurrency",
+        "FuturesPrice",
+        "FuturesPriceCurrency",
+        "InventoryValuationMethod",
+        "LendingValue",
+        "LendingValueCurrency",
+        "LongPosition",
+        "MarketValue",
+        "MarketValueCurrency",
+        "NetPosition",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "OptionPremium",
+        "OptionPremiumCurrency",
+        "PositionAmount",
+        "PositionCategory",
+        "Price",
+        "PriceCurrency",
+        "PurchasePrice",
+        "PurchasePriceCurrency",
+        "Quantity",
+        "SecurityPositionCategory",
+        "ShortPosition",
+        "StrikePriceCurrency",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Currency" as "Currency",
+            "OLD_ExpirationDate" as "ExpirationDate",
+            "OLD_LotID" as "LotID",
+            "OLD_PutOrCall" as "PutOrCall",
+            "OLD_StrikePrice" as "StrikePrice",
+            "OLD_ValuationMethod" as "ValuationMethod",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID",
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem",
+            "OLD__DerivativesAccount.FinancialContractID" as "_DerivativesAccount.FinancialContractID",
+            "OLD__DerivativesAccount.IDSystem" as "_DerivativesAccount.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID",
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Accrual" as "Accrual",
+            "OLD_AccrualCurrency" as "AccrualCurrency",
+            "OLD_AveragePaidPrice" as "AveragePaidPrice",
+            "OLD_AveragePaidPriceCurrency" as "AveragePaidPriceCurrency",
+            "OLD_FuturesPrice" as "FuturesPrice",
+            "OLD_FuturesPriceCurrency" as "FuturesPriceCurrency",
+            "OLD_InventoryValuationMethod" as "InventoryValuationMethod",
+            "OLD_LendingValue" as "LendingValue",
+            "OLD_LendingValueCurrency" as "LendingValueCurrency",
+            "OLD_LongPosition" as "LongPosition",
+            "OLD_MarketValue" as "MarketValue",
+            "OLD_MarketValueCurrency" as "MarketValueCurrency",
+            "OLD_NetPosition" as "NetPosition",
+            "OLD_NominalAmount" as "NominalAmount",
+            "OLD_NominalAmountCurrency" as "NominalAmountCurrency",
+            "OLD_OptionPremium" as "OptionPremium",
+            "OLD_OptionPremiumCurrency" as "OptionPremiumCurrency",
+            "OLD_PositionAmount" as "PositionAmount",
+            "OLD_PositionCategory" as "PositionCategory",
+            "OLD_Price" as "Price",
+            "OLD_PriceCurrency" as "PriceCurrency",
+            "OLD_PurchasePrice" as "PurchasePrice",
+            "OLD_PurchasePriceCurrency" as "PurchasePriceCurrency",
+            "OLD_Quantity" as "Quantity",
+            "OLD_SecurityPositionCategory" as "SecurityPositionCategory",
+            "OLD_ShortPosition" as "ShortPosition",
+            "OLD_StrikePriceCurrency" as "StrikePriceCurrency",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."Currency",
+                        "IN"."ExpirationDate",
+                        "IN"."LotID",
+                        "IN"."PutOrCall",
+                        "IN"."StrikePrice",
+                        "IN"."ValuationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_DerivativesAccount.FinancialContractID",
+                        "IN"."_DerivativesAccount.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."Currency" as "OLD_Currency",
+                        "OLD"."ExpirationDate" as "OLD_ExpirationDate",
+                        "OLD"."LotID" as "OLD_LotID",
+                        "OLD"."PutOrCall" as "OLD_PutOrCall",
+                        "OLD"."StrikePrice" as "OLD_StrikePrice",
+                        "OLD"."ValuationMethod" as "OLD_ValuationMethod",
+                        "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                        "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                        "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                        "OLD"."_DerivativesAccount.FinancialContractID" as "OLD__DerivativesAccount.FinancialContractID",
+                        "OLD"."_DerivativesAccount.IDSystem" as "OLD__DerivativesAccount.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."Accrual" as "OLD_Accrual",
+                        "OLD"."AccrualCurrency" as "OLD_AccrualCurrency",
+                        "OLD"."AveragePaidPrice" as "OLD_AveragePaidPrice",
+                        "OLD"."AveragePaidPriceCurrency" as "OLD_AveragePaidPriceCurrency",
+                        "OLD"."FuturesPrice" as "OLD_FuturesPrice",
+                        "OLD"."FuturesPriceCurrency" as "OLD_FuturesPriceCurrency",
+                        "OLD"."InventoryValuationMethod" as "OLD_InventoryValuationMethod",
+                        "OLD"."LendingValue" as "OLD_LendingValue",
+                        "OLD"."LendingValueCurrency" as "OLD_LendingValueCurrency",
+                        "OLD"."LongPosition" as "OLD_LongPosition",
+                        "OLD"."MarketValue" as "OLD_MarketValue",
+                        "OLD"."MarketValueCurrency" as "OLD_MarketValueCurrency",
+                        "OLD"."NetPosition" as "OLD_NetPosition",
+                        "OLD"."NominalAmount" as "OLD_NominalAmount",
+                        "OLD"."NominalAmountCurrency" as "OLD_NominalAmountCurrency",
+                        "OLD"."OptionPremium" as "OLD_OptionPremium",
+                        "OLD"."OptionPremiumCurrency" as "OLD_OptionPremiumCurrency",
+                        "OLD"."PositionAmount" as "OLD_PositionAmount",
+                        "OLD"."PositionCategory" as "OLD_PositionCategory",
+                        "OLD"."Price" as "OLD_Price",
+                        "OLD"."PriceCurrency" as "OLD_PriceCurrency",
+                        "OLD"."PurchasePrice" as "OLD_PurchasePrice",
+                        "OLD"."PurchasePriceCurrency" as "OLD_PurchasePriceCurrency",
+                        "OLD"."Quantity" as "OLD_Quantity",
+                        "OLD"."SecurityPositionCategory" as "OLD_SecurityPositionCategory",
+                        "OLD"."ShortPosition" as "OLD_ShortPosition",
+                        "OLD"."StrikePriceCurrency" as "OLD_StrikePriceCurrency",
+                        "OLD"."Unit" as "OLD_Unit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Position" as "OLD"
+            on
+                ( case when "IN"."Currency" is null then '' else "IN"."Currency" end ) = "OLD"."Currency" and
+                ( case when "IN"."ExpirationDate" is null then '0001-01-01' else "IN"."ExpirationDate" end ) = "OLD"."ExpirationDate" and
+                ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+                ( case when "IN"."PutOrCall" is null then '' else "IN"."PutOrCall" end ) = "OLD"."PutOrCall" and
+                ( case when "IN"."StrikePrice" is null then 0 else "IN"."StrikePrice" end ) = "OLD"."StrikePrice" and
+                ( case when "IN"."ValuationMethod" is null then '' else "IN"."ValuationMethod" end ) = "OLD"."ValuationMethod" and
+                ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+                ( case when "IN"."_Collection.CollectionID" is null then '' else "IN"."_Collection.CollectionID" end ) = "OLD"."_Collection.CollectionID" and
+                ( case when "IN"."_Collection.IDSystem" is null then '' else "IN"."_Collection.IDSystem" end ) = "OLD"."_Collection.IDSystem" and
+                ( case when "IN"."_DerivativesAccount.FinancialContractID" is null then '' else "IN"."_DerivativesAccount.FinancialContractID" end ) = "OLD"."_DerivativesAccount.FinancialContractID" and
+                ( case when "IN"."_DerivativesAccount.IDSystem" is null then '' else "IN"."_DerivativesAccount.IDSystem" end ) = "OLD"."_DerivativesAccount.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::Position"
+    where (
+        "Currency",
+        "ExpirationDate",
+        "LotID",
+        "PutOrCall",
+        "StrikePrice",
+        "ValuationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_DerivativesAccount.FinancialContractID",
+        "_DerivativesAccount.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."Currency",
+            "OLD"."ExpirationDate",
+            "OLD"."LotID",
+            "OLD"."PutOrCall",
+            "OLD"."StrikePrice",
+            "OLD"."ValuationMethod",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_Collection.CollectionID",
+            "OLD"."_Collection.IDSystem",
+            "OLD"."_DerivativesAccount.FinancialContractID",
+            "OLD"."_DerivativesAccount.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_SecuritiesAccount.FinancialContractID",
+            "OLD"."_SecuritiesAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Position" as "OLD"
+        on
+           ( case when "IN"."Currency" is null then '' else "IN"."Currency" end ) = "OLD"."Currency" and
+           ( case when "IN"."ExpirationDate" is null then '0001-01-01' else "IN"."ExpirationDate" end ) = "OLD"."ExpirationDate" and
+           ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+           ( case when "IN"."PutOrCall" is null then '' else "IN"."PutOrCall" end ) = "OLD"."PutOrCall" and
+           ( case when "IN"."StrikePrice" is null then 0 else "IN"."StrikePrice" end ) = "OLD"."StrikePrice" and
+           ( case when "IN"."ValuationMethod" is null then '' else "IN"."ValuationMethod" end ) = "OLD"."ValuationMethod" and
+           ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+           ( case when "IN"."_Collection.CollectionID" is null then '' else "IN"."_Collection.CollectionID" end ) = "OLD"."_Collection.CollectionID" and
+           ( case when "IN"."_Collection.IDSystem" is null then '' else "IN"."_Collection.IDSystem" end ) = "OLD"."_Collection.IDSystem" and
+           ( case when "IN"."_DerivativesAccount.FinancialContractID" is null then '' else "IN"."_DerivativesAccount.FinancialContractID" end ) = "OLD"."_DerivativesAccount.FinancialContractID" and
+           ( case when "IN"."_DerivativesAccount.IDSystem" is null then '' else "IN"."_DerivativesAccount.IDSystem" end ) = "OLD"."_DerivativesAccount.IDSystem" and
+           ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+           ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+           ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::Position" (
+        "Currency",
+        "ExpirationDate",
+        "LotID",
+        "PutOrCall",
+        "StrikePrice",
+        "ValuationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_DerivativesAccount.FinancialContractID",
+        "_DerivativesAccount.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Accrual",
+        "AccrualCurrency",
+        "AveragePaidPrice",
+        "AveragePaidPriceCurrency",
+        "FuturesPrice",
+        "FuturesPriceCurrency",
+        "InventoryValuationMethod",
+        "LendingValue",
+        "LendingValueCurrency",
+        "LongPosition",
+        "MarketValue",
+        "MarketValueCurrency",
+        "NetPosition",
+        "NominalAmount",
+        "NominalAmountCurrency",
+        "OptionPremium",
+        "OptionPremiumCurrency",
+        "PositionAmount",
+        "PositionCategory",
+        "Price",
+        "PriceCurrency",
+        "PurchasePrice",
+        "PurchasePriceCurrency",
+        "Quantity",
+        "SecurityPositionCategory",
+        "ShortPosition",
+        "StrikePriceCurrency",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "Currency" is null then '' else "Currency" end ) as "Currency",
+            ( case when "ExpirationDate" is null then '0001-01-01' else "ExpirationDate" end ) as "ExpirationDate",
+            ( case when "LotID" is null then '' else "LotID" end ) as "LotID",
+            ( case when "PutOrCall" is null then '' else "PutOrCall" end ) as "PutOrCall",
+            ( case when "StrikePrice" is null then 0 else "StrikePrice" end ) as "StrikePrice",
+            ( case when "ValuationMethod" is null then '' else "ValuationMethod" end ) as "ValuationMethod",
+            ( case when "_AccountingSystem.AccountingSystemID" is null then '' else "_AccountingSystem.AccountingSystemID" end ) as "_AccountingSystem.AccountingSystemID",
+            ( case when "_Collection.CollectionID" is null then '' else "_Collection.CollectionID" end ) as "_Collection.CollectionID",
+            ( case when "_Collection.IDSystem" is null then '' else "_Collection.IDSystem" end ) as "_Collection.IDSystem",
+            ( case when "_DerivativesAccount.FinancialContractID" is null then '' else "_DerivativesAccount.FinancialContractID" end ) as "_DerivativesAccount.FinancialContractID",
+            ( case when "_DerivativesAccount.IDSystem" is null then '' else "_DerivativesAccount.IDSystem" end ) as "_DerivativesAccount.IDSystem",
+            ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+            ( case when "_SecuritiesAccount.FinancialContractID" is null then '' else "_SecuritiesAccount.FinancialContractID" end ) as "_SecuritiesAccount.FinancialContractID",
+            ( case when "_SecuritiesAccount.IDSystem" is null then '' else "_SecuritiesAccount.IDSystem" end ) as "_SecuritiesAccount.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "Accrual"  ,
+            "AccrualCurrency"  ,
+            "AveragePaidPrice"  ,
+            "AveragePaidPriceCurrency"  ,
+            "FuturesPrice"  ,
+            "FuturesPriceCurrency"  ,
+            "InventoryValuationMethod"  ,
+            "LendingValue"  ,
+            "LendingValueCurrency"  ,
+            "LongPosition"  ,
+            "MarketValue"  ,
+            "MarketValueCurrency"  ,
+            "NetPosition"  ,
+            "NominalAmount"  ,
+            "NominalAmountCurrency"  ,
+            "OptionPremium"  ,
+            "OptionPremiumCurrency"  ,
+            "PositionAmount"  ,
+            "PositionCategory"  ,
+            "Price"  ,
+            "PriceCurrency"  ,
+            "PurchasePrice"  ,
+            "PurchasePriceCurrency"  ,
+            "Quantity"  ,
+            "SecurityPositionCategory"  ,
+            "ShortPosition"  ,
+            "StrikePriceCurrency"  ,
+            "Unit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

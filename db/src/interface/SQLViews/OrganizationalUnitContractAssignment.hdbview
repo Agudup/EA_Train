@@ -1,0 +1,29 @@
+view "sap.fsdm.SQLViews::OrganizationalUnitContractAssignment_View" 
+as select
+      "RoleOfOrganizationalUnit" ,
+      "ASSOC_Contract.FinancialContractID" ,
+      "ASSOC_Contract.IDSystem" ,
+      "ASSOC_OrgUnit.OrganizationalUnitID" ,
+      "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::OrganizationalUnitContractAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_Contract"
+	  on "ASSOC_Contract"."FinancialContractID" = "ASSOC_Contract.FinancialContractID" AND 
+	     "ASSOC_Contract"."IDSystem" = "ASSOC_Contract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrgUnit"
+	  on "ASSOC_OrgUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrgUnit"."OrganizationalUnitID" = "ASSOC_OrgUnit.OrganizationalUnitID"
+	     
+);

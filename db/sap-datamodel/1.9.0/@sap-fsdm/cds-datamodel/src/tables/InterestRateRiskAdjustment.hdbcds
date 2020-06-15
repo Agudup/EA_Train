@@ -1,0 +1,75 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "InterestRateRiskAdjustment" {
+    key "IRRCalculationMethod"                     : String(20);
+    key "IndicatorResultBeforeChange"              : Boolean;
+    key "_AccountingSystem"                        : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialContract"                       : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                           not null;
+    key "_FinancialInstrument"                     : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_InvestmentAccount"                       : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                           not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                                                 not null;
+        "SystemValidTo"                            : UTCTimestamp                                                 not null;
+        "IRRHedgePaymentCurrency"                  : String(3);
+        "IRRHedgePositionCurrency"                 : String(3);
+        "IRRPaymentCurrency"                       : String(3);
+        "IRRPositionCurrency"                      : String(3);
+        "IRRiskAdjHedgedInPaymentPositionCurrency" : Decimal(34, 6);
+        "IRRiskAdjHedgedInPositionCurrency"        : Decimal(34, 6);
+        "IRRiskAdjUnhedgedInPaymentCurrency"       : Decimal(34, 6);
+        "IRRiskAdjUnhedgedInPositionCurrency"      : Decimal(34, 6);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InterestRateRiskAdjustment_Historical" {
+    "IRRCalculationMethod"                     : String(20)                                                   not null;
+    "IndicatorResultBeforeChange"              : Boolean                                                      not null;
+    "_AccountingSystem"                        : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialContract"                       : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                           not null;
+    "_FinancialInstrument"                     : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_InvestmentAccount"                       : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                           not null;
+    "BusinessValidFrom"                        : LocalDate                                                    not null;
+    "BusinessValidTo"                          : LocalDate                                                    not null;
+    "SystemValidFrom"                          : UTCTimestamp                                                 not null;
+    "SystemValidTo"                            : UTCTimestamp                                                 not null;
+    "IRRHedgePaymentCurrency"                  : String(3);
+    "IRRHedgePositionCurrency"                 : String(3);
+    "IRRPaymentCurrency"                       : String(3);
+    "IRRPositionCurrency"                      : String(3);
+    "IRRiskAdjHedgedInPaymentPositionCurrency" : Decimal(34, 6);
+    "IRRiskAdjHedgedInPositionCurrency"        : Decimal(34, 6);
+    "IRRiskAdjUnhedgedInPaymentCurrency"       : Decimal(34, 6);
+    "IRRiskAdjUnhedgedInPositionCurrency"      : Decimal(34, 6);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

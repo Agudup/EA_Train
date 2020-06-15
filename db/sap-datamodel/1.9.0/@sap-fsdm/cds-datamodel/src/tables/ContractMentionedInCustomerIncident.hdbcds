@@ -1,0 +1,46 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"CommunicationEvent";
+
+entity "ContractMentionedInCustomerIncident" {
+    key "ASSOC_ContractMentionedInCustomerIncident" : association to FinancialContract {
+                                                                                         FinancialContractID,
+                                                                                         IDSystem
+                                                                                       }  not null;
+    key "ASSOC_CustomerIncident"                    : association to CommunicationEvent {
+                                                                                          CommunicationEventID,
+                                                                                          IDSystem
+                                                                                        } not null;
+        "SystemValidFrom"                           : UTCTimestamp                        not null;
+        "SystemValidTo"                             : UTCTimestamp                        not null;
+        "SourceSystemID"                            : String(128);
+        "ChangeTimestampInSourceSystem"             : UTCTimestamp;
+        "ChangingUserInSourceSystem"                : String(128);
+        "ChangingProcessType"                       : String(40);
+        "ChangingProcessID"                         : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ContractMentionedInCustomerIncident_Historical" {
+    "ASSOC_ContractMentionedInCustomerIncident" : association to FinancialContract {
+                                                                                     FinancialContractID,
+                                                                                     IDSystem
+                                                                                   }  not null;
+    "ASSOC_CustomerIncident"                    : association to CommunicationEvent {
+                                                                                      CommunicationEventID,
+                                                                                      IDSystem
+                                                                                    } not null;
+    "SystemValidFrom"                           : UTCTimestamp                        not null;
+    "SystemValidTo"                             : UTCTimestamp                        not null;
+    "SourceSystemID"                            : String(128);
+    "ChangeTimestampInSourceSystem"             : UTCTimestamp;
+    "ChangingUserInSourceSystem"                : String(128);
+    "ChangingProcessType"                       : String(40);
+    "ChangingProcessID"                         : String(128);
+}
+technical configuration {
+    column store;
+};

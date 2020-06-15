@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::IndustryClassHierarchyRelation_View" 
+as select
+      "IndustryHierarchy" ,
+      "ASSOC_Child.Industry" ,
+      "ASSOC_Child.IndustryClassificationSystem" ,
+      "ASSOC_Parent.Industry" ,
+      "ASSOC_Parent.IndustryClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "IndustryHierarchyName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndustryClassHierarchyRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::IndustryClass_View" as "ASSOC_Child"
+	  on "ASSOC_Child"."Industry" = "ASSOC_Child.Industry" AND 
+	     "ASSOC_Child"."IndustryClassificationSystem" = "ASSOC_Child.IndustryClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClass_View" as "ASSOC_Parent"
+	  on "ASSOC_Parent"."IndustryClassificationSystem" = "ASSOC_Parent.IndustryClassificationSystem" AND 
+	     "ASSOC_Parent"."Industry" = "ASSOC_Parent.Industry"
+	     
+);

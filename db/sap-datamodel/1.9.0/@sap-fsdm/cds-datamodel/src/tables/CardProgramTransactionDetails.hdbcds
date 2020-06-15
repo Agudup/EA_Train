@@ -1,0 +1,47 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Settlement";
+
+entity "CardProgramTransactionDetails" {
+    key "CardProgramID"                    : String(256);
+    key "ASSOC_BusinessTransactionItem"    : association to Settlement {
+                                                                         IDSystem,
+                                                                         ItemNumber,
+                                                                         SettlementID
+                                                                       } not null;
+        "SystemValidFrom"                  : UTCTimestamp                not null;
+        "SystemValidTo"                    : UTCTimestamp                not null;
+        "CardProgramAmountCurrency"        : String(3);
+        "CardProgramAmountFromTransaction" : Decimal(34, 6);
+        "CardProgramPointsFromTransaction" : Decimal(34, 6);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CardProgramTransactionDetails_Historical" {
+    "CardProgramID"                    : String(256)                 not null;
+    "ASSOC_BusinessTransactionItem"    : association to Settlement {
+                                                                     IDSystem,
+                                                                     ItemNumber,
+                                                                     SettlementID
+                                                                   } not null;
+    "SystemValidFrom"                  : UTCTimestamp                not null;
+    "SystemValidTo"                    : UTCTimestamp                not null;
+    "CardProgramAmountCurrency"        : String(3);
+    "CardProgramAmountFromTransaction" : Decimal(34, 6);
+    "CardProgramPointsFromTransaction" : Decimal(34, 6);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

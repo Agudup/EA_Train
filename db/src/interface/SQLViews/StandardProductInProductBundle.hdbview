@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::StandardProductInProductBundle_View" 
+as select
+      "ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+      "ASSOC_FinancialStandardProduct.IDSystem" ,
+      "ASSOC_FinancialStandardProduct.PricingScheme" ,
+      "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "ASSOC_ProductBundle.ProductBundleID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardProductInProductBundle"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "ASSOC_FinancialStandardProduct"
+	  on "ASSOC_FinancialStandardProduct"."ASSOC_Company.BusinessPartnerID" = "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_FinancialStandardProduct"."FinancialStandardProductID" = "ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_FinancialStandardProduct"."IDSystem" = "ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "ASSOC_FinancialStandardProduct"."PricingScheme" = "ASSOC_FinancialStandardProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::ProductBundle_View" as "ASSOC_ProductBundle"
+	  on "ASSOC_ProductBundle"."ProductBundleID" = "ASSOC_ProductBundle.ProductBundleID"
+	     
+);

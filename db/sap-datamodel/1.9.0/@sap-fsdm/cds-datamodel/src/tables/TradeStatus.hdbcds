@@ -1,0 +1,52 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Trade";
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "TradeStatus" {
+    key "TradeStatusCategory"                      : String(40);
+    key "TradeStatusType"                          : String(40);
+    key "_Trade"                                   : association to Trade {
+                                                                            IDSystem,
+                                                                            TradeID
+                                                                          }                                not null;
+    key "BusinessValidFrom"                        : UTCTimestamp;
+    key "BusinessValidTo"                          : UTCTimestamp;
+        "SystemValidFrom"                          : UTCTimestamp                                          not null;
+        "SystemValidTo"                            : UTCTimestamp                                          not null;
+        "_EmployeeResponsibleForTradeStatusChange" : association to BusinessPartner { BusinessPartnerID };
+        "Status"                                   : String(100);
+        "StatusChangeReason"                       : String(200);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "TradeStatus_Historical" {
+    "TradeStatusCategory"                      : String(40)                                            not null;
+    "TradeStatusType"                          : String(40)                                            not null;
+    "_Trade"                                   : association to Trade {
+                                                                        IDSystem,
+                                                                        TradeID
+                                                                      }                                not null;
+    "BusinessValidFrom"                        : UTCTimestamp                                          not null;
+    "BusinessValidTo"                          : UTCTimestamp                                          not null;
+    "SystemValidFrom"                          : UTCTimestamp                                          not null;
+    "SystemValidTo"                            : UTCTimestamp                                          not null;
+    "_EmployeeResponsibleForTradeStatusChange" : association to BusinessPartner { BusinessPartnerID };
+    "Status"                                   : String(100);
+    "StatusChangeReason"                       : String(200);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

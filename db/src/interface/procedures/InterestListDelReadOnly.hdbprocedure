@@ -1,0 +1,761 @@
+PROCEDURE "sap.fsdm.procedures::InterestListDelReadOnly" (IN ROW "sap.fsdm.tabletypes::InterestTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::InterestTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::InterestTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_CcyOfMultiCcyAccnt.PositionCurrency=' || TO_VARCHAR("ASSOC_CcyOfMultiCcyAccnt.PositionCurrency") || ' ' ||
+                'ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                '_DebtInstrument.FinancialInstrumentID=' || TO_VARCHAR("_DebtInstrument.FinancialInstrumentID") || ' ' ||
+                '_OptionOfReferenceRateSpecification.ComponentNumber=' || TO_VARCHAR("_OptionOfReferenceRateSpecification.ComponentNumber") || ' ' ||
+                '_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID=' || TO_VARCHAR("_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID") || ' ' ||
+                '_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem=' || TO_VARCHAR("_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem") || ' ' ||
+                '_OptionOfStrikeSpecification.ComponentNumber=' || TO_VARCHAR("_OptionOfStrikeSpecification.ComponentNumber") || ' ' ||
+                '_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID=' || TO_VARCHAR("_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID") || ' ' ||
+                '_OptionOfStrikeSpecification._InterestRateOption.IDSystem=' || TO_VARCHAR("_OptionOfStrikeSpecification._InterestRateOption.IDSystem") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_DebtInstrument.FinancialInstrumentID",
+                        "IN"."_OptionOfReferenceRateSpecification.ComponentNumber",
+                        "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."_OptionOfStrikeSpecification.ComponentNumber",
+                        "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."_DebtInstrument.FinancialInstrumentID",
+                        "IN"."_OptionOfReferenceRateSpecification.ComponentNumber",
+                        "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."_OptionOfStrikeSpecification.ComponentNumber",
+                        "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "_DebtInstrument.FinancialInstrumentID",
+                        "_OptionOfReferenceRateSpecification.ComponentNumber",
+                        "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "_OptionOfStrikeSpecification.ComponentNumber",
+                        "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                    "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_DebtInstrument.FinancialInstrumentID",
+                                    "IN"."_OptionOfReferenceRateSpecification.ComponentNumber",
+                                    "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                    "IN"."_OptionOfStrikeSpecification.ComponentNumber",
+                                    "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                    "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."_DebtInstrument.FinancialInstrumentID",
+                                    "IN"."_OptionOfReferenceRateSpecification.ComponentNumber",
+                                    "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                    "IN"."_OptionOfStrikeSpecification.ComponentNumber",
+                                    "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "SequenceNumber",
+            "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "ASSOC_FinancialContract.FinancialContractID",
+            "ASSOC_FinancialContract.IDSystem",
+            "_DebtInstrument.FinancialInstrumentID",
+            "_OptionOfReferenceRateSpecification.ComponentNumber",
+            "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "_OptionOfStrikeSpecification.ComponentNumber",
+            "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "_Trade.IDSystem",
+            "_Trade.TradeID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::Interest" WHERE
+            (
+            "SequenceNumber" ,
+            "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+            "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_FinancialContract.IDSystem" ,
+            "_DebtInstrument.FinancialInstrumentID" ,
+            "_OptionOfReferenceRateSpecification.ComponentNumber" ,
+            "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+            "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+            "_OptionOfStrikeSpecification.ComponentNumber" ,
+            "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+            "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+            "_Trade.IDSystem" ,
+            "_Trade.TradeID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."_DebtInstrument.FinancialInstrumentID",
+            "OLD"."_OptionOfReferenceRateSpecification.ComponentNumber",
+            "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "OLD"."_OptionOfStrikeSpecification.ComponentNumber",
+            "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Interest" as "OLD"
+        on
+                              ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_DebtInstrument.FinancialInstrumentID" = "OLD"."_DebtInstrument.FinancialInstrumentID" or "IN"."_DebtInstrument.FinancialInstrumentID" is null ) and
+                              ( "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+                              ( "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+                              ( "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+                              ( "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                              ( "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+                              ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) and
+                              ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "SequenceNumber",
+        "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_DebtInstrument.FinancialInstrumentID",
+        "_OptionOfReferenceRateSpecification.ComponentNumber",
+        "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "_OptionOfStrikeSpecification.ComponentNumber",
+        "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_ReferenceRateID.ReferenceRateID",
+        "AnnuityAmount",
+        "AnnuityAmountCurrency",
+        "BusinessDayConvention",
+        "CompoundingConvention",
+        "CutoffRelativeToDate",
+        "DayCountConvention",
+        "DayOfMonthOfInterestPayment",
+        "DayOfMonthOfInterestPeriodEnd",
+        "DayOfMonthOfReset",
+        "DueDateScheduleIsIndependent",
+        "DueScheduleBusinessCalendar",
+        "DueScheduleBusinessDayConvention",
+        "DueSchedulePeriodLength",
+        "DueSchedulePeriodTimeUnit",
+        "FirstDueDate",
+        "FirstInterestPeriodEndDate",
+        "FirstInterestPeriodStartDate",
+        "FirstRegularFloatingRateResetDate",
+        "FixedRate",
+        "FixingRateSpecificationCategory",
+        "InstallmentAmount",
+        "InstallmentAmountCurrency",
+        "InstallmentInterestAmount",
+        "InstallmentInterestAmountCurrency",
+        "InterestBusinessCalendar",
+        "InterestCategory",
+        "InterestCurrency",
+        "InterestInAdvance",
+        "InterestIsCompounded",
+        "InterestPaymentPrecision",
+        "InterestPaymentRoundingMethod",
+        "InterestPeriodLength",
+        "InterestPeriodTimeUnit",
+        "InterestSpecificationCategory",
+        "InterestSubPeriodLength",
+        "InterestSubPeriodSpecificationCategory",
+        "InterestSubPeriodTimeUnit",
+        "InterestType",
+        "LastInterestPeriodEndDate",
+        "NumberOfInstallments",
+        "PayingOrReceiving",
+        "PeriodEndDueDateLag",
+        "PeriodEndDueDateLagTimeUnit",
+        "PreconditionApplies",
+        "ReferenceRateFactor",
+        "ReferenceRateFormula",
+        "RelativeToInterestPeriodStartOrEnd",
+        "ResetAtMonthUltimo",
+        "ResetBusinessCalendar",
+        "ResetBusinessDayConvention",
+        "ResetCutoffLength",
+        "ResetCutoffTimeUnit",
+        "ResetInArrears",
+        "ResetLagLength",
+        "ResetLagTimeUnit",
+        "ResetPeriodLength",
+        "ResetPeriodTimeUnit",
+        "ResetPrecision",
+        "ResetRounding",
+        "RoleOfPayer",
+        "ScaleApplies",
+        "Spread",
+        "TotalInstallmentAmount",
+        "TotalInstallmentInterestAmount",
+        "VariableRateMax",
+        "VariableRateMin",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+            "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD__DebtInstrument.FinancialInstrumentID" as "_DebtInstrument.FinancialInstrumentID" ,
+            "OLD__OptionOfReferenceRateSpecification.ComponentNumber" as "_OptionOfReferenceRateSpecification.ComponentNumber" ,
+            "OLD__OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+            "OLD__OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+            "OLD__OptionOfStrikeSpecification.ComponentNumber" as "_OptionOfStrikeSpecification.ComponentNumber" ,
+            "OLD__OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+            "OLD__OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_ReferenceRateID.ReferenceRateID" as "ASSOC_ReferenceRateID.ReferenceRateID" ,
+            "OLD_AnnuityAmount" as "AnnuityAmount" ,
+            "OLD_AnnuityAmountCurrency" as "AnnuityAmountCurrency" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_CompoundingConvention" as "CompoundingConvention" ,
+            "OLD_CutoffRelativeToDate" as "CutoffRelativeToDate" ,
+            "OLD_DayCountConvention" as "DayCountConvention" ,
+            "OLD_DayOfMonthOfInterestPayment" as "DayOfMonthOfInterestPayment" ,
+            "OLD_DayOfMonthOfInterestPeriodEnd" as "DayOfMonthOfInterestPeriodEnd" ,
+            "OLD_DayOfMonthOfReset" as "DayOfMonthOfReset" ,
+            "OLD_DueDateScheduleIsIndependent" as "DueDateScheduleIsIndependent" ,
+            "OLD_DueScheduleBusinessCalendar" as "DueScheduleBusinessCalendar" ,
+            "OLD_DueScheduleBusinessDayConvention" as "DueScheduleBusinessDayConvention" ,
+            "OLD_DueSchedulePeriodLength" as "DueSchedulePeriodLength" ,
+            "OLD_DueSchedulePeriodTimeUnit" as "DueSchedulePeriodTimeUnit" ,
+            "OLD_FirstDueDate" as "FirstDueDate" ,
+            "OLD_FirstInterestPeriodEndDate" as "FirstInterestPeriodEndDate" ,
+            "OLD_FirstInterestPeriodStartDate" as "FirstInterestPeriodStartDate" ,
+            "OLD_FirstRegularFloatingRateResetDate" as "FirstRegularFloatingRateResetDate" ,
+            "OLD_FixedRate" as "FixedRate" ,
+            "OLD_FixingRateSpecificationCategory" as "FixingRateSpecificationCategory" ,
+            "OLD_InstallmentAmount" as "InstallmentAmount" ,
+            "OLD_InstallmentAmountCurrency" as "InstallmentAmountCurrency" ,
+            "OLD_InstallmentInterestAmount" as "InstallmentInterestAmount" ,
+            "OLD_InstallmentInterestAmountCurrency" as "InstallmentInterestAmountCurrency" ,
+            "OLD_InterestBusinessCalendar" as "InterestBusinessCalendar" ,
+            "OLD_InterestCategory" as "InterestCategory" ,
+            "OLD_InterestCurrency" as "InterestCurrency" ,
+            "OLD_InterestInAdvance" as "InterestInAdvance" ,
+            "OLD_InterestIsCompounded" as "InterestIsCompounded" ,
+            "OLD_InterestPaymentPrecision" as "InterestPaymentPrecision" ,
+            "OLD_InterestPaymentRoundingMethod" as "InterestPaymentRoundingMethod" ,
+            "OLD_InterestPeriodLength" as "InterestPeriodLength" ,
+            "OLD_InterestPeriodTimeUnit" as "InterestPeriodTimeUnit" ,
+            "OLD_InterestSpecificationCategory" as "InterestSpecificationCategory" ,
+            "OLD_InterestSubPeriodLength" as "InterestSubPeriodLength" ,
+            "OLD_InterestSubPeriodSpecificationCategory" as "InterestSubPeriodSpecificationCategory" ,
+            "OLD_InterestSubPeriodTimeUnit" as "InterestSubPeriodTimeUnit" ,
+            "OLD_InterestType" as "InterestType" ,
+            "OLD_LastInterestPeriodEndDate" as "LastInterestPeriodEndDate" ,
+            "OLD_NumberOfInstallments" as "NumberOfInstallments" ,
+            "OLD_PayingOrReceiving" as "PayingOrReceiving" ,
+            "OLD_PeriodEndDueDateLag" as "PeriodEndDueDateLag" ,
+            "OLD_PeriodEndDueDateLagTimeUnit" as "PeriodEndDueDateLagTimeUnit" ,
+            "OLD_PreconditionApplies" as "PreconditionApplies" ,
+            "OLD_ReferenceRateFactor" as "ReferenceRateFactor" ,
+            "OLD_ReferenceRateFormula" as "ReferenceRateFormula" ,
+            "OLD_RelativeToInterestPeriodStartOrEnd" as "RelativeToInterestPeriodStartOrEnd" ,
+            "OLD_ResetAtMonthUltimo" as "ResetAtMonthUltimo" ,
+            "OLD_ResetBusinessCalendar" as "ResetBusinessCalendar" ,
+            "OLD_ResetBusinessDayConvention" as "ResetBusinessDayConvention" ,
+            "OLD_ResetCutoffLength" as "ResetCutoffLength" ,
+            "OLD_ResetCutoffTimeUnit" as "ResetCutoffTimeUnit" ,
+            "OLD_ResetInArrears" as "ResetInArrears" ,
+            "OLD_ResetLagLength" as "ResetLagLength" ,
+            "OLD_ResetLagTimeUnit" as "ResetLagTimeUnit" ,
+            "OLD_ResetPeriodLength" as "ResetPeriodLength" ,
+            "OLD_ResetPeriodTimeUnit" as "ResetPeriodTimeUnit" ,
+            "OLD_ResetPrecision" as "ResetPrecision" ,
+            "OLD_ResetRounding" as "ResetRounding" ,
+            "OLD_RoleOfPayer" as "RoleOfPayer" ,
+            "OLD_ScaleApplies" as "ScaleApplies" ,
+            "OLD_Spread" as "Spread" ,
+            "OLD_TotalInstallmentAmount" as "TotalInstallmentAmount" ,
+            "OLD_TotalInstallmentInterestAmount" as "TotalInstallmentInterestAmount" ,
+            "OLD_VariableRateMax" as "VariableRateMax" ,
+            "OLD_VariableRateMin" as "VariableRateMin" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_DebtInstrument.FinancialInstrumentID",
+                        "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "OLD_ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_DebtInstrument.FinancialInstrumentID" as "OLD__DebtInstrument.FinancialInstrumentID",
+                                "OLD"."_OptionOfReferenceRateSpecification.ComponentNumber" as "OLD__OptionOfReferenceRateSpecification.ComponentNumber",
+                                "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "OLD__OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "OLD__OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                "OLD"."_OptionOfStrikeSpecification.ComponentNumber" as "OLD__OptionOfStrikeSpecification.ComponentNumber",
+                                "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "OLD__OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "OLD__OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_ReferenceRateID.ReferenceRateID" as "OLD_ASSOC_ReferenceRateID.ReferenceRateID",
+                                "OLD"."AnnuityAmount" as "OLD_AnnuityAmount",
+                                "OLD"."AnnuityAmountCurrency" as "OLD_AnnuityAmountCurrency",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."CompoundingConvention" as "OLD_CompoundingConvention",
+                                "OLD"."CutoffRelativeToDate" as "OLD_CutoffRelativeToDate",
+                                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                                "OLD"."DayOfMonthOfInterestPayment" as "OLD_DayOfMonthOfInterestPayment",
+                                "OLD"."DayOfMonthOfInterestPeriodEnd" as "OLD_DayOfMonthOfInterestPeriodEnd",
+                                "OLD"."DayOfMonthOfReset" as "OLD_DayOfMonthOfReset",
+                                "OLD"."DueDateScheduleIsIndependent" as "OLD_DueDateScheduleIsIndependent",
+                                "OLD"."DueScheduleBusinessCalendar" as "OLD_DueScheduleBusinessCalendar",
+                                "OLD"."DueScheduleBusinessDayConvention" as "OLD_DueScheduleBusinessDayConvention",
+                                "OLD"."DueSchedulePeriodLength" as "OLD_DueSchedulePeriodLength",
+                                "OLD"."DueSchedulePeriodTimeUnit" as "OLD_DueSchedulePeriodTimeUnit",
+                                "OLD"."FirstDueDate" as "OLD_FirstDueDate",
+                                "OLD"."FirstInterestPeriodEndDate" as "OLD_FirstInterestPeriodEndDate",
+                                "OLD"."FirstInterestPeriodStartDate" as "OLD_FirstInterestPeriodStartDate",
+                                "OLD"."FirstRegularFloatingRateResetDate" as "OLD_FirstRegularFloatingRateResetDate",
+                                "OLD"."FixedRate" as "OLD_FixedRate",
+                                "OLD"."FixingRateSpecificationCategory" as "OLD_FixingRateSpecificationCategory",
+                                "OLD"."InstallmentAmount" as "OLD_InstallmentAmount",
+                                "OLD"."InstallmentAmountCurrency" as "OLD_InstallmentAmountCurrency",
+                                "OLD"."InstallmentInterestAmount" as "OLD_InstallmentInterestAmount",
+                                "OLD"."InstallmentInterestAmountCurrency" as "OLD_InstallmentInterestAmountCurrency",
+                                "OLD"."InterestBusinessCalendar" as "OLD_InterestBusinessCalendar",
+                                "OLD"."InterestCategory" as "OLD_InterestCategory",
+                                "OLD"."InterestCurrency" as "OLD_InterestCurrency",
+                                "OLD"."InterestInAdvance" as "OLD_InterestInAdvance",
+                                "OLD"."InterestIsCompounded" as "OLD_InterestIsCompounded",
+                                "OLD"."InterestPaymentPrecision" as "OLD_InterestPaymentPrecision",
+                                "OLD"."InterestPaymentRoundingMethod" as "OLD_InterestPaymentRoundingMethod",
+                                "OLD"."InterestPeriodLength" as "OLD_InterestPeriodLength",
+                                "OLD"."InterestPeriodTimeUnit" as "OLD_InterestPeriodTimeUnit",
+                                "OLD"."InterestSpecificationCategory" as "OLD_InterestSpecificationCategory",
+                                "OLD"."InterestSubPeriodLength" as "OLD_InterestSubPeriodLength",
+                                "OLD"."InterestSubPeriodSpecificationCategory" as "OLD_InterestSubPeriodSpecificationCategory",
+                                "OLD"."InterestSubPeriodTimeUnit" as "OLD_InterestSubPeriodTimeUnit",
+                                "OLD"."InterestType" as "OLD_InterestType",
+                                "OLD"."LastInterestPeriodEndDate" as "OLD_LastInterestPeriodEndDate",
+                                "OLD"."NumberOfInstallments" as "OLD_NumberOfInstallments",
+                                "OLD"."PayingOrReceiving" as "OLD_PayingOrReceiving",
+                                "OLD"."PeriodEndDueDateLag" as "OLD_PeriodEndDueDateLag",
+                                "OLD"."PeriodEndDueDateLagTimeUnit" as "OLD_PeriodEndDueDateLagTimeUnit",
+                                "OLD"."PreconditionApplies" as "OLD_PreconditionApplies",
+                                "OLD"."ReferenceRateFactor" as "OLD_ReferenceRateFactor",
+                                "OLD"."ReferenceRateFormula" as "OLD_ReferenceRateFormula",
+                                "OLD"."RelativeToInterestPeriodStartOrEnd" as "OLD_RelativeToInterestPeriodStartOrEnd",
+                                "OLD"."ResetAtMonthUltimo" as "OLD_ResetAtMonthUltimo",
+                                "OLD"."ResetBusinessCalendar" as "OLD_ResetBusinessCalendar",
+                                "OLD"."ResetBusinessDayConvention" as "OLD_ResetBusinessDayConvention",
+                                "OLD"."ResetCutoffLength" as "OLD_ResetCutoffLength",
+                                "OLD"."ResetCutoffTimeUnit" as "OLD_ResetCutoffTimeUnit",
+                                "OLD"."ResetInArrears" as "OLD_ResetInArrears",
+                                "OLD"."ResetLagLength" as "OLD_ResetLagLength",
+                                "OLD"."ResetLagTimeUnit" as "OLD_ResetLagTimeUnit",
+                                "OLD"."ResetPeriodLength" as "OLD_ResetPeriodLength",
+                                "OLD"."ResetPeriodTimeUnit" as "OLD_ResetPeriodTimeUnit",
+                                "OLD"."ResetPrecision" as "OLD_ResetPrecision",
+                                "OLD"."ResetRounding" as "OLD_ResetRounding",
+                                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                                "OLD"."Spread" as "OLD_Spread",
+                                "OLD"."TotalInstallmentAmount" as "OLD_TotalInstallmentAmount",
+                                "OLD"."TotalInstallmentInterestAmount" as "OLD_TotalInstallmentInterestAmount",
+                                "OLD"."VariableRateMax" as "OLD_VariableRateMax",
+                                "OLD"."VariableRateMin" as "OLD_VariableRateMin",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Interest" as "OLD"
+            on
+                                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_DebtInstrument.FinancialInstrumentID" = "OLD"."_DebtInstrument.FinancialInstrumentID" or "IN"."_DebtInstrument.FinancialInstrumentID" is null ) and
+                                      ( "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+                                      ( "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+                                      ( "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+                                      ( "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+                                      ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) and
+                                      ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD__DebtInstrument.FinancialInstrumentID" as "_DebtInstrument.FinancialInstrumentID",
+            "OLD__OptionOfReferenceRateSpecification.ComponentNumber" as "_OptionOfReferenceRateSpecification.ComponentNumber",
+            "OLD__OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "OLD__OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "OLD__OptionOfStrikeSpecification.ComponentNumber" as "_OptionOfStrikeSpecification.ComponentNumber",
+            "OLD__OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "OLD__OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_ReferenceRateID.ReferenceRateID" as "ASSOC_ReferenceRateID.ReferenceRateID",
+            "OLD_AnnuityAmount" as "AnnuityAmount",
+            "OLD_AnnuityAmountCurrency" as "AnnuityAmountCurrency",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_CompoundingConvention" as "CompoundingConvention",
+            "OLD_CutoffRelativeToDate" as "CutoffRelativeToDate",
+            "OLD_DayCountConvention" as "DayCountConvention",
+            "OLD_DayOfMonthOfInterestPayment" as "DayOfMonthOfInterestPayment",
+            "OLD_DayOfMonthOfInterestPeriodEnd" as "DayOfMonthOfInterestPeriodEnd",
+            "OLD_DayOfMonthOfReset" as "DayOfMonthOfReset",
+            "OLD_DueDateScheduleIsIndependent" as "DueDateScheduleIsIndependent",
+            "OLD_DueScheduleBusinessCalendar" as "DueScheduleBusinessCalendar",
+            "OLD_DueScheduleBusinessDayConvention" as "DueScheduleBusinessDayConvention",
+            "OLD_DueSchedulePeriodLength" as "DueSchedulePeriodLength",
+            "OLD_DueSchedulePeriodTimeUnit" as "DueSchedulePeriodTimeUnit",
+            "OLD_FirstDueDate" as "FirstDueDate",
+            "OLD_FirstInterestPeriodEndDate" as "FirstInterestPeriodEndDate",
+            "OLD_FirstInterestPeriodStartDate" as "FirstInterestPeriodStartDate",
+            "OLD_FirstRegularFloatingRateResetDate" as "FirstRegularFloatingRateResetDate",
+            "OLD_FixedRate" as "FixedRate",
+            "OLD_FixingRateSpecificationCategory" as "FixingRateSpecificationCategory",
+            "OLD_InstallmentAmount" as "InstallmentAmount",
+            "OLD_InstallmentAmountCurrency" as "InstallmentAmountCurrency",
+            "OLD_InstallmentInterestAmount" as "InstallmentInterestAmount",
+            "OLD_InstallmentInterestAmountCurrency" as "InstallmentInterestAmountCurrency",
+            "OLD_InterestBusinessCalendar" as "InterestBusinessCalendar",
+            "OLD_InterestCategory" as "InterestCategory",
+            "OLD_InterestCurrency" as "InterestCurrency",
+            "OLD_InterestInAdvance" as "InterestInAdvance",
+            "OLD_InterestIsCompounded" as "InterestIsCompounded",
+            "OLD_InterestPaymentPrecision" as "InterestPaymentPrecision",
+            "OLD_InterestPaymentRoundingMethod" as "InterestPaymentRoundingMethod",
+            "OLD_InterestPeriodLength" as "InterestPeriodLength",
+            "OLD_InterestPeriodTimeUnit" as "InterestPeriodTimeUnit",
+            "OLD_InterestSpecificationCategory" as "InterestSpecificationCategory",
+            "OLD_InterestSubPeriodLength" as "InterestSubPeriodLength",
+            "OLD_InterestSubPeriodSpecificationCategory" as "InterestSubPeriodSpecificationCategory",
+            "OLD_InterestSubPeriodTimeUnit" as "InterestSubPeriodTimeUnit",
+            "OLD_InterestType" as "InterestType",
+            "OLD_LastInterestPeriodEndDate" as "LastInterestPeriodEndDate",
+            "OLD_NumberOfInstallments" as "NumberOfInstallments",
+            "OLD_PayingOrReceiving" as "PayingOrReceiving",
+            "OLD_PeriodEndDueDateLag" as "PeriodEndDueDateLag",
+            "OLD_PeriodEndDueDateLagTimeUnit" as "PeriodEndDueDateLagTimeUnit",
+            "OLD_PreconditionApplies" as "PreconditionApplies",
+            "OLD_ReferenceRateFactor" as "ReferenceRateFactor",
+            "OLD_ReferenceRateFormula" as "ReferenceRateFormula",
+            "OLD_RelativeToInterestPeriodStartOrEnd" as "RelativeToInterestPeriodStartOrEnd",
+            "OLD_ResetAtMonthUltimo" as "ResetAtMonthUltimo",
+            "OLD_ResetBusinessCalendar" as "ResetBusinessCalendar",
+            "OLD_ResetBusinessDayConvention" as "ResetBusinessDayConvention",
+            "OLD_ResetCutoffLength" as "ResetCutoffLength",
+            "OLD_ResetCutoffTimeUnit" as "ResetCutoffTimeUnit",
+            "OLD_ResetInArrears" as "ResetInArrears",
+            "OLD_ResetLagLength" as "ResetLagLength",
+            "OLD_ResetLagTimeUnit" as "ResetLagTimeUnit",
+            "OLD_ResetPeriodLength" as "ResetPeriodLength",
+            "OLD_ResetPeriodTimeUnit" as "ResetPeriodTimeUnit",
+            "OLD_ResetPrecision" as "ResetPrecision",
+            "OLD_ResetRounding" as "ResetRounding",
+            "OLD_RoleOfPayer" as "RoleOfPayer",
+            "OLD_ScaleApplies" as "ScaleApplies",
+            "OLD_Spread" as "Spread",
+            "OLD_TotalInstallmentAmount" as "TotalInstallmentAmount",
+            "OLD_TotalInstallmentInterestAmount" as "TotalInstallmentInterestAmount",
+            "OLD_VariableRateMax" as "VariableRateMax",
+            "OLD_VariableRateMin" as "VariableRateMin",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_DebtInstrument.FinancialInstrumentID",
+                        "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "OLD"."_Trade.TradeID",
+                        "OLD"."_Trade.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "OLD_ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_DebtInstrument.FinancialInstrumentID" as "OLD__DebtInstrument.FinancialInstrumentID",
+                                "OLD"."_OptionOfReferenceRateSpecification.ComponentNumber" as "OLD__OptionOfReferenceRateSpecification.ComponentNumber",
+                                "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "OLD__OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "OLD__OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                "OLD"."_OptionOfStrikeSpecification.ComponentNumber" as "OLD__OptionOfStrikeSpecification.ComponentNumber",
+                                "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "OLD__OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "OLD__OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_ReferenceRateID.ReferenceRateID" as "OLD_ASSOC_ReferenceRateID.ReferenceRateID",
+                                "OLD"."AnnuityAmount" as "OLD_AnnuityAmount",
+                                "OLD"."AnnuityAmountCurrency" as "OLD_AnnuityAmountCurrency",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."CompoundingConvention" as "OLD_CompoundingConvention",
+                                "OLD"."CutoffRelativeToDate" as "OLD_CutoffRelativeToDate",
+                                "OLD"."DayCountConvention" as "OLD_DayCountConvention",
+                                "OLD"."DayOfMonthOfInterestPayment" as "OLD_DayOfMonthOfInterestPayment",
+                                "OLD"."DayOfMonthOfInterestPeriodEnd" as "OLD_DayOfMonthOfInterestPeriodEnd",
+                                "OLD"."DayOfMonthOfReset" as "OLD_DayOfMonthOfReset",
+                                "OLD"."DueDateScheduleIsIndependent" as "OLD_DueDateScheduleIsIndependent",
+                                "OLD"."DueScheduleBusinessCalendar" as "OLD_DueScheduleBusinessCalendar",
+                                "OLD"."DueScheduleBusinessDayConvention" as "OLD_DueScheduleBusinessDayConvention",
+                                "OLD"."DueSchedulePeriodLength" as "OLD_DueSchedulePeriodLength",
+                                "OLD"."DueSchedulePeriodTimeUnit" as "OLD_DueSchedulePeriodTimeUnit",
+                                "OLD"."FirstDueDate" as "OLD_FirstDueDate",
+                                "OLD"."FirstInterestPeriodEndDate" as "OLD_FirstInterestPeriodEndDate",
+                                "OLD"."FirstInterestPeriodStartDate" as "OLD_FirstInterestPeriodStartDate",
+                                "OLD"."FirstRegularFloatingRateResetDate" as "OLD_FirstRegularFloatingRateResetDate",
+                                "OLD"."FixedRate" as "OLD_FixedRate",
+                                "OLD"."FixingRateSpecificationCategory" as "OLD_FixingRateSpecificationCategory",
+                                "OLD"."InstallmentAmount" as "OLD_InstallmentAmount",
+                                "OLD"."InstallmentAmountCurrency" as "OLD_InstallmentAmountCurrency",
+                                "OLD"."InstallmentInterestAmount" as "OLD_InstallmentInterestAmount",
+                                "OLD"."InstallmentInterestAmountCurrency" as "OLD_InstallmentInterestAmountCurrency",
+                                "OLD"."InterestBusinessCalendar" as "OLD_InterestBusinessCalendar",
+                                "OLD"."InterestCategory" as "OLD_InterestCategory",
+                                "OLD"."InterestCurrency" as "OLD_InterestCurrency",
+                                "OLD"."InterestInAdvance" as "OLD_InterestInAdvance",
+                                "OLD"."InterestIsCompounded" as "OLD_InterestIsCompounded",
+                                "OLD"."InterestPaymentPrecision" as "OLD_InterestPaymentPrecision",
+                                "OLD"."InterestPaymentRoundingMethod" as "OLD_InterestPaymentRoundingMethod",
+                                "OLD"."InterestPeriodLength" as "OLD_InterestPeriodLength",
+                                "OLD"."InterestPeriodTimeUnit" as "OLD_InterestPeriodTimeUnit",
+                                "OLD"."InterestSpecificationCategory" as "OLD_InterestSpecificationCategory",
+                                "OLD"."InterestSubPeriodLength" as "OLD_InterestSubPeriodLength",
+                                "OLD"."InterestSubPeriodSpecificationCategory" as "OLD_InterestSubPeriodSpecificationCategory",
+                                "OLD"."InterestSubPeriodTimeUnit" as "OLD_InterestSubPeriodTimeUnit",
+                                "OLD"."InterestType" as "OLD_InterestType",
+                                "OLD"."LastInterestPeriodEndDate" as "OLD_LastInterestPeriodEndDate",
+                                "OLD"."NumberOfInstallments" as "OLD_NumberOfInstallments",
+                                "OLD"."PayingOrReceiving" as "OLD_PayingOrReceiving",
+                                "OLD"."PeriodEndDueDateLag" as "OLD_PeriodEndDueDateLag",
+                                "OLD"."PeriodEndDueDateLagTimeUnit" as "OLD_PeriodEndDueDateLagTimeUnit",
+                                "OLD"."PreconditionApplies" as "OLD_PreconditionApplies",
+                                "OLD"."ReferenceRateFactor" as "OLD_ReferenceRateFactor",
+                                "OLD"."ReferenceRateFormula" as "OLD_ReferenceRateFormula",
+                                "OLD"."RelativeToInterestPeriodStartOrEnd" as "OLD_RelativeToInterestPeriodStartOrEnd",
+                                "OLD"."ResetAtMonthUltimo" as "OLD_ResetAtMonthUltimo",
+                                "OLD"."ResetBusinessCalendar" as "OLD_ResetBusinessCalendar",
+                                "OLD"."ResetBusinessDayConvention" as "OLD_ResetBusinessDayConvention",
+                                "OLD"."ResetCutoffLength" as "OLD_ResetCutoffLength",
+                                "OLD"."ResetCutoffTimeUnit" as "OLD_ResetCutoffTimeUnit",
+                                "OLD"."ResetInArrears" as "OLD_ResetInArrears",
+                                "OLD"."ResetLagLength" as "OLD_ResetLagLength",
+                                "OLD"."ResetLagTimeUnit" as "OLD_ResetLagTimeUnit",
+                                "OLD"."ResetPeriodLength" as "OLD_ResetPeriodLength",
+                                "OLD"."ResetPeriodTimeUnit" as "OLD_ResetPeriodTimeUnit",
+                                "OLD"."ResetPrecision" as "OLD_ResetPrecision",
+                                "OLD"."ResetRounding" as "OLD_ResetRounding",
+                                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                                "OLD"."Spread" as "OLD_Spread",
+                                "OLD"."TotalInstallmentAmount" as "OLD_TotalInstallmentAmount",
+                                "OLD"."TotalInstallmentInterestAmount" as "OLD_TotalInstallmentInterestAmount",
+                                "OLD"."VariableRateMax" as "OLD_VariableRateMax",
+                                "OLD"."VariableRateMin" as "OLD_VariableRateMin",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Interest" as "OLD"
+            on
+               ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+               ( "IN"."_DebtInstrument.FinancialInstrumentID" = "OLD"."_DebtInstrument.FinancialInstrumentID" or "IN"."_DebtInstrument.FinancialInstrumentID" is null ) and
+               ( "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" or "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null ) and
+               ( "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "OLD"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" or "IN"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null ) and
+               ( "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "OLD"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" or "IN"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null ) and
+               ( "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "OLD"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" or "IN"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+               ( "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+               ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) and
+               ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

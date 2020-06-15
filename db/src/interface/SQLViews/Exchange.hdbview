@@ -1,0 +1,74 @@
+view "sap.fsdm.SQLViews::Exchange_View" 
+as select
+      "MarketIdentifierCode" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_OrganizationRunningTheExchange.BusinessPartnerID" ,
+      "AfterHoursTradingCloseTime" ,
+      "CloseTime" ,
+      "CountryCode" ,
+      "Name" ,
+      "OpenTime" ,
+      "PreMarketTradingOpenTime" ,
+      "RecognizedExchangeAsPerCRR" ,
+      "TimeZone" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Exchange"
+with associations
+(
+	join "sap.fsdm.SQLViews::CommodityAtExchange_View" as "_CommodityAtExchange__Exchange"
+	  on "MarketIdentifierCode" = "_CommodityAtExchange__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::CommodityEndOfDayPriceObservation_View" as "_CommodityEndOfDayPriceObservation__Exchange"
+	  on "MarketIdentifierCode" = "_CommodityEndOfDayPriceObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::CommodityIntradayTradingObservation_View" as "_CommodityIntradayTradingObservation__Exchange"
+	  on "MarketIdentifierCode" = "_CommodityIntradayTradingObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::EndOfDayListedDerivativePriceObservation_View" as "_EndOfDayListedDerivativePriceObservation__Exchange"
+	  on "MarketIdentifierCode" = "_EndOfDayListedDerivativePriceObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::EndOfDayPriceObservation_View" as "_EndOfDayPriceObservation__Exchange"
+	  on "MarketIdentifierCode" = "_EndOfDayPriceObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_OrganizationRunningTheExchange"
+	  on "_OrganizationRunningTheExchange"."BusinessPartnerID" = "_OrganizationRunningTheExchange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__Exchange"
+	  on "MarketIdentifierCode" = "_FinancialContract__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__Exchange"
+	  on "MarketIdentifierCode" = "_FinancialInstrument__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentIntradayQuotation_View" as "_InstrumentIntradayQuotation__Exchange"
+	  on "MarketIdentifierCode" = "_InstrumentIntradayQuotation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentIntradayTradingObservation_View" as "_InstrumentIntradayTradingObservation__Exchange"
+	  on "MarketIdentifierCode" = "_InstrumentIntradayTradingObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentsAtExchange_View" as "_InstrumentsAtExchange__Exchange"
+	  on "MarketIdentifierCode" = "_InstrumentsAtExchange__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::ListedDerivativeIntradayQuotation_View" as "_ListedDerivativeIntradayQuotation__Exchange"
+	  on "MarketIdentifierCode" = "_ListedDerivativeIntradayQuotation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::ListedDerivativeTradingObservation_View" as "_ListedDerivativeTradingObservation__Exchange"
+	  on "MarketIdentifierCode" = "_ListedDerivativeTradingObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::MarketAdmissionStatus_View" as "_MarketAdmissionStatus__Exchange"
+	  on "MarketIdentifierCode" = "_MarketAdmissionStatus__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::TimeIntervalPriceObservation_View" as "_TimeIntervalPriceObservation__Exchange"
+	  on "MarketIdentifierCode" = "_TimeIntervalPriceObservation__Exchange"."_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__Exchange"
+	  on "MarketIdentifierCode" = "_Trade__Exchange"."_Exchange.MarketIdentifierCode"
+	     
+);

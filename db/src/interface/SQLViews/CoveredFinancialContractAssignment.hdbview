@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::CoveredFinancialContractAssignment_View" 
+as select
+      "_CollateralPool.CollectionID" ,
+      "_CollateralPool.IDSystem" ,
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CoveredFinancialContractAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::Collection_View" as "_CollateralPool"
+	  on "_CollateralPool"."CollectionID" = "_CollateralPool.CollectionID" AND 
+	     "_CollateralPool"."IDSystem" = "_CollateralPool.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     
+);

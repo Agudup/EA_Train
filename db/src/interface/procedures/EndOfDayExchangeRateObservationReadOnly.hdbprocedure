@@ -1,0 +1,292 @@
+PROCEDURE "sap.fsdm.procedures::EndOfDayExchangeRateObservationReadOnly" (IN ROW "sap.fsdm.tabletypes::EndOfDayExchangeRateObservationTT", OUT CURR_DEL "sap.fsdm.tabletypes::EndOfDayExchangeRateObservationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::EndOfDayExchangeRateObservationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'BaseCurrency=' || TO_VARCHAR("BaseCurrency") || ' ' ||
+                'ExchangeRateType=' || TO_VARCHAR("ExchangeRateType") || ' ' ||
+                'PriceDataProvider=' || TO_VARCHAR("PriceDataProvider") || ' ' ||
+                'QuotationType=' || TO_VARCHAR("QuotationType") || ' ' ||
+                'QuoteCurrency=' || TO_VARCHAR("QuoteCurrency") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."BaseCurrency",
+                        "IN"."ExchangeRateType",
+                        "IN"."PriceDataProvider",
+                        "IN"."QuotationType",
+                        "IN"."QuoteCurrency"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."BaseCurrency",
+                        "IN"."ExchangeRateType",
+                        "IN"."PriceDataProvider",
+                        "IN"."QuotationType",
+                        "IN"."QuoteCurrency"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "BaseCurrency",
+                        "ExchangeRateType",
+                        "PriceDataProvider",
+                        "QuotationType",
+                        "QuoteCurrency"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."BaseCurrency",
+                                    "IN"."ExchangeRateType",
+                                    "IN"."PriceDataProvider",
+                                    "IN"."QuotationType",
+                                    "IN"."QuoteCurrency"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."BaseCurrency",
+                                    "IN"."ExchangeRateType",
+                                    "IN"."PriceDataProvider",
+                                    "IN"."QuotationType",
+                                    "IN"."QuoteCurrency"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "BaseCurrency",
+        "ExchangeRateType",
+        "PriceDataProvider",
+        "QuotationType",
+        "QuoteCurrency",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::EndOfDayExchangeRateObservation" WHERE
+        (            "BaseCurrency" ,
+            "ExchangeRateType" ,
+            "PriceDataProvider" ,
+            "QuotationType" ,
+            "QuoteCurrency" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."BaseCurrency",
+            "OLD"."ExchangeRateType",
+            "OLD"."PriceDataProvider",
+            "OLD"."QuotationType",
+            "OLD"."QuoteCurrency",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayExchangeRateObservation" as "OLD"
+            on
+               ( case when "IN"."BaseCurrency" is null then '' else "IN"."BaseCurrency" end ) = "OLD"."BaseCurrency" and
+               ( case when "IN"."ExchangeRateType" is null then '' else "IN"."ExchangeRateType" end ) = "OLD"."ExchangeRateType" and
+               ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+               ( case when "IN"."QuotationType" is null then '' else "IN"."QuotationType" end ) = "OLD"."QuotationType" and
+               ( case when "IN"."QuoteCurrency" is null then '' else "IN"."QuoteCurrency" end ) = "OLD"."QuoteCurrency" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "BaseCurrency",
+        "ExchangeRateType",
+        "PriceDataProvider",
+        "QuotationType",
+        "QuoteCurrency",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Close",
+        "High",
+        "Low",
+        "Open",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "BaseCurrency" is null then '' else "BaseCurrency" end ) as "BaseCurrency",
+                    ( case when "ExchangeRateType" is null then '' else "ExchangeRateType" end ) as "ExchangeRateType",
+                    ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+                    ( case when "QuotationType" is null then '' else "QuotationType" end ) as "QuotationType",
+                    ( case when "QuoteCurrency" is null then '' else "QuoteCurrency" end ) as "QuoteCurrency",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "Close"  ,
+                    "High"  ,
+                    "Low"  ,
+                    "Open"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_BaseCurrency" as "BaseCurrency" ,
+                    "OLD_ExchangeRateType" as "ExchangeRateType" ,
+                    "OLD_PriceDataProvider" as "PriceDataProvider" ,
+                    "OLD_QuotationType" as "QuotationType" ,
+                    "OLD_QuoteCurrency" as "QuoteCurrency" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_Close" as "Close" ,
+                    "OLD_High" as "High" ,
+                    "OLD_Low" as "Low" ,
+                    "OLD_Open" as "Open" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."BaseCurrency",
+                        "IN"."ExchangeRateType",
+                        "IN"."PriceDataProvider",
+                        "IN"."QuotationType",
+                        "IN"."QuoteCurrency",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."BaseCurrency" as "OLD_BaseCurrency",
+                                "OLD"."ExchangeRateType" as "OLD_ExchangeRateType",
+                                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                                "OLD"."QuotationType" as "OLD_QuotationType",
+                                "OLD"."QuoteCurrency" as "OLD_QuoteCurrency",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Close" as "OLD_Close",
+                                "OLD"."High" as "OLD_High",
+                                "OLD"."Low" as "OLD_Low",
+                                "OLD"."Open" as "OLD_Open",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayExchangeRateObservation" as "OLD"
+            on
+                ( case when "IN"."BaseCurrency" is null then '' else "IN"."BaseCurrency" end ) = "OLD"."BaseCurrency" and
+                ( case when "IN"."ExchangeRateType" is null then '' else "IN"."ExchangeRateType" end ) = "OLD"."ExchangeRateType" and
+                ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+                ( case when "IN"."QuotationType" is null then '' else "IN"."QuotationType" end ) = "OLD"."QuotationType" and
+                ( case when "IN"."QuoteCurrency" is null then '' else "IN"."QuoteCurrency" end ) = "OLD"."QuoteCurrency" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_BaseCurrency" as "BaseCurrency",
+            "OLD_ExchangeRateType" as "ExchangeRateType",
+            "OLD_PriceDataProvider" as "PriceDataProvider",
+            "OLD_QuotationType" as "QuotationType",
+            "OLD_QuoteCurrency" as "QuoteCurrency",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Close" as "Close",
+            "OLD_High" as "High",
+            "OLD_Low" as "Low",
+            "OLD_Open" as "Open",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."BaseCurrency",
+                        "IN"."ExchangeRateType",
+                        "IN"."PriceDataProvider",
+                        "IN"."QuotationType",
+                        "IN"."QuoteCurrency",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."BaseCurrency" as "OLD_BaseCurrency",
+                        "OLD"."ExchangeRateType" as "OLD_ExchangeRateType",
+                        "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                        "OLD"."QuotationType" as "OLD_QuotationType",
+                        "OLD"."QuoteCurrency" as "OLD_QuoteCurrency",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."Close" as "OLD_Close",
+                        "OLD"."High" as "OLD_High",
+                        "OLD"."Low" as "OLD_Low",
+                        "OLD"."Open" as "OLD_Open",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayExchangeRateObservation" as "OLD"
+            on
+                ( case when "IN"."BaseCurrency" is null then '' else "IN"."BaseCurrency" end ) = "OLD"."BaseCurrency" and
+                ( case when "IN"."ExchangeRateType" is null then '' else "IN"."ExchangeRateType" end ) = "OLD"."ExchangeRateType" and
+                ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+                ( case when "IN"."QuotationType" is null then '' else "IN"."QuotationType" end ) = "OLD"."QuotationType" and
+                ( case when "IN"."QuoteCurrency" is null then '' else "IN"."QuoteCurrency" end ) = "OLD"."QuoteCurrency" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

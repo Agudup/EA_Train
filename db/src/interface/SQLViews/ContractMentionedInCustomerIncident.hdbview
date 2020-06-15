@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::ContractMentionedInCustomerIncident_View" 
+as select
+      "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" ,
+      "ASSOC_ContractMentionedInCustomerIncident.IDSystem" ,
+      "ASSOC_CustomerIncident.CommunicationEventID" ,
+      "ASSOC_CustomerIncident.IDSystem" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ContractMentionedInCustomerIncident"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_ContractMentionedInCustomerIncident"
+	  on "ASSOC_ContractMentionedInCustomerIncident"."FinancialContractID" = "ASSOC_ContractMentionedInCustomerIncident.FinancialContractID" AND 
+	     "ASSOC_ContractMentionedInCustomerIncident"."IDSystem" = "ASSOC_ContractMentionedInCustomerIncident.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "ASSOC_CustomerIncident"
+	  on "ASSOC_CustomerIncident"."CommunicationEventID" = "ASSOC_CustomerIncident.CommunicationEventID" AND 
+	     "ASSOC_CustomerIncident"."IDSystem" = "ASSOC_CustomerIncident.IDSystem"
+	     
+);

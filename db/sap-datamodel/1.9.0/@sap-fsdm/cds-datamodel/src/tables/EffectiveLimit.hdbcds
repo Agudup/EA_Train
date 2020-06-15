@@ -1,0 +1,96 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"CardIssue";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialContractDelegation";
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+
+entity "EffectiveLimit" {
+    key "LimitType"                           : String(40);
+    key "ASSOC_BusinessPartner"               : association to BusinessPartner { BusinessPartnerID }     not null;
+    key "ASSOC_CardIssue"                     : association to CardIssue {
+                                                                           CardIssueID,
+                                                                           ASSOC_CardAgreement,
+                                                                           _BankAccount
+                                                                         }                               not null;
+    key "ASSOC_FinancialContract"             : association to FinancialContract {
+                                                                                   FinancialContractID,
+                                                                                   IDSystem
+                                                                                 }                       not null;
+    key "ASSOC_FinancialContractDelegation"   : association to FinancialContractDelegation {
+                                                                                             DelegatedRole,
+                                                                                             ASSOC_BusinessPartner,
+                                                                                             ASSOC_Delegator,
+                                                                                             ASSOC_FinancialContract
+                                                                                           }             not null;
+    key "ASSOC_OrganizationalUnit"            : association to OrganizationalUnit {
+                                                                                    OrganizationalUnitID,
+                                                                                    ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                  }                      not null;
+    key "ASSOC_PositionCcyOfMultiCcyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                         PositionCurrency,
+                                                                                                         ASSOC_MultiCcyAccnt
+                                                                                                       } not null;
+    key "BusinessValidFrom"                   : LocalDate;
+    key "BusinessValidTo"                     : LocalDate;
+        "SystemValidFrom"                     : UTCTimestamp                                             not null;
+        "SystemValidTo"                       : UTCTimestamp                                             not null;
+        "LimitAmount"                         : Decimal(34, 6);
+        "LimitCurrency"                       : String(3);
+        "LimitQuantity"                       : Decimal(34, 6);
+        "LimitUnit"                           : String(10);
+        "SourceSystemID"                      : String(128);
+        "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+        "ChangingUserInSourceSystem"          : String(128);
+        "ChangingProcessType"                 : String(40);
+        "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "EffectiveLimit_Historical" {
+    "LimitType"                           : String(40)                                               not null;
+    "ASSOC_BusinessPartner"               : association to BusinessPartner { BusinessPartnerID }     not null;
+    "ASSOC_CardIssue"                     : association to CardIssue {
+                                                                       CardIssueID,
+                                                                       ASSOC_CardAgreement,
+                                                                       _BankAccount
+                                                                     }                               not null;
+    "ASSOC_FinancialContract"             : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }                       not null;
+    "ASSOC_FinancialContractDelegation"   : association to FinancialContractDelegation {
+                                                                                         DelegatedRole,
+                                                                                         ASSOC_BusinessPartner,
+                                                                                         ASSOC_Delegator,
+                                                                                         ASSOC_FinancialContract
+                                                                                       }             not null;
+    "ASSOC_OrganizationalUnit"            : association to OrganizationalUnit {
+                                                                                OrganizationalUnitID,
+                                                                                ASSOC_OrganizationHostingOrganizationalUnit
+                                                                              }                      not null;
+    "ASSOC_PositionCcyOfMultiCcyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                     PositionCurrency,
+                                                                                                     ASSOC_MultiCcyAccnt
+                                                                                                   } not null;
+    "BusinessValidFrom"                   : LocalDate                                                not null;
+    "BusinessValidTo"                     : LocalDate                                                not null;
+    "SystemValidFrom"                     : UTCTimestamp                                             not null;
+    "SystemValidTo"                       : UTCTimestamp                                             not null;
+    "LimitAmount"                         : Decimal(34, 6);
+    "LimitCurrency"                       : String(3);
+    "LimitQuantity"                       : Decimal(34, 6);
+    "LimitUnit"                           : String(10);
+    "SourceSystemID"                      : String(128);
+    "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+    "ChangingUserInSourceSystem"          : String(128);
+    "ChangingProcessType"                 : String(40);
+    "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};

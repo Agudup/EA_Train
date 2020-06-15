@@ -1,0 +1,37 @@
+view "sap.fsdm.SQLViews::PurchasedReceivable_View" 
+as select
+      "_ReceivablePurchaseAgreement.FinancialContractID" ,
+      "_ReceivablePurchaseAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_Receivable.ReceivableID" ,
+      "IsDisclosed" ,
+      "LifecycleStatus" ,
+      "PaidOutAmount" ,
+      "PaidOutAmountCurrency" ,
+      "PurchasedPercentage" ,
+      "PurchasedReceivableAmount" ,
+      "PurchasedReceivableAmountCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PurchasedReceivable"
+with associations
+(
+	join "sap.fsdm.SQLViews::Document_View" as "_Document__PurchasedReceivable"
+	  on "_ReceivablePurchaseAgreement.FinancialContractID" = "_Document__PurchasedReceivable"."_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" AND 
+	     "_ReceivablePurchaseAgreement.IDSystem" = "_Document__PurchasedReceivable"."_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "_Receivable"
+	  on "_Receivable"."ReceivableID" = "_Receivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_ReceivablePurchaseAgreement"
+	  on "_ReceivablePurchaseAgreement"."FinancialContractID" = "_ReceivablePurchaseAgreement.FinancialContractID" AND 
+	     "_ReceivablePurchaseAgreement"."IDSystem" = "_ReceivablePurchaseAgreement.IDSystem"
+	     
+);

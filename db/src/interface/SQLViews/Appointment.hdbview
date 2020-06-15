@@ -1,0 +1,37 @@
+view "sap.fsdm.SQLViews::Appointment_View" 
+as select
+      "SequenceNumber" ,
+      "_IndividualPerson.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_Organization.BusinessPartnerID" ,
+      "AppointingOrganization" ,
+      "AppointmentType" ,
+      "DateOfAppointment" ,
+      "SubjectOfAppointment" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Appointment"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_IndividualPerson"
+	  on "_IndividualPerson"."BusinessPartnerID" = "_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_Organization"
+	  on "_Organization"."BusinessPartnerID" = "_Organization.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::AppointmentBasedOnLicense_View" as "_AppointmentBasedOnLicense__Appointment"
+	  on "SequenceNumber" = "_AppointmentBasedOnLicense__Appointment"."_Appointment.SequenceNumber" AND 
+	     "_IndividualPerson.BusinessPartnerID" = "_AppointmentBasedOnLicense__Appointment"."_Appointment._IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::AppointmentBasedOnQualification_View" as "_AppointmentBasedOnQualification__Appointment"
+	  on "SequenceNumber" = "_AppointmentBasedOnQualification__Appointment"."_Appointment.SequenceNumber" AND 
+	     "_IndividualPerson.BusinessPartnerID" = "_AppointmentBasedOnQualification__Appointment"."_Appointment._IndividualPerson.BusinessPartnerID"
+	     
+);

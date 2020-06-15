@@ -1,0 +1,33 @@
+view "sap.fsdm.SQLViews::NursingInsuranceBenefit_View" 
+as select
+      "NursingCareLevel" ,
+      "_AnnuityCoverage.ID" ,
+      "_AnnuityCoverage._InsuranceContract.FinancialContractID" ,
+      "_AnnuityCoverage._InsuranceContract.IDSystem" ,
+      "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "InpatientBenefitPercent" ,
+      "OutpatientBenefitPercent" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::NursingInsuranceBenefit"
+with associations
+(
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_AnnuityCoverage"
+	  on "_AnnuityCoverage"."ID" = "_AnnuityCoverage.ID" AND 
+	     "_AnnuityCoverage"."_InsuranceContract.FinancialContractID" = "_AnnuityCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_AnnuityCoverage"."_InsuranceContract.IDSystem" = "_AnnuityCoverage._InsuranceContract.IDSystem" AND 
+	     "_AnnuityCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_AnnuityCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_AnnuityCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

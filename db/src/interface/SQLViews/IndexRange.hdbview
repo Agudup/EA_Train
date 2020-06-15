@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::IndexRange_View" 
+as select
+      "ID" ,
+      "IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Name" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndexRange"
+with associations
+(
+	join "sap.fsdm.SQLViews::IndexOfferedToIndexedInsuranceContractByIndexRange_View" as "_IndexOfferedToIndexedInsuranceContractByIndexRange__IndexRange"
+	  on "IDSystem" = "_IndexOfferedToIndexedInsuranceContractByIndexRange__IndexRange"."_IndexRange.IDSystem" AND 
+	     "ID" = "_IndexOfferedToIndexedInsuranceContractByIndexRange__IndexRange"."_IndexRange.ID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_InsuranceCoverage__IndexRange"
+	  on "ID" = "_InsuranceCoverage__IndexRange"."_IndexRange.ID" AND 
+	     "IDSystem" = "_InsuranceCoverage__IndexRange"."_IndexRange.IDSystem"
+	     
+);

@@ -1,0 +1,32 @@
+view "sap.fsdm.Views::ApplicableInterestRate_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "InterestType" as "InterestType",
+      "RoleOfPayer" as "RoleOfPayer",
+      "ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract_IDSystem",
+      "ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount_PositionCurrency",
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount_ASSOC_MultiCcyAccnt_FinancialContractID",
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount_ASSOC_MultiCcyAccnt_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_LifeAndAnnuityInsuranceCoverage.ID" as "_LifeAndAnnuityInsuranceCoverage_ID",
+      "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "_LifeAndAnnuityInsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "_LifeAndAnnuityInsuranceCoverage__InsuranceContract_IDSystem",
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_LifeAndAnnuityInsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_LifeAndAnnuityInsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_LifeAndAnnuityInsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "LastResetDate" as "LastResetDate",
+      "NextResetDate" as "NextResetDate",
+      "Rate" as "Rate",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ApplicableInterestRate"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

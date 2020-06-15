@@ -1,0 +1,105 @@
+PROCEDURE "sap.fsdm.procedures::CommunicationEventReadOnly" (IN ROW "sap.fsdm.tabletypes::CommunicationEventTT" , OUT CURR_DEL "sap.fsdm.tabletypes::CommunicationEventTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::CommunicationEventTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"CommunicationEventID",
+"IDSystem"
+from "sap.fsdm::CommunicationEvent" WHERE("CommunicationEventID" ,
+"IDSystem" 
+)in ( select     ( case when "CommunicationEventID" is null then '' else "CommunicationEventID" end ) as "CommunicationEventID",
+    ( case when "IDSystem" is null then '' else "IDSystem" end ) as "IDSystem"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"CommunicationEventID",
+"IDSystem",
+"ASSOC_BankingChannel.BankingChannelID",
+"ASSOC_BusinessEventDataOwner.BusinessPartnerID",
+"ASSOC_CompanyEmployeeHandlingTheEvent.BusinessPartnerID",
+"ASSOC_EarlyWarningForPartner.BusinessPartnerID",
+"ASSOC_EmployeeResponsibleForEarlyWarning.BusinessPartnerID",
+"ASSOC_OrganizationalUnit.OrganizationalUnitID",
+"ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"ASSOC_ReferencedFinancialContract.FinancialContractID",
+"ASSOC_ReferencedFinancialContract.IDSystem",
+"ASSOC_Sender.BusinessPartnerID",
+"AdditionalRequestedTermLength",
+"AdditionalRequestedTermLengthUnit",
+"AnnouncedPrepaymentAmount",
+"AnnouncedPrepaymentDate",
+"CancelledAmount",
+"CancelledAmountCurrency",
+"CommunicationEventCategory",
+"CustomerCommunicationEventType",
+"DateOfReceipt",
+"EarlyWarningEventCategory",
+"EarlyWarningEventType",
+"EventAmount",
+"EventComment",
+"EventCurrency",
+"FinancialCriterion",
+"FinancialCriterionValue",
+"InitiatedByCustomer",
+"ManuallyCreatedEarlyWarning",
+"NonnumericalCriterionValue",
+"Note",
+"PartialCancellation",
+"RequestedCancellationDate",
+"TradeFinanceEventType",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "CommunicationEventID" is null then '' else "CommunicationEventID" end ) as "CommunicationEventID",
+    ( case when "IDSystem" is null then '' else "IDSystem" end ) as "IDSystem",
+  "ASSOC_BankingChannel.BankingChannelID"  ,
+  "ASSOC_BusinessEventDataOwner.BusinessPartnerID"  ,
+  "ASSOC_CompanyEmployeeHandlingTheEvent.BusinessPartnerID"  ,
+  "ASSOC_EarlyWarningForPartner.BusinessPartnerID"  ,
+  "ASSOC_EmployeeResponsibleForEarlyWarning.BusinessPartnerID"  ,
+  "ASSOC_OrganizationalUnit.OrganizationalUnitID"  ,
+  "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+  "ASSOC_ReferencedFinancialContract.FinancialContractID"  ,
+  "ASSOC_ReferencedFinancialContract.IDSystem"  ,
+  "ASSOC_Sender.BusinessPartnerID"  ,
+  "AdditionalRequestedTermLength"  ,
+  "AdditionalRequestedTermLengthUnit"  ,
+  "AnnouncedPrepaymentAmount"  ,
+  "AnnouncedPrepaymentDate"  ,
+  "CancelledAmount"  ,
+  "CancelledAmountCurrency"  ,
+  "CommunicationEventCategory"  ,
+  "CustomerCommunicationEventType"  ,
+  "DateOfReceipt"  ,
+  "EarlyWarningEventCategory"  ,
+  "EarlyWarningEventType"  ,
+  "EventAmount"  ,
+  "EventComment"  ,
+  "EventCurrency"  ,
+  "FinancialCriterion"  ,
+  "FinancialCriterionValue"  ,
+  "InitiatedByCustomer"  ,
+  "ManuallyCreatedEarlyWarning"  ,
+  "NonnumericalCriterionValue"  ,
+  "Note"  ,
+  "PartialCancellation"  ,
+  "RequestedCancellationDate"  ,
+  "TradeFinanceEventType"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

@@ -1,0 +1,56 @@
+view "sap.fsdm.SQLViews::Document_View" 
+as select
+      "DocumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_CommunicationEvent.CommunicationEventID" ,
+      "ASSOC_CommunicationEvent.IDSystem" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" ,
+      "_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem" ,
+      "_Trade.IDSystem" ,
+      "_Trade.TradeID" ,
+      "DocumentComment" ,
+      "DocumentIssuingAuthority" ,
+      "DocumentIssuingCountry" ,
+      "DocumentLabel" ,
+      "DocumentLink" ,
+      "DocumentLocation" ,
+      "DocumentSystem" ,
+      "DocumentType" ,
+      "DocumentValidFrom" ,
+      "ExpiryDate" ,
+      "Status" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Document"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "ASSOC_CommunicationEvent"
+	  on "ASSOC_CommunicationEvent"."CommunicationEventID" = "ASSOC_CommunicationEvent.CommunicationEventID" AND 
+	     "ASSOC_CommunicationEvent"."IDSystem" = "ASSOC_CommunicationEvent.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PurchasedReceivable_View" as "_PurchasedReceivable"
+	  on "_PurchasedReceivable"."_ReceivablePurchaseAgreement.FinancialContractID" = "_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" AND 
+	     "_PurchasedReceivable"."_ReceivablePurchaseAgreement.IDSystem" = "_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade"
+	  on "_Trade"."IDSystem" = "_Trade.IDSystem" AND 
+	     "_Trade"."TradeID" = "_Trade.TradeID"
+	     
+);

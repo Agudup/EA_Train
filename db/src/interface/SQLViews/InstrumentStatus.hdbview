@@ -1,0 +1,29 @@
+view "sap.fsdm.SQLViews::InstrumentStatus_View" 
+as select
+      "InstrumentStatusCategory" ,
+      "InstrumentStatusType" ,
+      "_Instrument.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_EmployeeResponsibleForStatusChange.BusinessPartnerID" ,
+      "NextStatusReviewDate" ,
+      "Status" ,
+      "StatusChangeReason" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentStatus"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_EmployeeResponsibleForStatusChange"
+	  on "_EmployeeResponsibleForStatusChange"."BusinessPartnerID" = "_EmployeeResponsibleForStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Instrument"
+	  on "_Instrument"."FinancialInstrumentID" = "_Instrument.FinancialInstrumentID"
+	     
+);

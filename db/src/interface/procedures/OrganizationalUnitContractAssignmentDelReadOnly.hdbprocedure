@@ -1,0 +1,251 @@
+PROCEDURE "sap.fsdm.procedures::OrganizationalUnitContractAssignmentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::OrganizationalUnitContractAssignmentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::OrganizationalUnitContractAssignmentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::OrganizationalUnitContractAssignmentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'RoleOfOrganizationalUnit=' || TO_VARCHAR("RoleOfOrganizationalUnit") || ' ' ||
+                'ASSOC_Contract.FinancialContractID=' || TO_VARCHAR("ASSOC_Contract.FinancialContractID") || ' ' ||
+                'ASSOC_Contract.IDSystem=' || TO_VARCHAR("ASSOC_Contract.IDSystem") || ' ' ||
+                'ASSOC_OrgUnit.OrganizationalUnitID=' || TO_VARCHAR("ASSOC_OrgUnit.OrganizationalUnitID") || ' ' ||
+                'ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID=' || TO_VARCHAR("ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."RoleOfOrganizationalUnit",
+                        "IN"."ASSOC_Contract.FinancialContractID",
+                        "IN"."ASSOC_Contract.IDSystem",
+                        "IN"."ASSOC_OrgUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."RoleOfOrganizationalUnit",
+                        "IN"."ASSOC_Contract.FinancialContractID",
+                        "IN"."ASSOC_Contract.IDSystem",
+                        "IN"."ASSOC_OrgUnit.OrganizationalUnitID",
+                        "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "RoleOfOrganizationalUnit",
+                        "ASSOC_Contract.FinancialContractID",
+                        "ASSOC_Contract.IDSystem",
+                        "ASSOC_OrgUnit.OrganizationalUnitID",
+                        "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."RoleOfOrganizationalUnit",
+                                    "IN"."ASSOC_Contract.FinancialContractID",
+                                    "IN"."ASSOC_Contract.IDSystem",
+                                    "IN"."ASSOC_OrgUnit.OrganizationalUnitID",
+                                    "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."RoleOfOrganizationalUnit",
+                                    "IN"."ASSOC_Contract.FinancialContractID",
+                                    "IN"."ASSOC_Contract.IDSystem",
+                                    "IN"."ASSOC_OrgUnit.OrganizationalUnitID",
+                                    "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "RoleOfOrganizationalUnit",
+            "ASSOC_Contract.FinancialContractID",
+            "ASSOC_Contract.IDSystem",
+            "ASSOC_OrgUnit.OrganizationalUnitID",
+            "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::OrganizationalUnitContractAssignment" WHERE
+            (
+            "RoleOfOrganizationalUnit" ,
+            "ASSOC_Contract.FinancialContractID" ,
+            "ASSOC_Contract.IDSystem" ,
+            "ASSOC_OrgUnit.OrganizationalUnitID" ,
+            "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."RoleOfOrganizationalUnit",
+            "OLD"."ASSOC_Contract.FinancialContractID",
+            "OLD"."ASSOC_Contract.IDSystem",
+            "OLD"."ASSOC_OrgUnit.OrganizationalUnitID",
+            "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::OrganizationalUnitContractAssignment" as "OLD"
+        on
+                              ( "IN"."RoleOfOrganizationalUnit" = "OLD"."RoleOfOrganizationalUnit" or "IN"."RoleOfOrganizationalUnit" is null ) and
+                              ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+                              ( "IN"."ASSOC_OrgUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" or "IN"."ASSOC_OrgUnit.OrganizationalUnitID" is null ) and
+                              ( "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "RoleOfOrganizationalUnit",
+        "ASSOC_Contract.FinancialContractID",
+        "ASSOC_Contract.IDSystem",
+        "ASSOC_OrgUnit.OrganizationalUnitID",
+        "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_RoleOfOrganizationalUnit" as "RoleOfOrganizationalUnit" ,
+            "OLD_ASSOC_Contract.FinancialContractID" as "ASSOC_Contract.FinancialContractID" ,
+            "OLD_ASSOC_Contract.IDSystem" as "ASSOC_Contract.IDSystem" ,
+            "OLD_ASSOC_OrgUnit.OrganizationalUnitID" as "ASSOC_OrgUnit.OrganizationalUnitID" ,
+            "OLD_ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."RoleOfOrganizationalUnit",
+                        "OLD"."ASSOC_Contract.FinancialContractID",
+                        "OLD"."ASSOC_Contract.IDSystem",
+                        "OLD"."ASSOC_OrgUnit.OrganizationalUnitID",
+                        "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."RoleOfOrganizationalUnit" as "OLD_RoleOfOrganizationalUnit",
+                                "OLD"."ASSOC_Contract.FinancialContractID" as "OLD_ASSOC_Contract.FinancialContractID",
+                                "OLD"."ASSOC_Contract.IDSystem" as "OLD_ASSOC_Contract.IDSystem",
+                                "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" as "OLD_ASSOC_OrgUnit.OrganizationalUnitID",
+                                "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::OrganizationalUnitContractAssignment" as "OLD"
+            on
+                                      ( "IN"."RoleOfOrganizationalUnit" = "OLD"."RoleOfOrganizationalUnit" or "IN"."RoleOfOrganizationalUnit" is null ) and
+                                      ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_OrgUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" or "IN"."ASSOC_OrgUnit.OrganizationalUnitID" is null ) and
+                                      ( "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_RoleOfOrganizationalUnit" as "RoleOfOrganizationalUnit",
+            "OLD_ASSOC_Contract.FinancialContractID" as "ASSOC_Contract.FinancialContractID",
+            "OLD_ASSOC_Contract.IDSystem" as "ASSOC_Contract.IDSystem",
+            "OLD_ASSOC_OrgUnit.OrganizationalUnitID" as "ASSOC_OrgUnit.OrganizationalUnitID",
+            "OLD_ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."RoleOfOrganizationalUnit",
+                        "OLD"."ASSOC_Contract.FinancialContractID",
+                        "OLD"."ASSOC_Contract.IDSystem",
+                        "OLD"."ASSOC_OrgUnit.OrganizationalUnitID",
+                        "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."RoleOfOrganizationalUnit" as "OLD_RoleOfOrganizationalUnit",
+                                "OLD"."ASSOC_Contract.FinancialContractID" as "OLD_ASSOC_Contract.FinancialContractID",
+                                "OLD"."ASSOC_Contract.IDSystem" as "OLD_ASSOC_Contract.IDSystem",
+                                "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" as "OLD_ASSOC_OrgUnit.OrganizationalUnitID",
+                                "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD_ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::OrganizationalUnitContractAssignment" as "OLD"
+            on
+               ( "IN"."RoleOfOrganizationalUnit" = "OLD"."RoleOfOrganizationalUnit" or "IN"."RoleOfOrganizationalUnit" is null ) and
+               ( "IN"."ASSOC_Contract.FinancialContractID" = "OLD"."ASSOC_Contract.FinancialContractID" or "IN"."ASSOC_Contract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_Contract.IDSystem" = "OLD"."ASSOC_Contract.IDSystem" or "IN"."ASSOC_Contract.IDSystem" is null ) and
+               ( "IN"."ASSOC_OrgUnit.OrganizationalUnitID" = "OLD"."ASSOC_OrgUnit.OrganizationalUnitID" or "IN"."ASSOC_OrgUnit.OrganizationalUnitID" is null ) and
+               ( "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

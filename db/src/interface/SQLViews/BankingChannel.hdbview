@@ -1,0 +1,74 @@
+view "sap.fsdm.SQLViews::BankingChannel_View" 
+as select
+      "BankingChannelID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_BranchOfTerminal.BankingChannelID" ,
+      "ASSOC_CashInventory.CashAccountID" ,
+      "ASSOC_CashInventory.IDSystem" ,
+      "ASSOC_OrgUnitManagingChannel.OrganizationalUnitID" ,
+      "ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "AuthenticationMethod" ,
+      "BankingChannelCategory" ,
+      "Description" ,
+      "TerminalType" ,
+      "URL" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BankingChannel"
+with associations
+(
+	join "sap.fsdm.SQLViews::Address_View" as "_Address_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_Address_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BranchOfTerminal"
+	  on "ASSOC_BranchOfTerminal"."BankingChannelID" = "ASSOC_BranchOfTerminal.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::CashInventory_View" as "ASSOC_CashInventory"
+	  on "ASSOC_CashInventory"."CashAccountID" = "ASSOC_CashInventory.CashAccountID" AND 
+	     "ASSOC_CashInventory"."IDSystem" = "ASSOC_CashInventory.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrgUnitManagingChannel"
+	  on "ASSOC_OrgUnitManagingChannel"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrgUnitManagingChannel.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrgUnitManagingChannel"."OrganizationalUnitID" = "ASSOC_OrgUnitManagingChannel.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannelStatus_View" as "_BankingChannelStatus_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_BankingChannelStatus_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "_CommunicationEvent_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_CommunicationEvent_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::ContractChannelStatus_View" as "_ContractChannelStatus_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_ContractChannelStatus_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::DigitalBankingPlatformAccess_View" as "_DigitalBankingPlatformAccess_ASSOC_DigitalBankingPlatform"
+	  on "BankingChannelID" = "_DigitalBankingPlatformAccess_ASSOC_DigitalBankingPlatform"."ASSOC_DigitalBankingPlatform.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_FinancialContract_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAssetLiquidationEvent_View" as "_PhysicalAssetLiquidationEvent_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_PhysicalAssetLiquidationEvent_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::SafeDepositLocker_View" as "_SafeDepositLocker__SafeDepositLockerBranch"
+	  on "BankingChannelID" = "_SafeDepositLocker__SafeDepositLockerBranch"."_SafeDepositLockerBranch.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_Settlement_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__BankingChannel"
+	  on "BankingChannelID" = "_Trade__BankingChannel"."_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder_ASSOC_BankingChannel"
+	  on "BankingChannelID" = "_TransferOrder_ASSOC_BankingChannel"."ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::VoiceAccess_View" as "_VoiceAccess_ASSOC_VoiceAccessSystem"
+	  on "BankingChannelID" = "_VoiceAccess_ASSOC_VoiceAccessSystem"."ASSOC_VoiceAccessSystem.BankingChannelID"
+	     
+);

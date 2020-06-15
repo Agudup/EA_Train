@@ -1,0 +1,252 @@
+PROCEDURE "sap.fsdm.procedures::WebAccountReadOnly" (IN ROW "sap.fsdm.tabletypes::WebAccountTT", OUT CURR_DEL "sap.fsdm.tabletypes::WebAccountTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::WebAccountTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'AccountName=' || TO_VARCHAR("AccountName") || ' ' ||
+                'WebAccountProvider=' || TO_VARCHAR("WebAccountProvider") || ' ' ||
+                'ASSOC_Partner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_Partner.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."AccountName",
+                        "IN"."WebAccountProvider",
+                        "IN"."ASSOC_Partner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."AccountName",
+                        "IN"."WebAccountProvider",
+                        "IN"."ASSOC_Partner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "AccountName",
+                        "WebAccountProvider",
+                        "ASSOC_Partner.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."AccountName",
+                                    "IN"."WebAccountProvider",
+                                    "IN"."ASSOC_Partner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."AccountName",
+                                    "IN"."WebAccountProvider",
+                                    "IN"."ASSOC_Partner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "AccountName",
+        "WebAccountProvider",
+        "ASSOC_Partner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::WebAccount" WHERE
+        (            "AccountName" ,
+            "WebAccountProvider" ,
+            "ASSOC_Partner.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."AccountName",
+            "OLD"."WebAccountProvider",
+            "OLD"."ASSOC_Partner.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::WebAccount" as "OLD"
+            on
+               ( case when "IN"."AccountName" is null then '' else "IN"."AccountName" end ) = "OLD"."AccountName" and
+               ( case when "IN"."WebAccountProvider" is null then '' else "IN"."WebAccountProvider" end ) = "OLD"."WebAccountProvider" and
+               ( case when "IN"."ASSOC_Partner.BusinessPartnerID" is null then '' else "IN"."ASSOC_Partner.BusinessPartnerID" end ) = "OLD"."ASSOC_Partner.BusinessPartnerID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "AccountName",
+        "WebAccountProvider",
+        "ASSOC_Partner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID",
+        "C_ActivityLevel",
+        "C_OwnBankFeeds",
+        "C_CompetitionFeeds",
+        "C_Activtities"
+        from (
+            (
+                select
+                    ( case when "AccountName" is null then '' else "AccountName" end ) as "AccountName",
+                    ( case when "WebAccountProvider" is null then '' else "WebAccountProvider" end ) as "WebAccountProvider",
+                    ( case when "ASSOC_Partner.BusinessPartnerID" is null then '' else "ASSOC_Partner.BusinessPartnerID" end ) as "ASSOC_Partner.BusinessPartnerID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  ,
+                    "C_ActivityLevel"  ,
+                    "C_OwnBankFeeds"  ,
+                    "C_CompetitionFeeds"  ,
+                    "C_Activtities"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_AccountName" as "AccountName" ,
+                    "OLD_WebAccountProvider" as "WebAccountProvider" ,
+                    "OLD_ASSOC_Partner.BusinessPartnerID" as "ASSOC_Partner.BusinessPartnerID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" ,
+                    "OLD_C_ActivityLevel" as "C_ActivityLevel" ,
+                    "OLD_C_OwnBankFeeds" as "C_OwnBankFeeds" ,
+                    "OLD_C_CompetitionFeeds" as "C_CompetitionFeeds" ,
+                    "OLD_C_Activtities" as "C_Activtities" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."AccountName",
+                        "IN"."WebAccountProvider",
+                        "IN"."ASSOC_Partner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."AccountName" as "OLD_AccountName",
+                                "OLD"."WebAccountProvider" as "OLD_WebAccountProvider",
+                                "OLD"."ASSOC_Partner.BusinessPartnerID" as "OLD_ASSOC_Partner.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID",
+                                "OLD"."C_ActivityLevel" as "OLD_C_ActivityLevel",
+                                "OLD"."C_OwnBankFeeds" as "OLD_C_OwnBankFeeds",
+                                "OLD"."C_CompetitionFeeds" as "OLD_C_CompetitionFeeds",
+                                "OLD"."C_Activtities" as "OLD_C_Activtities"
+            from :row as "IN"
+            inner join "sap.fsdm::WebAccount" as "OLD"
+            on
+                ( case when "IN"."AccountName" is null then '' else "IN"."AccountName" end ) = "OLD"."AccountName" and
+                ( case when "IN"."WebAccountProvider" is null then '' else "IN"."WebAccountProvider" end ) = "OLD"."WebAccountProvider" and
+                ( case when "IN"."ASSOC_Partner.BusinessPartnerID" is null then '' else "IN"."ASSOC_Partner.BusinessPartnerID" end ) = "OLD"."ASSOC_Partner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_AccountName" as "AccountName",
+            "OLD_WebAccountProvider" as "WebAccountProvider",
+            "OLD_ASSOC_Partner.BusinessPartnerID" as "ASSOC_Partner.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID",
+            "OLD_C_ActivityLevel" as "C_ActivityLevel",
+            "OLD_C_OwnBankFeeds" as "C_OwnBankFeeds",
+            "OLD_C_CompetitionFeeds" as "C_CompetitionFeeds",
+            "OLD_C_Activtities" as "C_Activtities"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."AccountName",
+                        "IN"."WebAccountProvider",
+                        "IN"."ASSOC_Partner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."AccountName" as "OLD_AccountName",
+                        "OLD"."WebAccountProvider" as "OLD_WebAccountProvider",
+                        "OLD"."ASSOC_Partner.BusinessPartnerID" as "OLD_ASSOC_Partner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID",
+                        "OLD"."C_ActivityLevel" as "OLD_C_ActivityLevel",
+                        "OLD"."C_OwnBankFeeds" as "OLD_C_OwnBankFeeds",
+                        "OLD"."C_CompetitionFeeds" as "OLD_C_CompetitionFeeds",
+                        "OLD"."C_Activtities" as "OLD_C_Activtities"
+            from :row as "IN"
+            inner join "sap.fsdm::WebAccount" as "OLD"
+            on
+                ( case when "IN"."AccountName" is null then '' else "IN"."AccountName" end ) = "OLD"."AccountName" and
+                ( case when "IN"."WebAccountProvider" is null then '' else "IN"."WebAccountProvider" end ) = "OLD"."WebAccountProvider" and
+                ( case when "IN"."ASSOC_Partner.BusinessPartnerID" is null then '' else "IN"."ASSOC_Partner.BusinessPartnerID" end ) = "OLD"."ASSOC_Partner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

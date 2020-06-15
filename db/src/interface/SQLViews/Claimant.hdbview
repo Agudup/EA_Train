@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::Claimant_View" 
+as select
+      "_BusinessPartner.BusinessPartnerID" ,
+      "_Claim.ID" ,
+      "_Claim.IDSystem" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Claimant"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessPartner"
+	  on "_BusinessPartner"."BusinessPartnerID" = "_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::Claim_View" as "_Claim"
+	  on "_Claim"."ID" = "_Claim.ID" AND 
+	     "_Claim"."IDSystem" = "_Claim.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Subclaim_View" as "_Subclaim__Claimant"
+	  on "_BusinessPartner.BusinessPartnerID" = "_Subclaim__Claimant"."_Claimant._BusinessPartner.BusinessPartnerID" AND 
+	     "_Claim.ID" = "_Subclaim__Claimant"."_Claimant._Claim.ID" AND 
+	     "_Claim.IDSystem" = "_Subclaim__Claimant"."_Claimant._Claim.IDSystem"
+	     
+);

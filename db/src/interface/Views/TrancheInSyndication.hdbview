@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::TrancheInSyndication_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "TrancheSequenceNumber" as "TrancheSequenceNumber",
+      "_SyndicationAgreement.FinancialContractID" as "_SyndicationAgreement_FinancialContractID",
+      "_SyndicationAgreement.IDSystem" as "_SyndicationAgreement_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "IsTrancheRevolving" as "IsTrancheRevolving",
+      "Status" as "Status",
+      "TrancheAmount" as "TrancheAmount",
+      "TrancheCurrency" as "TrancheCurrency",
+      "TrancheEndDate" as "TrancheEndDate",
+      "TrancheStartDate" as "TrancheStartDate",
+      "TrancheType" as "TrancheType",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::TrancheInSyndication"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

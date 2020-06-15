@@ -1,0 +1,22 @@
+view "sap.fsdm.Views::ExercisePeriod_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "StartDate" as "StartDate",
+      "_Option.FinancialContractID" as "_Option_FinancialContractID",
+      "_Option.IDSystem" as "_Option_IDSystem",
+      "_Swaption.FinancialContractID" as "_Swaption_FinancialContractID",
+      "_Swaption.IDSystem" as "_Swaption_IDSystem",
+      "_Warrant.FinancialInstrumentID" as "_Warrant_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "EndDate" as "EndDate",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ExercisePeriod"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

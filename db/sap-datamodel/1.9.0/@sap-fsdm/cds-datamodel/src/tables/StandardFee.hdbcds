@@ -1,0 +1,93 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialStandardProduct";
+
+entity "StandardFee" {
+    key "SequenceNumber"                 : Integer;
+    key "ASSOC_StandardProduct"          : association to FinancialStandardProduct {
+                                                                                     FinancialStandardProductID,
+                                                                                     IDSystem,
+                                                                                     PricingScheme,
+                                                                                     ASSOC_Company
+                                                                                   } not null;
+    key "BusinessValidFrom"              : LocalDate;
+    key "BusinessValidTo"                : LocalDate;
+        "SystemValidFrom"                : UTCTimestamp                              not null;
+        "SystemValidTo"                  : UTCTimestamp                              not null;
+        "AssessmentBase"                 : String(10);
+        "BusinessCalendar"               : String(10);
+        "BusinessDayConvention"          : String(40);
+        "DayOfMonthOfFeeBillingDate"     : Integer;
+        "EventDescription"               : String(200);
+        "EventTriggerType"               : String(40);
+        "FeeAmount"                      : Decimal(34, 6);
+        "FeeCalculationMethod"           : String(20);
+        "FeeCurrency"                    : String(3);
+        "FeeTruncatedForStubPeriods"     : Boolean;
+        "FeeType"                        : String(40);
+        "Percentage"                     : Decimal(15, 11);
+        "PeriodUntilFeeValidityEnd"      : Decimal(34, 6);
+        "PeriodUntilFeeValidityStart"    : Decimal(34, 6);
+        "PeriodUntilFirstFeeBillingDate" : Decimal(34, 6);
+        "PeriodUntilLastFeeBillingDate"  : Decimal(34, 6);
+        "PreconditionApplies"            : Boolean;
+        "ReccurringFeePeriodTimeUnit"    : String(10);
+        "RecurringFeePeriodLength"       : Integer;
+        "RoleOfPayer"                    : String(50);
+        "ScaleApplies"                   : Boolean;
+        "StandardFeeCategory"            : String(50);
+        "TimeUnit"                       : String(12);
+        "SourceSystemID"                 : String(128);
+        "ChangeTimestampInSourceSystem"  : UTCTimestamp;
+        "ChangingUserInSourceSystem"     : String(128);
+        "ChangingProcessType"            : String(40);
+        "ChangingProcessID"              : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "StandardFee_Historical" {
+    "SequenceNumber"                 : Integer                                   not null;
+    "ASSOC_StandardProduct"          : association to FinancialStandardProduct {
+                                                                                 FinancialStandardProductID,
+                                                                                 IDSystem,
+                                                                                 PricingScheme,
+                                                                                 ASSOC_Company
+                                                                               } not null;
+    "BusinessValidFrom"              : LocalDate                                 not null;
+    "BusinessValidTo"                : LocalDate                                 not null;
+    "SystemValidFrom"                : UTCTimestamp                              not null;
+    "SystemValidTo"                  : UTCTimestamp                              not null;
+    "AssessmentBase"                 : String(10);
+    "BusinessCalendar"               : String(10);
+    "BusinessDayConvention"          : String(40);
+    "DayOfMonthOfFeeBillingDate"     : Integer;
+    "EventDescription"               : String(200);
+    "EventTriggerType"               : String(40);
+    "FeeAmount"                      : Decimal(34, 6);
+    "FeeCalculationMethod"           : String(20);
+    "FeeCurrency"                    : String(3);
+    "FeeTruncatedForStubPeriods"     : Boolean;
+    "FeeType"                        : String(40);
+    "Percentage"                     : Decimal(15, 11);
+    "PeriodUntilFeeValidityEnd"      : Decimal(34, 6);
+    "PeriodUntilFeeValidityStart"    : Decimal(34, 6);
+    "PeriodUntilFirstFeeBillingDate" : Decimal(34, 6);
+    "PeriodUntilLastFeeBillingDate"  : Decimal(34, 6);
+    "PreconditionApplies"            : Boolean;
+    "ReccurringFeePeriodTimeUnit"    : String(10);
+    "RecurringFeePeriodLength"       : Integer;
+    "RoleOfPayer"                    : String(50);
+    "ScaleApplies"                   : Boolean;
+    "StandardFeeCategory"            : String(50);
+    "TimeUnit"                       : String(12);
+    "SourceSystemID"                 : String(128);
+    "ChangeTimestampInSourceSystem"  : UTCTimestamp;
+    "ChangingUserInSourceSystem"     : String(128);
+    "ChangingProcessType"            : String(40);
+    "ChangingProcessID"              : String(128);
+}
+technical configuration {
+    column store;
+};

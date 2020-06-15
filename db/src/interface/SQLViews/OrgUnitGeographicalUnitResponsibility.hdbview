@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::OrgUnitGeographicalUnitResponsibility_View" 
+as select
+      "ASSOC_GeographicalUnit.GeographicalStructureID" ,
+      "ASSOC_GeographicalUnit.GeographicalUnitID" ,
+      "ASSOC_OrgUnit.OrganizationalUnitID" ,
+      "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::OrgUnitGeographicalUnitResponsibility"
+with associations
+(
+	join "sap.fsdm.SQLViews::GeographicalUnit_View" as "ASSOC_GeographicalUnit"
+	  on "ASSOC_GeographicalUnit"."GeographicalUnitID" = "ASSOC_GeographicalUnit.GeographicalUnitID" AND 
+	     "ASSOC_GeographicalUnit"."GeographicalStructureID" = "ASSOC_GeographicalUnit.GeographicalStructureID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrgUnit"
+	  on "ASSOC_OrgUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrgUnit"."OrganizationalUnitID" = "ASSOC_OrgUnit.OrganizationalUnitID"
+	     
+);

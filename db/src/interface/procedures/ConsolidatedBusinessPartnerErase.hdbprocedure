@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::ConsolidatedBusinessPartnerErase" (IN ROW "sap.fsdm.tabletypes::ConsolidatedBusinessPartnerTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ConsolidationSystem" is null and
+                         "ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_MotherCompany.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ConsolidatedBusinessPartner" WHERE
+("ConsolidationSystem" ,
+"ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_MotherCompany.BusinessPartnerID" 
+)in ( select "OLD"."ConsolidationSystem" ,
+"OLD"."ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_MotherCompany.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::ConsolidatedBusinessPartner" "OLD"
+on
+  ( "IN"."ConsolidationSystem" = "OLD"."ConsolidationSystem" or "IN"."ConsolidationSystem" is null ) and
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_MotherCompany.BusinessPartnerID" = "OLD"."ASSOC_MotherCompany.BusinessPartnerID" or "IN"."ASSOC_MotherCompany.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ConsolidatedBusinessPartner_Historical" WHERE
+("ConsolidationSystem" ,
+"ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_MotherCompany.BusinessPartnerID" 
+)in ( select "OLD"."ConsolidationSystem" ,
+"OLD"."ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_MotherCompany.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::ConsolidatedBusinessPartner_Historical" "OLD"
+on
+  ( "IN"."ConsolidationSystem" = "OLD"."ConsolidationSystem" or "IN"."ConsolidationSystem" is null ) and
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_MotherCompany.BusinessPartnerID" = "OLD"."ASSOC_MotherCompany.BusinessPartnerID" or "IN"."ASSOC_MotherCompany.BusinessPartnerID" is null ) 
+);
+
+END

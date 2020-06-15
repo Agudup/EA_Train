@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::MortgageRegisterEntryErase" (IN ROW "sap.fsdm.tabletypes::MortgageRegisterEntryTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "Beneficiary" is null and
+                         "MortgageRegister" is null and
+                         "Rank" is null and
+                         "Section" is null and
+                         "SequenceNumber" is null and
+                         "ASSOC_PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::MortgageRegisterEntry" WHERE
+("Beneficiary" ,
+"MortgageRegister" ,
+"Rank" ,
+"Section" ,
+"SequenceNumber" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."Beneficiary" ,
+"OLD"."MortgageRegister" ,
+"OLD"."Rank" ,
+"OLD"."Section" ,
+"OLD"."SequenceNumber" ,
+"OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::MortgageRegisterEntry" "OLD"
+on
+  ( "IN"."Beneficiary" = "OLD"."Beneficiary" or "IN"."Beneficiary" is null ) and
+  ( "IN"."MortgageRegister" = "OLD"."MortgageRegister" or "IN"."MortgageRegister" is null ) and
+  ( "IN"."Rank" = "OLD"."Rank" or "IN"."Rank" is null ) and
+  ( "IN"."Section" = "OLD"."Section" or "IN"."Section" is null ) and
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::MortgageRegisterEntry_Historical" WHERE
+("Beneficiary" ,
+"MortgageRegister" ,
+"Rank" ,
+"Section" ,
+"SequenceNumber" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."Beneficiary" ,
+"OLD"."MortgageRegister" ,
+"OLD"."Rank" ,
+"OLD"."Section" ,
+"OLD"."SequenceNumber" ,
+"OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::MortgageRegisterEntry_Historical" "OLD"
+on
+  ( "IN"."Beneficiary" = "OLD"."Beneficiary" or "IN"."Beneficiary" is null ) and
+  ( "IN"."MortgageRegister" = "OLD"."MortgageRegister" or "IN"."MortgageRegister" is null ) and
+  ( "IN"."Rank" = "OLD"."Rank" or "IN"."Rank" is null ) and
+  ( "IN"."Section" = "OLD"."Section" or "IN"."Section" is null ) and
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

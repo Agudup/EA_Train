@@ -1,0 +1,76 @@
+view "sap.fsdm.SQLViews::NonProportionalCoverageLimitDeductible_View" 
+as select
+      "NonProportionalCoverageLimitDeductableType" ,
+      "_CededRiskCurrency.Currency" ,
+      "_CededRiskCurrency._ReinsuranceCoverage.CoverageID" ,
+      "_CededRiskCurrency._ReinsuranceCoverage.SectionID" ,
+      "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+      "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+      "_ClassOfInsurance.ClassOfInsurance" ,
+      "_ClassOfInsurance.SubClassOfInsurance" ,
+      "_ClassOfInsurance.SubSubClassOfInsurance" ,
+      "_ClassOfInsurance._ReinsuranceCoverage.CoverageID" ,
+      "_ClassOfInsurance._ReinsuranceCoverage.SectionID" ,
+      "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+      "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+      "_Peril.Peril" ,
+      "_Peril._ReinsuranceCoverage.CoverageID" ,
+      "_Peril._ReinsuranceCoverage.SectionID" ,
+      "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+      "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+      "_Region.Region" ,
+      "_Region._ReinsuranceCoverage.CoverageID" ,
+      "_Region._ReinsuranceCoverage.SectionID" ,
+      "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+      "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Category" ,
+      "EndDate" ,
+      "MaximumAmount" ,
+      "MinimumAmount" ,
+      "Percent" ,
+      "ReferenceBasis" ,
+      "StartDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::NonProportionalCoverageLimitDeductible"
+with associations
+(
+	join "sap.fsdm.SQLViews::CededRiskCurrency_View" as "_CededRiskCurrency"
+	  on "_CededRiskCurrency"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" AND 
+	     "_CededRiskCurrency"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_CededRiskCurrency"."_ReinsuranceCoverage.SectionID" = "_CededRiskCurrency._ReinsuranceCoverage.SectionID" AND 
+	     "_CededRiskCurrency"."_ReinsuranceCoverage.CoverageID" = "_CededRiskCurrency._ReinsuranceCoverage.CoverageID" AND 
+	     "_CededRiskCurrency"."Currency" = "_CededRiskCurrency.Currency"
+	     ,
+	join "sap.fsdm.SQLViews::ClassOfInsurance_View" as "_ClassOfInsurance"
+	  on "_ClassOfInsurance"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" AND 
+	     "_ClassOfInsurance"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_ClassOfInsurance"."_ReinsuranceCoverage.SectionID" = "_ClassOfInsurance._ReinsuranceCoverage.SectionID" AND 
+	     "_ClassOfInsurance"."_ReinsuranceCoverage.CoverageID" = "_ClassOfInsurance._ReinsuranceCoverage.CoverageID" AND 
+	     "_ClassOfInsurance"."SubSubClassOfInsurance" = "_ClassOfInsurance.SubSubClassOfInsurance" AND 
+	     "_ClassOfInsurance"."SubClassOfInsurance" = "_ClassOfInsurance.SubClassOfInsurance" AND 
+	     "_ClassOfInsurance"."ClassOfInsurance" = "_ClassOfInsurance.ClassOfInsurance"
+	     ,
+	join "sap.fsdm.SQLViews::Peril_View" as "_Peril"
+	  on "_Peril"."Peril" = "_Peril.Peril" AND 
+	     "_Peril"."_ReinsuranceCoverage.CoverageID" = "_Peril._ReinsuranceCoverage.CoverageID" AND 
+	     "_Peril"."_ReinsuranceCoverage.SectionID" = "_Peril._ReinsuranceCoverage.SectionID" AND 
+	     "_Peril"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_Peril"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Region_View" as "_Region"
+	  on "_Region"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" AND 
+	     "_Region"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_Region"."_ReinsuranceCoverage.SectionID" = "_Region._ReinsuranceCoverage.SectionID" AND 
+	     "_Region"."_ReinsuranceCoverage.CoverageID" = "_Region._ReinsuranceCoverage.CoverageID" AND 
+	     "_Region"."Region" = "_Region.Region"
+	     
+);

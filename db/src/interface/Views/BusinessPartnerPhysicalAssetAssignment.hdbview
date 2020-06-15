@@ -1,0 +1,28 @@
+view "sap.fsdm.Views::BusinessPartnerPhysicalAssetAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "BusinessPartnerRole" as "BusinessPartnerRole",
+      "RentedPropertyType" as "RentedPropertyType",
+      "ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner_BusinessPartnerID",
+      "ASSOC_PhysicalAsset.PhysicalAssetID" as "ASSOC_PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AcquisitionDate" as "AcquisitionDate",
+      "BusinessPartnerPhysicalAssetAssignmentCategory" as "BusinessPartnerPhysicalAssetAssignmentCategory",
+      "NetRentIncome" as "NetRentIncome",
+      "NetRentIncomeCurrency" as "NetRentIncomeCurrency",
+      "PartialOwnership" as "PartialOwnership",
+      "RentalIncomePeriodLength" as "RentalIncomePeriodLength",
+      "RentalIncomePeriodTimeUnit" as "RentalIncomePeriodTimeUnit",
+      "RentedPropertyQuantity" as "RentedPropertyQuantity",
+      "RentedPropertyUnit" as "RentedPropertyUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::BusinessPartnerPhysicalAssetAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

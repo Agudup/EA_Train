@@ -1,0 +1,306 @@
+PROCEDURE "sap.fsdm.procedures::AnalystEstimateReadOnly" (IN ROW "sap.fsdm.tabletypes::AnalystEstimateTT", OUT CURR_DEL "sap.fsdm.tabletypes::AnalystEstimateTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::AnalystEstimateTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Analyst=' || TO_VARCHAR("Analyst") || ' ' ||
+                'Firm=' || TO_VARCHAR("Firm") || ' ' ||
+                'KeyFigure=' || TO_VARCHAR("KeyFigure") || ' ' ||
+                'Quarter=' || TO_VARCHAR("Quarter") || ' ' ||
+                'Year=' || TO_VARCHAR("Year") || ' ' ||
+                '_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("_BusinessPartner.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Analyst",
+                        "IN"."Firm",
+                        "IN"."KeyFigure",
+                        "IN"."Quarter",
+                        "IN"."Year",
+                        "IN"."_BusinessPartner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Analyst",
+                        "IN"."Firm",
+                        "IN"."KeyFigure",
+                        "IN"."Quarter",
+                        "IN"."Year",
+                        "IN"."_BusinessPartner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Analyst",
+                        "Firm",
+                        "KeyFigure",
+                        "Quarter",
+                        "Year",
+                        "_BusinessPartner.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Analyst",
+                                    "IN"."Firm",
+                                    "IN"."KeyFigure",
+                                    "IN"."Quarter",
+                                    "IN"."Year",
+                                    "IN"."_BusinessPartner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Analyst",
+                                    "IN"."Firm",
+                                    "IN"."KeyFigure",
+                                    "IN"."Quarter",
+                                    "IN"."Year",
+                                    "IN"."_BusinessPartner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "Analyst",
+        "Firm",
+        "KeyFigure",
+        "Quarter",
+        "Year",
+        "_BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::AnalystEstimate" WHERE
+        (            "Analyst" ,
+            "Firm" ,
+            "KeyFigure" ,
+            "Quarter" ,
+            "Year" ,
+            "_BusinessPartner.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."Analyst",
+            "OLD"."Firm",
+            "OLD"."KeyFigure",
+            "OLD"."Quarter",
+            "OLD"."Year",
+            "OLD"."_BusinessPartner.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::AnalystEstimate" as "OLD"
+            on
+               ( case when "IN"."Analyst" is null then '' else "IN"."Analyst" end ) = "OLD"."Analyst" and
+               ( case when "IN"."Firm" is null then '' else "IN"."Firm" end ) = "OLD"."Firm" and
+               ( case when "IN"."KeyFigure" is null then '' else "IN"."KeyFigure" end ) = "OLD"."KeyFigure" and
+               ( case when "IN"."Quarter" is null then -1 else "IN"."Quarter" end ) = "OLD"."Quarter" and
+               ( case when "IN"."Year" is null then '' else "IN"."Year" end ) = "OLD"."Year" and
+               ( case when "IN"."_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_BusinessPartner.BusinessPartnerID" end ) = "OLD"."_BusinessPartner.BusinessPartnerID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "Analyst",
+        "Firm",
+        "KeyFigure",
+        "Quarter",
+        "Year",
+        "_BusinessPartner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "EstimatedAmount",
+        "EstimatedAmountCurrency",
+        "PublicationDate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "Analyst" is null then '' else "Analyst" end ) as "Analyst",
+                    ( case when "Firm" is null then '' else "Firm" end ) as "Firm",
+                    ( case when "KeyFigure" is null then '' else "KeyFigure" end ) as "KeyFigure",
+                    ( case when "Quarter" is null then -1 else "Quarter" end ) as "Quarter",
+                    ( case when "Year" is null then '' else "Year" end ) as "Year",
+                    ( case when "_BusinessPartner.BusinessPartnerID" is null then '' else "_BusinessPartner.BusinessPartnerID" end ) as "_BusinessPartner.BusinessPartnerID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "EstimatedAmount"  ,
+                    "EstimatedAmountCurrency"  ,
+                    "PublicationDate"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_Analyst" as "Analyst" ,
+                    "OLD_Firm" as "Firm" ,
+                    "OLD_KeyFigure" as "KeyFigure" ,
+                    "OLD_Quarter" as "Quarter" ,
+                    "OLD_Year" as "Year" ,
+                    "OLD__BusinessPartner.BusinessPartnerID" as "_BusinessPartner.BusinessPartnerID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_EstimatedAmount" as "EstimatedAmount" ,
+                    "OLD_EstimatedAmountCurrency" as "EstimatedAmountCurrency" ,
+                    "OLD_PublicationDate" as "PublicationDate" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."Analyst",
+                        "IN"."Firm",
+                        "IN"."KeyFigure",
+                        "IN"."Quarter",
+                        "IN"."Year",
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Analyst" as "OLD_Analyst",
+                                "OLD"."Firm" as "OLD_Firm",
+                                "OLD"."KeyFigure" as "OLD_KeyFigure",
+                                "OLD"."Quarter" as "OLD_Quarter",
+                                "OLD"."Year" as "OLD_Year",
+                                "OLD"."_BusinessPartner.BusinessPartnerID" as "OLD__BusinessPartner.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."EstimatedAmount" as "OLD_EstimatedAmount",
+                                "OLD"."EstimatedAmountCurrency" as "OLD_EstimatedAmountCurrency",
+                                "OLD"."PublicationDate" as "OLD_PublicationDate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AnalystEstimate" as "OLD"
+            on
+                ( case when "IN"."Analyst" is null then '' else "IN"."Analyst" end ) = "OLD"."Analyst" and
+                ( case when "IN"."Firm" is null then '' else "IN"."Firm" end ) = "OLD"."Firm" and
+                ( case when "IN"."KeyFigure" is null then '' else "IN"."KeyFigure" end ) = "OLD"."KeyFigure" and
+                ( case when "IN"."Quarter" is null then -1 else "IN"."Quarter" end ) = "OLD"."Quarter" and
+                ( case when "IN"."Year" is null then '' else "IN"."Year" end ) = "OLD"."Year" and
+                ( case when "IN"."_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_BusinessPartner.BusinessPartnerID" end ) = "OLD"."_BusinessPartner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_Analyst" as "Analyst",
+            "OLD_Firm" as "Firm",
+            "OLD_KeyFigure" as "KeyFigure",
+            "OLD_Quarter" as "Quarter",
+            "OLD_Year" as "Year",
+            "OLD__BusinessPartner.BusinessPartnerID" as "_BusinessPartner.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_EstimatedAmount" as "EstimatedAmount",
+            "OLD_EstimatedAmountCurrency" as "EstimatedAmountCurrency",
+            "OLD_PublicationDate" as "PublicationDate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."Analyst",
+                        "IN"."Firm",
+                        "IN"."KeyFigure",
+                        "IN"."Quarter",
+                        "IN"."Year",
+                        "IN"."_BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."Analyst" as "OLD_Analyst",
+                        "OLD"."Firm" as "OLD_Firm",
+                        "OLD"."KeyFigure" as "OLD_KeyFigure",
+                        "OLD"."Quarter" as "OLD_Quarter",
+                        "OLD"."Year" as "OLD_Year",
+                        "OLD"."_BusinessPartner.BusinessPartnerID" as "OLD__BusinessPartner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."EstimatedAmount" as "OLD_EstimatedAmount",
+                        "OLD"."EstimatedAmountCurrency" as "OLD_EstimatedAmountCurrency",
+                        "OLD"."PublicationDate" as "OLD_PublicationDate",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AnalystEstimate" as "OLD"
+            on
+                ( case when "IN"."Analyst" is null then '' else "IN"."Analyst" end ) = "OLD"."Analyst" and
+                ( case when "IN"."Firm" is null then '' else "IN"."Firm" end ) = "OLD"."Firm" and
+                ( case when "IN"."KeyFigure" is null then '' else "IN"."KeyFigure" end ) = "OLD"."KeyFigure" and
+                ( case when "IN"."Quarter" is null then -1 else "IN"."Quarter" end ) = "OLD"."Quarter" and
+                ( case when "IN"."Year" is null then '' else "IN"."Year" end ) = "OLD"."Year" and
+                ( case when "IN"."_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."_BusinessPartner.BusinessPartnerID" end ) = "OLD"."_BusinessPartner.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

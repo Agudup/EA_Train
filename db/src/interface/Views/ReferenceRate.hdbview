@@ -1,0 +1,27 @@
+view "sap.fsdm.Views::ReferenceRate_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ReferenceRateID" as "ReferenceRateID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "BusinessCalendar" as "BusinessCalendar",
+      "BusinessDayConvention" as "BusinessDayConvention",
+      "DayCountConvention" as "DayCountConvention",
+      "FixingIntervalPeriodLength" as "FixingIntervalPeriodLength",
+      "FixingIntervalTimeUnit" as "FixingIntervalTimeUnit",
+      "IsInternallyFixed" as "IsInternallyFixed",
+      "ProviderOfReferenceRate" as "ProviderOfReferenceRate",
+      "ReferenceRateCurrency" as "ReferenceRateCurrency",
+      "ReferenceRateType" as "ReferenceRateType",
+      "TimeToMaturity" as "TimeToMaturity",
+      "TimeToMaturityUnit" as "TimeToMaturityUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ReferenceRate"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

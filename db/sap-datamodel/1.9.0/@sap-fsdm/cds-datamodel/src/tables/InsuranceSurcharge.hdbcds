@@ -1,0 +1,78 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"InsuranceOption";
+using "sap"."fsdm"::"InsuranceCoverage";
+using "sap"."fsdm"::"InsuranceCoverageOption";
+
+entity "InsuranceSurcharge" {
+    key "Type"                            : String(40);
+    key "_InsuranceContract"              : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }       not null;
+    key "_InsuranceCoverOption"           : association to InsuranceOption { Type }  not null;
+    key "_InsuranceCoverage"              : association to InsuranceCoverage {
+                                                                               ID,
+                                                                               _InsuranceContract,
+                                                                               _InsuredObject
+                                                                             }       not null;
+    key "_InsuranceCoverageOptionPremium" : association to InsuranceCoverageOption {
+                                                                                     Type,
+                                                                                     _InsuranceCoverage
+                                                                                   } not null;
+    key "BusinessValidFrom"               : LocalDate;
+    key "BusinessValidTo"                 : LocalDate;
+        "SystemValidFrom"                 : UTCTimestamp                             not null;
+        "SystemValidTo"                   : UTCTimestamp                             not null;
+        "AnnualAmount"                    : Decimal(34, 6);
+        "EndDate"                         : LocalDate;
+        "InsurancePolicyStructureLevel"   : String(40);
+        "PeriodAmount"                    : Decimal(34, 6);
+        "StartDate"                       : LocalDate;
+        "SurchargeClass"                  : String(40);
+        "SourceSystemID"                  : String(128);
+        "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+        "ChangingUserInSourceSystem"      : String(128);
+        "ChangingProcessType"             : String(40);
+        "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InsuranceSurcharge_Historical" {
+    "Type"                            : String(40)                               not null;
+    "_InsuranceContract"              : association to FinancialContract {
+                                                                           FinancialContractID,
+                                                                           IDSystem
+                                                                         }       not null;
+    "_InsuranceCoverOption"           : association to InsuranceOption { Type }  not null;
+    "_InsuranceCoverage"              : association to InsuranceCoverage {
+                                                                           ID,
+                                                                           _InsuranceContract,
+                                                                           _InsuredObject
+                                                                         }       not null;
+    "_InsuranceCoverageOptionPremium" : association to InsuranceCoverageOption {
+                                                                                 Type,
+                                                                                 _InsuranceCoverage
+                                                                               } not null;
+    "BusinessValidFrom"               : LocalDate                                not null;
+    "BusinessValidTo"                 : LocalDate                                not null;
+    "SystemValidFrom"                 : UTCTimestamp                             not null;
+    "SystemValidTo"                   : UTCTimestamp                             not null;
+    "AnnualAmount"                    : Decimal(34, 6);
+    "EndDate"                         : LocalDate;
+    "InsurancePolicyStructureLevel"   : String(40);
+    "PeriodAmount"                    : Decimal(34, 6);
+    "StartDate"                       : LocalDate;
+    "SurchargeClass"                  : String(40);
+    "SourceSystemID"                  : String(128);
+    "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+    "ChangingUserInSourceSystem"      : String(128);
+    "ChangingProcessType"             : String(40);
+    "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,81 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"InstrumentClass";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"ProductCatalogItem";
+
+entity "EligibleCollateral" {
+    key "Scheme"                        : String(128);
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    /**
+    *@Deprecated
+    *@Reason: Due to deprecation of the Instrument Class entity
+    *@ReplacedBy: Product Catalog Item Accepted As Collateral relationship
+    */
+    key "_InstrumentClass"              : association to InstrumentClass {
+                                                                           InstrumentClass,
+                                                                           InstrumentClassificationSystem
+                                                                         }                             not null;
+    key "_MasterAgreement"              : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_Organization"                 : association to BusinessPartner { BusinessPartnerID }         not null;
+    key "_ProductCatalogItem"           : association to ProductCatalogItem {
+                                                                              ProductCatalogItem,
+                                                                              _ProductCatalog
+                                                                            }                          not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "EligibilityStatus"             : String(100);
+        "Haircut"                       : Decimal(15, 11);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "EligibleCollateral_Historical" {
+    "Scheme"                        : String(128)                                                  not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    /**
+    *@Deprecated
+    *@Reason: Due to deprecation of the Instrument Class entity
+    *@ReplacedBy: Product Catalog Item Accepted As Collateral relationship
+    */
+    "_InstrumentClass"              : association to InstrumentClass {
+                                                                       InstrumentClass,
+                                                                       InstrumentClassificationSystem
+                                                                     }                             not null;
+    "_MasterAgreement"              : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_Organization"                 : association to BusinessPartner { BusinessPartnerID }         not null;
+    "_ProductCatalogItem"           : association to ProductCatalogItem {
+                                                                          ProductCatalogItem,
+                                                                          _ProductCatalog
+                                                                        }                          not null;
+    "BusinessValidFrom"             : LocalDate                                                    not null;
+    "BusinessValidTo"               : LocalDate                                                    not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "EligibilityStatus"             : String(100);
+    "Haircut"                       : Decimal(15, 11);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

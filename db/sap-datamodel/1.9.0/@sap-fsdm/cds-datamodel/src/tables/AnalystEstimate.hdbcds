@@ -1,0 +1,51 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "AnalystEstimate" {
+    key "Analyst"                       : String(40);
+    key "Firm"                          : String(40);
+    key "KeyFigure"                     : String(10)                                           default '';
+    key "Quarter"                       : Integer;
+    key "Year"                          : String(10);
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "EstimatedAmount"               : Decimal(34, 6);
+        "EstimatedAmountCurrency"       : String(3);
+        "PublicationDate"               : LocalDate;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "AnalystEstimate_Historical" {
+    "Analyst"                       : String(40)                                           not null;
+    "Firm"                          : String(40)                                           not null;
+    "KeyFigure"                     : String(10)                                           default '' not null;
+    "Quarter"                       : Integer                                              not null;
+    "Year"                          : String(10)                                           not null;
+    "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "BusinessValidFrom"             : UTCTimestamp                                         not null;
+    "BusinessValidTo"               : UTCTimestamp                                         not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "EstimatedAmount"               : Decimal(34, 6);
+    "EstimatedAmountCurrency"       : String(3);
+    "PublicationDate"               : LocalDate;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

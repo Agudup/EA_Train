@@ -1,0 +1,48 @@
+view "sap.fsdm.SQLViews::YieldCurve_View" 
+as select
+      "YieldCurveID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_ReferenceRate.ReferenceRateID" ,
+      "CurveCurrency" ,
+      "Description" ,
+      "IsForwardStarting" ,
+      "IsSpreadCurve" ,
+      "Name" ,
+      "PeriodUntilForwardStartingDate" ,
+      "PeriodUntilTimeUnit" ,
+      "Rating" ,
+      "RatingAgency" ,
+      "RatingMethod" ,
+      "ShortMidLongTerm" ,
+      "TimeToMaturityUnit" ,
+      "YieldCurveCalculationMethod" ,
+      "YieldCurveCategory" ,
+      "YieldCurveType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::YieldCurve"
+with associations
+(
+	join "sap.fsdm.SQLViews::CurveDataPoint_View" as "_CurveDataPoint_ASSOC_YieldCurve"
+	  on "YieldCurveID" = "_CurveDataPoint_ASSOC_YieldCurve"."ASSOC_YieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::FundsTransferPricingRate_View" as "_FundsTransferPricingRate_ASSOC_YieldCurve"
+	  on "YieldCurveID" = "_FundsTransferPricingRate_ASSOC_YieldCurve"."ASSOC_YieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__BenchmarkYieldCurve"
+	  on "YieldCurveID" = "_Trade__BenchmarkYieldCurve"."_BenchmarkYieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_YieldCurve"
+	  on "YieldCurveID" = "_Valuation_ASSOC_YieldCurve"."ASSOC_YieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::ReferenceRate_View" as "ASSOC_ReferenceRate"
+	  on "ASSOC_ReferenceRate"."ReferenceRateID" = "ASSOC_ReferenceRate.ReferenceRateID"
+	     
+);

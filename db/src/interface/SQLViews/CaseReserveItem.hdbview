@@ -1,0 +1,33 @@
+view "sap.fsdm.SQLViews::CaseReserveItem_View" 
+as select
+      "ReserveChangeDate" ,
+      "_CaseReserve.Type" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_CaseReserveItem.ReserveChangeDate" ,
+      "_CaseReserveItem._CaseReserve.Type" ,
+      "Amount" ,
+      "Currency" ,
+      "PostingDate" ,
+      "ReserveChangeReason" ,
+      "ReversedIndicator" ,
+      "Type" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CaseReserveItem"
+with associations
+(
+	join "sap.fsdm.SQLViews::CaseReserve_View" as "_CaseReserve"
+	  on "_CaseReserve"."Type" = "_CaseReserve.Type"
+	     ,
+	join "sap.fsdm.SQLViews::CaseReserveItem_View" as "_CaseReserveItem"
+	  on "_CaseReserveItem"."ReserveChangeDate" = "_CaseReserveItem.ReserveChangeDate" AND 
+	     "_CaseReserveItem"."_CaseReserve.Type" = "_CaseReserveItem._CaseReserve.Type"
+	     
+);

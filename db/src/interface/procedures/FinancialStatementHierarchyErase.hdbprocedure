@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::FinancialStatementHierarchyErase" (IN ROW "sap.fsdm.tabletypes::FinancialStatementHierarchyTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "FinancialStatementHierarchyID" is null and
+                         "_Child.FinancialStatementSegmentID" is null and
+                         "_Child._FinancialStatementStructure.FinancialStatementStructureID" is null and
+                         "_Parent.FinancialStatementSegmentID" is null and
+                         "_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::FinancialStatementHierarchy" WHERE
+("FinancialStatementHierarchyID" ,
+"_Child.FinancialStatementSegmentID" ,
+"_Child._FinancialStatementStructure.FinancialStatementStructureID" ,
+"_Parent.FinancialStatementSegmentID" ,
+"_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+)in ( select "OLD"."FinancialStatementHierarchyID" ,
+"OLD"."_Child.FinancialStatementSegmentID" ,
+"OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" ,
+"OLD"."_Parent.FinancialStatementSegmentID" ,
+"OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialStatementHierarchy" "OLD"
+on
+  ( "IN"."FinancialStatementHierarchyID" = "OLD"."FinancialStatementHierarchyID" or "IN"."FinancialStatementHierarchyID" is null ) and
+  ( "IN"."_Child.FinancialStatementSegmentID" = "OLD"."_Child.FinancialStatementSegmentID" or "IN"."_Child.FinancialStatementSegmentID" is null ) and
+  ( "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" = "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" or "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" is null ) and
+  ( "IN"."_Parent.FinancialStatementSegmentID" = "OLD"."_Parent.FinancialStatementSegmentID" or "IN"."_Parent.FinancialStatementSegmentID" is null ) and
+  ( "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" = "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" or "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::FinancialStatementHierarchy_Historical" WHERE
+("FinancialStatementHierarchyID" ,
+"_Child.FinancialStatementSegmentID" ,
+"_Child._FinancialStatementStructure.FinancialStatementStructureID" ,
+"_Parent.FinancialStatementSegmentID" ,
+"_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+)in ( select "OLD"."FinancialStatementHierarchyID" ,
+"OLD"."_Child.FinancialStatementSegmentID" ,
+"OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" ,
+"OLD"."_Parent.FinancialStatementSegmentID" ,
+"OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" 
+from :ROW "IN"
+inner join "sap.fsdm::FinancialStatementHierarchy_Historical" "OLD"
+on
+  ( "IN"."FinancialStatementHierarchyID" = "OLD"."FinancialStatementHierarchyID" or "IN"."FinancialStatementHierarchyID" is null ) and
+  ( "IN"."_Child.FinancialStatementSegmentID" = "OLD"."_Child.FinancialStatementSegmentID" or "IN"."_Child.FinancialStatementSegmentID" is null ) and
+  ( "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" = "OLD"."_Child._FinancialStatementStructure.FinancialStatementStructureID" or "IN"."_Child._FinancialStatementStructure.FinancialStatementStructureID" is null ) and
+  ( "IN"."_Parent.FinancialStatementSegmentID" = "OLD"."_Parent.FinancialStatementSegmentID" or "IN"."_Parent.FinancialStatementSegmentID" is null ) and
+  ( "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" = "OLD"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" or "IN"."_Parent._FinancialStatementStructure.FinancialStatementStructureID" is null ) 
+);
+
+END

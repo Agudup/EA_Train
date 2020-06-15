@@ -1,0 +1,31 @@
+view "sap.fsdm.Views::PaymentIntervalListEntry_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PaymentIntervalEndDate" as "PaymentIntervalEndDate",
+      "PaymentIntervalStartDate" as "PaymentIntervalStartDate",
+      "ASSOC_PaymentIntervalList.SequenceNumber" as "ASSOC_PaymentIntervalList_SequenceNumber",
+      "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_PaymentIntervalList_ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" as "ASSOC_PaymentIntervalList_ASSOC_FinancialContract_IDSystem",
+      "ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" as "ASSOC_PaymentIntervalList_ASSOC_Receivable_ReceivableID",
+      "ASSOC_PaymentIntervalList._CreditCardLoan.ID" as "ASSOC_PaymentIntervalList__CreditCardLoan_ID",
+      "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" as "ASSOC_PaymentIntervalList__CreditCardLoan__CreditCardAgreement_FinancialContractID",
+      "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" as "ASSOC_PaymentIntervalList__CreditCardLoan__CreditCardAgreement_IDSystem",
+      "ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" as "ASSOC_PaymentIntervalList__DebtInstrument_FinancialInstrumentID",
+      "ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" as "ASSOC_PaymentIntervalList__InterestRateOptionComponent_ComponentNumber",
+      "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" as "ASSOC_PaymentIntervalList__InterestRateOptionComponent__InterestRateOption_FinancialContractID",
+      "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" as "ASSOC_PaymentIntervalList__InterestRateOptionComponent__InterestRateOption_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PaymentAmount" as "PaymentAmount",
+      "PaymentCurrency" as "PaymentCurrency",
+      "PaymentPercentage" as "PaymentPercentage",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PaymentIntervalListEntry"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

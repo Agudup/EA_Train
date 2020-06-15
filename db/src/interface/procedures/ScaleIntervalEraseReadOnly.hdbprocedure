@@ -1,0 +1,330 @@
+PROCEDURE "sap.fsdm.procedures::ScaleIntervalEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::ScaleIntervalTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::ScaleIntervalTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::ScaleIntervalTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_FeeSpecification.SequenceNumber" is null and
+                         "ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" is null and
+                         "ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" is null and
+                         "ASSOC_FeeSpecification._Trade.IDSystem" is null and
+                         "ASSOC_FeeSpecification._Trade.TradeID" is null and
+                         "ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" is null and
+                         "ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null and
+                         "ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" is null and
+                         "ASSOC_InterestSpecification.SequenceNumber" is null and
+                         "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null and
+                         "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" is null and
+                         "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" is null and
+                         "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null and
+                         "ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" is null and
+                         "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null and
+                         "ASSOC_InterestSpecification._Trade.IDSystem" is null and
+                         "ASSOC_InterestSpecification._Trade.TradeID" is null and
+                         "ASSOC_StandardFee.SequenceNumber" is null and
+                         "ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" is null and
+                         "ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" is null and
+                         "ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" is null and
+                         "ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null and
+                         "ASSOC_StandardInterest.SequenceNumber" is null and
+                         "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" is null and
+                         "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null and
+                         "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" is null and
+                         "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" is null and
+                         "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null and
+                         "ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" is null and
+                         "ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" is null and
+                         "ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" is null and
+                         "ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" is null and
+                         "_PnLParticipation.SequenceNumber" is null and
+                         "_PnLParticipation._ParticipationCert.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"ASSOC_FeeSpecification.SequenceNumber",
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem",
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem",
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID",
+"ASSOC_FeeSpecification._Trade.IDSystem",
+"ASSOC_FeeSpecification._Trade.TradeID",
+"ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber",
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem",
+"ASSOC_InterestSpecification.SequenceNumber",
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem",
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID",
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber",
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber",
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestSpecification._Trade.IDSystem",
+"ASSOC_InterestSpecification._Trade.TradeID",
+"ASSOC_StandardFee.SequenceNumber",
+"ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+"ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+"ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+"ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+"ASSOC_StandardInterest.SequenceNumber",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+"_PnLParticipation.SequenceNumber",
+"_PnLParticipation._ParticipationCert.FinancialInstrumentID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::ScaleInterval" WHERE("ASSOC_FeeSpecification.SequenceNumber" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" ,
+"ASSOC_FeeSpecification._Trade.IDSystem" ,
+"ASSOC_FeeSpecification._Trade.TradeID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_InterestSpecification.SequenceNumber" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.TradeID" ,
+"ASSOC_StandardFee.SequenceNumber" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.SequenceNumber" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"_PnLParticipation.SequenceNumber" ,
+"_PnLParticipation._ParticipationCert.FinancialInstrumentID" 
+)in ( select "ASSOC_FeeSpecification.SequenceNumber" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" ,
+"ASSOC_FeeSpecification._Trade.IDSystem" ,
+"ASSOC_FeeSpecification._Trade.TradeID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_InterestSpecification.SequenceNumber" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.TradeID" ,
+"ASSOC_StandardFee.SequenceNumber" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.SequenceNumber" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"_PnLParticipation.SequenceNumber" ,
+"_PnLParticipation._ParticipationCert.FinancialInstrumentID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"ASSOC_FeeSpecification.SequenceNumber",
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem",
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem",
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID",
+"ASSOC_FeeSpecification._Trade.IDSystem",
+"ASSOC_FeeSpecification._Trade.TradeID",
+"ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber",
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID",
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem",
+"ASSOC_InterestSpecification.SequenceNumber",
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem",
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID",
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber",
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber",
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+"ASSOC_InterestSpecification._Trade.IDSystem",
+"ASSOC_InterestSpecification._Trade.TradeID",
+"ASSOC_StandardFee.SequenceNumber",
+"ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID",
+"ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem",
+"ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme",
+"ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+"ASSOC_StandardInterest.SequenceNumber",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme",
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme",
+"ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID",
+"_PnLParticipation.SequenceNumber",
+"_PnLParticipation._ParticipationCert.FinancialInstrumentID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::ScaleInterval_Historical" WHERE("ASSOC_FeeSpecification.SequenceNumber" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" ,
+"ASSOC_FeeSpecification._Trade.IDSystem" ,
+"ASSOC_FeeSpecification._Trade.TradeID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_InterestSpecification.SequenceNumber" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.TradeID" ,
+"ASSOC_StandardFee.SequenceNumber" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.SequenceNumber" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"_PnLParticipation.SequenceNumber" ,
+"_PnLParticipation._ParticipationCert.FinancialInstrumentID" 
+)in ( select "ASSOC_FeeSpecification.SequenceNumber" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" ,
+"ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" ,
+"ASSOC_FeeSpecification._Trade.IDSystem" ,
+"ASSOC_FeeSpecification._Trade.TradeID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+"ASSOC_InterestSpecification.SequenceNumber" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+"ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.IDSystem" ,
+"ASSOC_InterestSpecification._Trade.TradeID" ,
+"ASSOC_StandardFee.SequenceNumber" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.SequenceNumber" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" ,
+"ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"_PnLParticipation.SequenceNumber" ,
+"_PnLParticipation._ParticipationCert.FinancialInstrumentID" 
+from :ROW );
+
+END

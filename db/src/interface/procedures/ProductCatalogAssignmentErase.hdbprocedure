@@ -1,0 +1,114 @@
+PROCEDURE "sap.fsdm.procedures::ProductCatalogAssignmentErase" (IN ROW "sap.fsdm.tabletypes::ProductCatalogAssignmentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_FinancialContract.FinancialContractID" is null and
+                         "_FinancialContract.IDSystem" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null and
+                         "_FinancialStandardProduct.FinancialStandardProductID" is null and
+                         "_FinancialStandardProduct.IDSystem" is null and
+                         "_FinancialStandardProduct.PricingScheme" is null and
+                         "_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null and
+                         "_ProductCatalogItem.ProductCatalogItem" is null and
+                         "_ProductCatalogItem._ProductCatalog.CatalogID" is null and
+                         "_Trade.IDSystem" is null and
+                         "_Trade.TradeID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::ProductCatalogAssignment" WHERE
+("_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_FinancialStandardProduct.FinancialStandardProductID" ,
+"_FinancialStandardProduct.IDSystem" ,
+"_FinancialStandardProduct.PricingScheme" ,
+"_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"_ProductCatalogItem.ProductCatalogItem" ,
+"_ProductCatalogItem._ProductCatalog.CatalogID" ,
+"_Trade.IDSystem" ,
+"_Trade.TradeID" 
+)in ( select "OLD"."_FinancialContract.FinancialContractID" ,
+"OLD"."_FinancialContract.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" ,
+"OLD"."_FinancialStandardProduct.FinancialStandardProductID" ,
+"OLD"."_FinancialStandardProduct.IDSystem" ,
+"OLD"."_FinancialStandardProduct.PricingScheme" ,
+"OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"OLD"."_ProductCatalogItem.ProductCatalogItem" ,
+"OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" ,
+"OLD"."_Trade.IDSystem" ,
+"OLD"."_Trade.TradeID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProductCatalogAssignment" "OLD"
+on
+  ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."_FinancialStandardProduct.FinancialStandardProductID" or "IN"."_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+  ( "IN"."_FinancialStandardProduct.IDSystem" = "OLD"."_FinancialStandardProduct.IDSystem" or "IN"."_FinancialStandardProduct.IDSystem" is null ) and
+  ( "IN"."_FinancialStandardProduct.PricingScheme" = "OLD"."_FinancialStandardProduct.PricingScheme" or "IN"."_FinancialStandardProduct.PricingScheme" is null ) and
+  ( "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+  ( "IN"."_ProductCatalogItem.ProductCatalogItem" = "OLD"."_ProductCatalogItem.ProductCatalogItem" or "IN"."_ProductCatalogItem.ProductCatalogItem" is null ) and
+  ( "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" = "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" or "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" is null ) and
+  ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+  ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::ProductCatalogAssignment_Historical" WHERE
+("_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_FinancialStandardProduct.FinancialStandardProductID" ,
+"_FinancialStandardProduct.IDSystem" ,
+"_FinancialStandardProduct.PricingScheme" ,
+"_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"_ProductCatalogItem.ProductCatalogItem" ,
+"_ProductCatalogItem._ProductCatalog.CatalogID" ,
+"_Trade.IDSystem" ,
+"_Trade.TradeID" 
+)in ( select "OLD"."_FinancialContract.FinancialContractID" ,
+"OLD"."_FinancialContract.IDSystem" ,
+"OLD"."_FinancialInstrument.FinancialInstrumentID" ,
+"OLD"."_FinancialStandardProduct.FinancialStandardProductID" ,
+"OLD"."_FinancialStandardProduct.IDSystem" ,
+"OLD"."_FinancialStandardProduct.PricingScheme" ,
+"OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"OLD"."_ProductCatalogItem.ProductCatalogItem" ,
+"OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" ,
+"OLD"."_Trade.IDSystem" ,
+"OLD"."_Trade.TradeID" 
+from :ROW "IN"
+inner join "sap.fsdm::ProductCatalogAssignment_Historical" "OLD"
+on
+  ( "IN"."_FinancialContract.FinancialContractID" = "OLD"."_FinancialContract.FinancialContractID" or "IN"."_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_FinancialContract.IDSystem" = "OLD"."_FinancialContract.IDSystem" or "IN"."_FinancialContract.IDSystem" is null ) and
+  ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."_FinancialStandardProduct.FinancialStandardProductID" or "IN"."_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+  ( "IN"."_FinancialStandardProduct.IDSystem" = "OLD"."_FinancialStandardProduct.IDSystem" or "IN"."_FinancialStandardProduct.IDSystem" is null ) and
+  ( "IN"."_FinancialStandardProduct.PricingScheme" = "OLD"."_FinancialStandardProduct.PricingScheme" or "IN"."_FinancialStandardProduct.PricingScheme" is null ) and
+  ( "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+  ( "IN"."_ProductCatalogItem.ProductCatalogItem" = "OLD"."_ProductCatalogItem.ProductCatalogItem" or "IN"."_ProductCatalogItem.ProductCatalogItem" is null ) and
+  ( "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" = "OLD"."_ProductCatalogItem._ProductCatalog.CatalogID" or "IN"."_ProductCatalogItem._ProductCatalog.CatalogID" is null ) and
+  ( "IN"."_Trade.IDSystem" = "OLD"."_Trade.IDSystem" or "IN"."_Trade.IDSystem" is null ) and
+  ( "IN"."_Trade.TradeID" = "OLD"."_Trade.TradeID" or "IN"."_Trade.TradeID" is null ) 
+);
+
+END

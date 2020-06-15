@@ -1,0 +1,63 @@
+view "sap.fsdm.SQLViews::InsuredPerson_View" 
+as select
+      "SequenceOrdinalNumber" ,
+      "_IndividualPerson.BusinessPartnerID" ,
+      "_InsuranceCoverage.ID" ,
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_Address.AddressType" ,
+      "_Address.SequenceNumber" ,
+      "_Address.ASSOC_BankingChannel.BankingChannelID" ,
+      "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+      "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+      "_Address._Claim.ID" ,
+      "_Address._Claim.IDSystem" ,
+      "ActuarialAge" ,
+      "HeightInCentimetersAtInception" ,
+      "HeightInFeetAtInception" ,
+      "HeightInInchesAtInception" ,
+      "RiskGroup" ,
+      "WeightInKilogramsAtInception" ,
+      "WeightInPoundsAtInception" ,
+      "WeightInStonesAtInception" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InsuredPerson"
+with associations
+(
+	join "sap.fsdm.SQLViews::Address_View" as "_Address"
+	  on "_Address"."_Claim.IDSystem" = "_Address._Claim.IDSystem" AND 
+	     "_Address"."_Claim.ID" = "_Address._Claim.ID" AND 
+	     "_Address"."SequenceNumber" = "_Address.SequenceNumber" AND 
+	     "_Address"."AddressType" = "_Address.AddressType" AND 
+	     "_Address"."ASSOC_PhysicalAsset.PhysicalAssetID" = "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" AND 
+	     "_Address"."ASSOC_OrganizationalUnit.OrganizationalUnitID" = "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" AND 
+	     "_Address"."ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_Address"."ASSOC_BusinessPartnerID.BusinessPartnerID" = "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" AND 
+	     "_Address"."ASSOC_BankingChannel.BankingChannelID" = "_Address.ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_IndividualPerson"
+	  on "_IndividualPerson"."BusinessPartnerID" = "_IndividualPerson.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_InsuranceCoverage"
+	  on "_InsuranceCoverage"."ID" = "_InsuranceCoverage.ID" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.FinancialContractID" = "_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.IDSystem" = "_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

@@ -1,0 +1,642 @@
+PROCEDURE "sap.fsdm.procedures::InsuranceTechnicalAccountMovementLoad" (IN ROW "sap.fsdm.tabletypes::InsuranceTechnicalAccountMovementTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ID=' || TO_VARCHAR("ID") || ' ' ||
+                '_Coverage.ID=' || TO_VARCHAR("_Coverage.ID") || ' ' ||
+                '_Coverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_Coverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_Coverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_Coverage._InsuranceContract.IDSystem") || ' ' ||
+                '_Coverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_Coverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_Coverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_Coverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                '_Option.Type=' || TO_VARCHAR("_Option.Type") || ' ' ||
+                '_Option._InsuranceCoverage.ID=' || TO_VARCHAR("_Option._InsuranceCoverage.ID") || ' ' ||
+                '_Option._InsuranceCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_Option._InsuranceCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_Option._InsuranceCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_Option._InsuranceCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ID",
+                        "IN"."_Coverage.ID",
+                        "IN"."_Coverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Coverage._InsuranceContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "IN"."_Option.Type",
+                        "IN"."_Option._InsuranceCoverage.ID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ID",
+                        "IN"."_Coverage.ID",
+                        "IN"."_Coverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Coverage._InsuranceContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "IN"."_Option.Type",
+                        "IN"."_Option._InsuranceCoverage.ID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ID",
+                        "_Coverage.ID",
+                        "_Coverage._InsuranceContract.FinancialContractID",
+                        "_Coverage._InsuranceContract.IDSystem",
+                        "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "_Option.Type",
+                        "_Option._InsuranceCoverage.ID",
+                        "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ID",
+                                    "IN"."_Coverage.ID",
+                                    "IN"."_Coverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_Coverage._InsuranceContract.IDSystem",
+                                    "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                    "IN"."_Option.Type",
+                                    "IN"."_Option._InsuranceCoverage.ID",
+                                    "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ID",
+                                    "IN"."_Coverage.ID",
+                                    "IN"."_Coverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_Coverage._InsuranceContract.IDSystem",
+                                    "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                    "IN"."_Option.Type",
+                                    "IN"."_Option._InsuranceCoverage.ID",
+                                    "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InsuranceTechnicalAccountMovement" (
+        "ID",
+        "_Coverage.ID",
+        "_Coverage._InsuranceContract.FinancialContractID",
+        "_Coverage._InsuranceContract.IDSystem",
+        "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_Option.Type",
+        "_Option._InsuranceCoverage.ID",
+        "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_InsuranceTechnicalAccountBalance.Type",
+        "_InsuranceTechnicalAccountBalance._Coverage.ID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_InsuranceTechnicalAccountBalance._Option.Type",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "Amount",
+        "AnalysisPeriodEndDate",
+        "AnalysisPeriodStartDate",
+        "Category",
+        "Currency",
+        "Reason",
+        "Type",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ID" as "ID" ,
+            "OLD__Coverage.ID" as "_Coverage.ID" ,
+            "OLD__Coverage._InsuranceContract.FinancialContractID" as "_Coverage._InsuranceContract.FinancialContractID" ,
+            "OLD__Coverage._InsuranceContract.IDSystem" as "_Coverage._InsuranceContract.IDSystem" ,
+            "OLD__Coverage._InsuredObject._FinancialContract.FinancialContractID" as "_Coverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__Coverage._InsuredObject._FinancialContract.IDSystem" as "_Coverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "OLD__Option.Type" as "_Option.Type" ,
+            "OLD__Option._InsuranceCoverage.ID" as "_Option._InsuranceCoverage.ID" ,
+            "OLD__Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__Option._InsuranceCoverage._InsuranceContract.IDSystem" as "_Option._InsuranceCoverage._InsuranceContract.IDSystem" ,
+            "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__InsuranceTechnicalAccountBalance.Type" as "_InsuranceTechnicalAccountBalance.Type" ,
+            "OLD__InsuranceTechnicalAccountBalance._Coverage.ID" as "_InsuranceTechnicalAccountBalance._Coverage.ID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem" ,
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option.Type" as "_InsuranceTechnicalAccountBalance._Option.Type" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "OLD_Amount" as "Amount" ,
+            "OLD_AnalysisPeriodEndDate" as "AnalysisPeriodEndDate" ,
+            "OLD_AnalysisPeriodStartDate" as "AnalysisPeriodStartDate" ,
+            "OLD_Category" as "Category" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_Reason" as "Reason" ,
+            "OLD_Type" as "Type" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ID",
+                        "IN"."_Coverage.ID",
+                        "IN"."_Coverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Coverage._InsuranceContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "IN"."_Option.Type",
+                        "IN"."_Option._InsuranceCoverage.ID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ID" as "OLD_ID",
+                                "OLD"."_Coverage.ID" as "OLD__Coverage.ID",
+                                "OLD"."_Coverage._InsuranceContract.FinancialContractID" as "OLD__Coverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_Coverage._InsuranceContract.IDSystem" as "OLD__Coverage._InsuranceContract.IDSystem",
+                                "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" as "OLD__Coverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."_Option.Type" as "OLD__Option.Type",
+                                "OLD"."_Option._InsuranceCoverage.ID" as "OLD__Option._InsuranceCoverage.ID",
+                                "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."_InsuranceTechnicalAccountBalance.Type" as "OLD__InsuranceTechnicalAccountBalance.Type",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Coverage.ID" as "OLD__InsuranceTechnicalAccountBalance._Coverage.ID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option.Type" as "OLD__InsuranceTechnicalAccountBalance._Option.Type",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."Amount" as "OLD_Amount",
+                                "OLD"."AnalysisPeriodEndDate" as "OLD_AnalysisPeriodEndDate",
+                                "OLD"."AnalysisPeriodStartDate" as "OLD_AnalysisPeriodStartDate",
+                                "OLD"."Category" as "OLD_Category",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."Reason" as "OLD_Reason",
+                                "OLD"."Type" as "OLD_Type",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InsuranceTechnicalAccountMovement" as "OLD"
+            on
+                ( case when "IN"."ID" is null then '' else "IN"."ID" end ) = "OLD"."ID" and
+                ( case when "IN"."_Coverage.ID" is null then '' else "IN"."_Coverage.ID" end ) = "OLD"."_Coverage.ID" and
+                ( case when "IN"."_Coverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Coverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Coverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Coverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Coverage._InsuranceContract.IDSystem" end ) = "OLD"."_Coverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" and
+                ( case when "IN"."_Option.Type" is null then '' else "IN"."_Option.Type" end ) = "OLD"."_Option.Type" and
+                ( case when "IN"."_Option._InsuranceCoverage.ID" is null then '' else "IN"."_Option._InsuranceCoverage.ID" end ) = "OLD"."_Option._InsuranceCoverage.ID" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InsuranceTechnicalAccountMovement" (
+        "ID",
+        "_Coverage.ID",
+        "_Coverage._InsuranceContract.FinancialContractID",
+        "_Coverage._InsuranceContract.IDSystem",
+        "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_Option.Type",
+        "_Option._InsuranceCoverage.ID",
+        "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_InsuranceTechnicalAccountBalance.Type",
+        "_InsuranceTechnicalAccountBalance._Coverage.ID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_InsuranceTechnicalAccountBalance._Option.Type",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "Amount",
+        "AnalysisPeriodEndDate",
+        "AnalysisPeriodStartDate",
+        "Category",
+        "Currency",
+        "Reason",
+        "Type",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ID" as "ID",
+            "OLD__Coverage.ID" as "_Coverage.ID",
+            "OLD__Coverage._InsuranceContract.FinancialContractID" as "_Coverage._InsuranceContract.FinancialContractID",
+            "OLD__Coverage._InsuranceContract.IDSystem" as "_Coverage._InsuranceContract.IDSystem",
+            "OLD__Coverage._InsuredObject._FinancialContract.FinancialContractID" as "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__Coverage._InsuredObject._FinancialContract.IDSystem" as "_Coverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD__Option.Type" as "_Option.Type",
+            "OLD__Option._InsuranceCoverage.ID" as "_Option._InsuranceCoverage.ID",
+            "OLD__Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__Option._InsuranceCoverage._InsuranceContract.IDSystem" as "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__InsuranceTechnicalAccountBalance.Type" as "_InsuranceTechnicalAccountBalance.Type",
+            "OLD__InsuranceTechnicalAccountBalance._Coverage.ID" as "_InsuranceTechnicalAccountBalance._Coverage.ID",
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID",
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem",
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD__InsuranceTechnicalAccountBalance._Option.Type" as "_InsuranceTechnicalAccountBalance._Option.Type",
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID",
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD_Amount" as "Amount",
+            "OLD_AnalysisPeriodEndDate" as "AnalysisPeriodEndDate",
+            "OLD_AnalysisPeriodStartDate" as "AnalysisPeriodStartDate",
+            "OLD_Category" as "Category",
+            "OLD_Currency" as "Currency",
+            "OLD_Reason" as "Reason",
+            "OLD_Type" as "Type",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ID",
+                        "IN"."_Coverage.ID",
+                        "IN"."_Coverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Coverage._InsuranceContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "IN"."_Option.Type",
+                        "IN"."_Option._InsuranceCoverage.ID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."ID" as "OLD_ID",
+                        "OLD"."_Coverage.ID" as "OLD__Coverage.ID",
+                        "OLD"."_Coverage._InsuranceContract.FinancialContractID" as "OLD__Coverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_Coverage._InsuranceContract.IDSystem" as "OLD__Coverage._InsuranceContract.IDSystem",
+                        "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" as "OLD__Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."_Option.Type" as "OLD__Option.Type",
+                        "OLD"."_Option._InsuranceCoverage.ID" as "OLD__Option._InsuranceCoverage.ID",
+                        "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."_InsuranceTechnicalAccountBalance.Type" as "OLD__InsuranceTechnicalAccountBalance.Type",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Coverage.ID" as "OLD__InsuranceTechnicalAccountBalance._Coverage.ID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option.Type" as "OLD__InsuranceTechnicalAccountBalance._Option.Type",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."Amount" as "OLD_Amount",
+                        "OLD"."AnalysisPeriodEndDate" as "OLD_AnalysisPeriodEndDate",
+                        "OLD"."AnalysisPeriodStartDate" as "OLD_AnalysisPeriodStartDate",
+                        "OLD"."Category" as "OLD_Category",
+                        "OLD"."Currency" as "OLD_Currency",
+                        "OLD"."Reason" as "OLD_Reason",
+                        "OLD"."Type" as "OLD_Type",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InsuranceTechnicalAccountMovement" as "OLD"
+            on
+                ( case when "IN"."ID" is null then '' else "IN"."ID" end ) = "OLD"."ID" and
+                ( case when "IN"."_Coverage.ID" is null then '' else "IN"."_Coverage.ID" end ) = "OLD"."_Coverage.ID" and
+                ( case when "IN"."_Coverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Coverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Coverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Coverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Coverage._InsuranceContract.IDSystem" end ) = "OLD"."_Coverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" and
+                ( case when "IN"."_Option.Type" is null then '' else "IN"."_Option.Type" end ) = "OLD"."_Option.Type" and
+                ( case when "IN"."_Option._InsuranceCoverage.ID" is null then '' else "IN"."_Option._InsuranceCoverage.ID" end ) = "OLD"."_Option._InsuranceCoverage.ID" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InsuranceTechnicalAccountMovement"
+    where (
+        "ID",
+        "_Coverage.ID",
+        "_Coverage._InsuranceContract.FinancialContractID",
+        "_Coverage._InsuranceContract.IDSystem",
+        "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_Option.Type",
+        "_Option._InsuranceCoverage.ID",
+        "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ID",
+            "OLD"."_Coverage.ID",
+            "OLD"."_Coverage._InsuranceContract.FinancialContractID",
+            "OLD"."_Coverage._InsuranceContract.IDSystem",
+            "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."_Option.Type",
+            "OLD"."_Option._InsuranceCoverage.ID",
+            "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InsuranceTechnicalAccountMovement" as "OLD"
+        on
+           ( case when "IN"."ID" is null then '' else "IN"."ID" end ) = "OLD"."ID" and
+           ( case when "IN"."_Coverage.ID" is null then '' else "IN"."_Coverage.ID" end ) = "OLD"."_Coverage.ID" and
+           ( case when "IN"."_Coverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Coverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Coverage._InsuranceContract.FinancialContractID" and
+           ( case when "IN"."_Coverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Coverage._InsuranceContract.IDSystem" end ) = "OLD"."_Coverage._InsuranceContract.IDSystem" and
+           ( case when "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" and
+           ( case when "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" and
+           ( case when "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" and
+           ( case when "IN"."_Option.Type" is null then '' else "IN"."_Option.Type" end ) = "OLD"."_Option.Type" and
+           ( case when "IN"."_Option._InsuranceCoverage.ID" is null then '' else "IN"."_Option._InsuranceCoverage.ID" end ) = "OLD"."_Option._InsuranceCoverage.ID" and
+           ( case when "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" and
+           ( case when "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" and
+           ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+           ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+           ( case when "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::InsuranceTechnicalAccountMovement" (
+        "ID",
+        "_Coverage.ID",
+        "_Coverage._InsuranceContract.FinancialContractID",
+        "_Coverage._InsuranceContract.IDSystem",
+        "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_Option.Type",
+        "_Option._InsuranceCoverage.ID",
+        "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_InsuranceTechnicalAccountBalance.Type",
+        "_InsuranceTechnicalAccountBalance._Coverage.ID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "_InsuranceTechnicalAccountBalance._Option.Type",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "Amount",
+        "AnalysisPeriodEndDate",
+        "AnalysisPeriodStartDate",
+        "Category",
+        "Currency",
+        "Reason",
+        "Type",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "ID" is null then '' else "ID" end ) as "ID",
+            ( case when "_Coverage.ID" is null then '' else "_Coverage.ID" end ) as "_Coverage.ID",
+            ( case when "_Coverage._InsuranceContract.FinancialContractID" is null then '' else "_Coverage._InsuranceContract.FinancialContractID" end ) as "_Coverage._InsuranceContract.FinancialContractID",
+            ( case when "_Coverage._InsuranceContract.IDSystem" is null then '' else "_Coverage._InsuranceContract.IDSystem" end ) as "_Coverage._InsuranceContract.IDSystem",
+            ( case when "_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "_Coverage._InsuredObject._FinancialContract.FinancialContractID" end ) as "_Coverage._InsuredObject._FinancialContract.FinancialContractID",
+            ( case when "_Coverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "_Coverage._InsuredObject._FinancialContract.IDSystem" end ) as "_Coverage._InsuredObject._FinancialContract.IDSystem",
+            ( case when "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) as "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            ( case when "_Option.Type" is null then '' else "_Option.Type" end ) as "_Option.Type",
+            ( case when "_Option._InsuranceCoverage.ID" is null then '' else "_Option._InsuranceCoverage.ID" end ) as "_Option._InsuranceCoverage.ID",
+            ( case when "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" end ) as "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID",
+            ( case when "_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "_Option._InsuranceCoverage._InsuranceContract.IDSystem" end ) as "_Option._InsuranceCoverage._InsuranceContract.IDSystem",
+            ( case when "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) as "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            ( case when "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) as "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            ( case when "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) as "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "_InsuranceTechnicalAccountBalance.Type"  ,
+            "_InsuranceTechnicalAccountBalance._Coverage.ID"  ,
+            "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.FinancialContractID"  ,
+            "_InsuranceTechnicalAccountBalance._Coverage._InsuranceContract.IDSystem"  ,
+            "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.FinancialContractID"  ,
+            "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._FinancialContract.IDSystem"  ,
+            "_InsuranceTechnicalAccountBalance._Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID"  ,
+            "_InsuranceTechnicalAccountBalance._Option.Type"  ,
+            "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage.ID"  ,
+            "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.FinancialContractID"  ,
+            "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuranceContract.IDSystem"  ,
+            "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID"  ,
+            "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem"  ,
+            "_InsuranceTechnicalAccountBalance._Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"  ,
+            "Amount"  ,
+            "AnalysisPeriodEndDate"  ,
+            "AnalysisPeriodStartDate"  ,
+            "Category"  ,
+            "Currency"  ,
+            "Reason"  ,
+            "Type"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

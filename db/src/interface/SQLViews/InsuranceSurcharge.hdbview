@@ -1,0 +1,63 @@
+view "sap.fsdm.SQLViews::InsuranceSurcharge_View" 
+as select
+      "Type" ,
+      "_InsuranceContract.FinancialContractID" ,
+      "_InsuranceContract.IDSystem" ,
+      "_InsuranceCoverOption.Type" ,
+      "_InsuranceCoverage.ID" ,
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "_InsuranceCoverageOptionPremium.Type" ,
+      "_InsuranceCoverageOptionPremium._InsuranceCoverage.ID" ,
+      "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AnnualAmount" ,
+      "EndDate" ,
+      "InsurancePolicyStructureLevel" ,
+      "PeriodAmount" ,
+      "StartDate" ,
+      "SurchargeClass" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InsuranceSurcharge"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_InsuranceContract"
+	  on "_InsuranceContract"."FinancialContractID" = "_InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract"."IDSystem" = "_InsuranceContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceOption_View" as "_InsuranceCoverOption"
+	  on "_InsuranceCoverOption"."Type" = "_InsuranceCoverOption.Type"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_InsuranceCoverage"
+	  on "_InsuranceCoverage"."ID" = "_InsuranceCoverage.ID" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.FinancialContractID" = "_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.IDSystem" = "_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverageOption_View" as "_InsuranceCoverageOptionPremium"
+	  on "_InsuranceCoverageOptionPremium"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuranceCoverageOptionPremium"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuranceCoverageOptionPremium"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceCoverageOptionPremium"."_InsuranceCoverage._InsuranceContract.IDSystem" = "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceCoverageOptionPremium"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "_InsuranceCoverageOptionPremium._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceCoverageOptionPremium"."_InsuranceCoverage.ID" = "_InsuranceCoverageOptionPremium._InsuranceCoverage.ID" AND 
+	     "_InsuranceCoverageOptionPremium"."Type" = "_InsuranceCoverageOptionPremium.Type"
+	     
+);

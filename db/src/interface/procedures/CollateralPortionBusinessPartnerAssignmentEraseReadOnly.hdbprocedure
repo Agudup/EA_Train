@@ -1,0 +1,64 @@
+PROCEDURE "sap.fsdm.procedures::CollateralPortionBusinessPartnerAssignmentEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::CollateralPortionBusinessPartnerAssignmentTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::CollateralPortionBusinessPartnerAssignmentTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::CollateralPortionBusinessPartnerAssignmentTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_BusinessPartner.BusinessPartnerID" is null and
+                         "_CollateralPortion.PortionNumber" is null and
+                         "_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null and
+                         "_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"_BusinessPartner.BusinessPartnerID",
+"_CollateralPortion.PortionNumber",
+"_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+"_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::CollateralPortionBusinessPartnerAssignment" WHERE("_BusinessPartner.BusinessPartnerID" ,
+"_CollateralPortion.PortionNumber" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" 
+)in ( select "_BusinessPartner.BusinessPartnerID" ,
+"_CollateralPortion.PortionNumber" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"_BusinessPartner.BusinessPartnerID",
+"_CollateralPortion.PortionNumber",
+"_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+"_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::CollateralPortionBusinessPartnerAssignment_Historical" WHERE("_BusinessPartner.BusinessPartnerID" ,
+"_CollateralPortion.PortionNumber" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" 
+)in ( select "_BusinessPartner.BusinessPartnerID" ,
+"_CollateralPortion.PortionNumber" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" 
+from :ROW );
+
+END

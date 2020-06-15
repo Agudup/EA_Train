@@ -1,0 +1,256 @@
+PROCEDURE "sap.fsdm.procedures::PurchasedReceivableReadOnly" (IN ROW "sap.fsdm.tabletypes::PurchasedReceivableTT", OUT CURR_DEL "sap.fsdm.tabletypes::PurchasedReceivableTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::PurchasedReceivableTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_ReceivablePurchaseAgreement.FinancialContractID=' || TO_VARCHAR("_ReceivablePurchaseAgreement.FinancialContractID") || ' ' ||
+                '_ReceivablePurchaseAgreement.IDSystem=' || TO_VARCHAR("_ReceivablePurchaseAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_ReceivablePurchaseAgreement.FinancialContractID",
+                        "IN"."_ReceivablePurchaseAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_ReceivablePurchaseAgreement.FinancialContractID",
+                        "IN"."_ReceivablePurchaseAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_ReceivablePurchaseAgreement.FinancialContractID",
+                        "_ReceivablePurchaseAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_ReceivablePurchaseAgreement.FinancialContractID",
+                                    "IN"."_ReceivablePurchaseAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_ReceivablePurchaseAgreement.FinancialContractID",
+                                    "IN"."_ReceivablePurchaseAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "_ReceivablePurchaseAgreement.FinancialContractID",
+        "_ReceivablePurchaseAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::PurchasedReceivable" WHERE
+        (            "_ReceivablePurchaseAgreement.FinancialContractID" ,
+            "_ReceivablePurchaseAgreement.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."_ReceivablePurchaseAgreement.FinancialContractID",
+            "OLD"."_ReceivablePurchaseAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::PurchasedReceivable" as "OLD"
+            on
+               ( case when "IN"."_ReceivablePurchaseAgreement.FinancialContractID" is null then '' else "IN"."_ReceivablePurchaseAgreement.FinancialContractID" end ) = "OLD"."_ReceivablePurchaseAgreement.FinancialContractID" and
+               ( case when "IN"."_ReceivablePurchaseAgreement.IDSystem" is null then '' else "IN"."_ReceivablePurchaseAgreement.IDSystem" end ) = "OLD"."_ReceivablePurchaseAgreement.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "_ReceivablePurchaseAgreement.FinancialContractID",
+        "_ReceivablePurchaseAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Receivable.ReceivableID",
+        "IsDisclosed",
+        "LifecycleStatus",
+        "PaidOutAmount",
+        "PaidOutAmountCurrency",
+        "PurchasedPercentage",
+        "PurchasedReceivableAmount",
+        "PurchasedReceivableAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "_ReceivablePurchaseAgreement.FinancialContractID" is null then '' else "_ReceivablePurchaseAgreement.FinancialContractID" end ) as "_ReceivablePurchaseAgreement.FinancialContractID",
+                    ( case when "_ReceivablePurchaseAgreement.IDSystem" is null then '' else "_ReceivablePurchaseAgreement.IDSystem" end ) as "_ReceivablePurchaseAgreement.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "_Receivable.ReceivableID"  ,
+                    "IsDisclosed"  ,
+                    "LifecycleStatus"  ,
+                    "PaidOutAmount"  ,
+                    "PaidOutAmountCurrency"  ,
+                    "PurchasedPercentage"  ,
+                    "PurchasedReceivableAmount"  ,
+                    "PurchasedReceivableAmountCurrency"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD__ReceivablePurchaseAgreement.FinancialContractID" as "_ReceivablePurchaseAgreement.FinancialContractID" ,
+                    "OLD__ReceivablePurchaseAgreement.IDSystem" as "_ReceivablePurchaseAgreement.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD__Receivable.ReceivableID" as "_Receivable.ReceivableID" ,
+                    "OLD_IsDisclosed" as "IsDisclosed" ,
+                    "OLD_LifecycleStatus" as "LifecycleStatus" ,
+                    "OLD_PaidOutAmount" as "PaidOutAmount" ,
+                    "OLD_PaidOutAmountCurrency" as "PaidOutAmountCurrency" ,
+                    "OLD_PurchasedPercentage" as "PurchasedPercentage" ,
+                    "OLD_PurchasedReceivableAmount" as "PurchasedReceivableAmount" ,
+                    "OLD_PurchasedReceivableAmountCurrency" as "PurchasedReceivableAmountCurrency" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_ReceivablePurchaseAgreement.FinancialContractID",
+                        "IN"."_ReceivablePurchaseAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_ReceivablePurchaseAgreement.FinancialContractID" as "OLD__ReceivablePurchaseAgreement.FinancialContractID",
+                                "OLD"."_ReceivablePurchaseAgreement.IDSystem" as "OLD__ReceivablePurchaseAgreement.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."_Receivable.ReceivableID" as "OLD__Receivable.ReceivableID",
+                                "OLD"."IsDisclosed" as "OLD_IsDisclosed",
+                                "OLD"."LifecycleStatus" as "OLD_LifecycleStatus",
+                                "OLD"."PaidOutAmount" as "OLD_PaidOutAmount",
+                                "OLD"."PaidOutAmountCurrency" as "OLD_PaidOutAmountCurrency",
+                                "OLD"."PurchasedPercentage" as "OLD_PurchasedPercentage",
+                                "OLD"."PurchasedReceivableAmount" as "OLD_PurchasedReceivableAmount",
+                                "OLD"."PurchasedReceivableAmountCurrency" as "OLD_PurchasedReceivableAmountCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PurchasedReceivable" as "OLD"
+            on
+                ( case when "IN"."_ReceivablePurchaseAgreement.FinancialContractID" is null then '' else "IN"."_ReceivablePurchaseAgreement.FinancialContractID" end ) = "OLD"."_ReceivablePurchaseAgreement.FinancialContractID" and
+                ( case when "IN"."_ReceivablePurchaseAgreement.IDSystem" is null then '' else "IN"."_ReceivablePurchaseAgreement.IDSystem" end ) = "OLD"."_ReceivablePurchaseAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD__ReceivablePurchaseAgreement.FinancialContractID" as "_ReceivablePurchaseAgreement.FinancialContractID",
+            "OLD__ReceivablePurchaseAgreement.IDSystem" as "_ReceivablePurchaseAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__Receivable.ReceivableID" as "_Receivable.ReceivableID",
+            "OLD_IsDisclosed" as "IsDisclosed",
+            "OLD_LifecycleStatus" as "LifecycleStatus",
+            "OLD_PaidOutAmount" as "PaidOutAmount",
+            "OLD_PaidOutAmountCurrency" as "PaidOutAmountCurrency",
+            "OLD_PurchasedPercentage" as "PurchasedPercentage",
+            "OLD_PurchasedReceivableAmount" as "PurchasedReceivableAmount",
+            "OLD_PurchasedReceivableAmountCurrency" as "PurchasedReceivableAmountCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_ReceivablePurchaseAgreement.FinancialContractID",
+                        "IN"."_ReceivablePurchaseAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_ReceivablePurchaseAgreement.FinancialContractID" as "OLD__ReceivablePurchaseAgreement.FinancialContractID",
+                        "OLD"."_ReceivablePurchaseAgreement.IDSystem" as "OLD__ReceivablePurchaseAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."_Receivable.ReceivableID" as "OLD__Receivable.ReceivableID",
+                        "OLD"."IsDisclosed" as "OLD_IsDisclosed",
+                        "OLD"."LifecycleStatus" as "OLD_LifecycleStatus",
+                        "OLD"."PaidOutAmount" as "OLD_PaidOutAmount",
+                        "OLD"."PaidOutAmountCurrency" as "OLD_PaidOutAmountCurrency",
+                        "OLD"."PurchasedPercentage" as "OLD_PurchasedPercentage",
+                        "OLD"."PurchasedReceivableAmount" as "OLD_PurchasedReceivableAmount",
+                        "OLD"."PurchasedReceivableAmountCurrency" as "OLD_PurchasedReceivableAmountCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PurchasedReceivable" as "OLD"
+            on
+                ( case when "IN"."_ReceivablePurchaseAgreement.FinancialContractID" is null then '' else "IN"."_ReceivablePurchaseAgreement.FinancialContractID" end ) = "OLD"."_ReceivablePurchaseAgreement.FinancialContractID" and
+                ( case when "IN"."_ReceivablePurchaseAgreement.IDSystem" is null then '' else "IN"."_ReceivablePurchaseAgreement.IDSystem" end ) = "OLD"."_ReceivablePurchaseAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

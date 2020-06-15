@@ -1,0 +1,261 @@
+PROCEDURE "sap.fsdm.procedures::GeographicalHierarchyRelationDelete" (IN ROW "sap.fsdm.tabletypes::GeographicalHierarchyRelationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'GeographicalHierarchyID=' || TO_VARCHAR("GeographicalHierarchyID") || ' ' ||
+                'ASSOC_Child.GeographicalStructureID=' || TO_VARCHAR("ASSOC_Child.GeographicalStructureID") || ' ' ||
+                'ASSOC_Child.GeographicalUnitID=' || TO_VARCHAR("ASSOC_Child.GeographicalUnitID") || ' ' ||
+                'ASSOC_Parent.GeographicalStructureID=' || TO_VARCHAR("ASSOC_Parent.GeographicalStructureID") || ' ' ||
+                'ASSOC_Parent.GeographicalUnitID=' || TO_VARCHAR("ASSOC_Parent.GeographicalUnitID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."GeographicalHierarchyID",
+                        "IN"."ASSOC_Child.GeographicalStructureID",
+                        "IN"."ASSOC_Child.GeographicalUnitID",
+                        "IN"."ASSOC_Parent.GeographicalStructureID",
+                        "IN"."ASSOC_Parent.GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."GeographicalHierarchyID",
+                        "IN"."ASSOC_Child.GeographicalStructureID",
+                        "IN"."ASSOC_Child.GeographicalUnitID",
+                        "IN"."ASSOC_Parent.GeographicalStructureID",
+                        "IN"."ASSOC_Parent.GeographicalUnitID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "GeographicalHierarchyID",
+                        "ASSOC_Child.GeographicalStructureID",
+                        "ASSOC_Child.GeographicalUnitID",
+                        "ASSOC_Parent.GeographicalStructureID",
+                        "ASSOC_Parent.GeographicalUnitID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."GeographicalHierarchyID",
+                                    "IN"."ASSOC_Child.GeographicalStructureID",
+                                    "IN"."ASSOC_Child.GeographicalUnitID",
+                                    "IN"."ASSOC_Parent.GeographicalStructureID",
+                                    "IN"."ASSOC_Parent.GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."GeographicalHierarchyID",
+                                    "IN"."ASSOC_Child.GeographicalStructureID",
+                                    "IN"."ASSOC_Child.GeographicalUnitID",
+                                    "IN"."ASSOC_Parent.GeographicalStructureID",
+                                    "IN"."ASSOC_Parent.GeographicalUnitID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::GeographicalHierarchyRelation" (
+        "GeographicalHierarchyID",
+        "ASSOC_Child.GeographicalStructureID",
+        "ASSOC_Child.GeographicalUnitID",
+        "ASSOC_Parent.GeographicalStructureID",
+        "ASSOC_Parent.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "GeographicalHierarchyName",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_GeographicalHierarchyID" as "GeographicalHierarchyID" ,
+            "OLD_ASSOC_Child.GeographicalStructureID" as "ASSOC_Child.GeographicalStructureID" ,
+            "OLD_ASSOC_Child.GeographicalUnitID" as "ASSOC_Child.GeographicalUnitID" ,
+            "OLD_ASSOC_Parent.GeographicalStructureID" as "ASSOC_Parent.GeographicalStructureID" ,
+            "OLD_ASSOC_Parent.GeographicalUnitID" as "ASSOC_Parent.GeographicalUnitID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_GeographicalHierarchyName" as "GeographicalHierarchyName" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."GeographicalHierarchyID",
+                        "OLD"."ASSOC_Child.GeographicalStructureID",
+                        "OLD"."ASSOC_Child.GeographicalUnitID",
+                        "OLD"."ASSOC_Parent.GeographicalStructureID",
+                        "OLD"."ASSOC_Parent.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."GeographicalHierarchyID" as "OLD_GeographicalHierarchyID",
+                "OLD"."ASSOC_Child.GeographicalStructureID" as "OLD_ASSOC_Child.GeographicalStructureID",
+                "OLD"."ASSOC_Child.GeographicalUnitID" as "OLD_ASSOC_Child.GeographicalUnitID",
+                "OLD"."ASSOC_Parent.GeographicalStructureID" as "OLD_ASSOC_Parent.GeographicalStructureID",
+                "OLD"."ASSOC_Parent.GeographicalUnitID" as "OLD_ASSOC_Parent.GeographicalUnitID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."GeographicalHierarchyName" as "OLD_GeographicalHierarchyName",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GeographicalHierarchyRelation" as "OLD"
+            on
+                      ( "IN"."GeographicalHierarchyID" = "OLD"."GeographicalHierarchyID" or "IN"."GeographicalHierarchyID" is null ) and
+                      ( "IN"."ASSOC_Child.GeographicalStructureID" = "OLD"."ASSOC_Child.GeographicalStructureID" or "IN"."ASSOC_Child.GeographicalStructureID" is null ) and
+                      ( "IN"."ASSOC_Child.GeographicalUnitID" = "OLD"."ASSOC_Child.GeographicalUnitID" or "IN"."ASSOC_Child.GeographicalUnitID" is null ) and
+                      ( "IN"."ASSOC_Parent.GeographicalStructureID" = "OLD"."ASSOC_Parent.GeographicalStructureID" or "IN"."ASSOC_Parent.GeographicalStructureID" is null ) and
+                      ( "IN"."ASSOC_Parent.GeographicalUnitID" = "OLD"."ASSOC_Parent.GeographicalUnitID" or "IN"."ASSOC_Parent.GeographicalUnitID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::GeographicalHierarchyRelation" (
+        "GeographicalHierarchyID",
+        "ASSOC_Child.GeographicalStructureID",
+        "ASSOC_Child.GeographicalUnitID",
+        "ASSOC_Parent.GeographicalStructureID",
+        "ASSOC_Parent.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "GeographicalHierarchyName",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_GeographicalHierarchyID" as "GeographicalHierarchyID",
+            "OLD_ASSOC_Child.GeographicalStructureID" as "ASSOC_Child.GeographicalStructureID",
+            "OLD_ASSOC_Child.GeographicalUnitID" as "ASSOC_Child.GeographicalUnitID",
+            "OLD_ASSOC_Parent.GeographicalStructureID" as "ASSOC_Parent.GeographicalStructureID",
+            "OLD_ASSOC_Parent.GeographicalUnitID" as "ASSOC_Parent.GeographicalUnitID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_GeographicalHierarchyName" as "GeographicalHierarchyName",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."GeographicalHierarchyID",
+                        "OLD"."ASSOC_Child.GeographicalStructureID",
+                        "OLD"."ASSOC_Child.GeographicalUnitID",
+                        "OLD"."ASSOC_Parent.GeographicalStructureID",
+                        "OLD"."ASSOC_Parent.GeographicalUnitID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."GeographicalHierarchyID" as "OLD_GeographicalHierarchyID",
+                "OLD"."ASSOC_Child.GeographicalStructureID" as "OLD_ASSOC_Child.GeographicalStructureID",
+                "OLD"."ASSOC_Child.GeographicalUnitID" as "OLD_ASSOC_Child.GeographicalUnitID",
+                "OLD"."ASSOC_Parent.GeographicalStructureID" as "OLD_ASSOC_Parent.GeographicalStructureID",
+                "OLD"."ASSOC_Parent.GeographicalUnitID" as "OLD_ASSOC_Parent.GeographicalUnitID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."GeographicalHierarchyName" as "OLD_GeographicalHierarchyName",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::GeographicalHierarchyRelation" as "OLD"
+            on
+                                                ( "IN"."GeographicalHierarchyID" = "OLD"."GeographicalHierarchyID" or "IN"."GeographicalHierarchyID" is null ) and
+                                                ( "IN"."ASSOC_Child.GeographicalStructureID" = "OLD"."ASSOC_Child.GeographicalStructureID" or "IN"."ASSOC_Child.GeographicalStructureID" is null ) and
+                                                ( "IN"."ASSOC_Child.GeographicalUnitID" = "OLD"."ASSOC_Child.GeographicalUnitID" or "IN"."ASSOC_Child.GeographicalUnitID" is null ) and
+                                                ( "IN"."ASSOC_Parent.GeographicalStructureID" = "OLD"."ASSOC_Parent.GeographicalStructureID" or "IN"."ASSOC_Parent.GeographicalStructureID" is null ) and
+                                                ( "IN"."ASSOC_Parent.GeographicalUnitID" = "OLD"."ASSOC_Parent.GeographicalUnitID" or "IN"."ASSOC_Parent.GeographicalUnitID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::GeographicalHierarchyRelation"
+    where (
+        "GeographicalHierarchyID",
+        "ASSOC_Child.GeographicalStructureID",
+        "ASSOC_Child.GeographicalUnitID",
+        "ASSOC_Parent.GeographicalStructureID",
+        "ASSOC_Parent.GeographicalUnitID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."GeographicalHierarchyID",
+            "OLD"."ASSOC_Child.GeographicalStructureID",
+            "OLD"."ASSOC_Child.GeographicalUnitID",
+            "OLD"."ASSOC_Parent.GeographicalStructureID",
+            "OLD"."ASSOC_Parent.GeographicalUnitID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::GeographicalHierarchyRelation" as "OLD"
+        on
+                                       ( "IN"."GeographicalHierarchyID" = "OLD"."GeographicalHierarchyID" or "IN"."GeographicalHierarchyID" is null ) and
+                                       ( "IN"."ASSOC_Child.GeographicalStructureID" = "OLD"."ASSOC_Child.GeographicalStructureID" or "IN"."ASSOC_Child.GeographicalStructureID" is null ) and
+                                       ( "IN"."ASSOC_Child.GeographicalUnitID" = "OLD"."ASSOC_Child.GeographicalUnitID" or "IN"."ASSOC_Child.GeographicalUnitID" is null ) and
+                                       ( "IN"."ASSOC_Parent.GeographicalStructureID" = "OLD"."ASSOC_Parent.GeographicalStructureID" or "IN"."ASSOC_Parent.GeographicalStructureID" is null ) and
+                                       ( "IN"."ASSOC_Parent.GeographicalUnitID" = "OLD"."ASSOC_Parent.GeographicalUnitID" or "IN"."ASSOC_Parent.GeographicalUnitID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

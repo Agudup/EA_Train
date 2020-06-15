@@ -1,0 +1,444 @@
+PROCEDURE "sap.fsdm.procedures::ApplicableInterestRateDelete" (IN ROW "sap.fsdm.tabletypes::ApplicableInterestRateTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'InterestType=' || TO_VARCHAR("InterestType") || ' ' ||
+                'RoleOfPayer=' || TO_VARCHAR("RoleOfPayer") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_LifeAndAnnuityInsuranceCoverage.ID=' || TO_VARCHAR("_LifeAndAnnuityInsuranceCoverage.ID") || ' ' ||
+                '_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."InterestType",
+                        "IN"."RoleOfPayer",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage.ID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."InterestType",
+                        "IN"."RoleOfPayer",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage.ID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "InterestType",
+                        "RoleOfPayer",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_LifeAndAnnuityInsuranceCoverage.ID",
+                        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."InterestType",
+                                    "IN"."RoleOfPayer",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage.ID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."InterestType",
+                                    "IN"."RoleOfPayer",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage.ID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ApplicableInterestRate" (
+        "InterestType",
+        "RoleOfPayer",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_LifeAndAnnuityInsuranceCoverage.ID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "LastResetDate",
+        "NextResetDate",
+        "Rate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InterestType" as "InterestType" ,
+            "OLD_RoleOfPayer" as "RoleOfPayer" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__LifeAndAnnuityInsuranceCoverage.ID" as "_LifeAndAnnuityInsuranceCoverage.ID" ,
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_LastResetDate" as "LastResetDate" ,
+            "OLD_NextResetDate" as "NextResetDate" ,
+            "OLD_Rate" as "Rate" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."InterestType",
+                        "OLD"."RoleOfPayer",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage.ID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."InterestType" as "OLD_InterestType",
+                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" as "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage.ID" as "OLD__LifeAndAnnuityInsuranceCoverage.ID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."LastResetDate" as "OLD_LastResetDate",
+                "OLD"."NextResetDate" as "OLD_NextResetDate",
+                "OLD"."Rate" as "OLD_Rate",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ApplicableInterestRate" as "OLD"
+            on
+                      ( "IN"."InterestType" = "OLD"."InterestType" or "IN"."InterestType" is null ) and
+                      ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                      ( "IN"."_LifeAndAnnuityInsuranceCoverage.ID" = "OLD"."_LifeAndAnnuityInsuranceCoverage.ID" or "IN"."_LifeAndAnnuityInsuranceCoverage.ID" is null ) and
+                      ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                      ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                      ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                      ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ApplicableInterestRate" (
+        "InterestType",
+        "RoleOfPayer",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_LifeAndAnnuityInsuranceCoverage.ID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "LastResetDate",
+        "NextResetDate",
+        "Rate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InterestType" as "InterestType",
+            "OLD_RoleOfPayer" as "RoleOfPayer",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__LifeAndAnnuityInsuranceCoverage.ID" as "_LifeAndAnnuityInsuranceCoverage.ID",
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_LastResetDate" as "LastResetDate",
+            "OLD_NextResetDate" as "NextResetDate",
+            "OLD_Rate" as "Rate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."InterestType",
+                        "OLD"."RoleOfPayer",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage.ID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."InterestType" as "OLD_InterestType",
+                "OLD"."RoleOfPayer" as "OLD_RoleOfPayer",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" as "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage.ID" as "OLD__LifeAndAnnuityInsuranceCoverage.ID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."LastResetDate" as "OLD_LastResetDate",
+                "OLD"."NextResetDate" as "OLD_NextResetDate",
+                "OLD"."Rate" as "OLD_Rate",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ApplicableInterestRate" as "OLD"
+            on
+                                                ( "IN"."InterestType" = "OLD"."InterestType" or "IN"."InterestType" is null ) and
+                                                ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                                ( "IN"."_LifeAndAnnuityInsuranceCoverage.ID" = "OLD"."_LifeAndAnnuityInsuranceCoverage.ID" or "IN"."_LifeAndAnnuityInsuranceCoverage.ID" is null ) and
+                                                ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                                                ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                                                ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ApplicableInterestRate"
+    where (
+        "InterestType",
+        "RoleOfPayer",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_LifeAndAnnuityInsuranceCoverage.ID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."InterestType",
+            "OLD"."RoleOfPayer",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_LifeAndAnnuityInsuranceCoverage.ID",
+            "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ApplicableInterestRate" as "OLD"
+        on
+                                       ( "IN"."InterestType" = "OLD"."InterestType" or "IN"."InterestType" is null ) and
+                                       ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                       ( "IN"."_LifeAndAnnuityInsuranceCoverage.ID" = "OLD"."_LifeAndAnnuityInsuranceCoverage.ID" or "IN"."_LifeAndAnnuityInsuranceCoverage.ID" is null ) and
+                                       ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+                                       ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+                                       ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

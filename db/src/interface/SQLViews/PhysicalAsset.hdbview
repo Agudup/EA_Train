@@ -1,0 +1,128 @@
+view "sap.fsdm.SQLViews::PhysicalAsset_View" 
+as select
+      "PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_RealEstateProperty.PhysicalAssetID" ,
+      "AdequatelyInsured" ,
+      "AntiLockBrakeIndicator" ,
+      "AntiTheftDeviceType" ,
+      "AvailableCommercialFloorSpace" ,
+      "AvailableFloorSpace" ,
+      "AvailableFloorSpaceForVariousUsages" ,
+      "AvailableResidentialFloorSpace" ,
+      "BodyStyle" ,
+      "ChassisNumber" ,
+      "CityOfRegistration" ,
+      "CompletionState" ,
+      "CountryOfRegistration" ,
+      "DateOfCompletion" ,
+      "DateOfFirstRegistration" ,
+      "DepreciationRate" ,
+      "Description" ,
+      "DescriptionOfGoods" ,
+      "DescriptionOfLocation" ,
+      "DriverAirbagIndicator" ,
+      "ElectronicStabilityControlIndicator" ,
+      "EligibleForReducedRiskWeight" ,
+      "EngineCubicCentimeter" ,
+      "GrossRegisteredTons" ,
+      "InUseByBorrower" ,
+      "IsLet" ,
+      "LeadingRegistrationIndicator" ,
+      "Make" ,
+      "Manufacturer" ,
+      "Model" ,
+      "Name" ,
+      "NumberOfGarages" ,
+      "NumberOfParkingSpaces" ,
+      "NumberOfUnits" ,
+      "Operator" ,
+      "PassengerAirbagIndicator" ,
+      "PassiveSeatBeltIndicator" ,
+      "PhysicalAssetCategory" ,
+      "PortOfRegistry" ,
+      "RealEstateType" ,
+      "RegistrationNumber" ,
+      "RegistrationNumberType" ,
+      "RentedFloorSpace" ,
+      "SeasonEndMonth" ,
+      "SeasonStartMonth" ,
+      "ShipType" ,
+      "SideCollisionProtectionIndicator" ,
+      "SizeOfLot" ,
+      "SizeUnit" ,
+      "SpeedUnit" ,
+      "TemporaryRegistrationDuration" ,
+      "TopSpeed" ,
+      "Trim" ,
+      "UsageType" ,
+      "UsedFloorSpace" ,
+      "VIN" ,
+      "VehicleCategory" ,
+      "VehicleType" ,
+      "YearOfLastModernization" ,
+      "YearOfLastRefurbishment" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PhysicalAsset"
+with associations
+(
+	join "sap.fsdm.SQLViews::Address_View" as "_Address_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_Address_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::AlternativePhysicalAssetIdentification_View" as "_AlternativePhysicalAssetIdentification_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_AlternativePhysicalAssetIdentification_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::AssetTransferredAsCollateral_View" as "_AssetTransferredAsCollateral_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_AssetTransferredAsCollateral_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::BuildingCertificate_View" as "_BuildingCertificate__PhysicalAsset"
+	  on "PhysicalAssetID" = "_BuildingCertificate__PhysicalAsset"."_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerPhysicalAssetAssignment_View" as "_BusinessPartnerPhysicalAssetAssignment_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_BusinessPartnerPhysicalAssetAssignment_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralDistributionResult_View" as "_CollateralDistributionResult__PhysicalAssetUsedAsCollateral"
+	  on "PhysicalAssetID" = "_CollateralDistributionResult__PhysicalAssetUsedAsCollateral"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExposure_View" as "_CreditRiskExposure__PhysicalAssetUsedAsCollateral"
+	  on "PhysicalAssetID" = "_CreditRiskExposure__PhysicalAssetUsedAsCollateral"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskLossGivenDefault_View" as "_CreditRiskLossGivenDefault__PhysicalAssetUsedAsCollateral"
+	  on "PhysicalAssetID" = "_CreditRiskLossGivenDefault__PhysicalAssetUsedAsCollateral"."_PhysicalAssetUsedAsCollateral.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_FinancialContract_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::IncomeInformation_View" as "_IncomeInformation__PhysicalAsset"
+	  on "PhysicalAssetID" = "_IncomeInformation__PhysicalAsset"."_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredObject_View" as "_InsuredObject__PhysicalAsset"
+	  on "PhysicalAssetID" = "_InsuredObject__PhysicalAsset"."_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::LossObject_View" as "_LossObject__PhysicalAsset"
+	  on "PhysicalAssetID" = "_LossObject__PhysicalAsset"."_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::MortgageRegisterEntry_View" as "_MortgageRegisterEntry_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_MortgageRegisterEntry_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "_RealEstateProperty"
+	  on "_RealEstateProperty"."PhysicalAssetID" = "_RealEstateProperty.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAssetLiquidationEvent_View" as "_PhysicalAssetLiquidationEvent_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_PhysicalAssetLiquidationEvent_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::PledgedObject_View" as "_PledgedObject_ASSOC_PledgedPhysicalAsset"
+	  on "PhysicalAssetID" = "_PledgedObject_ASSOC_PledgedPhysicalAsset"."ASSOC_PledgedPhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation_ASSOC_PhysicalAsset"
+	  on "PhysicalAssetID" = "_Valuation_ASSOC_PhysicalAsset"."ASSOC_PhysicalAsset.PhysicalAssetID"
+	     
+);

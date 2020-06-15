@@ -1,0 +1,33 @@
+view "sap.fsdm.SQLViews::StandardPaymentIntervalListEntry_View" 
+as select
+      "PeriodUntilPaymentIntervalEnd" ,
+      "PeriodUntilPaymentIntervalStart" ,
+      "ASSOC_StandardPaymentIntervalList.SequenceNumber" ,
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.IDSystem" ,
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.PricingScheme" ,
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PaymentAmount" ,
+      "PaymentCurrency" ,
+      "PaymentPercentage" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardPaymentIntervalListEntry"
+with associations
+(
+	join "sap.fsdm.SQLViews::StandardPaymentSchedule_View" as "ASSOC_StandardPaymentIntervalList"
+	  on "ASSOC_StandardPaymentIntervalList"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardPaymentIntervalList"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardPaymentIntervalList"."ASSOC_FinancialStandardProduct.IDSystem" = "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "ASSOC_StandardPaymentIntervalList"."ASSOC_FinancialStandardProduct.PricingScheme" = "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardPaymentIntervalList"."SequenceNumber" = "ASSOC_StandardPaymentIntervalList.SequenceNumber"
+	     
+);

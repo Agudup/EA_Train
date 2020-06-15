@@ -1,0 +1,84 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"Settlement";
+
+entity "DeferralCalculatedResult" {
+    key "DeferralCalculationMethod"       : String(20);
+    key "_AccountingSystem"               : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialContract"              : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }                           not null;
+    key "_FinancialInstrument"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_InvestmentAccount"              : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }                           not null;
+    key "_SettlementItem"                 : association to Settlement {
+                                                                        IDSystem,
+                                                                        ItemNumber,
+                                                                        SettlementID
+                                                                      }                                  not null;
+    key "BusinessValidFrom"               : LocalDate;
+    key "BusinessValidTo"                 : LocalDate;
+        "SystemValidFrom"                 : UTCTimestamp                                                 not null;
+        "SystemValidTo"                   : UTCTimestamp                                                 not null;
+        "Deferral1TimeInPaymentCurrency"  : Decimal(34, 6);
+        "Deferral1TimeInPositionCurrency" : Decimal(34, 6);
+        "Deferral1TimePaymentCurrency"    : String(3);
+        "Deferral1TimePositionCurrency"   : String(3);
+        "DeferralInPaymentCurrency"       : Decimal(34, 6);
+        "DeferralInPositionCurrency"      : Decimal(34, 6);
+        "DeferralPaymentCurrency"         : String(3);
+        "DeferralPositionCurrency"        : String(3);
+        "SourceSystemID"                  : String(128);
+        "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+        "ChangingUserInSourceSystem"      : String(128);
+        "ChangingProcessType"             : String(40);
+        "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "DeferralCalculatedResult_Historical" {
+    "DeferralCalculationMethod"       : String(20)                                                   not null;
+    "_AccountingSystem"               : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialContract"              : association to FinancialContract {
+                                                                           FinancialContractID,
+                                                                           IDSystem
+                                                                         }                           not null;
+    "_FinancialInstrument"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_InvestmentAccount"              : association to FinancialContract {
+                                                                           FinancialContractID,
+                                                                           IDSystem
+                                                                         }                           not null;
+    "_SettlementItem"                 : association to Settlement {
+                                                                    IDSystem,
+                                                                    ItemNumber,
+                                                                    SettlementID
+                                                                  }                                  not null;
+    "BusinessValidFrom"               : LocalDate                                                    not null;
+    "BusinessValidTo"                 : LocalDate                                                    not null;
+    "SystemValidFrom"                 : UTCTimestamp                                                 not null;
+    "SystemValidTo"                   : UTCTimestamp                                                 not null;
+    "Deferral1TimeInPaymentCurrency"  : Decimal(34, 6);
+    "Deferral1TimeInPositionCurrency" : Decimal(34, 6);
+    "Deferral1TimePaymentCurrency"    : String(3);
+    "Deferral1TimePositionCurrency"   : String(3);
+    "DeferralInPaymentCurrency"       : Decimal(34, 6);
+    "DeferralInPositionCurrency"      : Decimal(34, 6);
+    "DeferralPaymentCurrency"         : String(3);
+    "DeferralPositionCurrency"        : String(3);
+    "SourceSystemID"                  : String(128);
+    "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+    "ChangingUserInSourceSystem"      : String(128);
+    "ChangingProcessType"             : String(40);
+    "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,285 @@
+PROCEDURE "sap.fsdm.procedures::StandardPaymentListEntryDelReadOnly" (IN ROW "sap.fsdm.tabletypes::StandardPaymentListEntryTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::StandardPaymentListEntryTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::StandardPaymentListEntryTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PeriodUntilPayment=' || TO_VARCHAR("PeriodUntilPayment") || ' ' ||
+                'ASSOC_StandardPaymentList.SequenceNumber=' || TO_VARCHAR("ASSOC_StandardPaymentList.SequenceNumber") || ' ' ||
+                'ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID") || ' ' ||
+                'ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem=' || TO_VARCHAR("ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem") || ' ' ||
+                'ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme=' || TO_VARCHAR("ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme") || ' ' ||
+                'ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PeriodUntilPayment",
+                        "IN"."ASSOC_StandardPaymentList.SequenceNumber",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PeriodUntilPayment",
+                        "IN"."ASSOC_StandardPaymentList.SequenceNumber",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                        "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PeriodUntilPayment",
+                        "ASSOC_StandardPaymentList.SequenceNumber",
+                        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PeriodUntilPayment",
+                                    "IN"."ASSOC_StandardPaymentList.SequenceNumber",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PeriodUntilPayment",
+                                    "IN"."ASSOC_StandardPaymentList.SequenceNumber",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                                    "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "PeriodUntilPayment",
+            "ASSOC_StandardPaymentList.SequenceNumber",
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::StandardPaymentListEntry" WHERE
+            (
+            "PeriodUntilPayment" ,
+            "ASSOC_StandardPaymentList.SequenceNumber" ,
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" ,
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" ,
+            "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."PeriodUntilPayment",
+            "OLD"."ASSOC_StandardPaymentList.SequenceNumber",
+            "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+            "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+            "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+            "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::StandardPaymentListEntry" as "OLD"
+        on
+                              ( "IN"."PeriodUntilPayment" = "OLD"."PeriodUntilPayment" or "IN"."PeriodUntilPayment" is null ) and
+                              ( "IN"."ASSOC_StandardPaymentList.SequenceNumber" = "OLD"."ASSOC_StandardPaymentList.SequenceNumber" or "IN"."ASSOC_StandardPaymentList.SequenceNumber" is null ) and
+                              ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+                              ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" is null ) and
+                              ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" is null ) and
+                              ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "PeriodUntilPayment",
+        "ASSOC_StandardPaymentList.SequenceNumber",
+        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+        "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "PaymentAmount",
+        "PaymentCurrency",
+        "PaymentPercentage",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_PeriodUntilPayment" as "PeriodUntilPayment" ,
+            "OLD_ASSOC_StandardPaymentList.SequenceNumber" as "ASSOC_StandardPaymentList.SequenceNumber" ,
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" ,
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" ,
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_PaymentAmount" as "PaymentAmount" ,
+            "OLD_PaymentCurrency" as "PaymentCurrency" ,
+            "OLD_PaymentPercentage" as "PaymentPercentage" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."PeriodUntilPayment",
+                        "OLD"."ASSOC_StandardPaymentList.SequenceNumber",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."PeriodUntilPayment" as "OLD_PeriodUntilPayment",
+                                "OLD"."ASSOC_StandardPaymentList.SequenceNumber" as "OLD_ASSOC_StandardPaymentList.SequenceNumber",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."PaymentAmount" as "OLD_PaymentAmount",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PaymentPercentage" as "OLD_PaymentPercentage",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardPaymentListEntry" as "OLD"
+            on
+                                      ( "IN"."PeriodUntilPayment" = "OLD"."PeriodUntilPayment" or "IN"."PeriodUntilPayment" is null ) and
+                                      ( "IN"."ASSOC_StandardPaymentList.SequenceNumber" = "OLD"."ASSOC_StandardPaymentList.SequenceNumber" or "IN"."ASSOC_StandardPaymentList.SequenceNumber" is null ) and
+                                      ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+                                      ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" is null ) and
+                                      ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_PeriodUntilPayment" as "PeriodUntilPayment",
+            "OLD_ASSOC_StandardPaymentList.SequenceNumber" as "ASSOC_StandardPaymentList.SequenceNumber",
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+            "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_PaymentAmount" as "PaymentAmount",
+            "OLD_PaymentCurrency" as "PaymentCurrency",
+            "OLD_PaymentPercentage" as "PaymentPercentage",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."PeriodUntilPayment",
+                        "OLD"."ASSOC_StandardPaymentList.SequenceNumber",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                        "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."PeriodUntilPayment" as "OLD_PeriodUntilPayment",
+                                "OLD"."ASSOC_StandardPaymentList.SequenceNumber" as "OLD_ASSOC_StandardPaymentList.SequenceNumber",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme",
+                                "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."PaymentAmount" as "OLD_PaymentAmount",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PaymentPercentage" as "OLD_PaymentPercentage",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardPaymentListEntry" as "OLD"
+            on
+               ( "IN"."PeriodUntilPayment" = "OLD"."PeriodUntilPayment" or "IN"."PeriodUntilPayment" is null ) and
+               ( "IN"."ASSOC_StandardPaymentList.SequenceNumber" = "OLD"."ASSOC_StandardPaymentList.SequenceNumber" or "IN"."ASSOC_StandardPaymentList.SequenceNumber" is null ) and
+               ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+               ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" is null ) and
+               ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" is null ) and
+               ( "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

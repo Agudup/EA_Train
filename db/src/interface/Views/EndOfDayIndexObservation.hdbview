@@ -1,0 +1,22 @@
+view "sap.fsdm.Views::EndOfDayIndexObservation_View" ( IN I_BUSINESS_DATE TIMESTAMP, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Index.IndexID" as "_Index_IndexID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "Close" as "Close",
+      "High" as "High",
+      "IndexStreamProvider" as "IndexStreamProvider",
+      "Low" as "Low",
+      "Open" as "Open",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::EndOfDayIndexObservation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

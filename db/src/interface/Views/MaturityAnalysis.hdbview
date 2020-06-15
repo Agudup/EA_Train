@@ -1,0 +1,36 @@
+view "sap.fsdm.Views::MaturityAnalysis_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "Bucket" as "Bucket",
+      "MaturityBand" as "MaturityBand",
+      "MaturityPeriodStartDate" as "MaturityPeriodStartDate",
+      "_AccountingSystem.AccountingSystemID" as "_AccountingSystem_AccountingSystemID",
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_InvestmentAccount.FinancialContractID" as "_InvestmentAccount_FinancialContractID",
+      "_InvestmentAccount.IDSystem" as "_InvestmentAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "FunctionalCurrency" as "FunctionalCurrency",
+      "GroupCurrency" as "GroupCurrency",
+      "HardCurrency" as "HardCurrency",
+      "IndexCurrency" as "IndexCurrency",
+      "LocalCurrency" as "LocalCurrency",
+      "MaturityDeterminationMethod" as "MaturityDeterminationMethod",
+      "MaturityPeriodEndDate" as "MaturityPeriodEndDate",
+      "PeriodAmountInFunctionalCurrency" as "PeriodAmountInFunctionalCurrency",
+      "PeriodAmountInGroupCurrency" as "PeriodAmountInGroupCurrency",
+      "PeriodAmountInHardCurrency" as "PeriodAmountInHardCurrency",
+      "PeriodAmountInIndexCurrency" as "PeriodAmountInIndexCurrency",
+      "PeriodAmountInLocalCurrency" as "PeriodAmountInLocalCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::MaturityAnalysis"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

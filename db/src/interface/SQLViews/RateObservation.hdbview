@@ -1,0 +1,21 @@
+view "sap.fsdm.SQLViews::RateObservation_View" 
+as select
+      "RateDataProvider" ,
+      "Timestamp" ,
+      "ASSOC_ReferenceRateID.ReferenceRateID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Rate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::RateObservation"
+with associations
+(
+	join "sap.fsdm.SQLViews::ReferenceRate_View" as "ASSOC_ReferenceRateID"
+	  on "ASSOC_ReferenceRateID"."ReferenceRateID" = "ASSOC_ReferenceRateID.ReferenceRateID"
+	     
+);

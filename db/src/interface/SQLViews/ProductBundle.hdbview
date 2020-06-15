@@ -1,0 +1,22 @@
+view "sap.fsdm.SQLViews::ProductBundle_View" 
+as select
+      "ProductBundleID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Description" ,
+      "ProductBundleName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ProductBundle"
+with associations
+(
+	join "sap.fsdm.SQLViews::StandardProductInProductBundle_View" as "_StandardProductInProductBundle_ASSOC_ProductBundle"
+	  on "ProductBundleID" = "_StandardProductInProductBundle_ASSOC_ProductBundle"."ASSOC_ProductBundle.ProductBundleID"
+	     
+);

@@ -1,0 +1,24 @@
+view "sap.fsdm.Views::StandardPaymentListEntry_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PeriodUntilPayment" as "PeriodUntilPayment",
+      "ASSOC_StandardPaymentList.SequenceNumber" as "ASSOC_StandardPaymentList_SequenceNumber",
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" as "ASSOC_StandardPaymentList_ASSOC_FinancialStandardProduct_FinancialStandardProductID",
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" as "ASSOC_StandardPaymentList_ASSOC_FinancialStandardProduct_IDSystem",
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" as "ASSOC_StandardPaymentList_ASSOC_FinancialStandardProduct_PricingScheme",
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardPaymentList_ASSOC_FinancialStandardProduct_ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PaymentAmount" as "PaymentAmount",
+      "PaymentCurrency" as "PaymentCurrency",
+      "PaymentPercentage" as "PaymentPercentage",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::StandardPaymentListEntry"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

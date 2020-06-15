@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::PledgedFinancialInstruments_View" 
+as select
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_PledgedObject.SequenceNumber" ,
+      "_PledgedObject.ASSOC_Pledge.FinancialContractID" ,
+      "_PledgedObject.ASSOC_Pledge.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PledgedNominalAmount" ,
+      "PledgedNominalAmountCurrency" ,
+      "PledgedQuantity" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PledgedFinancialInstruments"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::PledgedObject_View" as "_PledgedObject"
+	  on "_PledgedObject"."ASSOC_Pledge.FinancialContractID" = "_PledgedObject.ASSOC_Pledge.FinancialContractID" AND 
+	     "_PledgedObject"."ASSOC_Pledge.IDSystem" = "_PledgedObject.ASSOC_Pledge.IDSystem" AND 
+	     "_PledgedObject"."SequenceNumber" = "_PledgedObject.SequenceNumber"
+	     
+);

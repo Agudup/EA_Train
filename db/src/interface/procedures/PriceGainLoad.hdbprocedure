@@ -1,0 +1,425 @@
+PROCEDURE "sap.fsdm.procedures::PriceGainLoad" (IN ROW "sap.fsdm.tabletypes::PriceGainTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'LotID=' || TO_VARCHAR("LotID") || ' ' ||
+                'PriceGainCalculationMethod=' || TO_VARCHAR("PriceGainCalculationMethod") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_SecuritiesAccount.FinancialContractID=' || TO_VARCHAR("_SecuritiesAccount.FinancialContractID") || ' ' ||
+                '_SecuritiesAccount.IDSystem=' || TO_VARCHAR("_SecuritiesAccount.IDSystem") || ' ' ||
+                '_SettlementItem.IDSystem=' || TO_VARCHAR("_SettlementItem.IDSystem") || ' ' ||
+                '_SettlementItem.ItemNumber=' || TO_VARCHAR("_SettlementItem.ItemNumber") || ' ' ||
+                '_SettlementItem.SettlementID=' || TO_VARCHAR("_SettlementItem.SettlementID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."LotID",
+                        "IN"."PriceGainCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SettlementItem.IDSystem",
+                        "IN"."_SettlementItem.ItemNumber",
+                        "IN"."_SettlementItem.SettlementID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."LotID",
+                        "IN"."PriceGainCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SettlementItem.IDSystem",
+                        "IN"."_SettlementItem.ItemNumber",
+                        "IN"."_SettlementItem.SettlementID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "LotID",
+                        "PriceGainCalculationMethod",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_SecuritiesAccount.FinancialContractID",
+                        "_SecuritiesAccount.IDSystem",
+                        "_SettlementItem.IDSystem",
+                        "_SettlementItem.ItemNumber",
+                        "_SettlementItem.SettlementID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."LotID",
+                                    "IN"."PriceGainCalculationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem",
+                                    "IN"."_SettlementItem.IDSystem",
+                                    "IN"."_SettlementItem.ItemNumber",
+                                    "IN"."_SettlementItem.SettlementID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."LotID",
+                                    "IN"."PriceGainCalculationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_SecuritiesAccount.FinancialContractID",
+                                    "IN"."_SecuritiesAccount.IDSystem",
+                                    "IN"."_SettlementItem.IDSystem",
+                                    "IN"."_SettlementItem.ItemNumber",
+                                    "IN"."_SettlementItem.SettlementID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::PriceGain" (
+        "LotID",
+        "PriceGainCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SettlementItem.IDSystem",
+        "_SettlementItem.ItemNumber",
+        "_SettlementItem.SettlementID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AmountInLotInPositionCurrency",
+        "InflowOutflowLot",
+        "NominalAmountInLot",
+        "PositionCurrency",
+        "PriceGain",
+        "QuantityInLot",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_LotID" as "LotID" ,
+            "OLD_PriceGainCalculationMethod" as "PriceGainCalculationMethod" ,
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID" ,
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem" ,
+            "OLD__SettlementItem.IDSystem" as "_SettlementItem.IDSystem" ,
+            "OLD__SettlementItem.ItemNumber" as "_SettlementItem.ItemNumber" ,
+            "OLD__SettlementItem.SettlementID" as "_SettlementItem.SettlementID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AmountInLotInPositionCurrency" as "AmountInLotInPositionCurrency" ,
+            "OLD_InflowOutflowLot" as "InflowOutflowLot" ,
+            "OLD_NominalAmountInLot" as "NominalAmountInLot" ,
+            "OLD_PositionCurrency" as "PositionCurrency" ,
+            "OLD_PriceGain" as "PriceGain" ,
+            "OLD_QuantityInLot" as "QuantityInLot" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."LotID",
+                        "IN"."PriceGainCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SettlementItem.IDSystem",
+                        "IN"."_SettlementItem.ItemNumber",
+                        "IN"."_SettlementItem.SettlementID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."PriceGainCalculationMethod" as "OLD_PriceGainCalculationMethod",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                                "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                                "OLD"."_SettlementItem.IDSystem" as "OLD__SettlementItem.IDSystem",
+                                "OLD"."_SettlementItem.ItemNumber" as "OLD__SettlementItem.ItemNumber",
+                                "OLD"."_SettlementItem.SettlementID" as "OLD__SettlementItem.SettlementID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AmountInLotInPositionCurrency" as "OLD_AmountInLotInPositionCurrency",
+                                "OLD"."InflowOutflowLot" as "OLD_InflowOutflowLot",
+                                "OLD"."NominalAmountInLot" as "OLD_NominalAmountInLot",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."PriceGain" as "OLD_PriceGain",
+                                "OLD"."QuantityInLot" as "OLD_QuantityInLot",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PriceGain" as "OLD"
+            on
+                ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+                ( case when "IN"."PriceGainCalculationMethod" is null then '' else "IN"."PriceGainCalculationMethod" end ) = "OLD"."PriceGainCalculationMethod" and
+                ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" and
+                ( case when "IN"."_SettlementItem.IDSystem" is null then '' else "IN"."_SettlementItem.IDSystem" end ) = "OLD"."_SettlementItem.IDSystem" and
+                ( case when "IN"."_SettlementItem.ItemNumber" is null then -1 else "IN"."_SettlementItem.ItemNumber" end ) = "OLD"."_SettlementItem.ItemNumber" and
+                ( case when "IN"."_SettlementItem.SettlementID" is null then '' else "IN"."_SettlementItem.SettlementID" end ) = "OLD"."_SettlementItem.SettlementID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::PriceGain" (
+        "LotID",
+        "PriceGainCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SettlementItem.IDSystem",
+        "_SettlementItem.ItemNumber",
+        "_SettlementItem.SettlementID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AmountInLotInPositionCurrency",
+        "InflowOutflowLot",
+        "NominalAmountInLot",
+        "PositionCurrency",
+        "PriceGain",
+        "QuantityInLot",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_LotID" as "LotID",
+            "OLD_PriceGainCalculationMethod" as "PriceGainCalculationMethod",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount.FinancialContractID",
+            "OLD__SecuritiesAccount.IDSystem" as "_SecuritiesAccount.IDSystem",
+            "OLD__SettlementItem.IDSystem" as "_SettlementItem.IDSystem",
+            "OLD__SettlementItem.ItemNumber" as "_SettlementItem.ItemNumber",
+            "OLD__SettlementItem.SettlementID" as "_SettlementItem.SettlementID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AmountInLotInPositionCurrency" as "AmountInLotInPositionCurrency",
+            "OLD_InflowOutflowLot" as "InflowOutflowLot",
+            "OLD_NominalAmountInLot" as "NominalAmountInLot",
+            "OLD_PositionCurrency" as "PositionCurrency",
+            "OLD_PriceGain" as "PriceGain",
+            "OLD_QuantityInLot" as "QuantityInLot",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."LotID",
+                        "IN"."PriceGainCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_SecuritiesAccount.FinancialContractID",
+                        "IN"."_SecuritiesAccount.IDSystem",
+                        "IN"."_SettlementItem.IDSystem",
+                        "IN"."_SettlementItem.ItemNumber",
+                        "IN"."_SettlementItem.SettlementID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."LotID" as "OLD_LotID",
+                        "OLD"."PriceGainCalculationMethod" as "OLD_PriceGainCalculationMethod",
+                        "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_SecuritiesAccount.FinancialContractID" as "OLD__SecuritiesAccount.FinancialContractID",
+                        "OLD"."_SecuritiesAccount.IDSystem" as "OLD__SecuritiesAccount.IDSystem",
+                        "OLD"."_SettlementItem.IDSystem" as "OLD__SettlementItem.IDSystem",
+                        "OLD"."_SettlementItem.ItemNumber" as "OLD__SettlementItem.ItemNumber",
+                        "OLD"."_SettlementItem.SettlementID" as "OLD__SettlementItem.SettlementID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."AmountInLotInPositionCurrency" as "OLD_AmountInLotInPositionCurrency",
+                        "OLD"."InflowOutflowLot" as "OLD_InflowOutflowLot",
+                        "OLD"."NominalAmountInLot" as "OLD_NominalAmountInLot",
+                        "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                        "OLD"."PriceGain" as "OLD_PriceGain",
+                        "OLD"."QuantityInLot" as "OLD_QuantityInLot",
+                        "OLD"."Unit" as "OLD_Unit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PriceGain" as "OLD"
+            on
+                ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+                ( case when "IN"."PriceGainCalculationMethod" is null then '' else "IN"."PriceGainCalculationMethod" end ) = "OLD"."PriceGainCalculationMethod" and
+                ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+                ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" and
+                ( case when "IN"."_SettlementItem.IDSystem" is null then '' else "IN"."_SettlementItem.IDSystem" end ) = "OLD"."_SettlementItem.IDSystem" and
+                ( case when "IN"."_SettlementItem.ItemNumber" is null then -1 else "IN"."_SettlementItem.ItemNumber" end ) = "OLD"."_SettlementItem.ItemNumber" and
+                ( case when "IN"."_SettlementItem.SettlementID" is null then '' else "IN"."_SettlementItem.SettlementID" end ) = "OLD"."_SettlementItem.SettlementID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::PriceGain"
+    where (
+        "LotID",
+        "PriceGainCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SettlementItem.IDSystem",
+        "_SettlementItem.ItemNumber",
+        "_SettlementItem.SettlementID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."LotID",
+            "OLD"."PriceGainCalculationMethod",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_SecuritiesAccount.FinancialContractID",
+            "OLD"."_SecuritiesAccount.IDSystem",
+            "OLD"."_SettlementItem.IDSystem",
+            "OLD"."_SettlementItem.ItemNumber",
+            "OLD"."_SettlementItem.SettlementID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::PriceGain" as "OLD"
+        on
+           ( case when "IN"."LotID" is null then '' else "IN"."LotID" end ) = "OLD"."LotID" and
+           ( case when "IN"."PriceGainCalculationMethod" is null then '' else "IN"."PriceGainCalculationMethod" end ) = "OLD"."PriceGainCalculationMethod" and
+           ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+           ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+           ( case when "IN"."_SecuritiesAccount.FinancialContractID" is null then '' else "IN"."_SecuritiesAccount.FinancialContractID" end ) = "OLD"."_SecuritiesAccount.FinancialContractID" and
+           ( case when "IN"."_SecuritiesAccount.IDSystem" is null then '' else "IN"."_SecuritiesAccount.IDSystem" end ) = "OLD"."_SecuritiesAccount.IDSystem" and
+           ( case when "IN"."_SettlementItem.IDSystem" is null then '' else "IN"."_SettlementItem.IDSystem" end ) = "OLD"."_SettlementItem.IDSystem" and
+           ( case when "IN"."_SettlementItem.ItemNumber" is null then -1 else "IN"."_SettlementItem.ItemNumber" end ) = "OLD"."_SettlementItem.ItemNumber" and
+           ( case when "IN"."_SettlementItem.SettlementID" is null then '' else "IN"."_SettlementItem.SettlementID" end ) = "OLD"."_SettlementItem.SettlementID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::PriceGain" (
+        "LotID",
+        "PriceGainCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_SecuritiesAccount.FinancialContractID",
+        "_SecuritiesAccount.IDSystem",
+        "_SettlementItem.IDSystem",
+        "_SettlementItem.ItemNumber",
+        "_SettlementItem.SettlementID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AmountInLotInPositionCurrency",
+        "InflowOutflowLot",
+        "NominalAmountInLot",
+        "PositionCurrency",
+        "PriceGain",
+        "QuantityInLot",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "LotID" is null then '' else "LotID" end ) as "LotID",
+            ( case when "PriceGainCalculationMethod" is null then '' else "PriceGainCalculationMethod" end ) as "PriceGainCalculationMethod",
+            ( case when "_AccountingSystem.AccountingSystemID" is null then '' else "_AccountingSystem.AccountingSystemID" end ) as "_AccountingSystem.AccountingSystemID",
+            ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+            ( case when "_SecuritiesAccount.FinancialContractID" is null then '' else "_SecuritiesAccount.FinancialContractID" end ) as "_SecuritiesAccount.FinancialContractID",
+            ( case when "_SecuritiesAccount.IDSystem" is null then '' else "_SecuritiesAccount.IDSystem" end ) as "_SecuritiesAccount.IDSystem",
+            ( case when "_SettlementItem.IDSystem" is null then '' else "_SettlementItem.IDSystem" end ) as "_SettlementItem.IDSystem",
+            ( case when "_SettlementItem.ItemNumber" is null then -1 else "_SettlementItem.ItemNumber" end ) as "_SettlementItem.ItemNumber",
+            ( case when "_SettlementItem.SettlementID" is null then '' else "_SettlementItem.SettlementID" end ) as "_SettlementItem.SettlementID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "AmountInLotInPositionCurrency"  ,
+            "InflowOutflowLot"  ,
+            "NominalAmountInLot"  ,
+            "PositionCurrency"  ,
+            "PriceGain"  ,
+            "QuantityInLot"  ,
+            "Unit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

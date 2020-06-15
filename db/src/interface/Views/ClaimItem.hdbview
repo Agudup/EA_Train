@@ -1,0 +1,36 @@
+view "sap.fsdm.Views::ClaimItem_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ID" as "ID",
+      "_Subclaim._Claimant._BusinessPartner.BusinessPartnerID" as "_Subclaim__Claimant__BusinessPartner_BusinessPartnerID",
+      "_Subclaim._Claimant._Claim.ID" as "_Subclaim__Claimant__Claim_ID",
+      "_Subclaim._Claimant._Claim.IDSystem" as "_Subclaim__Claimant__Claim_IDSystem",
+      "_Subclaim._InsuranceCoverage.ID" as "_Subclaim__InsuranceCoverage_ID",
+      "_Subclaim._InsuranceCoverage._InsuranceContract.FinancialContractID" as "_Subclaim__InsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_Subclaim._InsuranceCoverage._InsuranceContract.IDSystem" as "_Subclaim__InsuranceCoverage__InsuranceContract_IDSystem",
+      "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_Subclaim__InsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_Subclaim._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_Subclaim__InsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_Subclaim._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_Subclaim__InsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_InjuredPerson._IndividualPerson.BusinessPartnerID" as "_InjuredPerson__IndividualPerson_BusinessPartnerID",
+      "_InjuredPerson._PersonalInjury.LossCategory" as "_InjuredPerson__PersonalInjury_LossCategory",
+      "_InjuredPerson._PersonalInjury._Claim.ID" as "_InjuredPerson__PersonalInjury__Claim_ID",
+      "_InjuredPerson._PersonalInjury._Claim.IDSystem" as "_InjuredPerson__PersonalInjury__Claim_IDSystem",
+      "_LossObject.LossObjectID" as "_LossObject_LossObjectID",
+      "_LossObject._PropertyLoss.LossCategory" as "_LossObject__PropertyLoss_LossCategory",
+      "_LossObject._PropertyLoss._Claim.ID" as "_LossObject__PropertyLoss__Claim_ID",
+      "_LossObject._PropertyLoss._Claim.IDSystem" as "_LossObject__PropertyLoss__Claim_IDSystem",
+      "ClaimedAmount" as "ClaimedAmount",
+      "RejectionReason" as "RejectionReason",
+      "RiskCoverage" as "RiskCoverage",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ClaimItem"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

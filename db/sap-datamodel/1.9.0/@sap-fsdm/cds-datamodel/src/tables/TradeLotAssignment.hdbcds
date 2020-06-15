@@ -1,0 +1,54 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"Trade";
+
+entity "TradeLotAssignment" {
+    key "LotID"                                 : String(128);
+    key "_AccountingSystemOfTradeLotAssignment" : association to AccountingSystem { AccountingSystemID } not null;
+    key "_Trade"                                : association to Trade {
+                                                                         IDSystem,
+                                                                         TradeID
+                                                                       }                                 not null;
+    key "BusinessValidFrom"                     : UTCTimestamp;
+    key "BusinessValidTo"                       : UTCTimestamp;
+        "SystemValidFrom"                       : UTCTimestamp                                           not null;
+        "SystemValidTo"                         : UTCTimestamp                                           not null;
+        "NominalAmount"                         : Decimal(34, 6);
+        "NominalAmountCurrency"                 : String(3);
+        "Quantity"                              : Decimal(34, 6);
+        "Unit"                                  : String(10);
+        "SourceSystemID"                        : String(128);
+        "ChangeTimestampInSourceSystem"         : UTCTimestamp;
+        "ChangingUserInSourceSystem"            : String(128);
+        "ChangingProcessType"                   : String(40);
+        "ChangingProcessID"                     : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "TradeLotAssignment_Historical" {
+    "LotID"                                 : String(128)                                            not null;
+    "_AccountingSystemOfTradeLotAssignment" : association to AccountingSystem { AccountingSystemID } not null;
+    "_Trade"                                : association to Trade {
+                                                                     IDSystem,
+                                                                     TradeID
+                                                                   }                                 not null;
+    "BusinessValidFrom"                     : UTCTimestamp                                           not null;
+    "BusinessValidTo"                       : UTCTimestamp                                           not null;
+    "SystemValidFrom"                       : UTCTimestamp                                           not null;
+    "SystemValidTo"                         : UTCTimestamp                                           not null;
+    "NominalAmount"                         : Decimal(34, 6);
+    "NominalAmountCurrency"                 : String(3);
+    "Quantity"                              : Decimal(34, 6);
+    "Unit"                                  : String(10);
+    "SourceSystemID"                        : String(128);
+    "ChangeTimestampInSourceSystem"         : UTCTimestamp;
+    "ChangingUserInSourceSystem"            : String(128);
+    "ChangingProcessType"                   : String(40);
+    "ChangingProcessID"                     : String(128);
+}
+technical configuration {
+    column store;
+};

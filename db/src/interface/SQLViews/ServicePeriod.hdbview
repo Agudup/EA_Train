@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::ServicePeriod_View" 
+as select
+      "StartDate" ,
+      "_Section._ReinsuranceContract.FinancialContractID" ,
+      "_Section._ReinsuranceContract.IDSystem" ,
+      "_Section.SectionID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EndDate" ,
+      "LastNoticeDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ServicePeriod"
+with associations
+(
+	join "sap.fsdm.SQLViews::SectionCoverage_View" as "_Section"
+	  on "_Section"."SectionID" = "_Section.SectionID" AND 
+	     "_Section"."_ReinsuranceContract.FinancialContractID" = "_Section._ReinsuranceContract.FinancialContractID" AND 
+	     "_Section"."_ReinsuranceContract.IDSystem" = "_Section._ReinsuranceContract.IDSystem"
+	     
+);

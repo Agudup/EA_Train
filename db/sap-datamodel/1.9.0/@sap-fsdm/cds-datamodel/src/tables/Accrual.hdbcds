@@ -1,0 +1,66 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+
+entity "Accrual" {
+    key "AccrualType"                                   : String(40);
+    key "InterestType"                                  : String(40);
+    key "RoleOfPayer"                                   : String(50)                                               default '';
+    key "ASSOC_FinancialContract"                       : association to FinancialContract {
+                                                                                             FinancialContractID,
+                                                                                             IDSystem
+                                                                                           }                       not null;
+    key "ASSOC_PositionCurrencyOfMultiCurrencyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                                   PositionCurrency,
+                                                                                                                   ASSOC_MultiCcyAccnt
+                                                                                                                 } not null;
+    key "BusinessValidFrom"                             : LocalDate;
+    key "BusinessValidTo"                               : LocalDate;
+        "SystemValidFrom"                               : UTCTimestamp                                             not null;
+        "SystemValidTo"                                 : UTCTimestamp                                             not null;
+        "AccrualCategory"                               : String(100);
+        "AmountInPaymentCurrency"                       : Decimal(34, 6);
+        "AmountInPositionCurrency"                      : Decimal(34, 6);
+        "PaymentCurrency"                               : String(3);
+        "PositionCurrency"                              : String(3);
+        "SourceSystemID"                                : String(128);
+        "ChangeTimestampInSourceSystem"                 : UTCTimestamp;
+        "ChangingUserInSourceSystem"                    : String(128);
+        "ChangingProcessType"                           : String(40);
+        "ChangingProcessID"                             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Accrual_Historical" {
+    "AccrualType"                                   : String(40)                                               not null;
+    "InterestType"                                  : String(40)                                               not null;
+    "RoleOfPayer"                                   : String(50)                                               default '' not null;
+    "ASSOC_FinancialContract"                       : association to FinancialContract {
+                                                                                         FinancialContractID,
+                                                                                         IDSystem
+                                                                                       }                       not null;
+    "ASSOC_PositionCurrencyOfMultiCurrencyContract" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                               PositionCurrency,
+                                                                                                               ASSOC_MultiCcyAccnt
+                                                                                                             } not null;
+    "BusinessValidFrom"                             : LocalDate                                                not null;
+    "BusinessValidTo"                               : LocalDate                                                not null;
+    "SystemValidFrom"                               : UTCTimestamp                                             not null;
+    "SystemValidTo"                                 : UTCTimestamp                                             not null;
+    "AccrualCategory"                               : String(100);
+    "AmountInPaymentCurrency"                       : Decimal(34, 6);
+    "AmountInPositionCurrency"                      : Decimal(34, 6);
+    "PaymentCurrency"                               : String(3);
+    "PositionCurrency"                              : String(3);
+    "SourceSystemID"                                : String(128);
+    "ChangeTimestampInSourceSystem"                 : UTCTimestamp;
+    "ChangingUserInSourceSystem"                    : String(128);
+    "ChangingProcessType"                           : String(40);
+    "ChangingProcessID"                             : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::CommodityEndOfDayPriceObservationErase" (IN ROW "sap.fsdm.tabletypes::CommodityEndOfDayPriceObservationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PriceDataProvider" is null and
+                         "PriceSeriesType" is null and
+                         "_Commodity.CommodityID" is null and
+                         "_Exchange.MarketIdentifierCode" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CommodityEndOfDayPriceObservation" WHERE
+("PriceDataProvider" ,
+"PriceSeriesType" ,
+"_Commodity.CommodityID" ,
+"_Exchange.MarketIdentifierCode" 
+)in ( select "OLD"."PriceDataProvider" ,
+"OLD"."PriceSeriesType" ,
+"OLD"."_Commodity.CommodityID" ,
+"OLD"."_Exchange.MarketIdentifierCode" 
+from :ROW "IN"
+inner join "sap.fsdm::CommodityEndOfDayPriceObservation" "OLD"
+on
+  ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+  ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+  ( "IN"."_Commodity.CommodityID" = "OLD"."_Commodity.CommodityID" or "IN"."_Commodity.CommodityID" is null ) and
+  ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CommodityEndOfDayPriceObservation_Historical" WHERE
+("PriceDataProvider" ,
+"PriceSeriesType" ,
+"_Commodity.CommodityID" ,
+"_Exchange.MarketIdentifierCode" 
+)in ( select "OLD"."PriceDataProvider" ,
+"OLD"."PriceSeriesType" ,
+"OLD"."_Commodity.CommodityID" ,
+"OLD"."_Exchange.MarketIdentifierCode" 
+from :ROW "IN"
+inner join "sap.fsdm::CommodityEndOfDayPriceObservation_Historical" "OLD"
+on
+  ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+  ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+  ( "IN"."_Commodity.CommodityID" = "OLD"."_Commodity.CommodityID" or "IN"."_Commodity.CommodityID" is null ) and
+  ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) 
+);
+
+END

@@ -1,0 +1,261 @@
+PROCEDURE "sap.fsdm.procedures::DaysPastDueDelete" (IN ROW "sap.fsdm.tabletypes::DaysPastDueTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::DaysPastDue" (
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "DaysPastDue",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" ,
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_DaysPastDue" as "DaysPastDue" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."DaysPastDue" as "OLD_DaysPastDue",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::DaysPastDue" as "OLD"
+            on
+                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                      ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::DaysPastDue" (
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "DaysPastDue",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_DaysPastDue" as "DaysPastDue",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."DaysPastDue" as "OLD_DaysPastDue",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::DaysPastDue" as "OLD"
+            on
+                                                ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                                ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::DaysPastDue"
+    where (
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+            "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::DaysPastDue" as "OLD"
+        on
+                                       ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                       ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

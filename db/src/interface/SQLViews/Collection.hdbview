@@ -1,0 +1,111 @@
+view "sap.fsdm.SQLViews::Collection_View" 
+as select
+      "CollectionID" ,
+      "IDSystem" ,
+      "_Client.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_EmployeeResponsibleForPortfolio.BusinessPartnerID" ,
+      "_OrganizationalUnit.OrganizationalUnitID" ,
+      "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "CollateralPoolCoveringType" ,
+      "CollateralPoolType" ,
+      "CollectionCategory" ,
+      "CollectionName" ,
+      "CountryOfCollateralPoolCovering" ,
+      "Distributed" ,
+      "FinancialInstrumentPortfolioType" ,
+      "InvestmentObjective" ,
+      "ManagingUnit" ,
+      "PortfolioCategory" ,
+      "TradingDeskType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Collection"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingClassificationStatus_View" as "_AccountingClassificationStatus__Collection"
+	  on "CollectionID" = "_AccountingClassificationStatus__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_AccountingClassificationStatus__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BookDesignation_View" as "_BookDesignation__Collection"
+	  on "CollectionID" = "_BookDesignation__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_BookDesignation__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CashFlowStream_View" as "_CashFlowStream__CollectionOfCashFlow"
+	  on "CollectionID" = "_CashFlowStream__CollectionOfCashFlow"."_CollectionOfCashFlow.CollectionID" AND 
+	     "IDSystem" = "_CashFlowStream__CollectionOfCashFlow"."_CollectionOfCashFlow.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CollateralPoolAssetAssignment_View" as "_CollateralPoolAssetAssignment__CollateralPool"
+	  on "IDSystem" = "_CollateralPoolAssetAssignment__CollateralPool"."_CollateralPool.IDSystem" AND 
+	     "CollectionID" = "_CollateralPoolAssetAssignment__CollateralPool"."_CollateralPool.CollectionID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_Client"
+	  on "_Client"."BusinessPartnerID" = "_Client.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_EmployeeResponsibleForPortfolio"
+	  on "_EmployeeResponsibleForPortfolio"."BusinessPartnerID" = "_EmployeeResponsibleForPortfolio.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "_OrganizationalUnit"
+	  on "_OrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "_OrganizationalUnit"."OrganizationalUnitID" = "_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::CoveredFinancialContractAssignment_View" as "_CoveredFinancialContractAssignment__CollateralPool"
+	  on "CollectionID" = "_CoveredFinancialContractAssignment__CollateralPool"."_CollateralPool.CollectionID" AND 
+	     "IDSystem" = "_CoveredFinancialContractAssignment__CollateralPool"."_CollateralPool.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CoveredFinancialInstrumentAssignment_View" as "_CoveredFinancialInstrumentAssignment__CollateralPool"
+	  on "IDSystem" = "_CoveredFinancialInstrumentAssignment__CollateralPool"."_CollateralPool.IDSystem" AND 
+	     "CollectionID" = "_CoveredFinancialInstrumentAssignment__CollateralPool"."_CollateralPool.CollectionID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExpectedLoss_View" as "_CreditRiskExpectedLoss__Collection"
+	  on "IDSystem" = "_CreditRiskExpectedLoss__Collection"."_Collection.IDSystem" AND 
+	     "CollectionID" = "_CreditRiskExpectedLoss__Collection"."_Collection.CollectionID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExposure_View" as "_CreditRiskExposure__CollectionOfInstruments"
+	  on "CollectionID" = "_CreditRiskExposure__CollectionOfInstruments"."_CollectionOfInstruments.CollectionID" AND 
+	     "IDSystem" = "_CreditRiskExposure__CollectionOfInstruments"."_CollectionOfInstruments.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CreditRiskExposureAtDefault_View" as "_CreditRiskExposureAtDefault__Collection"
+	  on "CollectionID" = "_CreditRiskExposureAtDefault__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_CreditRiskExposureAtDefault__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::DueSettlement_View" as "_DueSettlement__Collection"
+	  on "CollectionID" = "_DueSettlement__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_DueSettlement__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveInterestRate_View" as "_EffectiveInterestRate__Collection"
+	  on "CollectionID" = "_EffectiveInterestRate__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_EffectiveInterestRate__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::EuropeanRegulatoryReportingForContract_View" as "_EuropeanRegulatoryReportingForContract__Collection"
+	  on "CollectionID" = "_EuropeanRegulatoryReportingForContract__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_EuropeanRegulatoryReportingForContract__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FundsTransferPricingRate_View" as "_FundsTransferPricingRate__Collection"
+	  on "CollectionID" = "_FundsTransferPricingRate__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_FundsTransferPricingRate__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Position_View" as "_Position__Collection"
+	  on "CollectionID" = "_Position__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_Position__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::RefinancingRelation_View" as "_RefinancingRelation__CollectionOfRefinancedSecuritiesHolding"
+	  on "CollectionID" = "_RefinancingRelation__CollectionOfRefinancedSecuritiesHolding"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" AND 
+	     "IDSystem" = "_RefinancingRelation__CollectionOfRefinancedSecuritiesHolding"."_CollectionOfRefinancedSecuritiesHolding.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__Collection"
+	  on "CollectionID" = "_Trade__Collection"."_Collection.CollectionID" AND 
+	     "IDSystem" = "_Trade__Collection"."_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade__CollectionAtCounterparty"
+	  on "CollectionID" = "_Trade__CollectionAtCounterparty"."_CollectionAtCounterparty.CollectionID" AND 
+	     "IDSystem" = "_Trade__CollectionAtCounterparty"."_CollectionAtCounterparty.IDSystem"
+	     
+);

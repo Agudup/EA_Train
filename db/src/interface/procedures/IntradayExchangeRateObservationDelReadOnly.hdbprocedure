@@ -1,0 +1,64 @@
+PROCEDURE "sap.fsdm.procedures::IntradayExchangeRateObservationDelReadOnly" (IN ROW "sap.fsdm.tabletypes::IntradayExchangeRateObservationTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::IntradayExchangeRateObservationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "BaseCurrency" is null and
+                         "ExchangeRateType" is null and
+                         "PriceDataProvider" is null and
+                         "QuotationType" is null and
+                         "QuoteCurrency" is null and
+                         "Timestamp" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning--Delete entries for update from current table
+CURR_DEL = select 
+"BaseCurrency",
+"ExchangeRateType",
+"PriceDataProvider",
+"QuotationType",
+"QuoteCurrency",
+"Timestamp"
+from "sap.fsdm::IntradayExchangeRateObservation" WHERE("BaseCurrency" ,
+"ExchangeRateType" ,
+"PriceDataProvider" ,
+"QuotationType" ,
+"QuoteCurrency" ,
+"Timestamp" 
+)in ( select 
+"OLD"."BaseCurrency"  as "BaseCurrency" ,
+"OLD"."ExchangeRateType"  as "ExchangeRateType" ,
+"OLD"."PriceDataProvider"  as "PriceDataProvider" ,
+"OLD"."QuotationType"  as "QuotationType" ,
+"OLD"."QuoteCurrency"  as "QuoteCurrency" ,
+"OLD"."Timestamp"  as "Timestamp" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::IntradayExchangeRateObservation" AS "OLD"
+  ON
+  ( "IN"."BaseCurrency" = "OLD"."BaseCurrency" or "IN"."BaseCurrency" is null ) and
+  ( "IN"."ExchangeRateType" = "OLD"."ExchangeRateType" or "IN"."ExchangeRateType" is null ) and
+  ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+  ( "IN"."QuotationType" = "OLD"."QuotationType" or "IN"."QuotationType" is null ) and
+  ( "IN"."QuoteCurrency" = "OLD"."QuoteCurrency" or "IN"."QuoteCurrency" is null ) and
+  ( "IN"."Timestamp" = "OLD"."Timestamp" or "IN"."Timestamp" is null ) 
+);
+
+END

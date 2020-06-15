@@ -1,0 +1,49 @@
+PROCEDURE "sap.fsdm.procedures::StatusOfAgeInsert" (IN ROW "sap.fsdm.tabletypes::StatusOfAgeTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+
+declare in_tt "sap.fsdm.tabletypes::StatusOfAgeTT" default select    ( case when "Country" is null then '' else "Country" end ) as "Country",
+    ( case when "Status" is null then '' else "Status" end ) as "Status",
+    "AgeInDays",
+    "AgeInMonths",
+    "AgeInYears",
+    "SourceSystemID",
+    "ChangeTimestampInSourceSystem",
+    "ChangingUserInSourceSystem",
+    "ChangingProcessType",
+    "ChangingProcessID"
+from :ROW;
+
+--Insert ALL the input data
+
+insert into "sap.fsdm::StatusOfAge" (
+"Country",
+"Status",
+"AgeInDays",
+"AgeInMonths",
+"AgeInYears",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "Country"  ,
+  "Status"  ,
+  "AgeInDays"  ,
+  "AgeInMonths"  ,
+  "AgeInYears"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :in_tt );
+
+
+
+END

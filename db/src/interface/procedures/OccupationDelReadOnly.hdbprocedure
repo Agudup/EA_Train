@@ -1,0 +1,269 @@
+PROCEDURE "sap.fsdm.procedures::OccupationDelReadOnly" (IN ROW "sap.fsdm.tabletypes::OccupationTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::OccupationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::OccupationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("ASSOC_IndividualPerson.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_IndividualPerson.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_IndividualPerson.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "SequenceNumber",
+            "ASSOC_IndividualPerson.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::Occupation" WHERE
+            (
+            "SequenceNumber" ,
+            "ASSOC_IndividualPerson.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_IndividualPerson.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::Occupation" as "OLD"
+        on
+                              ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                              ( "IN"."ASSOC_IndividualPerson.BusinessPartnerID" = "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" or "IN"."ASSOC_IndividualPerson.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "SequenceNumber",
+        "ASSOC_IndividualPerson.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Designation",
+        "Employer",
+        "EmployerClass",
+        "EmployerCode",
+        "EmployerSector",
+        "GrossIncomeCurrency",
+        "GrossIncomeTimeUnit",
+        "NetIncomeCurrency",
+        "NetIncomeEvidenceProvided",
+        "NetIncomeTimeUnit",
+        "Occupation",
+        "Profession",
+        "RegularGrossIncome",
+        "RegularNetIncome",
+        "RetiredSince",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_IndividualPerson.BusinessPartnerID" as "ASSOC_IndividualPerson.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_Designation" as "Designation" ,
+            "OLD_Employer" as "Employer" ,
+            "OLD_EmployerClass" as "EmployerClass" ,
+            "OLD_EmployerCode" as "EmployerCode" ,
+            "OLD_EmployerSector" as "EmployerSector" ,
+            "OLD_GrossIncomeCurrency" as "GrossIncomeCurrency" ,
+            "OLD_GrossIncomeTimeUnit" as "GrossIncomeTimeUnit" ,
+            "OLD_NetIncomeCurrency" as "NetIncomeCurrency" ,
+            "OLD_NetIncomeEvidenceProvided" as "NetIncomeEvidenceProvided" ,
+            "OLD_NetIncomeTimeUnit" as "NetIncomeTimeUnit" ,
+            "OLD_Occupation" as "Occupation" ,
+            "OLD_Profession" as "Profession" ,
+            "OLD_RegularGrossIncome" as "RegularGrossIncome" ,
+            "OLD_RegularNetIncome" as "RegularNetIncome" ,
+            "OLD_RetiredSince" as "RetiredSince" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" as "OLD_ASSOC_IndividualPerson.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Designation" as "OLD_Designation",
+                                "OLD"."Employer" as "OLD_Employer",
+                                "OLD"."EmployerClass" as "OLD_EmployerClass",
+                                "OLD"."EmployerCode" as "OLD_EmployerCode",
+                                "OLD"."EmployerSector" as "OLD_EmployerSector",
+                                "OLD"."GrossIncomeCurrency" as "OLD_GrossIncomeCurrency",
+                                "OLD"."GrossIncomeTimeUnit" as "OLD_GrossIncomeTimeUnit",
+                                "OLD"."NetIncomeCurrency" as "OLD_NetIncomeCurrency",
+                                "OLD"."NetIncomeEvidenceProvided" as "OLD_NetIncomeEvidenceProvided",
+                                "OLD"."NetIncomeTimeUnit" as "OLD_NetIncomeTimeUnit",
+                                "OLD"."Occupation" as "OLD_Occupation",
+                                "OLD"."Profession" as "OLD_Profession",
+                                "OLD"."RegularGrossIncome" as "OLD_RegularGrossIncome",
+                                "OLD"."RegularNetIncome" as "OLD_RegularNetIncome",
+                                "OLD"."RetiredSince" as "OLD_RetiredSince",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Occupation" as "OLD"
+            on
+                                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                      ( "IN"."ASSOC_IndividualPerson.BusinessPartnerID" = "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" or "IN"."ASSOC_IndividualPerson.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_IndividualPerson.BusinessPartnerID" as "ASSOC_IndividualPerson.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Designation" as "Designation",
+            "OLD_Employer" as "Employer",
+            "OLD_EmployerClass" as "EmployerClass",
+            "OLD_EmployerCode" as "EmployerCode",
+            "OLD_EmployerSector" as "EmployerSector",
+            "OLD_GrossIncomeCurrency" as "GrossIncomeCurrency",
+            "OLD_GrossIncomeTimeUnit" as "GrossIncomeTimeUnit",
+            "OLD_NetIncomeCurrency" as "NetIncomeCurrency",
+            "OLD_NetIncomeEvidenceProvided" as "NetIncomeEvidenceProvided",
+            "OLD_NetIncomeTimeUnit" as "NetIncomeTimeUnit",
+            "OLD_Occupation" as "Occupation",
+            "OLD_Profession" as "Profession",
+            "OLD_RegularGrossIncome" as "RegularGrossIncome",
+            "OLD_RegularNetIncome" as "RegularNetIncome",
+            "OLD_RetiredSince" as "RetiredSince",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_IndividualPerson.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" as "OLD_ASSOC_IndividualPerson.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Designation" as "OLD_Designation",
+                                "OLD"."Employer" as "OLD_Employer",
+                                "OLD"."EmployerClass" as "OLD_EmployerClass",
+                                "OLD"."EmployerCode" as "OLD_EmployerCode",
+                                "OLD"."EmployerSector" as "OLD_EmployerSector",
+                                "OLD"."GrossIncomeCurrency" as "OLD_GrossIncomeCurrency",
+                                "OLD"."GrossIncomeTimeUnit" as "OLD_GrossIncomeTimeUnit",
+                                "OLD"."NetIncomeCurrency" as "OLD_NetIncomeCurrency",
+                                "OLD"."NetIncomeEvidenceProvided" as "OLD_NetIncomeEvidenceProvided",
+                                "OLD"."NetIncomeTimeUnit" as "OLD_NetIncomeTimeUnit",
+                                "OLD"."Occupation" as "OLD_Occupation",
+                                "OLD"."Profession" as "OLD_Profession",
+                                "OLD"."RegularGrossIncome" as "OLD_RegularGrossIncome",
+                                "OLD"."RegularNetIncome" as "OLD_RegularNetIncome",
+                                "OLD"."RetiredSince" as "OLD_RetiredSince",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Occupation" as "OLD"
+            on
+               ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+               ( "IN"."ASSOC_IndividualPerson.BusinessPartnerID" = "OLD"."ASSOC_IndividualPerson.BusinessPartnerID" or "IN"."ASSOC_IndividualPerson.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,179 @@
+PROCEDURE "sap.fsdm.procedures::AgreedLimitListErase" (IN ROW "sap.fsdm.tabletypes::AgreedLimitTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" is null and
+                         "ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" is null and
+                         "ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" is null and
+                         "ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_FinancialContractDelegation.DelegatedRole" is null and
+                         "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null and
+                         "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null and
+                         "ASSOC_CardIssue.CardIssueID" is null and
+                         "_TrancheInSyndication._SyndicationAgreement.IDSystem" is null and
+                         "_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::AgreedLimit" WHERE
+("SequenceNumber" ,
+"ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_TrancheInSyndication.TrancheSequenceNumber" ,
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_CardIssue.CardIssueID" ,
+"OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"OLD"."ASSOC_CardIssue._BankAccount.IDSystem" ,
+"OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_TrancheInSyndication.TrancheSequenceNumber" ,
+"OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::AgreedLimit" "OLD"
+on
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" = "OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" or "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" = "OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" or "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.DelegatedRole" = "OLD"."ASSOC_FinancialContractDelegation.DelegatedRole" or "IN"."ASSOC_FinancialContractDelegation.DelegatedRole" is null ) and
+  ( "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" or "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" or "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null ) and
+  ( "IN"."ASSOC_CardIssue.CardIssueID" = "OLD"."ASSOC_CardIssue.CardIssueID" or "IN"."ASSOC_CardIssue.CardIssueID" is null ) and
+  ( "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+  ( "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::AgreedLimit_Historical" WHERE
+("SequenceNumber" ,
+"ASSOC_CardIssue.CardIssueID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"ASSOC_CardIssue._BankAccount.IDSystem" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_TrancheInSyndication.TrancheSequenceNumber" ,
+"_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+)in ( select "OLD"."SequenceNumber" ,
+"OLD"."ASSOC_CardIssue.CardIssueID" ,
+"OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" ,
+"OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" ,
+"OLD"."ASSOC_CardIssue._BankAccount.FinancialContractID" ,
+"OLD"."ASSOC_CardIssue._BankAccount.IDSystem" ,
+"OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" ,
+"OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" ,
+"OLD"."ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_FinancialContractDelegation.DelegatedRole" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_TrancheInSyndication.TrancheSequenceNumber" ,
+"OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+"OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::AgreedLimit_Historical" "OLD"
+on
+  ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyAccnt.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" = "OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" or "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.ASSOC_ContactPerson.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" = "OLD"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" or "IN"."ASSOC_ContactWithLimitedPowerOfAttorney.TypeOfContact" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_FinancialContractDelegation.DelegatedRole" = "OLD"."ASSOC_FinancialContractDelegation.DelegatedRole" or "IN"."ASSOC_FinancialContractDelegation.DelegatedRole" is null ) and
+  ( "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" or "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" = "OLD"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" or "IN"."ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" is null ) and
+  ( "IN"."ASSOC_CardIssue.CardIssueID" = "OLD"."ASSOC_CardIssue.CardIssueID" or "IN"."ASSOC_CardIssue.CardIssueID" is null ) and
+  ( "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" = "OLD"."_TrancheInSyndication._SyndicationAgreement.IDSystem" or "IN"."_TrancheInSyndication._SyndicationAgreement.IDSystem" is null ) and
+  ( "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "OLD"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" or "IN"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" is null ) 
+);
+
+END

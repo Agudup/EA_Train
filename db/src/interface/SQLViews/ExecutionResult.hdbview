@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::ExecutionResult_View" 
+as select
+      "_TransferOrder.IDSystem" ,
+      "_TransferOrder.TransferOrderID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ConsecutiveExecutionFailureCount" ,
+      "ExecutionAttemptedCount" ,
+      "ExecutionFailureCount" ,
+      "ExecutionResultCategory" ,
+      "ExecutionSuspendedUptoDate" ,
+      "LastExecutionAttemptDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ExecutionResult"
+with associations
+(
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "_TransferOrder"
+	  on "_TransferOrder"."IDSystem" = "_TransferOrder.IDSystem" AND 
+	     "_TransferOrder"."TransferOrderID" = "_TransferOrder.TransferOrderID"
+	     
+);

@@ -1,0 +1,23 @@
+view "sap.fsdm.Views::CardProgramParticipation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CardProgramID" as "CardProgramID",
+      "ASSOC_CardIssue.CardIssueID" as "ASSOC_CardIssue_CardIssueID",
+      "ASSOC_CardIssue.ASSOC_CardAgreement.FinancialContractID" as "ASSOC_CardIssue_ASSOC_CardAgreement_FinancialContractID",
+      "ASSOC_CardIssue.ASSOC_CardAgreement.IDSystem" as "ASSOC_CardIssue_ASSOC_CardAgreement_IDSystem",
+      "ASSOC_CardIssue._BankAccount.FinancialContractID" as "ASSOC_CardIssue__BankAccount_FinancialContractID",
+      "ASSOC_CardIssue._BankAccount.IDSystem" as "ASSOC_CardIssue__BankAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "CardProgramParticipationNumber" as "CardProgramParticipationNumber",
+      "CardProgramStatus" as "CardProgramStatus",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CardProgramParticipation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

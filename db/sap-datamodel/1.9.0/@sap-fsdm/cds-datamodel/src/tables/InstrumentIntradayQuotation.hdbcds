@@ -1,0 +1,30 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Exchange";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "InstrumentIntradayQuotation" {
+    key "PriceDataProvider"                   : String(256)                                                  default '';
+    key "PriceSeriesType"                     : String(40)                                                   default '';
+    key "SequenceNumber"                      : Integer;
+    key "Timestamp"                           : UTCTimestamp;
+    key "_Exchange"                           : association to Exchange { MarketIdentifierCode }             not null;
+    key "_FinancialInstrument"                : association to FinancialInstrument { FinancialInstrumentID } not null;
+        "AskQuantity"                         : Decimal(34, 6);
+        "BestAsk"                             : Decimal(34, 6);
+        "BestBid"                             : Decimal(34, 6);
+        "BidQuantity"                         : Decimal(34, 6);
+        "Currency"                            : String(3);
+        "InstrumentIntradayQuotationCategory" : String(40);
+        "NetAssetValue"                       : Decimal(34, 6);
+        "NetAssetValueCurrency"               : String(3);
+        "PriceNotationForm"                   : String(40);
+        "SourceSystemID"                      : String(128);
+        "ChangeTimestampInSourceSystem"       : UTCTimestamp;
+        "ChangingUserInSourceSystem"          : String(128);
+        "ChangingProcessType"                 : String(40);
+        "ChangingProcessID"                   : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,670 @@
+PROCEDURE "sap.fsdm.procedures::NonProportionalCoverageLimitDeductibleReadOnly" (IN ROW "sap.fsdm.tabletypes::NonProportionalCoverageLimitDeductibleTT", OUT CURR_DEL "sap.fsdm.tabletypes::NonProportionalCoverageLimitDeductibleTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::NonProportionalCoverageLimitDeductibleTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'NonProportionalCoverageLimitDeductableType=' || TO_VARCHAR("NonProportionalCoverageLimitDeductableType") || ' ' ||
+                '_CededRiskCurrency.Currency=' || TO_VARCHAR("_CededRiskCurrency.Currency") || ' ' ||
+                '_CededRiskCurrency._ReinsuranceCoverage.CoverageID=' || TO_VARCHAR("_CededRiskCurrency._ReinsuranceCoverage.CoverageID") || ' ' ||
+                '_CededRiskCurrency._ReinsuranceCoverage.SectionID=' || TO_VARCHAR("_CededRiskCurrency._ReinsuranceCoverage.SectionID") || ' ' ||
+                '_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID=' || TO_VARCHAR("_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID") || ' ' ||
+                '_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem=' || TO_VARCHAR("_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem") || ' ' ||
+                '_ClassOfInsurance.ClassOfInsurance=' || TO_VARCHAR("_ClassOfInsurance.ClassOfInsurance") || ' ' ||
+                '_ClassOfInsurance.SubClassOfInsurance=' || TO_VARCHAR("_ClassOfInsurance.SubClassOfInsurance") || ' ' ||
+                '_ClassOfInsurance.SubSubClassOfInsurance=' || TO_VARCHAR("_ClassOfInsurance.SubSubClassOfInsurance") || ' ' ||
+                '_ClassOfInsurance._ReinsuranceCoverage.CoverageID=' || TO_VARCHAR("_ClassOfInsurance._ReinsuranceCoverage.CoverageID") || ' ' ||
+                '_ClassOfInsurance._ReinsuranceCoverage.SectionID=' || TO_VARCHAR("_ClassOfInsurance._ReinsuranceCoverage.SectionID") || ' ' ||
+                '_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID=' || TO_VARCHAR("_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID") || ' ' ||
+                '_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem=' || TO_VARCHAR("_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem") || ' ' ||
+                '_Peril.Peril=' || TO_VARCHAR("_Peril.Peril") || ' ' ||
+                '_Peril._ReinsuranceCoverage.CoverageID=' || TO_VARCHAR("_Peril._ReinsuranceCoverage.CoverageID") || ' ' ||
+                '_Peril._ReinsuranceCoverage.SectionID=' || TO_VARCHAR("_Peril._ReinsuranceCoverage.SectionID") || ' ' ||
+                '_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID=' || TO_VARCHAR("_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID") || ' ' ||
+                '_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem=' || TO_VARCHAR("_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem") || ' ' ||
+                '_Region.Region=' || TO_VARCHAR("_Region.Region") || ' ' ||
+                '_Region._ReinsuranceCoverage.CoverageID=' || TO_VARCHAR("_Region._ReinsuranceCoverage.CoverageID") || ' ' ||
+                '_Region._ReinsuranceCoverage.SectionID=' || TO_VARCHAR("_Region._ReinsuranceCoverage.SectionID") || ' ' ||
+                '_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID=' || TO_VARCHAR("_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID") || ' ' ||
+                '_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem=' || TO_VARCHAR("_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."NonProportionalCoverageLimitDeductableType",
+                        "IN"."_CededRiskCurrency.Currency",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_ClassOfInsurance.ClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubSubClassOfInsurance",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Peril.Peril",
+                        "IN"."_Peril._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Peril._ReinsuranceCoverage.SectionID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Region.Region",
+                        "IN"."_Region._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Region._ReinsuranceCoverage.SectionID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."NonProportionalCoverageLimitDeductableType",
+                        "IN"."_CededRiskCurrency.Currency",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_ClassOfInsurance.ClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubSubClassOfInsurance",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Peril.Peril",
+                        "IN"."_Peril._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Peril._ReinsuranceCoverage.SectionID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Region.Region",
+                        "IN"."_Region._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Region._ReinsuranceCoverage.SectionID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "NonProportionalCoverageLimitDeductableType",
+                        "_CededRiskCurrency.Currency",
+                        "_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                        "_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                        "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "_ClassOfInsurance.ClassOfInsurance",
+                        "_ClassOfInsurance.SubClassOfInsurance",
+                        "_ClassOfInsurance.SubSubClassOfInsurance",
+                        "_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                        "_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                        "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "_Peril.Peril",
+                        "_Peril._ReinsuranceCoverage.CoverageID",
+                        "_Peril._ReinsuranceCoverage.SectionID",
+                        "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "_Region.Region",
+                        "_Region._ReinsuranceCoverage.CoverageID",
+                        "_Region._ReinsuranceCoverage.SectionID",
+                        "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."NonProportionalCoverageLimitDeductableType",
+                                    "IN"."_CededRiskCurrency.Currency",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                    "IN"."_ClassOfInsurance.ClassOfInsurance",
+                                    "IN"."_ClassOfInsurance.SubClassOfInsurance",
+                                    "IN"."_ClassOfInsurance.SubSubClassOfInsurance",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                    "IN"."_Peril.Peril",
+                                    "IN"."_Peril._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_Peril._ReinsuranceCoverage.SectionID",
+                                    "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                    "IN"."_Region.Region",
+                                    "IN"."_Region._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_Region._ReinsuranceCoverage.SectionID",
+                                    "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."NonProportionalCoverageLimitDeductableType",
+                                    "IN"."_CededRiskCurrency.Currency",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                    "IN"."_ClassOfInsurance.ClassOfInsurance",
+                                    "IN"."_ClassOfInsurance.SubClassOfInsurance",
+                                    "IN"."_ClassOfInsurance.SubSubClassOfInsurance",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                    "IN"."_Peril.Peril",
+                                    "IN"."_Peril._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_Peril._ReinsuranceCoverage.SectionID",
+                                    "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                    "IN"."_Region.Region",
+                                    "IN"."_Region._ReinsuranceCoverage.CoverageID",
+                                    "IN"."_Region._ReinsuranceCoverage.SectionID",
+                                    "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "NonProportionalCoverageLimitDeductableType",
+        "_CededRiskCurrency.Currency",
+        "_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+        "_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+        "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "_ClassOfInsurance.ClassOfInsurance",
+        "_ClassOfInsurance.SubClassOfInsurance",
+        "_ClassOfInsurance.SubSubClassOfInsurance",
+        "_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+        "_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+        "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "_Peril.Peril",
+        "_Peril._ReinsuranceCoverage.CoverageID",
+        "_Peril._ReinsuranceCoverage.SectionID",
+        "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "_Region.Region",
+        "_Region._ReinsuranceCoverage.CoverageID",
+        "_Region._ReinsuranceCoverage.SectionID",
+        "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::NonProportionalCoverageLimitDeductible" WHERE
+        (            "NonProportionalCoverageLimitDeductableType" ,
+            "_CededRiskCurrency.Currency" ,
+            "_CededRiskCurrency._ReinsuranceCoverage.CoverageID" ,
+            "_CededRiskCurrency._ReinsuranceCoverage.SectionID" ,
+            "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+            "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+            "_ClassOfInsurance.ClassOfInsurance" ,
+            "_ClassOfInsurance.SubClassOfInsurance" ,
+            "_ClassOfInsurance.SubSubClassOfInsurance" ,
+            "_ClassOfInsurance._ReinsuranceCoverage.CoverageID" ,
+            "_ClassOfInsurance._ReinsuranceCoverage.SectionID" ,
+            "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+            "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+            "_Peril.Peril" ,
+            "_Peril._ReinsuranceCoverage.CoverageID" ,
+            "_Peril._ReinsuranceCoverage.SectionID" ,
+            "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+            "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+            "_Region.Region" ,
+            "_Region._ReinsuranceCoverage.CoverageID" ,
+            "_Region._ReinsuranceCoverage.SectionID" ,
+            "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+            "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."NonProportionalCoverageLimitDeductableType",
+            "OLD"."_CededRiskCurrency.Currency",
+            "OLD"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+            "OLD"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+            "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD"."_ClassOfInsurance.ClassOfInsurance",
+            "OLD"."_ClassOfInsurance.SubClassOfInsurance",
+            "OLD"."_ClassOfInsurance.SubSubClassOfInsurance",
+            "OLD"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+            "OLD"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+            "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD"."_Peril.Peril",
+            "OLD"."_Peril._ReinsuranceCoverage.CoverageID",
+            "OLD"."_Peril._ReinsuranceCoverage.SectionID",
+            "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD"."_Region.Region",
+            "OLD"."_Region._ReinsuranceCoverage.CoverageID",
+            "OLD"."_Region._ReinsuranceCoverage.SectionID",
+            "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::NonProportionalCoverageLimitDeductible" as "OLD"
+            on
+               ( case when "IN"."NonProportionalCoverageLimitDeductableType" is null then '' else "IN"."NonProportionalCoverageLimitDeductableType" end ) = "OLD"."NonProportionalCoverageLimitDeductableType" and
+               ( case when "IN"."_CededRiskCurrency.Currency" is null then '' else "IN"."_CededRiskCurrency.Currency" end ) = "OLD"."_CededRiskCurrency.Currency" and
+               ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" and
+               ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" and
+               ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+               ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+               ( case when "IN"."_ClassOfInsurance.ClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.ClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.ClassOfInsurance" and
+               ( case when "IN"."_ClassOfInsurance.SubClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.SubClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.SubClassOfInsurance" and
+               ( case when "IN"."_ClassOfInsurance.SubSubClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.SubSubClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.SubSubClassOfInsurance" and
+               ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" and
+               ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" and
+               ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+               ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+               ( case when "IN"."_Peril.Peril" is null then '' else "IN"."_Peril.Peril" end ) = "OLD"."_Peril.Peril" and
+               ( case when "IN"."_Peril._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_Peril._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_Peril._ReinsuranceCoverage.CoverageID" and
+               ( case when "IN"."_Peril._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_Peril._ReinsuranceCoverage.SectionID" end ) = "OLD"."_Peril._ReinsuranceCoverage.SectionID" and
+               ( case when "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+               ( case when "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+               ( case when "IN"."_Region.Region" is null then '' else "IN"."_Region.Region" end ) = "OLD"."_Region.Region" and
+               ( case when "IN"."_Region._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_Region._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_Region._ReinsuranceCoverage.CoverageID" and
+               ( case when "IN"."_Region._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_Region._ReinsuranceCoverage.SectionID" end ) = "OLD"."_Region._ReinsuranceCoverage.SectionID" and
+               ( case when "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+               ( case when "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "NonProportionalCoverageLimitDeductableType",
+        "_CededRiskCurrency.Currency",
+        "_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+        "_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+        "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "_ClassOfInsurance.ClassOfInsurance",
+        "_ClassOfInsurance.SubClassOfInsurance",
+        "_ClassOfInsurance.SubSubClassOfInsurance",
+        "_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+        "_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+        "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "_Peril.Peril",
+        "_Peril._ReinsuranceCoverage.CoverageID",
+        "_Peril._ReinsuranceCoverage.SectionID",
+        "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "_Region.Region",
+        "_Region._ReinsuranceCoverage.CoverageID",
+        "_Region._ReinsuranceCoverage.SectionID",
+        "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Category",
+        "EndDate",
+        "MaximumAmount",
+        "MinimumAmount",
+        "Percent",
+        "ReferenceBasis",
+        "StartDate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "NonProportionalCoverageLimitDeductableType" is null then '' else "NonProportionalCoverageLimitDeductableType" end ) as "NonProportionalCoverageLimitDeductableType",
+                    ( case when "_CededRiskCurrency.Currency" is null then '' else "_CededRiskCurrency.Currency" end ) as "_CededRiskCurrency.Currency",
+                    ( case when "_CededRiskCurrency._ReinsuranceCoverage.CoverageID" is null then '' else "_CededRiskCurrency._ReinsuranceCoverage.CoverageID" end ) as "_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                    ( case when "_CededRiskCurrency._ReinsuranceCoverage.SectionID" is null then '' else "_CededRiskCurrency._ReinsuranceCoverage.SectionID" end ) as "_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                    ( case when "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) as "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                    ( case when "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) as "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                    ( case when "_ClassOfInsurance.ClassOfInsurance" is null then '' else "_ClassOfInsurance.ClassOfInsurance" end ) as "_ClassOfInsurance.ClassOfInsurance",
+                    ( case when "_ClassOfInsurance.SubClassOfInsurance" is null then '' else "_ClassOfInsurance.SubClassOfInsurance" end ) as "_ClassOfInsurance.SubClassOfInsurance",
+                    ( case when "_ClassOfInsurance.SubSubClassOfInsurance" is null then '' else "_ClassOfInsurance.SubSubClassOfInsurance" end ) as "_ClassOfInsurance.SubSubClassOfInsurance",
+                    ( case when "_ClassOfInsurance._ReinsuranceCoverage.CoverageID" is null then '' else "_ClassOfInsurance._ReinsuranceCoverage.CoverageID" end ) as "_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                    ( case when "_ClassOfInsurance._ReinsuranceCoverage.SectionID" is null then '' else "_ClassOfInsurance._ReinsuranceCoverage.SectionID" end ) as "_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                    ( case when "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) as "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                    ( case when "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) as "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                    ( case when "_Peril.Peril" is null then '' else "_Peril.Peril" end ) as "_Peril.Peril",
+                    ( case when "_Peril._ReinsuranceCoverage.CoverageID" is null then '' else "_Peril._ReinsuranceCoverage.CoverageID" end ) as "_Peril._ReinsuranceCoverage.CoverageID",
+                    ( case when "_Peril._ReinsuranceCoverage.SectionID" is null then '' else "_Peril._ReinsuranceCoverage.SectionID" end ) as "_Peril._ReinsuranceCoverage.SectionID",
+                    ( case when "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) as "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                    ( case when "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) as "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                    ( case when "_Region.Region" is null then '' else "_Region.Region" end ) as "_Region.Region",
+                    ( case when "_Region._ReinsuranceCoverage.CoverageID" is null then '' else "_Region._ReinsuranceCoverage.CoverageID" end ) as "_Region._ReinsuranceCoverage.CoverageID",
+                    ( case when "_Region._ReinsuranceCoverage.SectionID" is null then '' else "_Region._ReinsuranceCoverage.SectionID" end ) as "_Region._ReinsuranceCoverage.SectionID",
+                    ( case when "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) as "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                    ( case when "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) as "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "Category"  ,
+                    "EndDate"  ,
+                    "MaximumAmount"  ,
+                    "MinimumAmount"  ,
+                    "Percent"  ,
+                    "ReferenceBasis"  ,
+                    "StartDate"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_NonProportionalCoverageLimitDeductableType" as "NonProportionalCoverageLimitDeductableType" ,
+                    "OLD__CededRiskCurrency.Currency" as "_CededRiskCurrency.Currency" ,
+                    "OLD__CededRiskCurrency._ReinsuranceCoverage.CoverageID" as "_CededRiskCurrency._ReinsuranceCoverage.CoverageID" ,
+                    "OLD__CededRiskCurrency._ReinsuranceCoverage.SectionID" as "_CededRiskCurrency._ReinsuranceCoverage.SectionID" ,
+                    "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+                    "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+                    "OLD__ClassOfInsurance.ClassOfInsurance" as "_ClassOfInsurance.ClassOfInsurance" ,
+                    "OLD__ClassOfInsurance.SubClassOfInsurance" as "_ClassOfInsurance.SubClassOfInsurance" ,
+                    "OLD__ClassOfInsurance.SubSubClassOfInsurance" as "_ClassOfInsurance.SubSubClassOfInsurance" ,
+                    "OLD__ClassOfInsurance._ReinsuranceCoverage.CoverageID" as "_ClassOfInsurance._ReinsuranceCoverage.CoverageID" ,
+                    "OLD__ClassOfInsurance._ReinsuranceCoverage.SectionID" as "_ClassOfInsurance._ReinsuranceCoverage.SectionID" ,
+                    "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+                    "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+                    "OLD__Peril.Peril" as "_Peril.Peril" ,
+                    "OLD__Peril._ReinsuranceCoverage.CoverageID" as "_Peril._ReinsuranceCoverage.CoverageID" ,
+                    "OLD__Peril._ReinsuranceCoverage.SectionID" as "_Peril._ReinsuranceCoverage.SectionID" ,
+                    "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+                    "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+                    "OLD__Region.Region" as "_Region.Region" ,
+                    "OLD__Region._ReinsuranceCoverage.CoverageID" as "_Region._ReinsuranceCoverage.CoverageID" ,
+                    "OLD__Region._ReinsuranceCoverage.SectionID" as "_Region._ReinsuranceCoverage.SectionID" ,
+                    "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+                    "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_Category" as "Category" ,
+                    "OLD_EndDate" as "EndDate" ,
+                    "OLD_MaximumAmount" as "MaximumAmount" ,
+                    "OLD_MinimumAmount" as "MinimumAmount" ,
+                    "OLD_Percent" as "Percent" ,
+                    "OLD_ReferenceBasis" as "ReferenceBasis" ,
+                    "OLD_StartDate" as "StartDate" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."NonProportionalCoverageLimitDeductableType",
+                        "IN"."_CededRiskCurrency.Currency",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_ClassOfInsurance.ClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubSubClassOfInsurance",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Peril.Peril",
+                        "IN"."_Peril._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Peril._ReinsuranceCoverage.SectionID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Region.Region",
+                        "IN"."_Region._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Region._ReinsuranceCoverage.SectionID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."NonProportionalCoverageLimitDeductableType" as "OLD_NonProportionalCoverageLimitDeductableType",
+                                "OLD"."_CededRiskCurrency.Currency" as "OLD__CededRiskCurrency.Currency",
+                                "OLD"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" as "OLD__CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                                "OLD"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" as "OLD__CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                                "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                "OLD"."_ClassOfInsurance.ClassOfInsurance" as "OLD__ClassOfInsurance.ClassOfInsurance",
+                                "OLD"."_ClassOfInsurance.SubClassOfInsurance" as "OLD__ClassOfInsurance.SubClassOfInsurance",
+                                "OLD"."_ClassOfInsurance.SubSubClassOfInsurance" as "OLD__ClassOfInsurance.SubSubClassOfInsurance",
+                                "OLD"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" as "OLD__ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                                "OLD"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" as "OLD__ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                                "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                "OLD"."_Peril.Peril" as "OLD__Peril.Peril",
+                                "OLD"."_Peril._ReinsuranceCoverage.CoverageID" as "OLD__Peril._ReinsuranceCoverage.CoverageID",
+                                "OLD"."_Peril._ReinsuranceCoverage.SectionID" as "OLD__Peril._ReinsuranceCoverage.SectionID",
+                                "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                "OLD"."_Region.Region" as "OLD__Region.Region",
+                                "OLD"."_Region._ReinsuranceCoverage.CoverageID" as "OLD__Region._ReinsuranceCoverage.CoverageID",
+                                "OLD"."_Region._ReinsuranceCoverage.SectionID" as "OLD__Region._ReinsuranceCoverage.SectionID",
+                                "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."Category" as "OLD_Category",
+                                "OLD"."EndDate" as "OLD_EndDate",
+                                "OLD"."MaximumAmount" as "OLD_MaximumAmount",
+                                "OLD"."MinimumAmount" as "OLD_MinimumAmount",
+                                "OLD"."Percent" as "OLD_Percent",
+                                "OLD"."ReferenceBasis" as "OLD_ReferenceBasis",
+                                "OLD"."StartDate" as "OLD_StartDate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::NonProportionalCoverageLimitDeductible" as "OLD"
+            on
+                ( case when "IN"."NonProportionalCoverageLimitDeductableType" is null then '' else "IN"."NonProportionalCoverageLimitDeductableType" end ) = "OLD"."NonProportionalCoverageLimitDeductableType" and
+                ( case when "IN"."_CededRiskCurrency.Currency" is null then '' else "IN"."_CededRiskCurrency.Currency" end ) = "OLD"."_CededRiskCurrency.Currency" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+                ( case when "IN"."_ClassOfInsurance.ClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.ClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.ClassOfInsurance" and
+                ( case when "IN"."_ClassOfInsurance.SubClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.SubClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.SubClassOfInsurance" and
+                ( case when "IN"."_ClassOfInsurance.SubSubClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.SubSubClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.SubSubClassOfInsurance" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+                ( case when "IN"."_Peril.Peril" is null then '' else "IN"."_Peril.Peril" end ) = "OLD"."_Peril.Peril" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_Peril._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_Peril._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_Peril._ReinsuranceCoverage.SectionID" end ) = "OLD"."_Peril._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+                ( case when "IN"."_Region.Region" is null then '' else "IN"."_Region.Region" end ) = "OLD"."_Region.Region" and
+                ( case when "IN"."_Region._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_Region._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_Region._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_Region._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_Region._ReinsuranceCoverage.SectionID" end ) = "OLD"."_Region._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_NonProportionalCoverageLimitDeductableType" as "NonProportionalCoverageLimitDeductableType",
+            "OLD__CededRiskCurrency.Currency" as "_CededRiskCurrency.Currency",
+            "OLD__CededRiskCurrency._ReinsuranceCoverage.CoverageID" as "_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+            "OLD__CededRiskCurrency._ReinsuranceCoverage.SectionID" as "_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+            "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD__ClassOfInsurance.ClassOfInsurance" as "_ClassOfInsurance.ClassOfInsurance",
+            "OLD__ClassOfInsurance.SubClassOfInsurance" as "_ClassOfInsurance.SubClassOfInsurance",
+            "OLD__ClassOfInsurance.SubSubClassOfInsurance" as "_ClassOfInsurance.SubSubClassOfInsurance",
+            "OLD__ClassOfInsurance._ReinsuranceCoverage.CoverageID" as "_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+            "OLD__ClassOfInsurance._ReinsuranceCoverage.SectionID" as "_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+            "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD__Peril.Peril" as "_Peril.Peril",
+            "OLD__Peril._ReinsuranceCoverage.CoverageID" as "_Peril._ReinsuranceCoverage.CoverageID",
+            "OLD__Peril._ReinsuranceCoverage.SectionID" as "_Peril._ReinsuranceCoverage.SectionID",
+            "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD__Region.Region" as "_Region.Region",
+            "OLD__Region._ReinsuranceCoverage.CoverageID" as "_Region._ReinsuranceCoverage.CoverageID",
+            "OLD__Region._ReinsuranceCoverage.SectionID" as "_Region._ReinsuranceCoverage.SectionID",
+            "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Category" as "Category",
+            "OLD_EndDate" as "EndDate",
+            "OLD_MaximumAmount" as "MaximumAmount",
+            "OLD_MinimumAmount" as "MinimumAmount",
+            "OLD_Percent" as "Percent",
+            "OLD_ReferenceBasis" as "ReferenceBasis",
+            "OLD_StartDate" as "StartDate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."NonProportionalCoverageLimitDeductableType",
+                        "IN"."_CededRiskCurrency.Currency",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_ClassOfInsurance.ClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubClassOfInsurance",
+                        "IN"."_ClassOfInsurance.SubSubClassOfInsurance",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Peril.Peril",
+                        "IN"."_Peril._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Peril._ReinsuranceCoverage.SectionID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "IN"."_Region.Region",
+                        "IN"."_Region._ReinsuranceCoverage.CoverageID",
+                        "IN"."_Region._ReinsuranceCoverage.SectionID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."NonProportionalCoverageLimitDeductableType" as "OLD_NonProportionalCoverageLimitDeductableType",
+                        "OLD"."_CededRiskCurrency.Currency" as "OLD__CededRiskCurrency.Currency",
+                        "OLD"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" as "OLD__CededRiskCurrency._ReinsuranceCoverage.CoverageID",
+                        "OLD"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" as "OLD__CededRiskCurrency._ReinsuranceCoverage.SectionID",
+                        "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."_ClassOfInsurance.ClassOfInsurance" as "OLD__ClassOfInsurance.ClassOfInsurance",
+                        "OLD"."_ClassOfInsurance.SubClassOfInsurance" as "OLD__ClassOfInsurance.SubClassOfInsurance",
+                        "OLD"."_ClassOfInsurance.SubSubClassOfInsurance" as "OLD__ClassOfInsurance.SubSubClassOfInsurance",
+                        "OLD"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" as "OLD__ClassOfInsurance._ReinsuranceCoverage.CoverageID",
+                        "OLD"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" as "OLD__ClassOfInsurance._ReinsuranceCoverage.SectionID",
+                        "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."_Peril.Peril" as "OLD__Peril.Peril",
+                        "OLD"."_Peril._ReinsuranceCoverage.CoverageID" as "OLD__Peril._ReinsuranceCoverage.CoverageID",
+                        "OLD"."_Peril._ReinsuranceCoverage.SectionID" as "OLD__Peril._ReinsuranceCoverage.SectionID",
+                        "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."_Region.Region" as "OLD__Region.Region",
+                        "OLD"."_Region._ReinsuranceCoverage.CoverageID" as "OLD__Region._ReinsuranceCoverage.CoverageID",
+                        "OLD"."_Region._ReinsuranceCoverage.SectionID" as "OLD__Region._ReinsuranceCoverage.SectionID",
+                        "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."Category" as "OLD_Category",
+                        "OLD"."EndDate" as "OLD_EndDate",
+                        "OLD"."MaximumAmount" as "OLD_MaximumAmount",
+                        "OLD"."MinimumAmount" as "OLD_MinimumAmount",
+                        "OLD"."Percent" as "OLD_Percent",
+                        "OLD"."ReferenceBasis" as "OLD_ReferenceBasis",
+                        "OLD"."StartDate" as "OLD_StartDate",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::NonProportionalCoverageLimitDeductible" as "OLD"
+            on
+                ( case when "IN"."NonProportionalCoverageLimitDeductableType" is null then '' else "IN"."NonProportionalCoverageLimitDeductableType" end ) = "OLD"."NonProportionalCoverageLimitDeductableType" and
+                ( case when "IN"."_CededRiskCurrency.Currency" is null then '' else "IN"."_CededRiskCurrency.Currency" end ) = "OLD"."_CededRiskCurrency.Currency" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_CededRiskCurrency._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+                ( case when "IN"."_ClassOfInsurance.ClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.ClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.ClassOfInsurance" and
+                ( case when "IN"."_ClassOfInsurance.SubClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.SubClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.SubClassOfInsurance" and
+                ( case when "IN"."_ClassOfInsurance.SubSubClassOfInsurance" is null then '' else "IN"."_ClassOfInsurance.SubSubClassOfInsurance" end ) = "OLD"."_ClassOfInsurance.SubSubClassOfInsurance" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+                ( case when "IN"."_Peril.Peril" is null then '' else "IN"."_Peril.Peril" end ) = "OLD"."_Peril.Peril" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_Peril._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_Peril._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_Peril._ReinsuranceCoverage.SectionID" end ) = "OLD"."_Peril._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_Peril._ReinsuranceCoverage._ReinsuranceContract.IDSystem" and
+                ( case when "IN"."_Region.Region" is null then '' else "IN"."_Region.Region" end ) = "OLD"."_Region.Region" and
+                ( case when "IN"."_Region._ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_Region._ReinsuranceCoverage.CoverageID" end ) = "OLD"."_Region._ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_Region._ReinsuranceCoverage.SectionID" is null then '' else "IN"."_Region._ReinsuranceCoverage.SectionID" end ) = "OLD"."_Region._ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_Region._ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

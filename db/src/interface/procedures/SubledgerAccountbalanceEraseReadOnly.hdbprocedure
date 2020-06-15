@@ -1,0 +1,116 @@
+PROCEDURE "sap.fsdm.procedures::SubledgerAccountbalanceEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::SubledgerAccountbalanceTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::SubledgerAccountbalanceTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "AccountingBalanceType" is null and
+                         "FiscalYear" is null and
+                         "PostingDate" is null and
+                         "_AccountingSystem.AccountingSystemID" is null and
+                         "_BusinessPartner.BusinessPartnerID" is null and
+                         "_BusinessSegment.OrganizationalUnitID" is null and
+                         "_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_BusinessSegmentAtCounterparty.OrganizationalUnitID" is null and
+                         "_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_CompanyCode.CompanyCode" is null and
+                         "_CompanyCode.ASSOC_Company.BusinessPartnerID" is null and
+                         "_FinancialContract.FinancialContractID" is null and
+                         "_FinancialContract.IDSystem" is null and
+                         "_GLAccount.GLAccount" is null and
+                         "_GLAccount._ChartOfAccounts.ChartOfAccountId" is null and
+                         "_ProductClass.ProductClass" is null and
+                         "_ProductClass.ProductClassificationSystem" is null and
+                         "_ProfitCenter.OrganizationalUnitID" is null and
+                         "_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_ProftCenterAtCouterparty.OrganizationalUnitID" is null and
+                         "_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "_SubledgerAccount.SubledgerAccount" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"AccountingBalanceType",
+"FiscalYear",
+"PostingDate",
+"_AccountingSystem.AccountingSystemID",
+"_BusinessPartner.BusinessPartnerID",
+"_BusinessSegment.OrganizationalUnitID",
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID",
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_CompanyCode.CompanyCode",
+"_CompanyCode.ASSOC_Company.BusinessPartnerID",
+"_FinancialContract.FinancialContractID",
+"_FinancialContract.IDSystem",
+"_GLAccount.GLAccount",
+"_GLAccount._ChartOfAccounts.ChartOfAccountId",
+"_ProductClass.ProductClass",
+"_ProductClass.ProductClassificationSystem",
+"_ProfitCenter.OrganizationalUnitID",
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_ProftCenterAtCouterparty.OrganizationalUnitID",
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+"_SubledgerAccount.SubledgerAccount"
+from "sap.fsdm::SubledgerAccountbalance" WHERE("AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessPartner.BusinessPartnerID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_SubledgerAccount.SubledgerAccount" 
+)in ( select "AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessPartner.BusinessPartnerID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_SubledgerAccount.SubledgerAccount" 
+from :ROW );
+
+END

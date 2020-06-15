@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::ClassificationOfTransferOrder_View" 
+as select
+      "ASSOC_TransferOrder.IDSystem" ,
+      "ASSOC_TransferOrder.TransferOrderID" ,
+      "ASSOC_TransferOrderClass.TransferOrderClass" ,
+      "ASSOC_TransferOrderClass.TransferOrderClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ClassificationOfTransferOrder"
+with associations
+(
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "ASSOC_TransferOrder"
+	  on "ASSOC_TransferOrder"."IDSystem" = "ASSOC_TransferOrder.IDSystem" AND 
+	     "ASSOC_TransferOrder"."TransferOrderID" = "ASSOC_TransferOrder.TransferOrderID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrderClass_View" as "ASSOC_TransferOrderClass"
+	  on "ASSOC_TransferOrderClass"."TransferOrderClass" = "ASSOC_TransferOrderClass.TransferOrderClass" AND 
+	     "ASSOC_TransferOrderClass"."TransferOrderClassificationSystem" = "ASSOC_TransferOrderClass.TransferOrderClassificationSystem"
+	     
+);

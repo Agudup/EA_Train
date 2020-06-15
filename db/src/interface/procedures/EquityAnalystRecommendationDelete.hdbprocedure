@@ -1,0 +1,260 @@
+PROCEDURE "sap.fsdm.procedures::EquityAnalystRecommendationDelete" (IN ROW "sap.fsdm.tabletypes::EquityAnalystRecommendationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Analyst=' || TO_VARCHAR("Analyst") || ' ' ||
+                'Firm=' || TO_VARCHAR("Firm") || ' ' ||
+                'PublicationDate=' || TO_VARCHAR("PublicationDate") || ' ' ||
+                '_EquityInstrument.FinancialInstrumentID=' || TO_VARCHAR("_EquityInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Analyst",
+                        "IN"."Firm",
+                        "IN"."PublicationDate",
+                        "IN"."_EquityInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Analyst",
+                        "IN"."Firm",
+                        "IN"."PublicationDate",
+                        "IN"."_EquityInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Analyst",
+                        "Firm",
+                        "PublicationDate",
+                        "_EquityInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Analyst",
+                                    "IN"."Firm",
+                                    "IN"."PublicationDate",
+                                    "IN"."_EquityInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Analyst",
+                                    "IN"."Firm",
+                                    "IN"."PublicationDate",
+                                    "IN"."_EquityInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::EquityAnalystRecommendation" (
+        "Analyst",
+        "Firm",
+        "PublicationDate",
+        "_EquityInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Recommendation",
+        "TargetPrice",
+        "TargetPriceCurrency",
+        "TargetPriceDate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Analyst" as "Analyst" ,
+            "OLD_Firm" as "Firm" ,
+            "OLD_PublicationDate" as "PublicationDate" ,
+            "OLD__EquityInstrument.FinancialInstrumentID" as "_EquityInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_Recommendation" as "Recommendation" ,
+            "OLD_TargetPrice" as "TargetPrice" ,
+            "OLD_TargetPriceCurrency" as "TargetPriceCurrency" ,
+            "OLD_TargetPriceDate" as "TargetPriceDate" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."Analyst",
+                        "OLD"."Firm",
+                        "OLD"."PublicationDate",
+                        "OLD"."_EquityInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."Analyst" as "OLD_Analyst",
+                "OLD"."Firm" as "OLD_Firm",
+                "OLD"."PublicationDate" as "OLD_PublicationDate",
+                "OLD"."_EquityInstrument.FinancialInstrumentID" as "OLD__EquityInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."Recommendation" as "OLD_Recommendation",
+                "OLD"."TargetPrice" as "OLD_TargetPrice",
+                "OLD"."TargetPriceCurrency" as "OLD_TargetPriceCurrency",
+                "OLD"."TargetPriceDate" as "OLD_TargetPriceDate",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EquityAnalystRecommendation" as "OLD"
+            on
+                      ( "IN"."Analyst" = "OLD"."Analyst" or "IN"."Analyst" is null ) and
+                      ( "IN"."Firm" = "OLD"."Firm" or "IN"."Firm" is null ) and
+                      ( "IN"."PublicationDate" = "OLD"."PublicationDate" or "IN"."PublicationDate" is null ) and
+                      ( "IN"."_EquityInstrument.FinancialInstrumentID" = "OLD"."_EquityInstrument.FinancialInstrumentID" or "IN"."_EquityInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::EquityAnalystRecommendation" (
+        "Analyst",
+        "Firm",
+        "PublicationDate",
+        "_EquityInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Recommendation",
+        "TargetPrice",
+        "TargetPriceCurrency",
+        "TargetPriceDate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Analyst" as "Analyst",
+            "OLD_Firm" as "Firm",
+            "OLD_PublicationDate" as "PublicationDate",
+            "OLD__EquityInstrument.FinancialInstrumentID" as "_EquityInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Recommendation" as "Recommendation",
+            "OLD_TargetPrice" as "TargetPrice",
+            "OLD_TargetPriceCurrency" as "TargetPriceCurrency",
+            "OLD_TargetPriceDate" as "TargetPriceDate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."Analyst",
+                        "OLD"."Firm",
+                        "OLD"."PublicationDate",
+                        "OLD"."_EquityInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."Analyst" as "OLD_Analyst",
+                "OLD"."Firm" as "OLD_Firm",
+                "OLD"."PublicationDate" as "OLD_PublicationDate",
+                "OLD"."_EquityInstrument.FinancialInstrumentID" as "OLD__EquityInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."Recommendation" as "OLD_Recommendation",
+                "OLD"."TargetPrice" as "OLD_TargetPrice",
+                "OLD"."TargetPriceCurrency" as "OLD_TargetPriceCurrency",
+                "OLD"."TargetPriceDate" as "OLD_TargetPriceDate",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EquityAnalystRecommendation" as "OLD"
+            on
+                                                ( "IN"."Analyst" = "OLD"."Analyst" or "IN"."Analyst" is null ) and
+                                                ( "IN"."Firm" = "OLD"."Firm" or "IN"."Firm" is null ) and
+                                                ( "IN"."PublicationDate" = "OLD"."PublicationDate" or "IN"."PublicationDate" is null ) and
+                                                ( "IN"."_EquityInstrument.FinancialInstrumentID" = "OLD"."_EquityInstrument.FinancialInstrumentID" or "IN"."_EquityInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::EquityAnalystRecommendation"
+    where (
+        "Analyst",
+        "Firm",
+        "PublicationDate",
+        "_EquityInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."Analyst",
+            "OLD"."Firm",
+            "OLD"."PublicationDate",
+            "OLD"."_EquityInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::EquityAnalystRecommendation" as "OLD"
+        on
+                                       ( "IN"."Analyst" = "OLD"."Analyst" or "IN"."Analyst" is null ) and
+                                       ( "IN"."Firm" = "OLD"."Firm" or "IN"."Firm" is null ) and
+                                       ( "IN"."PublicationDate" = "OLD"."PublicationDate" or "IN"."PublicationDate" is null ) and
+                                       ( "IN"."_EquityInstrument.FinancialInstrumentID" = "OLD"."_EquityInstrument.FinancialInstrumentID" or "IN"."_EquityInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::AccountHolderOfExternalSettlementAccount_View" 
+as select
+      "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" ,
+      "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" ,
+      "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" ,
+      "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AccountHolderOfExternalSettlementAccount"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_AccountHolderOfExternalSettlementAccount"
+	  on "_AccountHolderOfExternalSettlementAccount"."BusinessPartnerID" = "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::SettlementAccountAssignment_View" as "_ExternalSettlementAccountOfAccountHolder"
+	  on "_ExternalSettlementAccountOfAccountHolder"."ASSOC_BaseContract.FinancialContractID" = "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" AND 
+	     "_ExternalSettlementAccountOfAccountHolder"."ASSOC_BaseContract.IDSystem" = "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" AND 
+	     "_ExternalSettlementAccountOfAccountHolder"."SettlementAccountRole" = "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole"
+	     
+);

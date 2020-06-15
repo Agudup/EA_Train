@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::StandardPaymentListEntry_View" 
+as select
+      "PeriodUntilPayment" ,
+      "ASSOC_StandardPaymentList.SequenceNumber" ,
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" ,
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" ,
+      "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "PaymentAmount" ,
+      "PaymentCurrency" ,
+      "PaymentPercentage" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::StandardPaymentListEntry"
+with associations
+(
+	join "sap.fsdm.SQLViews::StandardPaymentSchedule_View" as "ASSOC_StandardPaymentList"
+	  on "ASSOC_StandardPaymentList"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardPaymentList"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardPaymentList"."ASSOC_FinancialStandardProduct.IDSystem" = "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.IDSystem" AND 
+	     "ASSOC_StandardPaymentList"."ASSOC_FinancialStandardProduct.PricingScheme" = "ASSOC_StandardPaymentList.ASSOC_FinancialStandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardPaymentList"."SequenceNumber" = "ASSOC_StandardPaymentList.SequenceNumber"
+	     
+);

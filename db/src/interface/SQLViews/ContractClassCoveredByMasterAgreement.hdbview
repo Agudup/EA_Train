@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::ContractClassCoveredByMasterAgreement_View" 
+as select
+      "_MasterAgreement.FinancialContractID" ,
+      "_MasterAgreement.IDSystem" ,
+      "_ProductClass.ProductClass" ,
+      "_ProductClass.ProductClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ContractClassCoveredByMasterAgreement"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_MasterAgreement"
+	  on "_MasterAgreement"."FinancialContractID" = "_MasterAgreement.FinancialContractID" AND 
+	     "_MasterAgreement"."IDSystem" = "_MasterAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ProductClass_View" as "_ProductClass"
+	  on "_ProductClass"."ProductClassificationSystem" = "_ProductClass.ProductClassificationSystem" AND 
+	     "_ProductClass"."ProductClass" = "_ProductClass.ProductClass"
+	     
+);

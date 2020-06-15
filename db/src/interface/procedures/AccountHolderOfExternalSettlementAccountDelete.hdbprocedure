@@ -1,0 +1,47 @@
+PROCEDURE "sap.fsdm.procedures::AccountHolderOfExternalSettlementAccountDelete" (IN ROW "sap.fsdm.tabletypes::AccountHolderOfExternalSettlementAccountTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" is null and
+                         "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" is null and
+                         "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" is null and
+                         "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning   --delete matching data in current tabledelete from "sap.fsdm::AccountHolderOfExternalSettlementAccount" WHERE("_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" ,
+"_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" ,
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" ,
+"_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" 
+)in ( select 
+"OLD"."_AccountHolderOfExternalSettlementAccount.BusinessPartnerID"  as "_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" ,
+"OLD"."_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole"  as "_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" ,
+"OLD"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID"  as "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" ,
+"OLD"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem"  as "_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::AccountHolderOfExternalSettlementAccount" AS "OLD"
+  ON
+  ( "IN"."_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" = "OLD"."_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" or "IN"."_AccountHolderOfExternalSettlementAccount.BusinessPartnerID" is null ) and
+  ( "IN"."_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" = "OLD"."_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" or "IN"."_ExternalSettlementAccountOfAccountHolder.SettlementAccountRole" is null ) and
+  ( "IN"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" = "OLD"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" or "IN"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.FinancialContractID" is null ) and
+  ( "IN"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" = "OLD"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" or "IN"."_ExternalSettlementAccountOfAccountHolder.ASSOC_BaseContract.IDSystem" is null ) 
+);
+
+END

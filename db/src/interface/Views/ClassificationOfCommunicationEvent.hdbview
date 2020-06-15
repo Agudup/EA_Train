@@ -1,0 +1,19 @@
+view "sap.fsdm.Views::ClassificationOfCommunicationEvent_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ASSOC_CommunicationEvent.CommunicationEventID" as "ASSOC_CommunicationEvent_CommunicationEventID",
+      "ASSOC_CommunicationEvent.IDSystem" as "ASSOC_CommunicationEvent_IDSystem",
+      "ASSOC_CommunicationEventClass.CommunicationEventClass" as "ASSOC_CommunicationEventClass_CommunicationEventClass",
+      "ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" as "ASSOC_CommunicationEventClass_CommunicationEventClassificationSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::ClassificationOfCommunicationEvent"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

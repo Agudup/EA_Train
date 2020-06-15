@@ -1,0 +1,27 @@
+view "sap.fsdm.Views::IncomeInformation_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "IncomeInformationType" as "IncomeInformationType",
+      "RentedPropertyType" as "RentedPropertyType",
+      "_PhysicalAsset.PhysicalAssetID" as "_PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "GrossOperatingIncome" as "GrossOperatingIncome",
+      "GrossOperatingIncomeCurrency" as "GrossOperatingIncomeCurrency",
+      "IncomePeriodLength" as "IncomePeriodLength",
+      "IncomePeriodTimeUnit" as "IncomePeriodTimeUnit",
+      "NetRentIncome" as "NetRentIncome",
+      "NetRentIncomeCurrency" as "NetRentIncomeCurrency",
+      "OperatingExpenses" as "OperatingExpenses",
+      "OperatingExpensesCurrency" as "OperatingExpensesCurrency",
+      "VacancyRate" as "VacancyRate",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::IncomeInformation"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

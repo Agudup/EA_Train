@@ -1,0 +1,234 @@
+PROCEDURE "sap.fsdm.procedures::NettingSetReadOnly" (IN ROW "sap.fsdm.tabletypes::NettingSetTT", OUT CURR_DEL "sap.fsdm.tabletypes::NettingSetTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::NettingSetTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'NettingSetID=' || TO_VARCHAR("NettingSetID") || ' ' ||
+                '_MasterAgreement.FinancialContractID=' || TO_VARCHAR("_MasterAgreement.FinancialContractID") || ' ' ||
+                '_MasterAgreement.IDSystem=' || TO_VARCHAR("_MasterAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."NettingSetID",
+                        "IN"."_MasterAgreement.FinancialContractID",
+                        "IN"."_MasterAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."NettingSetID",
+                        "IN"."_MasterAgreement.FinancialContractID",
+                        "IN"."_MasterAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "NettingSetID",
+                        "_MasterAgreement.FinancialContractID",
+                        "_MasterAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."NettingSetID",
+                                    "IN"."_MasterAgreement.FinancialContractID",
+                                    "IN"."_MasterAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."NettingSetID",
+                                    "IN"."_MasterAgreement.FinancialContractID",
+                                    "IN"."_MasterAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "NettingSetID",
+        "_MasterAgreement.FinancialContractID",
+        "_MasterAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::NettingSet" WHERE
+        (            "NettingSetID" ,
+            "_MasterAgreement.FinancialContractID" ,
+            "_MasterAgreement.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."NettingSetID",
+            "OLD"."_MasterAgreement.FinancialContractID",
+            "OLD"."_MasterAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::NettingSet" as "OLD"
+            on
+               ( case when "IN"."NettingSetID" is null then '' else "IN"."NettingSetID" end ) = "OLD"."NettingSetID" and
+               ( case when "IN"."_MasterAgreement.FinancialContractID" is null then '' else "IN"."_MasterAgreement.FinancialContractID" end ) = "OLD"."_MasterAgreement.FinancialContractID" and
+               ( case when "IN"."_MasterAgreement.IDSystem" is null then '' else "IN"."_MasterAgreement.IDSystem" end ) = "OLD"."_MasterAgreement.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "NettingSetID",
+        "_MasterAgreement.FinancialContractID",
+        "_MasterAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "NettingSetDescription",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "NettingSetID" is null then '' else "NettingSetID" end ) as "NettingSetID",
+                    ( case when "_MasterAgreement.FinancialContractID" is null then '' else "_MasterAgreement.FinancialContractID" end ) as "_MasterAgreement.FinancialContractID",
+                    ( case when "_MasterAgreement.IDSystem" is null then '' else "_MasterAgreement.IDSystem" end ) as "_MasterAgreement.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "NettingSetDescription"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_NettingSetID" as "NettingSetID" ,
+                    "OLD__MasterAgreement.FinancialContractID" as "_MasterAgreement.FinancialContractID" ,
+                    "OLD__MasterAgreement.IDSystem" as "_MasterAgreement.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_NettingSetDescription" as "NettingSetDescription" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."NettingSetID",
+                        "IN"."_MasterAgreement.FinancialContractID",
+                        "IN"."_MasterAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."NettingSetID" as "OLD_NettingSetID",
+                                "OLD"."_MasterAgreement.FinancialContractID" as "OLD__MasterAgreement.FinancialContractID",
+                                "OLD"."_MasterAgreement.IDSystem" as "OLD__MasterAgreement.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."NettingSetDescription" as "OLD_NettingSetDescription",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::NettingSet" as "OLD"
+            on
+                ( case when "IN"."NettingSetID" is null then '' else "IN"."NettingSetID" end ) = "OLD"."NettingSetID" and
+                ( case when "IN"."_MasterAgreement.FinancialContractID" is null then '' else "IN"."_MasterAgreement.FinancialContractID" end ) = "OLD"."_MasterAgreement.FinancialContractID" and
+                ( case when "IN"."_MasterAgreement.IDSystem" is null then '' else "IN"."_MasterAgreement.IDSystem" end ) = "OLD"."_MasterAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_NettingSetID" as "NettingSetID",
+            "OLD__MasterAgreement.FinancialContractID" as "_MasterAgreement.FinancialContractID",
+            "OLD__MasterAgreement.IDSystem" as "_MasterAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_NettingSetDescription" as "NettingSetDescription",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."NettingSetID",
+                        "IN"."_MasterAgreement.FinancialContractID",
+                        "IN"."_MasterAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."NettingSetID" as "OLD_NettingSetID",
+                        "OLD"."_MasterAgreement.FinancialContractID" as "OLD__MasterAgreement.FinancialContractID",
+                        "OLD"."_MasterAgreement.IDSystem" as "OLD__MasterAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."NettingSetDescription" as "OLD_NettingSetDescription",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::NettingSet" as "OLD"
+            on
+                ( case when "IN"."NettingSetID" is null then '' else "IN"."NettingSetID" end ) = "OLD"."NettingSetID" and
+                ( case when "IN"."_MasterAgreement.FinancialContractID" is null then '' else "IN"."_MasterAgreement.FinancialContractID" end ) = "OLD"."_MasterAgreement.FinancialContractID" and
+                ( case when "IN"."_MasterAgreement.IDSystem" is null then '' else "IN"."_MasterAgreement.IDSystem" end ) = "OLD"."_MasterAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

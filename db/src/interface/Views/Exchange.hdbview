@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::Exchange_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "MarketIdentifierCode" as "MarketIdentifierCode",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_OrganizationRunningTheExchange.BusinessPartnerID" as "_OrganizationRunningTheExchange_BusinessPartnerID",
+      "AfterHoursTradingCloseTime" as "AfterHoursTradingCloseTime",
+      "CloseTime" as "CloseTime",
+      "CountryCode" as "CountryCode",
+      "Name" as "Name",
+      "OpenTime" as "OpenTime",
+      "PreMarketTradingOpenTime" as "PreMarketTradingOpenTime",
+      "RecognizedExchangeAsPerCRR" as "RecognizedExchangeAsPerCRR",
+      "TimeZone" as "TimeZone",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::Exchange"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

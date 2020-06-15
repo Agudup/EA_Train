@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::CreditDefaultSwapProtectionLeg_View" ( IN I_BUSINESS_DATE TIMESTAMP, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_CreditDefaultSwap.FinancialContractID" as "_CreditDefaultSwap_FinancialContractID",
+      "_CreditDefaultSwap.IDSystem" as "_CreditDefaultSwap_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_Basket.FinancialInstrumentID" as "_Basket_FinancialInstrumentID",
+      "_CDSIndex.IndexID" as "_CDSIndex_IndexID",
+      "_DebtInstrument.FinancialInstrumentID" as "_DebtInstrument_FinancialInstrumentID",
+      "CreditEventBackstopDate" as "CreditEventBackstopDate",
+      "ProtectionCurrency" as "ProtectionCurrency",
+      "ProtectionStartDate" as "ProtectionStartDate",
+      "ReferenceEntityPairCode" as "ReferenceEntityPairCode",
+      "ReferencePrice" as "ReferencePrice",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CreditDefaultSwapProtectionLeg"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

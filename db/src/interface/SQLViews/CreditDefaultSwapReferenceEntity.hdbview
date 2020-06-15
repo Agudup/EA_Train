@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::CreditDefaultSwapReferenceEntity_View" 
+as select
+      "_Basket.FinancialInstrumentID" ,
+      "_ProtectionLeg._CreditDefaultSwap.FinancialContractID" ,
+      "_ProtectionLeg._CreditDefaultSwap.IDSystem" ,
+      "_ReferenceEntity.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "IsEntityExcluded" ,
+      "ReferenceEntityPairCode" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CreditDefaultSwapReferenceEntity"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Basket"
+	  on "_Basket"."FinancialInstrumentID" = "_Basket.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditDefaultSwapProtectionLeg_View" as "_ProtectionLeg"
+	  on "_ProtectionLeg"."_CreditDefaultSwap.FinancialContractID" = "_ProtectionLeg._CreditDefaultSwap.FinancialContractID" AND 
+	     "_ProtectionLeg"."_CreditDefaultSwap.IDSystem" = "_ProtectionLeg._CreditDefaultSwap.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_ReferenceEntity"
+	  on "_ReferenceEntity"."BusinessPartnerID" = "_ReferenceEntity.BusinessPartnerID"
+	     
+);

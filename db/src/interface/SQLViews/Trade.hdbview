@@ -1,0 +1,219 @@
+view "sap.fsdm.SQLViews::Trade_View" 
+as select
+      "IDSystem" ,
+      "TradeID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_BankingChannel.BankingChannelID" ,
+      "_BenchmarkInstrument.FinancialInstrumentID" ,
+      "_BenchmarkYieldCurve.YieldCurveID" ,
+      "_BusinessEventDataOwner.BusinessPartnerID" ,
+      "_ClientDerivativesAccount.FinancialContractID" ,
+      "_ClientDerivativesAccount.IDSystem" ,
+      "_Collection.CollectionID" ,
+      "_Collection.IDSystem" ,
+      "_CollectionAtCounterparty.CollectionID" ,
+      "_CollectionAtCounterparty.IDSystem" ,
+      "_Commodity.CommodityID" ,
+      "_DerivativesAccountManagedByExchange.FinancialContractID" ,
+      "_DerivativesAccountManagedByExchange.IDSystem" ,
+      "_Exchange.MarketIdentifierCode" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_FuturesContractSpecification.FinancialInstrumentID" ,
+      "_OptionsContractSpecification.FinancialInstrumentID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "_Security.FinancialInstrumentID" ,
+      "Accrual" ,
+      "AgreedRate" ,
+      "AmountInBaseCurrency" ,
+      "AmountInTradedCurrency" ,
+      "BaseCurrency" ,
+      "BenchmarkPrice" ,
+      "BenchmarkPriceType" ,
+      "BrokerIsLiable" ,
+      "BuyerAllowedToRetainCollateral" ,
+      "ClearingMethod" ,
+      "CloseOutIndicator" ,
+      "ContractSize" ,
+      "ContractualCurrency" ,
+      "DeliveryDate" ,
+      "DenominationCurrency" ,
+      "DivideByExchangeRate" ,
+      "ExchangeRateForSettlement" ,
+      "ExpirationDate" ,
+      "FirstNoticeDate" ,
+      "FuturesPrice" ,
+      "FuturesPriceCurrency" ,
+      "HedgePurpose" ,
+      "IndividualAtCounterpartyResponsible" ,
+      "LastNoticeDate" ,
+      "LastQuantityEffectOnPosition" ,
+      "LifecycleStatus" ,
+      "ListedDerivativeSymbol" ,
+      "ListedDerivativeTradeCategory" ,
+      "LongPositionEffect" ,
+      "ManufacturedPayments" ,
+      "MaturityDateForYieldCalculation" ,
+      "NettingSetID" ,
+      "NominalAmount" ,
+      "NominalAmountOfInstrumentsSold" ,
+      "NumberOfContracts" ,
+      "OpenMaturity" ,
+      "OptionPremium" ,
+      "OptionPremiumCurrency" ,
+      "Price" ,
+      "PriceAsPercentOfPar" ,
+      "PriceType" ,
+      "PurchaseDate" ,
+      "PurchasePricePerInstrument" ,
+      "PutOrCall" ,
+      "Quantity" ,
+      "QuantitySold" ,
+      "RedemptionPriceForYield" ,
+      "RedemptionPriceForYieldType" ,
+      "RepoInterestAmount" ,
+      "RepoToMaturity" ,
+      "RepurchaseDate" ,
+      "RepurchasePricePerInstrument" ,
+      "ResaleAllowed" ,
+      "SecurityTradeCategory" ,
+      "SettlementAmount" ,
+      "SettlementCurrency" ,
+      "SettlementDate" ,
+      "SettlementMethod" ,
+      "ShortPositionEffect" ,
+      "Side" ,
+      "Spread" ,
+      "StatusChangeReason" ,
+      "StrikePrice" ,
+      "StrikePriceCurrency" ,
+      "TotalPurchasePrice" ,
+      "TotalRepurchasePrice" ,
+      "TradeCategory" ,
+      "TradeCurrency" ,
+      "TradeGroup" ,
+      "TradeMessageID" ,
+      "TradeSequenceNumber" ,
+      "TradeTimestamp" ,
+      "TradeType" ,
+      "TradedCurrency" ,
+      "UnderlyingFuturesExpirationDate" ,
+      "Unit" ,
+      "Yield" ,
+      "YieldCalculationDate" ,
+      "YieldType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Trade"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartnerTradeAssignment_View" as "_BusinessPartnerTradeAssignment__Trade"
+	  on "IDSystem" = "_BusinessPartnerTradeAssignment__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_BusinessPartnerTradeAssignment__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::CancellationOption_View" as "_CancellationOption__Trade"
+	  on "TradeID" = "_CancellationOption__Trade"."_Trade.TradeID" AND 
+	     "IDSystem" = "_CancellationOption__Trade"."_Trade.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ClassificationOfTrade_View" as "_ClassificationOfTrade__Trade"
+	  on "TradeID" = "_ClassificationOfTrade__Trade"."_Trade.TradeID" AND 
+	     "IDSystem" = "_ClassificationOfTrade__Trade"."_Trade.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Document_View" as "_Document__Trade"
+	  on "IDSystem" = "_Document__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_Document__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::Fee_View" as "_Fee__Trade"
+	  on "IDSystem" = "_Fee__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_Fee__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::Interest_View" as "_Interest__Trade"
+	  on "IDSystem" = "_Interest__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_Interest__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::OrganizationalUnitTradeAssignment_View" as "_OrganizationalUnitTradeAssignment__Trade"
+	  on "IDSystem" = "_OrganizationalUnitTradeAssignment__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_OrganizationalUnitTradeAssignment__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogAssignment_View" as "_ProductCatalogAssignment__Trade"
+	  on "TradeID" = "_ProductCatalogAssignment__Trade"."_Trade.TradeID" AND 
+	     "IDSystem" = "_ProductCatalogAssignment__Trade"."_Trade.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::RegulatoryIndicatorForTrade_View" as "_RegulatoryIndicatorForTrade__Trade"
+	  on "IDSystem" = "_RegulatoryIndicatorForTrade__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_RegulatoryIndicatorForTrade__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement__Trade"
+	  on "IDSystem" = "_Settlement__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_Settlement__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "_BankingChannel"
+	  on "_BankingChannel"."BankingChannelID" = "_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_BenchmarkInstrument"
+	  on "_BenchmarkInstrument"."FinancialInstrumentID" = "_BenchmarkInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::YieldCurve_View" as "_BenchmarkYieldCurve"
+	  on "_BenchmarkYieldCurve"."YieldCurveID" = "_BenchmarkYieldCurve.YieldCurveID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_BusinessEventDataOwner"
+	  on "_BusinessEventDataOwner"."BusinessPartnerID" = "_BusinessEventDataOwner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_ClientDerivativesAccount"
+	  on "_ClientDerivativesAccount"."FinancialContractID" = "_ClientDerivativesAccount.FinancialContractID" AND 
+	     "_ClientDerivativesAccount"."IDSystem" = "_ClientDerivativesAccount.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_Collection"
+	  on "_Collection"."CollectionID" = "_Collection.CollectionID" AND 
+	     "_Collection"."IDSystem" = "_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_CollectionAtCounterparty"
+	  on "_CollectionAtCounterparty"."CollectionID" = "_CollectionAtCounterparty.CollectionID" AND 
+	     "_CollectionAtCounterparty"."IDSystem" = "_CollectionAtCounterparty.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Commodity_View" as "_Commodity"
+	  on "_Commodity"."CommodityID" = "_Commodity.CommodityID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_DerivativesAccountManagedByExchange"
+	  on "_DerivativesAccountManagedByExchange"."FinancialContractID" = "_DerivativesAccountManagedByExchange.FinancialContractID" AND 
+	     "_DerivativesAccountManagedByExchange"."IDSystem" = "_DerivativesAccountManagedByExchange.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Exchange_View" as "_Exchange"
+	  on "_Exchange"."MarketIdentifierCode" = "_Exchange.MarketIdentifierCode"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FuturesContractSpecification"
+	  on "_FuturesContractSpecification"."FinancialInstrumentID" = "_FuturesContractSpecification.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_OptionsContractSpecification"
+	  on "_OptionsContractSpecification"."FinancialInstrumentID" = "_OptionsContractSpecification.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem" AND 
+	     "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Security"
+	  on "_Security"."FinancialInstrumentID" = "_Security.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::TradeLotAssignment_View" as "_TradeLotAssignment__Trade"
+	  on "IDSystem" = "_TradeLotAssignment__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_TradeLotAssignment__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::TradeReferenceID_View" as "_TradeReferenceID__Trade"
+	  on "IDSystem" = "_TradeReferenceID__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_TradeReferenceID__Trade"."_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::TradeStatus_View" as "_TradeStatus__Trade"
+	  on "IDSystem" = "_TradeStatus__Trade"."_Trade.IDSystem" AND 
+	     "TradeID" = "_TradeStatus__Trade"."_Trade.TradeID"
+	     
+);

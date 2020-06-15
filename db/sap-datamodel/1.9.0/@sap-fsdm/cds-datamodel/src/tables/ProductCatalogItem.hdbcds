@@ -1,0 +1,41 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"ProductCatalog";
+
+entity "ProductCatalogItem" {
+    key "ProductCatalogItem"            : String(128)                                 default '';
+    key "_ProductCatalog"               : association to ProductCatalog { CatalogID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                not null;
+        "SystemValidTo"                 : UTCTimestamp                                not null;
+        "ProductCatalogItemCategory"    : String(256);
+        "ProductCatalogItemDescription" : String(256);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ProductCatalogItem_Historical" {
+    "ProductCatalogItem"            : String(128)                                 default '' not null;
+    "_ProductCatalog"               : association to ProductCatalog { CatalogID } not null;
+    "BusinessValidFrom"             : LocalDate                                   not null;
+    "BusinessValidTo"               : LocalDate                                   not null;
+    "SystemValidFrom"               : UTCTimestamp                                not null;
+    "SystemValidTo"                 : UTCTimestamp                                not null;
+    "ProductCatalogItemCategory"    : String(256);
+    "ProductCatalogItemDescription" : String(256);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

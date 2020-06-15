@@ -1,0 +1,215 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"CreditCardLoan";
+
+entity "MonetaryBalance" {
+    key "PostingOrValueDateCutoff"                    : String(40);
+    key "RoleOfCurrency"                              : String(40)                                               default '';
+    key "ASSOC_BalanceForCcyOfMultiCcyAccount"        : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                                 PositionCurrency,
+                                                                                                                 ASSOC_MultiCcyAccnt
+                                                                                                               } not null;
+    key "ASSOC_FinancialContract"                     : association to FinancialContract {
+                                                                                           FinancialContractID,
+                                                                                           IDSystem
+                                                                                         }                       not null;
+    key "_CreditCardLoan"                             : association to CreditCardLoan {
+                                                                                        ID,
+                                                                                        _CreditCardAgreement
+                                                                                      }                          not null;
+    key "BusinessValidFrom"                           : LocalDate;
+    key "BusinessValidTo"                             : LocalDate;
+        "SystemValidFrom"                             : UTCTimestamp                                             not null;
+        "SystemValidTo"                               : UTCTimestamp                                             not null;
+        "AccountBalance"                              : Decimal(34, 6);
+        "AccountBalanceCurrency"                      : String(3);
+        "AnnualTotalFreeWithdrawalAmount"             : Decimal(34, 6);
+        "AnnualTotalWithdrawalAmount"                 : Decimal(34, 6);
+        "BalanceCurrency"                             : String(3);
+        "CapitalizedFees"                             : Decimal(34, 6);
+        "CapitalizedFeesCurrency"                     : String(3);
+        "CapitalizedInterest"                         : Decimal(34, 6);
+        "CapitalizedInterestCurrency"                 : String(3);
+        "CardBalanceOpenToBuy"                        : Decimal(34, 6);
+        "CardBalanceOpenToBuyCurrency"                : String(3);
+        "CarriedOverBalance"                          : Decimal(34, 6);
+        "CarriedOverBalanceCurrency"                  : String(3);
+        "CashBalance"                                 : Decimal(34, 6);
+        "CashBalanceCurrency"                         : String(3);
+        "CashBalanceOpenToBuy"                        : Decimal(34, 6);
+        "CashBalanceOpenToBuyCurrency"                : String(3);
+        "ClaimableAmount"                             : Decimal(34, 6);
+        "ClaimableAmountCurrency"                     : String(3);
+        "ClaimedAmount"                               : Decimal(34, 6);
+        "ClaimedAmountCurrency"                       : String(3);
+        "DisbursedPrincipal"                          : Decimal(34, 6);
+        "DisbursedPrincipalCurrency"                  : String(3);
+        "FeesPastDue"                                 : Decimal(34, 6);
+        "FeesPastDueCurrency"                         : String(3);
+        "InterestPastDue"                             : Decimal(34, 6);
+        "InterestPastDueCurrency"                     : String(3);
+        "LienAmount"                                  : Decimal(34, 6);
+        "LienAmountCurrency"                          : String(3);
+        "MonetaryBalanceCategory"                     : String(40);
+        "OutstandingLoanAmount"                       : Decimal(34, 6);
+        "OutstandingLoanAmountCurrency"               : String(3);
+        "OutstandingPrincipal"                        : Decimal(34, 6);
+        "OutstandingPrincipalCurrency"                : String(3);
+        "Overpayment"                                 : Decimal(34, 6);
+        "OverpaymentCurrency"                         : String(3);
+        "PaidFeesSinceInception"                      : Decimal(34, 6);
+        "PaidFeesSinceInceptionCurrency"              : String(3);
+        "PaidInterestSinceInception"                  : Decimal(34, 6);
+        "PaidInterestSinceInceptionCurrency"          : String(3);
+        "PrincipalPastDue"                            : Decimal(34, 6);
+        "PrincipalPastDueCurrency"                    : String(3);
+        "ReimbursedAmount"                            : Decimal(34, 6);
+        "ReimbursedAmountCurrency"                    : String(3);
+        "RepaidPrincipalSinceInception"               : Decimal(34, 6);
+        "RepaidPrincipalSinceInceptionCurrency"       : String(3);
+        "RequestedNotDisbursedPrincipal"              : Decimal(34, 6);
+        "RequestedNotDisbursedPrincipalCurrency"      : String(3);
+        "RetailBalance"                               : Decimal(34, 6);
+        "RetailBalanceCurrency"                       : String(3);
+        "RetailReturnsAmount"                         : Decimal(34, 6);
+        "RetailReturnsAmountCurrency"                 : String(3);
+        "RewardsBalance"                              : Decimal(34, 6);
+        "RewardsBalanceUnit"                          : String(10);
+        "TotalAmountPaid"                             : Decimal(34, 6);
+        "TotalAmountPaidCurrency"                     : String(3);
+        "TotalFreeWithdrawalAmount"                   : Decimal(34, 6);
+        "TotalOutstandingAuthorizationAmount"         : Decimal(34, 6);
+        "TotalOutstandingAuthorizationAmountCurrency" : String(3);
+        "TotalPaidPremiumAmount"                      : Decimal(34, 6);
+        "TotalPastDue"                                : Decimal(34, 6);
+        "TotalPastDueCurrency"                        : String(3);
+        "TotalUnbilledCreditAmount"                   : Decimal(34, 6);
+        "TotalUnbilledCreditAmountCurrency"           : String(3);
+        "TotalUnbilledDebitAmount"                    : Decimal(34, 6);
+        "TotalUnbilledDebitAmountCurrency"            : String(3);
+        "TotalUnbilledDebits"                         : Decimal(34, 6);
+        "TotalWithdrawalAmount"                       : Decimal(34, 6);
+        "UnclearedBalance"                            : Decimal(34, 6);
+        "UnclearedBalanceCurrency"                    : String(3);
+        "UnpaidDueFees"                               : Decimal(34, 6);
+        "UnpaidDueFeesCurrency"                       : String(3);
+        "UnpaidDueInterest"                           : Decimal(34, 6);
+        "UnpaidDueInterestCurrency"                   : String(3);
+        "UnpaidDuePrincipal"                          : Decimal(34, 6);
+        "UnpaidDuePrincipalCurrency"                  : String(3);
+        "SourceSystemID"                              : String(128);
+        "ChangeTimestampInSourceSystem"               : UTCTimestamp;
+        "ChangingUserInSourceSystem"                  : String(128);
+        "ChangingProcessType"                         : String(40);
+        "ChangingProcessID"                           : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "MonetaryBalance_Historical" {
+    "PostingOrValueDateCutoff"                    : String(40)                                               not null;
+    "RoleOfCurrency"                              : String(40)                                               default '' not null;
+    "ASSOC_BalanceForCcyOfMultiCcyAccount"        : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                             PositionCurrency,
+                                                                                                             ASSOC_MultiCcyAccnt
+                                                                                                           } not null;
+    "ASSOC_FinancialContract"                     : association to FinancialContract {
+                                                                                       FinancialContractID,
+                                                                                       IDSystem
+                                                                                     }                       not null;
+    "_CreditCardLoan"                             : association to CreditCardLoan {
+                                                                                    ID,
+                                                                                    _CreditCardAgreement
+                                                                                  }                          not null;
+    "BusinessValidFrom"                           : LocalDate                                                not null;
+    "BusinessValidTo"                             : LocalDate                                                not null;
+    "SystemValidFrom"                             : UTCTimestamp                                             not null;
+    "SystemValidTo"                               : UTCTimestamp                                             not null;
+    "AccountBalance"                              : Decimal(34, 6);
+    "AccountBalanceCurrency"                      : String(3);
+    "AnnualTotalFreeWithdrawalAmount"             : Decimal(34, 6);
+    "AnnualTotalWithdrawalAmount"                 : Decimal(34, 6);
+    "BalanceCurrency"                             : String(3);
+    "CapitalizedFees"                             : Decimal(34, 6);
+    "CapitalizedFeesCurrency"                     : String(3);
+    "CapitalizedInterest"                         : Decimal(34, 6);
+    "CapitalizedInterestCurrency"                 : String(3);
+    "CardBalanceOpenToBuy"                        : Decimal(34, 6);
+    "CardBalanceOpenToBuyCurrency"                : String(3);
+    "CarriedOverBalance"                          : Decimal(34, 6);
+    "CarriedOverBalanceCurrency"                  : String(3);
+    "CashBalance"                                 : Decimal(34, 6);
+    "CashBalanceCurrency"                         : String(3);
+    "CashBalanceOpenToBuy"                        : Decimal(34, 6);
+    "CashBalanceOpenToBuyCurrency"                : String(3);
+    "ClaimableAmount"                             : Decimal(34, 6);
+    "ClaimableAmountCurrency"                     : String(3);
+    "ClaimedAmount"                               : Decimal(34, 6);
+    "ClaimedAmountCurrency"                       : String(3);
+    "DisbursedPrincipal"                          : Decimal(34, 6);
+    "DisbursedPrincipalCurrency"                  : String(3);
+    "FeesPastDue"                                 : Decimal(34, 6);
+    "FeesPastDueCurrency"                         : String(3);
+    "InterestPastDue"                             : Decimal(34, 6);
+    "InterestPastDueCurrency"                     : String(3);
+    "LienAmount"                                  : Decimal(34, 6);
+    "LienAmountCurrency"                          : String(3);
+    "MonetaryBalanceCategory"                     : String(40);
+    "OutstandingLoanAmount"                       : Decimal(34, 6);
+    "OutstandingLoanAmountCurrency"               : String(3);
+    "OutstandingPrincipal"                        : Decimal(34, 6);
+    "OutstandingPrincipalCurrency"                : String(3);
+    "Overpayment"                                 : Decimal(34, 6);
+    "OverpaymentCurrency"                         : String(3);
+    "PaidFeesSinceInception"                      : Decimal(34, 6);
+    "PaidFeesSinceInceptionCurrency"              : String(3);
+    "PaidInterestSinceInception"                  : Decimal(34, 6);
+    "PaidInterestSinceInceptionCurrency"          : String(3);
+    "PrincipalPastDue"                            : Decimal(34, 6);
+    "PrincipalPastDueCurrency"                    : String(3);
+    "ReimbursedAmount"                            : Decimal(34, 6);
+    "ReimbursedAmountCurrency"                    : String(3);
+    "RepaidPrincipalSinceInception"               : Decimal(34, 6);
+    "RepaidPrincipalSinceInceptionCurrency"       : String(3);
+    "RequestedNotDisbursedPrincipal"              : Decimal(34, 6);
+    "RequestedNotDisbursedPrincipalCurrency"      : String(3);
+    "RetailBalance"                               : Decimal(34, 6);
+    "RetailBalanceCurrency"                       : String(3);
+    "RetailReturnsAmount"                         : Decimal(34, 6);
+    "RetailReturnsAmountCurrency"                 : String(3);
+    "RewardsBalance"                              : Decimal(34, 6);
+    "RewardsBalanceUnit"                          : String(10);
+    "TotalAmountPaid"                             : Decimal(34, 6);
+    "TotalAmountPaidCurrency"                     : String(3);
+    "TotalFreeWithdrawalAmount"                   : Decimal(34, 6);
+    "TotalOutstandingAuthorizationAmount"         : Decimal(34, 6);
+    "TotalOutstandingAuthorizationAmountCurrency" : String(3);
+    "TotalPaidPremiumAmount"                      : Decimal(34, 6);
+    "TotalPastDue"                                : Decimal(34, 6);
+    "TotalPastDueCurrency"                        : String(3);
+    "TotalUnbilledCreditAmount"                   : Decimal(34, 6);
+    "TotalUnbilledCreditAmountCurrency"           : String(3);
+    "TotalUnbilledDebitAmount"                    : Decimal(34, 6);
+    "TotalUnbilledDebitAmountCurrency"            : String(3);
+    "TotalUnbilledDebits"                         : Decimal(34, 6);
+    "TotalWithdrawalAmount"                       : Decimal(34, 6);
+    "UnclearedBalance"                            : Decimal(34, 6);
+    "UnclearedBalanceCurrency"                    : String(3);
+    "UnpaidDueFees"                               : Decimal(34, 6);
+    "UnpaidDueFeesCurrency"                       : String(3);
+    "UnpaidDueInterest"                           : Decimal(34, 6);
+    "UnpaidDueInterestCurrency"                   : String(3);
+    "UnpaidDuePrincipal"                          : Decimal(34, 6);
+    "UnpaidDuePrincipalCurrency"                  : String(3);
+    "SourceSystemID"                              : String(128);
+    "ChangeTimestampInSourceSystem"               : UTCTimestamp;
+    "ChangingUserInSourceSystem"                  : String(128);
+    "ChangingProcessType"                         : String(40);
+    "ChangingProcessID"                           : String(128);
+}
+technical configuration {
+    column store;
+};

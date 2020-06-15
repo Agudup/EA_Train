@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::CommoditySwapCalculationPeriodErase" (IN ROW "sap.fsdm.tabletypes::CommoditySwapCalculationPeriodTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "IntervalEndDate" is null and
+                         "IntervalStartDate" is null and
+                         "RoleOfPayer" is null and
+                         "_Swap.FinancialContractID" is null and
+                         "_Swap.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::CommoditySwapCalculationPeriod" WHERE
+("IntervalEndDate" ,
+"IntervalStartDate" ,
+"RoleOfPayer" ,
+"_Swap.FinancialContractID" ,
+"_Swap.IDSystem" 
+)in ( select "OLD"."IntervalEndDate" ,
+"OLD"."IntervalStartDate" ,
+"OLD"."RoleOfPayer" ,
+"OLD"."_Swap.FinancialContractID" ,
+"OLD"."_Swap.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::CommoditySwapCalculationPeriod" "OLD"
+on
+  ( "IN"."IntervalEndDate" = "OLD"."IntervalEndDate" or "IN"."IntervalEndDate" is null ) and
+  ( "IN"."IntervalStartDate" = "OLD"."IntervalStartDate" or "IN"."IntervalStartDate" is null ) and
+  ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+  ( "IN"."_Swap.FinancialContractID" = "OLD"."_Swap.FinancialContractID" or "IN"."_Swap.FinancialContractID" is null ) and
+  ( "IN"."_Swap.IDSystem" = "OLD"."_Swap.IDSystem" or "IN"."_Swap.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::CommoditySwapCalculationPeriod_Historical" WHERE
+("IntervalEndDate" ,
+"IntervalStartDate" ,
+"RoleOfPayer" ,
+"_Swap.FinancialContractID" ,
+"_Swap.IDSystem" 
+)in ( select "OLD"."IntervalEndDate" ,
+"OLD"."IntervalStartDate" ,
+"OLD"."RoleOfPayer" ,
+"OLD"."_Swap.FinancialContractID" ,
+"OLD"."_Swap.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::CommoditySwapCalculationPeriod_Historical" "OLD"
+on
+  ( "IN"."IntervalEndDate" = "OLD"."IntervalEndDate" or "IN"."IntervalEndDate" is null ) and
+  ( "IN"."IntervalStartDate" = "OLD"."IntervalStartDate" or "IN"."IntervalStartDate" is null ) and
+  ( "IN"."RoleOfPayer" = "OLD"."RoleOfPayer" or "IN"."RoleOfPayer" is null ) and
+  ( "IN"."_Swap.FinancialContractID" = "OLD"."_Swap.FinancialContractID" or "IN"."_Swap.FinancialContractID" is null ) and
+  ( "IN"."_Swap.IDSystem" = "OLD"."_Swap.IDSystem" or "IN"."_Swap.IDSystem" is null ) 
+);
+
+END

@@ -1,0 +1,92 @@
+view "sap.fsdm.SQLViews::InterestAndFeeCalculationResult_View" 
+as select
+      "CalculationPeriodID" ,
+      "InterestAndFeeCalculationMethod" ,
+      "ItemNumber" ,
+      "ItemType" ,
+      "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+      "ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ActualBaseAmount" ,
+      "ActualCount" ,
+      "ApplicableInterestRate" ,
+      "BalanceAggregationMethod" ,
+      "BalanceAmount" ,
+      "BalanceAmountCurrency" ,
+      "BalanceType" ,
+      "BaseAmountCurrency" ,
+      "CalculatedAmountBeforeLimits" ,
+      "CalculatedAmountBeforeLimitsCurrency" ,
+      "CalculatedItemCategory" ,
+      "CalculationBaseType" ,
+      "CalculationPeriodEnd" ,
+      "CalculationPeriodEndDate" ,
+      "CalculationPeriodStart" ,
+      "CalculationPeriodStartDate" ,
+      "DueAmountInPaymentCurrency" ,
+      "DueAmountInPositionCurrency" ,
+      "EarliestConsideredPostingDate" ,
+      "EarliestConsideredValueDate" ,
+      "FeeType" ,
+      "InterestType" ,
+      "IsToBePosted" ,
+      "LatestConsideredPostingDate" ,
+      "LatestConsideredValueDate" ,
+      "LowerLimit" ,
+      "NumberOfBaseDays" ,
+      "NumberOfDays" ,
+      "PaymentCurrency" ,
+      "PositionCurrency" ,
+      "PostingCutoff" ,
+      "PostingDate" ,
+      "PostingDirection" ,
+      "Rate" ,
+      "ScaleBaseType" ,
+      "ScalingMethod" ,
+      "SettledBaseAmount" ,
+      "SettledCount" ,
+      "SettlementAccountIsDifferent" ,
+      "TaxableIndicator" ,
+      "ThresholdAmount" ,
+      "ThresholdAmountCurrency" ,
+      "UnsignedCalculatedAmountBeforeLimits" ,
+      "UnsignedDueAmountInPaymentCurrency" ,
+      "UnsignedDueAmountInPositionCurrency" ,
+      "UpperLimit" ,
+      "ValueCutoff" ,
+      "ValueDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InterestAndFeeCalculationResult"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContractOfCalculatedItems"
+	  on "ASSOC_FinancialContractOfCalculatedItems"."IDSystem" = "ASSOC_FinancialContractOfCalculatedItems.IDSystem" AND 
+	     "ASSOC_FinancialContractOfCalculatedItems"."FinancialContractID" = "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_PositionCcyOfMultiCcyContract"
+	  on "ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract"."PositionCurrency" = "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_CalculatedInterestAndFeesResult"
+	  on "InterestAndFeeCalculationMethod" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.InterestAndFeeCalculationMethod" AND 
+	     "CalculationPeriodID" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.CalculationPeriodID" AND 
+	     "BusinessValidFrom" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.BusinessValidFrom" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" AND 
+	     "ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.ASSOC_FinancialContractOfCalculatedItems.IDSystem" AND 
+	     "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "_Settlement_ASSOC_CalculatedInterestAndFeesResult"."ASSOC_CalculatedInterestAndFeesResult.ASSOC_FinancialContractOfCalculatedItems.FinancialContractID"
+	     
+);

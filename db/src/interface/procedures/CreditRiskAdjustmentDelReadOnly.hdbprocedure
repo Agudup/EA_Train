@@ -1,0 +1,467 @@
+PROCEDURE "sap.fsdm.procedures::CreditRiskAdjustmentDelReadOnly" (IN ROW "sap.fsdm.tabletypes::CreditRiskAdjustmentTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::CreditRiskAdjustmentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::CreditRiskAdjustmentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CalculationMethod=' || TO_VARCHAR("CalculationMethod") || ' ' ||
+                'IndicatorResultBeforeChange=' || TO_VARCHAR("IndicatorResultBeforeChange") || ' ' ||
+                'LotID=' || TO_VARCHAR("LotID") || ' ' ||
+                'RiskProvisionScenario=' || TO_VARCHAR("RiskProvisionScenario") || ' ' ||
+                'RiskProvisionType=' || TO_VARCHAR("RiskProvisionType") || ' ' ||
+                'ASSOC_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("ASSOC_AccountingSystem.AccountingSystemID") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_InvestmentAccount.FinancialContractID=' || TO_VARCHAR("_InvestmentAccount.FinancialContractID") || ' ' ||
+                '_InvestmentAccount.IDSystem=' || TO_VARCHAR("_InvestmentAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CalculationMethod",
+                        "IN"."IndicatorResultBeforeChange",
+                        "IN"."LotID",
+                        "IN"."RiskProvisionScenario",
+                        "IN"."RiskProvisionType",
+                        "IN"."ASSOC_AccountingSystem.AccountingSystemID",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CalculationMethod",
+                        "IN"."IndicatorResultBeforeChange",
+                        "IN"."LotID",
+                        "IN"."RiskProvisionScenario",
+                        "IN"."RiskProvisionType",
+                        "IN"."ASSOC_AccountingSystem.AccountingSystemID",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CalculationMethod",
+                        "IndicatorResultBeforeChange",
+                        "LotID",
+                        "RiskProvisionScenario",
+                        "RiskProvisionType",
+                        "ASSOC_AccountingSystem.AccountingSystemID",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_InvestmentAccount.FinancialContractID",
+                        "_InvestmentAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CalculationMethod",
+                                    "IN"."IndicatorResultBeforeChange",
+                                    "IN"."LotID",
+                                    "IN"."RiskProvisionScenario",
+                                    "IN"."RiskProvisionType",
+                                    "IN"."ASSOC_AccountingSystem.AccountingSystemID",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CalculationMethod",
+                                    "IN"."IndicatorResultBeforeChange",
+                                    "IN"."LotID",
+                                    "IN"."RiskProvisionScenario",
+                                    "IN"."RiskProvisionType",
+                                    "IN"."ASSOC_AccountingSystem.AccountingSystemID",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "CalculationMethod",
+            "IndicatorResultBeforeChange",
+            "LotID",
+            "RiskProvisionScenario",
+            "RiskProvisionType",
+            "ASSOC_AccountingSystem.AccountingSystemID",
+            "ASSOC_FinancialContract.FinancialContractID",
+            "ASSOC_FinancialContract.IDSystem",
+            "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+            "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "_FinancialInstrument.FinancialInstrumentID",
+            "_InvestmentAccount.FinancialContractID",
+            "_InvestmentAccount.IDSystem",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::CreditRiskAdjustment" WHERE
+            (
+            "CalculationMethod" ,
+            "IndicatorResultBeforeChange" ,
+            "LotID" ,
+            "RiskProvisionScenario" ,
+            "RiskProvisionType" ,
+            "ASSOC_AccountingSystem.AccountingSystemID" ,
+            "ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_FinancialContract.IDSystem" ,
+            "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" ,
+            "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "_InvestmentAccount.FinancialContractID" ,
+            "_InvestmentAccount.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."CalculationMethod",
+            "OLD"."IndicatorResultBeforeChange",
+            "OLD"."LotID",
+            "OLD"."RiskProvisionScenario",
+            "OLD"."RiskProvisionType",
+            "OLD"."ASSOC_AccountingSystem.AccountingSystemID",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+            "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_InvestmentAccount.FinancialContractID",
+            "OLD"."_InvestmentAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CreditRiskAdjustment" as "OLD"
+        on
+                              ( "IN"."CalculationMethod" = "OLD"."CalculationMethod" or "IN"."CalculationMethod" is null ) and
+                              ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                              ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                              ( "IN"."RiskProvisionScenario" = "OLD"."RiskProvisionScenario" or "IN"."RiskProvisionScenario" is null ) and
+                              ( "IN"."RiskProvisionType" = "OLD"."RiskProvisionType" or "IN"."RiskProvisionType" is null ) and
+                              ( "IN"."ASSOC_AccountingSystem.AccountingSystemID" = "OLD"."ASSOC_AccountingSystem.AccountingSystemID" or "IN"."ASSOC_AccountingSystem.AccountingSystemID" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" is null ) and
+                              ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                              ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                              ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                              ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "CalculationMethod",
+        "IndicatorResultBeforeChange",
+        "LotID",
+        "RiskProvisionScenario",
+        "RiskProvisionType",
+        "ASSOC_AccountingSystem.AccountingSystemID",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "CalculationCurrency",
+        "CreditRiskAdjustedEffectiveInterestRate",
+        "NominalAmount",
+        "PositionCurrency",
+        "Quantity",
+        "RiskProvisionInCalculationCurrency",
+        "RiskProvisionInPositionCurrency",
+        "Significance",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_CalculationMethod" as "CalculationMethod" ,
+            "OLD_IndicatorResultBeforeChange" as "IndicatorResultBeforeChange" ,
+            "OLD_LotID" as "LotID" ,
+            "OLD_RiskProvisionScenario" as "RiskProvisionScenario" ,
+            "OLD_RiskProvisionType" as "RiskProvisionType" ,
+            "OLD_ASSOC_AccountingSystem.AccountingSystemID" as "ASSOC_AccountingSystem.AccountingSystemID" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" ,
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID" ,
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_CalculationCurrency" as "CalculationCurrency" ,
+            "OLD_CreditRiskAdjustedEffectiveInterestRate" as "CreditRiskAdjustedEffectiveInterestRate" ,
+            "OLD_NominalAmount" as "NominalAmount" ,
+            "OLD_PositionCurrency" as "PositionCurrency" ,
+            "OLD_Quantity" as "Quantity" ,
+            "OLD_RiskProvisionInCalculationCurrency" as "RiskProvisionInCalculationCurrency" ,
+            "OLD_RiskProvisionInPositionCurrency" as "RiskProvisionInPositionCurrency" ,
+            "OLD_Significance" as "Significance" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."CalculationMethod",
+                        "OLD"."IndicatorResultBeforeChange",
+                        "OLD"."LotID",
+                        "OLD"."RiskProvisionScenario",
+                        "OLD"."RiskProvisionType",
+                        "OLD"."ASSOC_AccountingSystem.AccountingSystemID",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."CalculationMethod" as "OLD_CalculationMethod",
+                                "OLD"."IndicatorResultBeforeChange" as "OLD_IndicatorResultBeforeChange",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."RiskProvisionScenario" as "OLD_RiskProvisionScenario",
+                                "OLD"."RiskProvisionType" as "OLD_RiskProvisionType",
+                                "OLD"."ASSOC_AccountingSystem.AccountingSystemID" as "OLD_ASSOC_AccountingSystem.AccountingSystemID",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."CalculationCurrency" as "OLD_CalculationCurrency",
+                                "OLD"."CreditRiskAdjustedEffectiveInterestRate" as "OLD_CreditRiskAdjustedEffectiveInterestRate",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."RiskProvisionInCalculationCurrency" as "OLD_RiskProvisionInCalculationCurrency",
+                                "OLD"."RiskProvisionInPositionCurrency" as "OLD_RiskProvisionInPositionCurrency",
+                                "OLD"."Significance" as "OLD_Significance",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskAdjustment" as "OLD"
+            on
+                                      ( "IN"."CalculationMethod" = "OLD"."CalculationMethod" or "IN"."CalculationMethod" is null ) and
+                                      ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+                                      ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+                                      ( "IN"."RiskProvisionScenario" = "OLD"."RiskProvisionScenario" or "IN"."RiskProvisionScenario" is null ) and
+                                      ( "IN"."RiskProvisionType" = "OLD"."RiskProvisionType" or "IN"."RiskProvisionType" is null ) and
+                                      ( "IN"."ASSOC_AccountingSystem.AccountingSystemID" = "OLD"."ASSOC_AccountingSystem.AccountingSystemID" or "IN"."ASSOC_AccountingSystem.AccountingSystemID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" is null ) and
+                                      ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                      ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+                                      ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_CalculationMethod" as "CalculationMethod",
+            "OLD_IndicatorResultBeforeChange" as "IndicatorResultBeforeChange",
+            "OLD_LotID" as "LotID",
+            "OLD_RiskProvisionScenario" as "RiskProvisionScenario",
+            "OLD_RiskProvisionType" as "RiskProvisionType",
+            "OLD_ASSOC_AccountingSystem.AccountingSystemID" as "ASSOC_AccountingSystem.AccountingSystemID",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID",
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_CalculationCurrency" as "CalculationCurrency",
+            "OLD_CreditRiskAdjustedEffectiveInterestRate" as "CreditRiskAdjustedEffectiveInterestRate",
+            "OLD_NominalAmount" as "NominalAmount",
+            "OLD_PositionCurrency" as "PositionCurrency",
+            "OLD_Quantity" as "Quantity",
+            "OLD_RiskProvisionInCalculationCurrency" as "RiskProvisionInCalculationCurrency",
+            "OLD_RiskProvisionInPositionCurrency" as "RiskProvisionInPositionCurrency",
+            "OLD_Significance" as "Significance",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."CalculationMethod",
+                        "OLD"."IndicatorResultBeforeChange",
+                        "OLD"."LotID",
+                        "OLD"."RiskProvisionScenario",
+                        "OLD"."RiskProvisionType",
+                        "OLD"."ASSOC_AccountingSystem.AccountingSystemID",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."CalculationMethod" as "OLD_CalculationMethod",
+                                "OLD"."IndicatorResultBeforeChange" as "OLD_IndicatorResultBeforeChange",
+                                "OLD"."LotID" as "OLD_LotID",
+                                "OLD"."RiskProvisionScenario" as "OLD_RiskProvisionScenario",
+                                "OLD"."RiskProvisionType" as "OLD_RiskProvisionType",
+                                "OLD"."ASSOC_AccountingSystem.AccountingSystemID" as "OLD_ASSOC_AccountingSystem.AccountingSystemID",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency",
+                                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."CalculationCurrency" as "OLD_CalculationCurrency",
+                                "OLD"."CreditRiskAdjustedEffectiveInterestRate" as "OLD_CreditRiskAdjustedEffectiveInterestRate",
+                                "OLD"."NominalAmount" as "OLD_NominalAmount",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."RiskProvisionInCalculationCurrency" as "OLD_RiskProvisionInCalculationCurrency",
+                                "OLD"."RiskProvisionInPositionCurrency" as "OLD_RiskProvisionInPositionCurrency",
+                                "OLD"."Significance" as "OLD_Significance",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CreditRiskAdjustment" as "OLD"
+            on
+               ( "IN"."CalculationMethod" = "OLD"."CalculationMethod" or "IN"."CalculationMethod" is null ) and
+               ( "IN"."IndicatorResultBeforeChange" = "OLD"."IndicatorResultBeforeChange" or "IN"."IndicatorResultBeforeChange" is null ) and
+               ( "IN"."LotID" = "OLD"."LotID" or "IN"."LotID" is null ) and
+               ( "IN"."RiskProvisionScenario" = "OLD"."RiskProvisionScenario" or "IN"."RiskProvisionScenario" is null ) and
+               ( "IN"."RiskProvisionType" = "OLD"."RiskProvisionType" or "IN"."RiskProvisionType" is null ) and
+               ( "IN"."ASSOC_AccountingSystem.AccountingSystemID" = "OLD"."ASSOC_AccountingSystem.AccountingSystemID" or "IN"."ASSOC_AccountingSystem.AccountingSystemID" is null ) and
+               ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+               ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" is null ) and
+               ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+               ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+               ( "IN"."_InvestmentAccount.FinancialContractID" = "OLD"."_InvestmentAccount.FinancialContractID" or "IN"."_InvestmentAccount.FinancialContractID" is null ) and
+               ( "IN"."_InvestmentAccount.IDSystem" = "OLD"."_InvestmentAccount.IDSystem" or "IN"."_InvestmentAccount.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

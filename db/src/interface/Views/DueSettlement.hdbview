@@ -1,0 +1,34 @@
+view "sap.fsdm.Views::DueSettlement_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "DueDate" as "DueDate",
+      "DueSettlementsDeterminationMethod" as "DueSettlementsDeterminationMethod",
+      "ItemNumber" as "ItemNumber",
+      "Scenario" as "Scenario",
+      "ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract_IDSystem",
+      "ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount_PositionCurrency",
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount_ASSOC_MultiCcyAccnt_FinancialContractID",
+      "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount_ASSOC_MultiCcyAccnt_IDSystem",
+      "_Collection.CollectionID" as "_Collection_CollectionID",
+      "_Collection.IDSystem" as "_Collection_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_SettlementAccount.FinancialContractID" as "ASSOC_SettlementAccount_FinancialContractID",
+      "ASSOC_SettlementAccount.IDSystem" as "ASSOC_SettlementAccount_IDSystem",
+      "Currency" as "Currency",
+      "DueAmount" as "DueAmount",
+      "PostingDirection" as "PostingDirection",
+      "TransactionType" as "TransactionType",
+      "UnsignedDueAmount" as "UnsignedDueAmount",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::DueSettlement"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,197 @@
+PROCEDURE "sap.fsdm.procedures::ValuationEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::ValuationTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::ValuationTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::ValuationTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "Appraiser" is null and
+                         "RoleOfPayer" is null and
+                         "Scenario" is null and
+                         "ValuationMethod" is null and
+                         "ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" is null and
+                         "ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" is null and
+                         "ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" is null and
+                         "ASSOC_CollateralPortion.PortionNumber" is null and
+                         "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" is null and
+                         "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" is null and
+                         "ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_Organization.BusinessPartnerID" is null and
+                         "ASSOC_PhysicalAsset.PhysicalAssetID" is null and
+                         "ASSOC_PositionCurrencyForAccount.PositionCurrency" is null and
+                         "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_Receivable.ReceivableID" is null and
+                         "_FinancialInstrument.FinancialInstrumentID" is null and
+                         "_Fund.FundID" is null and
+                         "_Fund._InvestmentCorporation.BusinessPartnerID" is null and
+                         "_SecuritiesAccount.FinancialContractID" is null and
+                         "_SecuritiesAccount.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"Appraiser",
+"RoleOfPayer",
+"Scenario",
+"ValuationMethod",
+"ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+"ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+"ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+"ASSOC_CollateralPortion.PortionNumber",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+"ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContract.IDSystem",
+"ASSOC_Organization.BusinessPartnerID",
+"ASSOC_PhysicalAsset.PhysicalAssetID",
+"ASSOC_PositionCurrencyForAccount.PositionCurrency",
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_Receivable.ReceivableID",
+"_FinancialInstrument.FinancialInstrumentID",
+"_Fund.FundID",
+"_Fund._InvestmentCorporation.BusinessPartnerID",
+"_SecuritiesAccount.FinancialContractID",
+"_SecuritiesAccount.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::Valuation" WHERE("Appraiser" ,
+"RoleOfPayer" ,
+"Scenario" ,
+"ValuationMethod" ,
+"ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_Organization.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_Receivable.ReceivableID" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_Fund.FundID" ,
+"_Fund._InvestmentCorporation.BusinessPartnerID" ,
+"_SecuritiesAccount.FinancialContractID" ,
+"_SecuritiesAccount.IDSystem" 
+)in ( select "Appraiser" ,
+"RoleOfPayer" ,
+"Scenario" ,
+"ValuationMethod" ,
+"ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_Organization.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_Receivable.ReceivableID" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_Fund.FundID" ,
+"_Fund._InvestmentCorporation.BusinessPartnerID" ,
+"_SecuritiesAccount.FinancialContractID" ,
+"_SecuritiesAccount.IDSystem" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"Appraiser",
+"RoleOfPayer",
+"Scenario",
+"ValuationMethod",
+"ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType",
+"ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID",
+"ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID",
+"ASSOC_CollateralPortion.PortionNumber",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID",
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem",
+"ASSOC_FinancialContract.FinancialContractID",
+"ASSOC_FinancialContract.IDSystem",
+"ASSOC_Organization.BusinessPartnerID",
+"ASSOC_PhysicalAsset.PhysicalAssetID",
+"ASSOC_PositionCurrencyForAccount.PositionCurrency",
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+"ASSOC_Receivable.ReceivableID",
+"_FinancialInstrument.FinancialInstrumentID",
+"_Fund.FundID",
+"_Fund._InvestmentCorporation.BusinessPartnerID",
+"_SecuritiesAccount.FinancialContractID",
+"_SecuritiesAccount.IDSystem",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::Valuation_Historical" WHERE("Appraiser" ,
+"RoleOfPayer" ,
+"Scenario" ,
+"ValuationMethod" ,
+"ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_Organization.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_Receivable.ReceivableID" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_Fund.FundID" ,
+"_Fund._InvestmentCorporation.BusinessPartnerID" ,
+"_SecuritiesAccount.FinancialContractID" ,
+"_SecuritiesAccount.IDSystem" 
+)in ( select "Appraiser" ,
+"RoleOfPayer" ,
+"Scenario" ,
+"ValuationMethod" ,
+"ASSOC_BusinessInterestInOrganization.BusinessPartnerRelationType" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_BusinessInterestInOrganization.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+"ASSOC_CollateralPortion.PortionNumber" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" ,
+"ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" ,
+"ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_Organization.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" ,
+"ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_Receivable.ReceivableID" ,
+"_FinancialInstrument.FinancialInstrumentID" ,
+"_Fund.FundID" ,
+"_Fund._InvestmentCorporation.BusinessPartnerID" ,
+"_SecuritiesAccount.FinancialContractID" ,
+"_SecuritiesAccount.IDSystem" 
+from :ROW );
+
+END

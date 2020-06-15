@@ -1,0 +1,34 @@
+view "sap.fsdm.SQLViews::ExercisePeriod_View" 
+as select
+      "StartDate" ,
+      "_Option.FinancialContractID" ,
+      "_Option.IDSystem" ,
+      "_Swaption.FinancialContractID" ,
+      "_Swaption.IDSystem" ,
+      "_Warrant.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EndDate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ExercisePeriod"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_Option"
+	  on "_Option"."FinancialContractID" = "_Option.FinancialContractID" AND 
+	     "_Option"."IDSystem" = "_Option.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_Swaption"
+	  on "_Swaption"."FinancialContractID" = "_Swaption.FinancialContractID" AND 
+	     "_Swaption"."IDSystem" = "_Swaption.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Warrant"
+	  on "_Warrant"."FinancialInstrumentID" = "_Warrant.FinancialInstrumentID"
+	     
+);

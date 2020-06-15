@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::IntradayIndexObservationUpdate" (IN ROW "sap.fsdm.tabletypes::IntradayIndexObservationTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+--Update the existing records 
+
+  --select data matching in current table
+  var_matching = 
+  select    "IN"."Timestamp"  ,
+    "OLD"."Timestamp" AS "OLD_Timestamp" ,
+    "IN"."_Index.IndexID"  ,
+    "OLD"."_Index.IndexID" AS "OLD__Index.IndexID" ,
+    "IN"."IndexLevel"  ,
+    "OLD"."IndexLevel" AS "OLD_IndexLevel" ,
+    "IN"."IndexStreamProvider"  ,
+    "OLD"."IndexStreamProvider" AS "OLD_IndexStreamProvider" ,
+    "IN"."Unit"  ,
+    "OLD"."Unit" AS "OLD_Unit" ,
+    "IN"."SourceSystemID"  ,
+    "OLD"."SourceSystemID" AS "OLD_SourceSystemID" ,
+    "IN"."ChangeTimestampInSourceSystem"  ,
+    "OLD"."ChangeTimestampInSourceSystem" AS "OLD_ChangeTimestampInSourceSystem" ,
+    "IN"."ChangingUserInSourceSystem"  ,
+    "OLD"."ChangingUserInSourceSystem" AS "OLD_ChangingUserInSourceSystem" ,
+    "IN"."ChangingProcessType"  ,
+    "OLD"."ChangingProcessType" AS "OLD_ChangingProcessType" ,
+    "IN"."ChangingProcessID"  ,
+    "OLD"."ChangingProcessID" AS "OLD_ChangingProcessID" 
+  
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::IntradayIndexObservation" AS "OLD"
+  ON
+  "IN"."Timestamp" = "OLD"."Timestamp" and
+  "IN"."_Index.IndexID" = "OLD"."_Index.IndexID" 
+;
+
+
+
+
+--Delete entries for update from current table
+delete from "sap.fsdm::IntradayIndexObservation" WHERE("Timestamp" ,
+"_Index.IndexID" 
+)in ( select "OLD_Timestamp" AS "Timestamp" ,
+"OLD__Index.IndexID" AS "_Index.IndexID" 
+from :var_matching );
+
+
+--Insert ALL the input data 
+
+insert into "sap.fsdm::IntradayIndexObservation"  (
+"Timestamp",
+"_Index.IndexID",
+"IndexLevel",
+"IndexStreamProvider",
+"Unit",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+   "Timestamp"  ,
+  "_Index.IndexID"  ,
+  "IndexLevel"  ,
+  "IndexStreamProvider"  ,
+  "Unit"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :var_matching );
+
+
+
+END

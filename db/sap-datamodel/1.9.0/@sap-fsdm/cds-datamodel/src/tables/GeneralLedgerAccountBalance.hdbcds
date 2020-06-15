@@ -1,0 +1,69 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"CompanyCode";
+using "sap"."fsdm"::"GLAccount";
+using "sap"."fsdm"::"ProductClass";
+
+entity "GeneralLedgerAccountBalance" {
+    key "AccountingBalanceType"          : String(10);
+    key "FiscalYear"                     : String(10)                                             default '';
+    key "PostingDate"                    : LocalDate;
+    key "_AccountingSystem"              : association to AccountingSystem { AccountingSystemID } not null;
+    key "_BusinessSegment"               : association to OrganizationalUnit {
+                                                                               OrganizationalUnitID,
+                                                                               ASSOC_OrganizationHostingOrganizationalUnit
+                                                                             }                    not null;
+    key "_BusinessSegmentAtCounterparty" : association to OrganizationalUnit {
+                                                                               OrganizationalUnitID,
+                                                                               ASSOC_OrganizationHostingOrganizationalUnit
+                                                                             }                    not null;
+    key "_CompanyCode"                   : association to CompanyCode {
+                                                                        CompanyCode,
+                                                                        ASSOC_Company
+                                                                      }                           not null;
+    key "_GLAccount"                     : association to GLAccount {
+                                                                      GLAccount,
+                                                                      _ChartOfAccounts
+                                                                    }                             not null;
+    /**
+    *@Deprecated
+    *@Reason: Due to deprecation of the Product Class entity
+    *@ReplacedBy: No known use case
+    */
+    key "_ProductClass"                  : association to ProductClass {
+                                                                         ProductClass,
+                                                                         ProductClassificationSystem
+                                                                       }                          not null;
+    key "_ProfitCenter"                  : association to OrganizationalUnit {
+                                                                               OrganizationalUnitID,
+                                                                               ASSOC_OrganizationHostingOrganizationalUnit
+                                                                             }                    not null;
+    key "_ProftCenterAtCouterparty"      : association to OrganizationalUnit {
+                                                                               OrganizationalUnitID,
+                                                                               ASSOC_OrganizationHostingOrganizationalUnit
+                                                                             }                    not null;
+        "AmountInFunctionalCurrency"     : Decimal(34, 6);
+        "AmountInGroupCurrency"          : Decimal(34, 6);
+        "AmountInHardCurrency"           : Decimal(34, 6);
+        "AmountInIndexCurrency"          : Decimal(34, 6);
+        "AmountInLocalCurrency"          : Decimal(34, 6);
+        "AmountInTransactionCurrency"    : Decimal(34, 6);
+        "FiscalPeriodEnd"                : String(10);
+        "FiscalPeriodStart"              : String(10);
+        "FunctionalCurrency"             : String(3);
+        "GroupCurrency"                  : String(3);
+        "HardCurrency"                   : String(3);
+        "IndexCurrency"                  : String(3);
+        "LocalCurrency"                  : String(3);
+        "TransactionCurrency"            : String(3);
+        "SourceSystemID"                 : String(128);
+        "ChangeTimestampInSourceSystem"  : UTCTimestamp;
+        "ChangingUserInSourceSystem"     : String(128);
+        "ChangingProcessType"            : String(40);
+        "ChangingProcessID"              : String(128);
+}
+technical configuration {
+    column store;
+};

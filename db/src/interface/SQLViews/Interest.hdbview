@@ -1,0 +1,195 @@
+view "sap.fsdm.SQLViews::Interest_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+      "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "_DebtInstrument.FinancialInstrumentID" ,
+      "_OptionOfReferenceRateSpecification.ComponentNumber" ,
+      "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+      "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+      "_OptionOfStrikeSpecification.ComponentNumber" ,
+      "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+      "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+      "_Trade.IDSystem" ,
+      "_Trade.TradeID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_ReferenceRateID.ReferenceRateID" ,
+      "AnnuityAmount" ,
+      "AnnuityAmountCurrency" ,
+      "BusinessDayConvention" ,
+      "CompoundingConvention" ,
+      "CutoffRelativeToDate" ,
+      "DayCountConvention" ,
+      "DayOfMonthOfInterestPayment" ,
+      "DayOfMonthOfInterestPeriodEnd" ,
+      "DayOfMonthOfReset" ,
+      "DueDateScheduleIsIndependent" ,
+      "DueScheduleBusinessCalendar" ,
+      "DueScheduleBusinessDayConvention" ,
+      "DueSchedulePeriodLength" ,
+      "DueSchedulePeriodTimeUnit" ,
+      "FirstDueDate" ,
+      "FirstInterestPeriodEndDate" ,
+      "FirstInterestPeriodStartDate" ,
+      "FirstRegularFloatingRateResetDate" ,
+      "FixedRate" ,
+      "FixingRateSpecificationCategory" ,
+      "InstallmentAmount" ,
+      "InstallmentAmountCurrency" ,
+      "InstallmentInterestAmount" ,
+      "InstallmentInterestAmountCurrency" ,
+      "InterestBusinessCalendar" ,
+      "InterestCategory" ,
+      "InterestCurrency" ,
+      "InterestInAdvance" ,
+      "InterestIsCompounded" ,
+      "InterestPaymentPrecision" ,
+      "InterestPaymentRoundingMethod" ,
+      "InterestPeriodLength" ,
+      "InterestPeriodTimeUnit" ,
+      "InterestSpecificationCategory" ,
+      "InterestSubPeriodLength" ,
+      "InterestSubPeriodSpecificationCategory" ,
+      "InterestSubPeriodTimeUnit" ,
+      "InterestType" ,
+      "LastInterestPeriodEndDate" ,
+      "NumberOfInstallments" ,
+      "PayingOrReceiving" ,
+      "PeriodEndDueDateLag" ,
+      "PeriodEndDueDateLagTimeUnit" ,
+      "PreconditionApplies" ,
+      "ReferenceRateFactor" ,
+      "ReferenceRateFormula" ,
+      "RelativeToInterestPeriodStartOrEnd" ,
+      "ResetAtMonthUltimo" ,
+      "ResetBusinessCalendar" ,
+      "ResetBusinessDayConvention" ,
+      "ResetCutoffLength" ,
+      "ResetCutoffTimeUnit" ,
+      "ResetInArrears" ,
+      "ResetLagLength" ,
+      "ResetLagTimeUnit" ,
+      "ResetPeriodLength" ,
+      "ResetPeriodTimeUnit" ,
+      "ResetPrecision" ,
+      "ResetRounding" ,
+      "RoleOfPayer" ,
+      "ScaleApplies" ,
+      "Spread" ,
+      "TotalInstallmentAmount" ,
+      "TotalInstallmentInterestAmount" ,
+      "VariableRateMax" ,
+      "VariableRateMin" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Interest"
+with associations
+(
+	join "sap.fsdm.SQLViews::CashFlowStream_View" as "_CashFlowStream_ASSOC_InterestSpecification"
+	  on "_Trade.TradeID" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._Trade.TradeID" AND 
+	     "_Trade.IDSystem" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._Trade.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfStrikeSpecification.ComponentNumber" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfReferenceRateSpecification.ComponentNumber" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" AND 
+	     "SequenceNumber" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.SequenceNumber" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "_CashFlowStream_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PositionCurrencyOfMultiCurrencyContract_View" as "ASSOC_CcyOfMultiCcyAccnt"
+	  on "ASSOC_CcyOfMultiCcyAccnt"."PositionCurrency" = "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt"."ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt"."ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ReferenceRate_View" as "ASSOC_ReferenceRateID"
+	  on "ASSOC_ReferenceRateID"."ReferenceRateID" = "ASSOC_ReferenceRateID.ReferenceRateID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_DebtInstrument"
+	  on "_DebtInstrument"."FinancialInstrumentID" = "_DebtInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::InterestRateOptionComponent_View" as "_OptionOfReferenceRateSpecification"
+	  on "_OptionOfReferenceRateSpecification"."ComponentNumber" = "_OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "_OptionOfReferenceRateSpecification"."_InterestRateOption.FinancialContractID" = "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfReferenceRateSpecification"."_InterestRateOption.IDSystem" = "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InterestRateOptionComponent_View" as "_OptionOfStrikeSpecification"
+	  on "_OptionOfStrikeSpecification"."ComponentNumber" = "_OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "_OptionOfStrikeSpecification"."_InterestRateOption.FinancialContractID" = "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfStrikeSpecification"."_InterestRateOption.IDSystem" = "_OptionOfStrikeSpecification._InterestRateOption.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade"
+	  on "_Trade"."IDSystem" = "_Trade.IDSystem" AND 
+	     "_Trade"."TradeID" = "_Trade.TradeID"
+	     ,
+	join "sap.fsdm.SQLViews::InterestPaymentListEntry_View" as "_InterestPaymentListEntry_ASSOC_InterestPaymentList"
+	  on "_Trade.TradeID" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._Trade.TradeID" AND 
+	     "_Trade.IDSystem" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._Trade.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfStrikeSpecification.ComponentNumber" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfReferenceRateSpecification.ComponentNumber" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" AND 
+	     "SequenceNumber" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList.SequenceNumber" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "_InterestPaymentListEntry_ASSOC_InterestPaymentList"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::ScaleInterval_View" as "_ScaleInterval_ASSOC_InterestSpecification"
+	  on "_Trade.TradeID" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._Trade.TradeID" AND 
+	     "_Trade.IDSystem" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._Trade.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfStrikeSpecification.ComponentNumber" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfReferenceRateSpecification.ComponentNumber" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" AND 
+	     "SequenceNumber" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.SequenceNumber" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "_ScaleInterval_ASSOC_InterestSpecification"."ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::SetOfPreconditions_View" as "_SetOfPreconditions_ASSOC_Interest"
+	  on "_Trade.TradeID" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._Trade.TradeID" AND 
+	     "_Trade.IDSystem" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._Trade.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfStrikeSpecification.ComponentNumber" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "_OptionOfReferenceRateSpecification.ComponentNumber" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest._DebtInstrument.FinancialInstrumentID" AND 
+	     "SequenceNumber" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest.SequenceNumber" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "_SetOfPreconditions_ASSOC_Interest"."ASSOC_Interest.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     
+);

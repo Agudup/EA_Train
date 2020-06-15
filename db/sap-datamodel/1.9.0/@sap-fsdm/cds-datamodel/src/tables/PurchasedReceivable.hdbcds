@@ -1,0 +1,58 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"Receivable";
+
+entity "PurchasedReceivable" {
+    key "_ReceivablePurchaseAgreement"      : association to FinancialContract {
+                                                                                 FinancialContractID,
+                                                                                 IDSystem
+                                                                               }          not null;
+    key "BusinessValidFrom"                 : LocalDate;
+    key "BusinessValidTo"                   : LocalDate;
+        "SystemValidFrom"                   : UTCTimestamp                                not null;
+        "SystemValidTo"                     : UTCTimestamp                                not null;
+        "_Receivable"                       : association to Receivable { ReceivableID };
+        "IsDisclosed"                       : Boolean;
+        "LifecycleStatus"                   : String(100);
+        "PaidOutAmount"                     : Decimal(34, 6);
+        "PaidOutAmountCurrency"             : String(3);
+        "PurchasedPercentage"               : Decimal(15, 11);
+        "PurchasedReceivableAmount"         : Decimal(34, 6);
+        "PurchasedReceivableAmountCurrency" : String(3);
+        "SourceSystemID"                    : String(128);
+        "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+        "ChangingUserInSourceSystem"        : String(128);
+        "ChangingProcessType"               : String(40);
+        "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "PurchasedReceivable_Historical" {
+    "_ReceivablePurchaseAgreement"      : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }          not null;
+    "BusinessValidFrom"                 : LocalDate                                   not null;
+    "BusinessValidTo"                   : LocalDate                                   not null;
+    "SystemValidFrom"                   : UTCTimestamp                                not null;
+    "SystemValidTo"                     : UTCTimestamp                                not null;
+    "_Receivable"                       : association to Receivable { ReceivableID };
+    "IsDisclosed"                       : Boolean;
+    "LifecycleStatus"                   : String(100);
+    "PaidOutAmount"                     : Decimal(34, 6);
+    "PaidOutAmountCurrency"             : String(3);
+    "PurchasedPercentage"               : Decimal(15, 11);
+    "PurchasedReceivableAmount"         : Decimal(34, 6);
+    "PurchasedReceivableAmountCurrency" : String(3);
+    "SourceSystemID"                    : String(128);
+    "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+    "ChangingUserInSourceSystem"        : String(128);
+    "ChangingProcessType"               : String(40);
+    "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};

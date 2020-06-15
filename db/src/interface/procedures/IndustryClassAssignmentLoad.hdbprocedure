@@ -1,0 +1,259 @@
+PROCEDURE "sap.fsdm.procedures::IndustryClassAssignmentLoad" (IN ROW "sap.fsdm.tabletypes::IndustryClassAssignmentTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessPartner.BusinessPartnerID") || ' ' ||
+                'ASSOC_IndustryClass.Industry=' || TO_VARCHAR("ASSOC_IndustryClass.Industry") || ' ' ||
+                'ASSOC_IndustryClass.IndustryClassificationSystem=' || TO_VARCHAR("ASSOC_IndustryClass.IndustryClassificationSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_IndustryClass.Industry",
+                        "IN"."ASSOC_IndustryClass.IndustryClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_IndustryClass.Industry",
+                        "IN"."ASSOC_IndustryClass.IndustryClassificationSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_BusinessPartner.BusinessPartnerID",
+                        "ASSOC_IndustryClass.Industry",
+                        "ASSOC_IndustryClass.IndustryClassificationSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_IndustryClass.Industry",
+                                    "IN"."ASSOC_IndustryClass.IndustryClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_IndustryClass.Industry",
+                                    "IN"."ASSOC_IndustryClass.IndustryClassificationSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::IndustryClassAssignment" (
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_IndustryClass.Industry",
+        "ASSOC_IndustryClass.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessVolumePercentage",
+        "MainIndustry",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "OLD_ASSOC_IndustryClass.Industry" as "ASSOC_IndustryClass.Industry" ,
+            "OLD_ASSOC_IndustryClass.IndustryClassificationSystem" as "ASSOC_IndustryClass.IndustryClassificationSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BusinessVolumePercentage" as "BusinessVolumePercentage" ,
+            "OLD_MainIndustry" as "MainIndustry" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_IndustryClass.Industry",
+                        "IN"."ASSOC_IndustryClass.IndustryClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."ASSOC_IndustryClass.Industry" as "OLD_ASSOC_IndustryClass.Industry",
+                                "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" as "OLD_ASSOC_IndustryClass.IndustryClassificationSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BusinessVolumePercentage" as "OLD_BusinessVolumePercentage",
+                                "OLD"."MainIndustry" as "OLD_MainIndustry",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::IndustryClassAssignment" as "OLD"
+            on
+                ( case when "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."ASSOC_BusinessPartner.BusinessPartnerID" end ) = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_IndustryClass.Industry" is null then '' else "IN"."ASSOC_IndustryClass.Industry" end ) = "OLD"."ASSOC_IndustryClass.Industry" and
+                ( case when "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" is null then '' else "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" end ) = "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::IndustryClassAssignment" (
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_IndustryClass.Industry",
+        "ASSOC_IndustryClass.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessVolumePercentage",
+        "MainIndustry",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD_ASSOC_IndustryClass.Industry" as "ASSOC_IndustryClass.Industry",
+            "OLD_ASSOC_IndustryClass.IndustryClassificationSystem" as "ASSOC_IndustryClass.IndustryClassificationSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BusinessVolumePercentage" as "BusinessVolumePercentage",
+            "OLD_MainIndustry" as "MainIndustry",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_IndustryClass.Industry",
+                        "IN"."ASSOC_IndustryClass.IndustryClassificationSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_IndustryClass.Industry" as "OLD_ASSOC_IndustryClass.Industry",
+                        "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" as "OLD_ASSOC_IndustryClass.IndustryClassificationSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."BusinessVolumePercentage" as "OLD_BusinessVolumePercentage",
+                        "OLD"."MainIndustry" as "OLD_MainIndustry",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::IndustryClassAssignment" as "OLD"
+            on
+                ( case when "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."ASSOC_BusinessPartner.BusinessPartnerID" end ) = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" and
+                ( case when "IN"."ASSOC_IndustryClass.Industry" is null then '' else "IN"."ASSOC_IndustryClass.Industry" end ) = "OLD"."ASSOC_IndustryClass.Industry" and
+                ( case when "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" is null then '' else "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" end ) = "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::IndustryClassAssignment"
+    where (
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_IndustryClass.Industry",
+        "ASSOC_IndustryClass.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD"."ASSOC_IndustryClass.Industry",
+            "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::IndustryClassAssignment" as "OLD"
+        on
+           ( case when "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "IN"."ASSOC_BusinessPartner.BusinessPartnerID" end ) = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" and
+           ( case when "IN"."ASSOC_IndustryClass.Industry" is null then '' else "IN"."ASSOC_IndustryClass.Industry" end ) = "OLD"."ASSOC_IndustryClass.Industry" and
+           ( case when "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" is null then '' else "IN"."ASSOC_IndustryClass.IndustryClassificationSystem" end ) = "OLD"."ASSOC_IndustryClass.IndustryClassificationSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::IndustryClassAssignment" (
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_IndustryClass.Industry",
+        "ASSOC_IndustryClass.IndustryClassificationSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessVolumePercentage",
+        "MainIndustry",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "ASSOC_BusinessPartner.BusinessPartnerID" is null then '' else "ASSOC_BusinessPartner.BusinessPartnerID" end ) as "ASSOC_BusinessPartner.BusinessPartnerID",
+            ( case when "ASSOC_IndustryClass.Industry" is null then '' else "ASSOC_IndustryClass.Industry" end ) as "ASSOC_IndustryClass.Industry",
+            ( case when "ASSOC_IndustryClass.IndustryClassificationSystem" is null then '' else "ASSOC_IndustryClass.IndustryClassificationSystem" end ) as "ASSOC_IndustryClass.IndustryClassificationSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "BusinessVolumePercentage"  ,
+            "MainIndustry"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

@@ -1,0 +1,31 @@
+view "sap.fsdm.Views::PriceGain_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "LotID" as "LotID",
+      "PriceGainCalculationMethod" as "PriceGainCalculationMethod",
+      "_AccountingSystem.AccountingSystemID" as "_AccountingSystem_AccountingSystemID",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_SecuritiesAccount.FinancialContractID" as "_SecuritiesAccount_FinancialContractID",
+      "_SecuritiesAccount.IDSystem" as "_SecuritiesAccount_IDSystem",
+      "_SettlementItem.IDSystem" as "_SettlementItem_IDSystem",
+      "_SettlementItem.ItemNumber" as "_SettlementItem_ItemNumber",
+      "_SettlementItem.SettlementID" as "_SettlementItem_SettlementID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AmountInLotInPositionCurrency" as "AmountInLotInPositionCurrency",
+      "InflowOutflowLot" as "InflowOutflowLot",
+      "NominalAmountInLot" as "NominalAmountInLot",
+      "PositionCurrency" as "PositionCurrency",
+      "PriceGain" as "PriceGain",
+      "QuantityInLot" as "QuantityInLot",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::PriceGain"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

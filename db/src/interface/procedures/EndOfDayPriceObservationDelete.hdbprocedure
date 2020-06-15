@@ -1,0 +1,350 @@
+PROCEDURE "sap.fsdm.procedures::EndOfDayPriceObservationDelete" (IN ROW "sap.fsdm.tabletypes::EndOfDayPriceObservationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PriceDataProvider=' || TO_VARCHAR("PriceDataProvider") || ' ' ||
+                'PriceSeriesType=' || TO_VARCHAR("PriceSeriesType") || ' ' ||
+                '_Exchange.MarketIdentifierCode=' || TO_VARCHAR("_Exchange.MarketIdentifierCode") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PriceDataProvider",
+                        "PriceSeriesType",
+                        "_Exchange.MarketIdentifierCode",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."_Exchange.MarketIdentifierCode",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."_Exchange.MarketIdentifierCode",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::EndOfDayPriceObservation" (
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdjustedClosePrice",
+        "AdjustmentFactor",
+        "Ask",
+        "Bid",
+        "CleanDirtyIndicator",
+        "Close",
+        "Currency",
+        "EndOfDayPriceObservationCategory",
+        "High",
+        "Low",
+        "NAVperShare",
+        "NumberOfTrades",
+        "Open",
+        "PriceNotationForm",
+        "PriceType",
+        "TradedNominalAmount",
+        "TradedNominalAmountCurrency",
+        "Unit",
+        "Volume",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PriceDataProvider" as "PriceDataProvider" ,
+            "OLD_PriceSeriesType" as "PriceSeriesType" ,
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AdjustedClosePrice" as "AdjustedClosePrice" ,
+            "OLD_AdjustmentFactor" as "AdjustmentFactor" ,
+            "OLD_Ask" as "Ask" ,
+            "OLD_Bid" as "Bid" ,
+            "OLD_CleanDirtyIndicator" as "CleanDirtyIndicator" ,
+            "OLD_Close" as "Close" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_EndOfDayPriceObservationCategory" as "EndOfDayPriceObservationCategory" ,
+            "OLD_High" as "High" ,
+            "OLD_Low" as "Low" ,
+            "OLD_NAVperShare" as "NAVperShare" ,
+            "OLD_NumberOfTrades" as "NumberOfTrades" ,
+            "OLD_Open" as "Open" ,
+            "OLD_PriceNotationForm" as "PriceNotationForm" ,
+            "OLD_PriceType" as "PriceType" ,
+            "OLD_TradedNominalAmount" as "TradedNominalAmount" ,
+            "OLD_TradedNominalAmountCurrency" as "TradedNominalAmountCurrency" ,
+            "OLD_Unit" as "Unit" ,
+            "OLD_Volume" as "Volume" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."PriceDataProvider",
+                        "OLD"."PriceSeriesType",
+                        "OLD"."_Exchange.MarketIdentifierCode",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."AdjustedClosePrice" as "OLD_AdjustedClosePrice",
+                "OLD"."AdjustmentFactor" as "OLD_AdjustmentFactor",
+                "OLD"."Ask" as "OLD_Ask",
+                "OLD"."Bid" as "OLD_Bid",
+                "OLD"."CleanDirtyIndicator" as "OLD_CleanDirtyIndicator",
+                "OLD"."Close" as "OLD_Close",
+                "OLD"."Currency" as "OLD_Currency",
+                "OLD"."EndOfDayPriceObservationCategory" as "OLD_EndOfDayPriceObservationCategory",
+                "OLD"."High" as "OLD_High",
+                "OLD"."Low" as "OLD_Low",
+                "OLD"."NAVperShare" as "OLD_NAVperShare",
+                "OLD"."NumberOfTrades" as "OLD_NumberOfTrades",
+                "OLD"."Open" as "OLD_Open",
+                "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                "OLD"."PriceType" as "OLD_PriceType",
+                "OLD"."TradedNominalAmount" as "OLD_TradedNominalAmount",
+                "OLD"."TradedNominalAmountCurrency" as "OLD_TradedNominalAmountCurrency",
+                "OLD"."Unit" as "OLD_Unit",
+                "OLD"."Volume" as "OLD_Volume",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayPriceObservation" as "OLD"
+            on
+                      ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+                      ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+                      ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) and
+                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::EndOfDayPriceObservation" (
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdjustedClosePrice",
+        "AdjustmentFactor",
+        "Ask",
+        "Bid",
+        "CleanDirtyIndicator",
+        "Close",
+        "Currency",
+        "EndOfDayPriceObservationCategory",
+        "High",
+        "Low",
+        "NAVperShare",
+        "NumberOfTrades",
+        "Open",
+        "PriceNotationForm",
+        "PriceType",
+        "TradedNominalAmount",
+        "TradedNominalAmountCurrency",
+        "Unit",
+        "Volume",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PriceDataProvider" as "PriceDataProvider",
+            "OLD_PriceSeriesType" as "PriceSeriesType",
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AdjustedClosePrice" as "AdjustedClosePrice",
+            "OLD_AdjustmentFactor" as "AdjustmentFactor",
+            "OLD_Ask" as "Ask",
+            "OLD_Bid" as "Bid",
+            "OLD_CleanDirtyIndicator" as "CleanDirtyIndicator",
+            "OLD_Close" as "Close",
+            "OLD_Currency" as "Currency",
+            "OLD_EndOfDayPriceObservationCategory" as "EndOfDayPriceObservationCategory",
+            "OLD_High" as "High",
+            "OLD_Low" as "Low",
+            "OLD_NAVperShare" as "NAVperShare",
+            "OLD_NumberOfTrades" as "NumberOfTrades",
+            "OLD_Open" as "Open",
+            "OLD_PriceNotationForm" as "PriceNotationForm",
+            "OLD_PriceType" as "PriceType",
+            "OLD_TradedNominalAmount" as "TradedNominalAmount",
+            "OLD_TradedNominalAmountCurrency" as "TradedNominalAmountCurrency",
+            "OLD_Unit" as "Unit",
+            "OLD_Volume" as "Volume",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."PriceDataProvider",
+                        "OLD"."PriceSeriesType",
+                        "OLD"."_Exchange.MarketIdentifierCode",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."AdjustedClosePrice" as "OLD_AdjustedClosePrice",
+                "OLD"."AdjustmentFactor" as "OLD_AdjustmentFactor",
+                "OLD"."Ask" as "OLD_Ask",
+                "OLD"."Bid" as "OLD_Bid",
+                "OLD"."CleanDirtyIndicator" as "OLD_CleanDirtyIndicator",
+                "OLD"."Close" as "OLD_Close",
+                "OLD"."Currency" as "OLD_Currency",
+                "OLD"."EndOfDayPriceObservationCategory" as "OLD_EndOfDayPriceObservationCategory",
+                "OLD"."High" as "OLD_High",
+                "OLD"."Low" as "OLD_Low",
+                "OLD"."NAVperShare" as "OLD_NAVperShare",
+                "OLD"."NumberOfTrades" as "OLD_NumberOfTrades",
+                "OLD"."Open" as "OLD_Open",
+                "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                "OLD"."PriceType" as "OLD_PriceType",
+                "OLD"."TradedNominalAmount" as "OLD_TradedNominalAmount",
+                "OLD"."TradedNominalAmountCurrency" as "OLD_TradedNominalAmountCurrency",
+                "OLD"."Unit" as "OLD_Unit",
+                "OLD"."Volume" as "OLD_Volume",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::EndOfDayPriceObservation" as "OLD"
+            on
+                                                ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+                                                ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+                                                ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) and
+                                                ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::EndOfDayPriceObservation"
+    where (
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "_Exchange.MarketIdentifierCode",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."PriceDataProvider",
+            "OLD"."PriceSeriesType",
+            "OLD"."_Exchange.MarketIdentifierCode",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::EndOfDayPriceObservation" as "OLD"
+        on
+                                       ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+                                       ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+                                       ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) and
+                                       ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

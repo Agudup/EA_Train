@@ -1,0 +1,362 @@
+PROCEDURE "sap.fsdm.procedures::AmortizedValuationCostReadOnly" (IN ROW "sap.fsdm.tabletypes::AmortizedValuationCostTT", OUT CURR_DEL "sap.fsdm.tabletypes::AmortizedValuationCostTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::AmortizedValuationCostTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'AVCCalculationMethod=' || TO_VARCHAR("AVCCalculationMethod") || ' ' ||
+                '_AccountingSystem.AccountingSystemID=' || TO_VARCHAR("_AccountingSystem.AccountingSystemID") || ' ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                '_InvestmentAccount.FinancialContractID=' || TO_VARCHAR("_InvestmentAccount.FinancialContractID") || ' ' ||
+                '_InvestmentAccount.IDSystem=' || TO_VARCHAR("_InvestmentAccount.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."AVCCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."AVCCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "AVCCalculationMethod",
+                        "_AccountingSystem.AccountingSystemID",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID",
+                        "_InvestmentAccount.FinancialContractID",
+                        "_InvestmentAccount.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."AVCCalculationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."AVCCalculationMethod",
+                                    "IN"."_AccountingSystem.AccountingSystemID",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID",
+                                    "IN"."_InvestmentAccount.FinancialContractID",
+                                    "IN"."_InvestmentAccount.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "AVCCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::AmortizedValuationCost" WHERE
+        (            "AVCCalculationMethod" ,
+            "_AccountingSystem.AccountingSystemID" ,
+            "_FinancialContract.FinancialContractID" ,
+            "_FinancialContract.IDSystem" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "_InvestmentAccount.FinancialContractID" ,
+            "_InvestmentAccount.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."AVCCalculationMethod",
+            "OLD"."_AccountingSystem.AccountingSystemID",
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."_InvestmentAccount.FinancialContractID",
+            "OLD"."_InvestmentAccount.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::AmortizedValuationCost" as "OLD"
+            on
+               ( case when "IN"."AVCCalculationMethod" is null then '' else "IN"."AVCCalculationMethod" end ) = "OLD"."AVCCalculationMethod" and
+               ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+               ( case when "IN"."_FinancialContract.FinancialContractID" is null then '' else "IN"."_FinancialContract.FinancialContractID" end ) = "OLD"."_FinancialContract.FinancialContractID" and
+               ( case when "IN"."_FinancialContract.IDSystem" is null then '' else "IN"."_FinancialContract.IDSystem" end ) = "OLD"."_FinancialContract.IDSystem" and
+               ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+               ( case when "IN"."_InvestmentAccount.FinancialContractID" is null then '' else "IN"."_InvestmentAccount.FinancialContractID" end ) = "OLD"."_InvestmentAccount.FinancialContractID" and
+               ( case when "IN"."_InvestmentAccount.IDSystem" is null then '' else "IN"."_InvestmentAccount.IDSystem" end ) = "OLD"."_InvestmentAccount.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "AVCCalculationMethod",
+        "_AccountingSystem.AccountingSystemID",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "_InvestmentAccount.FinancialContractID",
+        "_InvestmentAccount.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AVC1PaymentCurrency",
+        "AVC1PositionCurrency",
+        "AVC1TimeInPaymentCurrency",
+        "AVC1TimeInPositionCurrency",
+        "AVCInPaymentCurrency",
+        "AVCInPositionCurrrency",
+        "AVCPaymentCurrency",
+        "AVCPositionCurrency",
+        "EffectiveInterestRate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "AVCCalculationMethod" is null then '' else "AVCCalculationMethod" end ) as "AVCCalculationMethod",
+                    ( case when "_AccountingSystem.AccountingSystemID" is null then '' else "_AccountingSystem.AccountingSystemID" end ) as "_AccountingSystem.AccountingSystemID",
+                    ( case when "_FinancialContract.FinancialContractID" is null then '' else "_FinancialContract.FinancialContractID" end ) as "_FinancialContract.FinancialContractID",
+                    ( case when "_FinancialContract.IDSystem" is null then '' else "_FinancialContract.IDSystem" end ) as "_FinancialContract.IDSystem",
+                    ( case when "_FinancialInstrument.FinancialInstrumentID" is null then '' else "_FinancialInstrument.FinancialInstrumentID" end ) as "_FinancialInstrument.FinancialInstrumentID",
+                    ( case when "_InvestmentAccount.FinancialContractID" is null then '' else "_InvestmentAccount.FinancialContractID" end ) as "_InvestmentAccount.FinancialContractID",
+                    ( case when "_InvestmentAccount.IDSystem" is null then '' else "_InvestmentAccount.IDSystem" end ) as "_InvestmentAccount.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "AVC1PaymentCurrency"  ,
+                    "AVC1PositionCurrency"  ,
+                    "AVC1TimeInPaymentCurrency"  ,
+                    "AVC1TimeInPositionCurrency"  ,
+                    "AVCInPaymentCurrency"  ,
+                    "AVCInPositionCurrrency"  ,
+                    "AVCPaymentCurrency"  ,
+                    "AVCPositionCurrency"  ,
+                    "EffectiveInterestRate"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_AVCCalculationMethod" as "AVCCalculationMethod" ,
+                    "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID" ,
+                    "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+                    "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+                    "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+                    "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID" ,
+                    "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_AVC1PaymentCurrency" as "AVC1PaymentCurrency" ,
+                    "OLD_AVC1PositionCurrency" as "AVC1PositionCurrency" ,
+                    "OLD_AVC1TimeInPaymentCurrency" as "AVC1TimeInPaymentCurrency" ,
+                    "OLD_AVC1TimeInPositionCurrency" as "AVC1TimeInPositionCurrency" ,
+                    "OLD_AVCInPaymentCurrency" as "AVCInPaymentCurrency" ,
+                    "OLD_AVCInPositionCurrrency" as "AVCInPositionCurrrency" ,
+                    "OLD_AVCPaymentCurrency" as "AVCPaymentCurrency" ,
+                    "OLD_AVCPositionCurrency" as "AVCPositionCurrency" ,
+                    "OLD_EffectiveInterestRate" as "EffectiveInterestRate" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."AVCCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."AVCCalculationMethod" as "OLD_AVCCalculationMethod",
+                                "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                                "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AVC1PaymentCurrency" as "OLD_AVC1PaymentCurrency",
+                                "OLD"."AVC1PositionCurrency" as "OLD_AVC1PositionCurrency",
+                                "OLD"."AVC1TimeInPaymentCurrency" as "OLD_AVC1TimeInPaymentCurrency",
+                                "OLD"."AVC1TimeInPositionCurrency" as "OLD_AVC1TimeInPositionCurrency",
+                                "OLD"."AVCInPaymentCurrency" as "OLD_AVCInPaymentCurrency",
+                                "OLD"."AVCInPositionCurrrency" as "OLD_AVCInPositionCurrrency",
+                                "OLD"."AVCPaymentCurrency" as "OLD_AVCPaymentCurrency",
+                                "OLD"."AVCPositionCurrency" as "OLD_AVCPositionCurrency",
+                                "OLD"."EffectiveInterestRate" as "OLD_EffectiveInterestRate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AmortizedValuationCost" as "OLD"
+            on
+                ( case when "IN"."AVCCalculationMethod" is null then '' else "IN"."AVCCalculationMethod" end ) = "OLD"."AVCCalculationMethod" and
+                ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+                ( case when "IN"."_FinancialContract.FinancialContractID" is null then '' else "IN"."_FinancialContract.FinancialContractID" end ) = "OLD"."_FinancialContract.FinancialContractID" and
+                ( case when "IN"."_FinancialContract.IDSystem" is null then '' else "IN"."_FinancialContract.IDSystem" end ) = "OLD"."_FinancialContract.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_InvestmentAccount.FinancialContractID" is null then '' else "IN"."_InvestmentAccount.FinancialContractID" end ) = "OLD"."_InvestmentAccount.FinancialContractID" and
+                ( case when "IN"."_InvestmentAccount.IDSystem" is null then '' else "IN"."_InvestmentAccount.IDSystem" end ) = "OLD"."_InvestmentAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_AVCCalculationMethod" as "AVCCalculationMethod",
+            "OLD__AccountingSystem.AccountingSystemID" as "_AccountingSystem.AccountingSystemID",
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "OLD__InvestmentAccount.FinancialContractID" as "_InvestmentAccount.FinancialContractID",
+            "OLD__InvestmentAccount.IDSystem" as "_InvestmentAccount.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AVC1PaymentCurrency" as "AVC1PaymentCurrency",
+            "OLD_AVC1PositionCurrency" as "AVC1PositionCurrency",
+            "OLD_AVC1TimeInPaymentCurrency" as "AVC1TimeInPaymentCurrency",
+            "OLD_AVC1TimeInPositionCurrency" as "AVC1TimeInPositionCurrency",
+            "OLD_AVCInPaymentCurrency" as "AVCInPaymentCurrency",
+            "OLD_AVCInPositionCurrrency" as "AVCInPositionCurrrency",
+            "OLD_AVCPaymentCurrency" as "AVCPaymentCurrency",
+            "OLD_AVCPositionCurrency" as "AVCPositionCurrency",
+            "OLD_EffectiveInterestRate" as "EffectiveInterestRate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."AVCCalculationMethod",
+                        "IN"."_AccountingSystem.AccountingSystemID",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID",
+                        "IN"."_InvestmentAccount.FinancialContractID",
+                        "IN"."_InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."AVCCalculationMethod" as "OLD_AVCCalculationMethod",
+                        "OLD"."_AccountingSystem.AccountingSystemID" as "OLD__AccountingSystem.AccountingSystemID",
+                        "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."_InvestmentAccount.FinancialContractID" as "OLD__InvestmentAccount.FinancialContractID",
+                        "OLD"."_InvestmentAccount.IDSystem" as "OLD__InvestmentAccount.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."AVC1PaymentCurrency" as "OLD_AVC1PaymentCurrency",
+                        "OLD"."AVC1PositionCurrency" as "OLD_AVC1PositionCurrency",
+                        "OLD"."AVC1TimeInPaymentCurrency" as "OLD_AVC1TimeInPaymentCurrency",
+                        "OLD"."AVC1TimeInPositionCurrency" as "OLD_AVC1TimeInPositionCurrency",
+                        "OLD"."AVCInPaymentCurrency" as "OLD_AVCInPaymentCurrency",
+                        "OLD"."AVCInPositionCurrrency" as "OLD_AVCInPositionCurrrency",
+                        "OLD"."AVCPaymentCurrency" as "OLD_AVCPaymentCurrency",
+                        "OLD"."AVCPositionCurrency" as "OLD_AVCPositionCurrency",
+                        "OLD"."EffectiveInterestRate" as "OLD_EffectiveInterestRate",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::AmortizedValuationCost" as "OLD"
+            on
+                ( case when "IN"."AVCCalculationMethod" is null then '' else "IN"."AVCCalculationMethod" end ) = "OLD"."AVCCalculationMethod" and
+                ( case when "IN"."_AccountingSystem.AccountingSystemID" is null then '' else "IN"."_AccountingSystem.AccountingSystemID" end ) = "OLD"."_AccountingSystem.AccountingSystemID" and
+                ( case when "IN"."_FinancialContract.FinancialContractID" is null then '' else "IN"."_FinancialContract.FinancialContractID" end ) = "OLD"."_FinancialContract.FinancialContractID" and
+                ( case when "IN"."_FinancialContract.IDSystem" is null then '' else "IN"."_FinancialContract.IDSystem" end ) = "OLD"."_FinancialContract.IDSystem" and
+                ( case when "IN"."_FinancialInstrument.FinancialInstrumentID" is null then '' else "IN"."_FinancialInstrument.FinancialInstrumentID" end ) = "OLD"."_FinancialInstrument.FinancialInstrumentID" and
+                ( case when "IN"."_InvestmentAccount.FinancialContractID" is null then '' else "IN"."_InvestmentAccount.FinancialContractID" end ) = "OLD"."_InvestmentAccount.FinancialContractID" and
+                ( case when "IN"."_InvestmentAccount.IDSystem" is null then '' else "IN"."_InvestmentAccount.IDSystem" end ) = "OLD"."_InvestmentAccount.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

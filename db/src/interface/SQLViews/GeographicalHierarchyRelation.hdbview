@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::GeographicalHierarchyRelation_View" 
+as select
+      "GeographicalHierarchyID" ,
+      "ASSOC_Child.GeographicalStructureID" ,
+      "ASSOC_Child.GeographicalUnitID" ,
+      "ASSOC_Parent.GeographicalStructureID" ,
+      "ASSOC_Parent.GeographicalUnitID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "GeographicalHierarchyName" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::GeographicalHierarchyRelation"
+with associations
+(
+	join "sap.fsdm.SQLViews::GeographicalUnit_View" as "ASSOC_Child"
+	  on "ASSOC_Child"."GeographicalStructureID" = "ASSOC_Child.GeographicalStructureID" AND 
+	     "ASSOC_Child"."GeographicalUnitID" = "ASSOC_Child.GeographicalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeographicalUnit_View" as "ASSOC_Parent"
+	  on "ASSOC_Parent"."GeographicalUnitID" = "ASSOC_Parent.GeographicalUnitID" AND 
+	     "ASSOC_Parent"."GeographicalStructureID" = "ASSOC_Parent.GeographicalStructureID"
+	     
+);

@@ -1,0 +1,64 @@
+PROCEDURE "sap.fsdm.procedures::CommodityIntradayTradingObservationDelReadOnly" (IN ROW "sap.fsdm.tabletypes::CommodityIntradayTradingObservationTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::CommodityIntradayTradingObservationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PriceDataProvider" is null and
+                         "PriceSeriesType" is null and
+                         "SequenceNumber" is null and
+                         "Timestamp" is null and
+                         "_Commodity.CommodityID" is null and
+                         "_Exchange.MarketIdentifierCode" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning--Delete entries for update from current table
+CURR_DEL = select 
+"PriceDataProvider",
+"PriceSeriesType",
+"SequenceNumber",
+"Timestamp",
+"_Commodity.CommodityID",
+"_Exchange.MarketIdentifierCode"
+from "sap.fsdm::CommodityIntradayTradingObservation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Commodity.CommodityID" ,
+"_Exchange.MarketIdentifierCode" 
+)in ( select 
+"OLD"."PriceDataProvider"  as "PriceDataProvider" ,
+"OLD"."PriceSeriesType"  as "PriceSeriesType" ,
+"OLD"."SequenceNumber"  as "SequenceNumber" ,
+"OLD"."Timestamp"  as "Timestamp" ,
+"OLD"."_Commodity.CommodityID"  as "_Commodity.CommodityID" ,
+"OLD"."_Exchange.MarketIdentifierCode"  as "_Exchange.MarketIdentifierCode" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::CommodityIntradayTradingObservation" AS "OLD"
+  ON
+  ( "IN"."PriceDataProvider" = "OLD"."PriceDataProvider" or "IN"."PriceDataProvider" is null ) and
+  ( "IN"."PriceSeriesType" = "OLD"."PriceSeriesType" or "IN"."PriceSeriesType" is null ) and
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."Timestamp" = "OLD"."Timestamp" or "IN"."Timestamp" is null ) and
+  ( "IN"."_Commodity.CommodityID" = "OLD"."_Commodity.CommodityID" or "IN"."_Commodity.CommodityID" is null ) and
+  ( "IN"."_Exchange.MarketIdentifierCode" = "OLD"."_Exchange.MarketIdentifierCode" or "IN"."_Exchange.MarketIdentifierCode" is null ) 
+);
+
+END

@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::IntradayExchangeRateObservationReadOnly" (IN ROW "sap.fsdm.tabletypes::IntradayExchangeRateObservationTT" , OUT CURR_DEL "sap.fsdm.tabletypes::IntradayExchangeRateObservationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::IntradayExchangeRateObservationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"BaseCurrency",
+"ExchangeRateType",
+"PriceDataProvider",
+"QuotationType",
+"QuoteCurrency",
+"Timestamp"
+from "sap.fsdm::IntradayExchangeRateObservation" WHERE("BaseCurrency" ,
+"ExchangeRateType" ,
+"PriceDataProvider" ,
+"QuotationType" ,
+"QuoteCurrency" ,
+"Timestamp" 
+)in ( select     ( case when "BaseCurrency" is null then '' else "BaseCurrency" end ) as "BaseCurrency",
+    ( case when "ExchangeRateType" is null then '' else "ExchangeRateType" end ) as "ExchangeRateType",
+    ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+    ( case when "QuotationType" is null then '' else "QuotationType" end ) as "QuotationType",
+    ( case when "QuoteCurrency" is null then '' else "QuoteCurrency" end ) as "QuoteCurrency",
+    ( case when "Timestamp" is null then '0001-01-01 01:01:01' else "Timestamp" end ) as "Timestamp"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"BaseCurrency",
+"ExchangeRateType",
+"PriceDataProvider",
+"QuotationType",
+"QuoteCurrency",
+"Timestamp",
+"AskID",
+"AskSize",
+"BestAsk",
+"BestBid",
+"BidID",
+"BidSize",
+"ExchangeRate",
+"IntradayExchangeRateCategory",
+"Mid",
+"TickID",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "BaseCurrency" is null then '' else "BaseCurrency" end ) as "BaseCurrency",
+    ( case when "ExchangeRateType" is null then '' else "ExchangeRateType" end ) as "ExchangeRateType",
+    ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+    ( case when "QuotationType" is null then '' else "QuotationType" end ) as "QuotationType",
+    ( case when "QuoteCurrency" is null then '' else "QuoteCurrency" end ) as "QuoteCurrency",
+    ( case when "Timestamp" is null then '0001-01-01 01:01:01' else "Timestamp" end ) as "Timestamp",
+  "AskID"  ,
+  "AskSize"  ,
+  "BestAsk"  ,
+  "BestBid"  ,
+  "BidID"  ,
+  "BidSize"  ,
+  "ExchangeRate"  ,
+  "IntradayExchangeRateCategory"  ,
+  "Mid"  ,
+  "TickID"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

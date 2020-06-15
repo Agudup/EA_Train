@@ -1,0 +1,228 @@
+PROCEDURE "sap.fsdm.procedures::ConsolidatedBusinessPartnerDelReadOnly" (IN ROW "sap.fsdm.tabletypes::ConsolidatedBusinessPartnerTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::ConsolidatedBusinessPartnerTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::ConsolidatedBusinessPartnerTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ConsolidationSystem=' || TO_VARCHAR("ConsolidationSystem") || ' ' ||
+                'ASSOC_BusinessPartner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_BusinessPartner.BusinessPartnerID") || ' ' ||
+                'ASSOC_MotherCompany.BusinessPartnerID=' || TO_VARCHAR("ASSOC_MotherCompany.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ConsolidationSystem",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_MotherCompany.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ConsolidationSystem",
+                        "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "IN"."ASSOC_MotherCompany.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ConsolidationSystem",
+                        "ASSOC_BusinessPartner.BusinessPartnerID",
+                        "ASSOC_MotherCompany.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ConsolidationSystem",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_MotherCompany.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ConsolidationSystem",
+                                    "IN"."ASSOC_BusinessPartner.BusinessPartnerID",
+                                    "IN"."ASSOC_MotherCompany.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "ConsolidationSystem",
+            "ASSOC_BusinessPartner.BusinessPartnerID",
+            "ASSOC_MotherCompany.BusinessPartnerID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::ConsolidatedBusinessPartner" WHERE
+            (
+            "ConsolidationSystem" ,
+            "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "ASSOC_MotherCompany.BusinessPartnerID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."ConsolidationSystem",
+            "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD"."ASSOC_MotherCompany.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ConsolidatedBusinessPartner" as "OLD"
+        on
+                              ( "IN"."ConsolidationSystem" = "OLD"."ConsolidationSystem" or "IN"."ConsolidationSystem" is null ) and
+                              ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                              ( "IN"."ASSOC_MotherCompany.BusinessPartnerID" = "OLD"."ASSOC_MotherCompany.BusinessPartnerID" or "IN"."ASSOC_MotherCompany.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "ConsolidationSystem",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_MotherCompany.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "MethodOfConsolidation",
+        "ProportionOfConsolidation",
+        "ReasonOfConsolidation",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_ConsolidationSystem" as "ConsolidationSystem" ,
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID" ,
+            "OLD_ASSOC_MotherCompany.BusinessPartnerID" as "ASSOC_MotherCompany.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_MethodOfConsolidation" as "MethodOfConsolidation" ,
+            "OLD_ProportionOfConsolidation" as "ProportionOfConsolidation" ,
+            "OLD_ReasonOfConsolidation" as "ReasonOfConsolidation" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ConsolidationSystem",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_MotherCompany.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ConsolidationSystem" as "OLD_ConsolidationSystem",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."ASSOC_MotherCompany.BusinessPartnerID" as "OLD_ASSOC_MotherCompany.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."MethodOfConsolidation" as "OLD_MethodOfConsolidation",
+                                "OLD"."ProportionOfConsolidation" as "OLD_ProportionOfConsolidation",
+                                "OLD"."ReasonOfConsolidation" as "OLD_ReasonOfConsolidation",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ConsolidatedBusinessPartner" as "OLD"
+            on
+                                      ( "IN"."ConsolidationSystem" = "OLD"."ConsolidationSystem" or "IN"."ConsolidationSystem" is null ) and
+                                      ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+                                      ( "IN"."ASSOC_MotherCompany.BusinessPartnerID" = "OLD"."ASSOC_MotherCompany.BusinessPartnerID" or "IN"."ASSOC_MotherCompany.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_ConsolidationSystem" as "ConsolidationSystem",
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD_ASSOC_MotherCompany.BusinessPartnerID" as "ASSOC_MotherCompany.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_MethodOfConsolidation" as "MethodOfConsolidation",
+            "OLD_ProportionOfConsolidation" as "ProportionOfConsolidation",
+            "OLD_ReasonOfConsolidation" as "ReasonOfConsolidation",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ConsolidationSystem",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_MotherCompany.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."ConsolidationSystem" as "OLD_ConsolidationSystem",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."ASSOC_MotherCompany.BusinessPartnerID" as "OLD_ASSOC_MotherCompany.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."MethodOfConsolidation" as "OLD_MethodOfConsolidation",
+                                "OLD"."ProportionOfConsolidation" as "OLD_ProportionOfConsolidation",
+                                "OLD"."ReasonOfConsolidation" as "OLD_ReasonOfConsolidation",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ConsolidatedBusinessPartner" as "OLD"
+            on
+               ( "IN"."ConsolidationSystem" = "OLD"."ConsolidationSystem" or "IN"."ConsolidationSystem" is null ) and
+               ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+               ( "IN"."ASSOC_MotherCompany.BusinessPartnerID" = "OLD"."ASSOC_MotherCompany.BusinessPartnerID" or "IN"."ASSOC_MotherCompany.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

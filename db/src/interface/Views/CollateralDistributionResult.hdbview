@@ -1,0 +1,41 @@
+view "sap.fsdm.Views::CollateralDistributionResult_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CollateralDistributionMethod" as "CollateralDistributionMethod",
+      "ASSOC_CollateralPortion.PortionNumber" as "ASSOC_CollateralPortion_PortionNumber",
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralPortion_ASSOC_CollateralAgreement_FinancialContractID",
+      "ASSOC_CollateralPortion.ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralPortion_ASSOC_CollateralAgreement_IDSystem",
+      "ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract_IDSystem",
+      "_CombinedCollateralAgreement.FinancialContractID" as "_CombinedCollateralAgreement_FinancialContractID",
+      "_CombinedCollateralAgreement.IDSystem" as "_CombinedCollateralAgreement_IDSystem",
+      "_FinancialContractUsedAsCollateral.FinancialContractID" as "_FinancialContractUsedAsCollateral_FinancialContractID",
+      "_FinancialContractUsedAsCollateral.IDSystem" as "_FinancialContractUsedAsCollateral_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_FinancialInstrumentUsedAsCollateral.FinancialInstrumentID" as "_FinancialInstrumentUsedAsCollateral_FinancialInstrumentID",
+      "_InvestmentAccount.FinancialContractID" as "_InvestmentAccount_FinancialContractID",
+      "_InvestmentAccount.IDSystem" as "_InvestmentAccount_IDSystem",
+      "_PhysicalAssetUsedAsCollateral.PhysicalAssetID" as "_PhysicalAssetUsedAsCollateral_PhysicalAssetID",
+      "_ReceivableUsedAsCollateral.ReceivableID" as "_ReceivableUsedAsCollateral_ReceivableID",
+      "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.FinancialContractID" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral_FinancialContractID",
+      "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral.IDSystem" as "_SecuritiesAccountOfFinancialInstrumentUsedAsCollateral_IDSystem",
+      "_SimpleCollateralAgreement.FinancialContractID" as "_SimpleCollateralAgreement_FinancialContractID",
+      "_SimpleCollateralAgreement.IDSystem" as "_SimpleCollateralAgreement_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AssignedCollateralAmmountInPositionCurrency" as "AssignedCollateralAmmountInPositionCurrency",
+      "AssignedCollateralAmount" as "AssignedCollateralAmount",
+      "AssignedCollateralAmountCurrency" as "AssignedCollateralAmountCurrency",
+      "CurrentExposure" as "CurrentExposure",
+      "MaximumExposure" as "MaximumExposure",
+      "PositionCurrency" as "PositionCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CollateralDistributionResult"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

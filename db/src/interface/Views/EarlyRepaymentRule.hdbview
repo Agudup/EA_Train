@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::EarlyRepaymentRule_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_Loan.FinancialContractID" as "ASSOC_Loan_FinancialContractID",
+      "ASSOC_Loan.IDSystem" as "ASSOC_Loan_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "EarlyRepaymentEndDate" as "EarlyRepaymentEndDate",
+      "EarlyRepaymentStartDate" as "EarlyRepaymentStartDate",
+      "MaximumPrepaymentAmount" as "MaximumPrepaymentAmount",
+      "MinimumPrepaymentAmount" as "MinimumPrepaymentAmount",
+      "NoticePeriodLength" as "NoticePeriodLength",
+      "NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+      "PrepaymentAmountCurrency" as "PrepaymentAmountCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::EarlyRepaymentRule"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

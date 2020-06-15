@@ -1,0 +1,48 @@
+PROCEDURE "sap.fsdm.procedures::GeneralLedgerAccountBalanceDelete" (IN ROW "sap.fsdm.tabletypes::GeneralLedgerAccountBalanceTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::GeneralLedgerAccountBalance" WHERE("AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+)in ( select "AccountingBalanceType" ,
+"FiscalYear" ,
+"PostingDate" ,
+"_AccountingSystem.AccountingSystemID" ,
+"_BusinessSegment.OrganizationalUnitID" ,
+"_BusinessSegment.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_BusinessSegmentAtCounterparty.OrganizationalUnitID" ,
+"_BusinessSegmentAtCounterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_CompanyCode.CompanyCode" ,
+"_CompanyCode.ASSOC_Company.BusinessPartnerID" ,
+"_GLAccount.GLAccount" ,
+"_GLAccount._ChartOfAccounts.ChartOfAccountId" ,
+"_ProductClass.ProductClass" ,
+"_ProductClass.ProductClassificationSystem" ,
+"_ProfitCenter.OrganizationalUnitID" ,
+"_ProfitCenter.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"_ProftCenterAtCouterparty.OrganizationalUnitID" ,
+"_ProftCenterAtCouterparty.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+from :ROW );
+
+
+END

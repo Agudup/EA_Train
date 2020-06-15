@@ -1,0 +1,20 @@
+view "sap.fsdm.Views::IndustryClassAssignment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner_BusinessPartnerID",
+      "ASSOC_IndustryClass.Industry" as "ASSOC_IndustryClass_Industry",
+      "ASSOC_IndustryClass.IndustryClassificationSystem" as "ASSOC_IndustryClass_IndustryClassificationSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "BusinessVolumePercentage" as "BusinessVolumePercentage",
+      "MainIndustry" as "MainIndustry",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::IndustryClassAssignment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

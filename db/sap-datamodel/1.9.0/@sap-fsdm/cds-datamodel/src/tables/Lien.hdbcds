@@ -1,0 +1,59 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+
+entity "Lien" {
+    key "SequenceNumber"                : Integer;
+    key "_LienAccount"                  : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                       not null;
+        "SystemValidTo"                 : UTCTimestamp                       not null;
+        "Comment"                       : String(200);
+        "IsLienReleased"                : Boolean;
+        "LienAmount"                    : Decimal(34, 6);
+        "LienAmountCurrency"            : String(3);
+        "LienExpiryDate"                : LocalDate;
+        "LienReason"                    : String(256);
+        "LienStartDate"                 : LocalDate;
+        "LienType"                      : String(40);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Lien_Historical" {
+    "SequenceNumber"                : Integer                            not null;
+    "_LienAccount"                  : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       } not null;
+    "BusinessValidFrom"             : LocalDate                          not null;
+    "BusinessValidTo"               : LocalDate                          not null;
+    "SystemValidFrom"               : UTCTimestamp                       not null;
+    "SystemValidTo"                 : UTCTimestamp                       not null;
+    "Comment"                       : String(200);
+    "IsLienReleased"                : Boolean;
+    "LienAmount"                    : Decimal(34, 6);
+    "LienAmountCurrency"            : String(3);
+    "LienExpiryDate"                : LocalDate;
+    "LienReason"                    : String(256);
+    "LienStartDate"                 : LocalDate;
+    "LienType"                      : String(40);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

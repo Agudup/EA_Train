@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::IndustryClassAssignment_View" 
+as select
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_IndustryClass.Industry" ,
+      "ASSOC_IndustryClass.IndustryClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BusinessVolumePercentage" ,
+      "MainIndustry" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndustryClassAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClass_View" as "ASSOC_IndustryClass"
+	  on "ASSOC_IndustryClass"."Industry" = "ASSOC_IndustryClass.Industry" AND 
+	     "ASSOC_IndustryClass"."IndustryClassificationSystem" = "ASSOC_IndustryClass.IndustryClassificationSystem"
+	     
+);

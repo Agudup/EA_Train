@@ -1,0 +1,71 @@
+PROCEDURE "sap.fsdm.procedures::PositionCurrencyOfMultiCcyStandardProductEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::PositionCurrencyOfMultiCcyStandardProductTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::PositionCurrencyOfMultiCcyStandardProductTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::PositionCurrencyOfMultiCcyStandardProductTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "PositionCurrency" is null and
+                         "ASSOC_StdMultiCcyAcct.FinancialStandardProductID" is null and
+                         "ASSOC_StdMultiCcyAcct.IDSystem" is null and
+                         "ASSOC_StdMultiCcyAcct.PricingScheme" is null and
+                         "ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"PositionCurrency",
+"ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+"ASSOC_StdMultiCcyAcct.IDSystem",
+"ASSOC_StdMultiCcyAcct.PricingScheme",
+"ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::PositionCurrencyOfMultiCcyStandardProduct" WHERE("PositionCurrency" ,
+"ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" 
+)in ( select "PositionCurrency" ,
+"ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"PositionCurrency",
+"ASSOC_StdMultiCcyAcct.FinancialStandardProductID",
+"ASSOC_StdMultiCcyAcct.IDSystem",
+"ASSOC_StdMultiCcyAcct.PricingScheme",
+"ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::PositionCurrencyOfMultiCcyStandardProduct_Historical" WHERE("PositionCurrency" ,
+"ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" 
+)in ( select "PositionCurrency" ,
+"ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+"ASSOC_StdMultiCcyAcct.IDSystem" ,
+"ASSOC_StdMultiCcyAcct.PricingScheme" ,
+"ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" 
+from :ROW );
+
+END

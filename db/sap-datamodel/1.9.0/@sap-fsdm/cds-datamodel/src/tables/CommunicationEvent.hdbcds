@@ -1,0 +1,110 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BankingChannel";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "CommunicationEvent" {
+    key "CommunicationEventID"                     : String(128);
+    key "IDSystem"                                 : String(40);
+        "SystemValidFrom"                          : UTCTimestamp not null;
+        "SystemValidTo"                            : UTCTimestamp not null;
+        "ASSOC_BankingChannel"                     : association to BankingChannel { BankingChannelID };
+        "ASSOC_BusinessEventDataOwner"             : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_CompanyEmployeeHandlingTheEvent"    : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_EarlyWarningForPartner"             : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_EmployeeResponsibleForEarlyWarning" : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_OrganizationalUnit"                 : association to OrganizationalUnit {
+                                                                                         OrganizationalUnitID,
+                                                                                         ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                       };
+        "ASSOC_ReferencedFinancialContract"        : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      };
+        "ASSOC_Sender"                             : association to BusinessPartner { BusinessPartnerID };
+        "AdditionalRequestedTermLength"            : Decimal(34, 6);
+        "AdditionalRequestedTermLengthUnit"        : String(12);
+        "AnnouncedPrepaymentAmount"                : Decimal(34, 6);
+        "AnnouncedPrepaymentDate"                  : LocalDate;
+        "CancelledAmount"                          : Decimal(34, 6);
+        "CancelledAmountCurrency"                  : String(3);
+        "CommunicationEventCategory"               : String(100);
+        "CustomerCommunicationEventType"           : String(40);
+        "DateOfReceipt"                            : LocalDate;
+        "EarlyWarningEventCategory"                : String(40);
+        "EarlyWarningEventType"                    : String(40);
+        "EventAmount"                              : Decimal(34, 6);
+        "EventComment"                             : String(200);
+        "EventCurrency"                            : String(3);
+        "FinancialCriterion"                       : String(40);
+        "FinancialCriterionValue"                  : Decimal(34, 6);
+        "InitiatedByCustomer"                      : Boolean;
+        "ManuallyCreatedEarlyWarning"              : Boolean;
+        "NonnumericalCriterionValue"               : String(40);
+        "Note"                                     : String(200);
+        "PartialCancellation"                      : Boolean;
+        "RequestedCancellationDate"                : LocalDate;
+        "TradeFinanceEventType"                    : String(50);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CommunicationEvent_Historical" {
+    "CommunicationEventID"                     : String(128)  not null;
+    "IDSystem"                                 : String(40)   not null;
+    "SystemValidFrom"                          : UTCTimestamp not null;
+    "SystemValidTo"                            : UTCTimestamp not null;
+    "ASSOC_BankingChannel"                     : association to BankingChannel { BankingChannelID };
+    "ASSOC_BusinessEventDataOwner"             : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_CompanyEmployeeHandlingTheEvent"    : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_EarlyWarningForPartner"             : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_EmployeeResponsibleForEarlyWarning" : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_OrganizationalUnit"                 : association to OrganizationalUnit {
+                                                                                     OrganizationalUnitID,
+                                                                                     ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                   };
+    "ASSOC_ReferencedFinancialContract"        : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  };
+    "ASSOC_Sender"                             : association to BusinessPartner { BusinessPartnerID };
+    "AdditionalRequestedTermLength"            : Decimal(34, 6);
+    "AdditionalRequestedTermLengthUnit"        : String(12);
+    "AnnouncedPrepaymentAmount"                : Decimal(34, 6);
+    "AnnouncedPrepaymentDate"                  : LocalDate;
+    "CancelledAmount"                          : Decimal(34, 6);
+    "CancelledAmountCurrency"                  : String(3);
+    "CommunicationEventCategory"               : String(100);
+    "CustomerCommunicationEventType"           : String(40);
+    "DateOfReceipt"                            : LocalDate;
+    "EarlyWarningEventCategory"                : String(40);
+    "EarlyWarningEventType"                    : String(40);
+    "EventAmount"                              : Decimal(34, 6);
+    "EventComment"                             : String(200);
+    "EventCurrency"                            : String(3);
+    "FinancialCriterion"                       : String(40);
+    "FinancialCriterionValue"                  : Decimal(34, 6);
+    "InitiatedByCustomer"                      : Boolean;
+    "ManuallyCreatedEarlyWarning"              : Boolean;
+    "NonnumericalCriterionValue"               : String(40);
+    "Note"                                     : String(200);
+    "PartialCancellation"                      : Boolean;
+    "RequestedCancellationDate"                : LocalDate;
+    "TradeFinanceEventType"                    : String(50);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

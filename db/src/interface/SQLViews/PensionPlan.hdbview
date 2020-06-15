@@ -1,0 +1,36 @@
+view "sap.fsdm.SQLViews::PensionPlan_View" 
+as select
+      "ID" ,
+      "_RetirementPlan.ID" ,
+      "_RetirementPlan._BusinessPartner.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Description" ,
+      "IssueDate" ,
+      "Name" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PensionPlan"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__PensionPlan"
+	  on "ID" = "_FinancialContract__PensionPlan"."_PensionPlan.ID" AND 
+	     "_RetirementPlan.ID" = "_FinancialContract__PensionPlan"."_PensionPlan._RetirementPlan.ID" AND 
+	     "_RetirementPlan._BusinessPartner.BusinessPartnerID" = "_FinancialContract__PensionPlan"."_PensionPlan._RetirementPlan._BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "_FinancialStandardProduct__PensionPlan"
+	  on "ID" = "_FinancialStandardProduct__PensionPlan"."_PensionPlan.ID" AND 
+	     "_RetirementPlan.ID" = "_FinancialStandardProduct__PensionPlan"."_PensionPlan._RetirementPlan.ID" AND 
+	     "_RetirementPlan._BusinessPartner.BusinessPartnerID" = "_FinancialStandardProduct__PensionPlan"."_PensionPlan._RetirementPlan._BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::RetirementPlan_View" as "_RetirementPlan"
+	  on "_RetirementPlan"."ID" = "_RetirementPlan.ID" AND 
+	     "_RetirementPlan"."_BusinessPartner.BusinessPartnerID" = "_RetirementPlan._BusinessPartner.BusinessPartnerID"
+	     
+);

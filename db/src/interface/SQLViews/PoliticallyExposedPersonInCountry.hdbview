@@ -1,0 +1,23 @@
+view "sap.fsdm.SQLViews::PoliticallyExposedPersonInCountry_View" 
+as select
+      "CountryCode" ,
+      "_IndividualPerson.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Description" ,
+      "PEPStatus" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PoliticallyExposedPersonInCountry"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_IndividualPerson"
+	  on "_IndividualPerson"."BusinessPartnerID" = "_IndividualPerson.BusinessPartnerID"
+	     
+);

@@ -1,0 +1,36 @@
+view "sap.fsdm.SQLViews::IndustryClass_View" 
+as select
+      "Industry" ,
+      "IndustryClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "IndustryClassificationSystemDescription" ,
+      "IndustryDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::IndustryClass"
+with associations
+(
+	join "sap.fsdm.SQLViews::FSSubledgerDocument_View" as "_FSSubledgerDocument__IndustryClass"
+	  on "Industry" = "_FSSubledgerDocument__IndustryClass"."_IndustryClass.Industry" AND 
+	     "IndustryClassificationSystem" = "_FSSubledgerDocument__IndustryClass"."_IndustryClass.IndustryClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClassAssignment_View" as "_IndustryClassAssignment_ASSOC_IndustryClass"
+	  on "Industry" = "_IndustryClassAssignment_ASSOC_IndustryClass"."ASSOC_IndustryClass.Industry" AND 
+	     "IndustryClassificationSystem" = "_IndustryClassAssignment_ASSOC_IndustryClass"."ASSOC_IndustryClass.IndustryClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClassHierarchyRelation_View" as "_IndustryClassHierarchyRelation_ASSOC_Child"
+	  on "Industry" = "_IndustryClassHierarchyRelation_ASSOC_Child"."ASSOC_Child.Industry" AND 
+	     "IndustryClassificationSystem" = "_IndustryClassHierarchyRelation_ASSOC_Child"."ASSOC_Child.IndustryClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::IndustryClassHierarchyRelation_View" as "_IndustryClassHierarchyRelation_ASSOC_Parent"
+	  on "IndustryClassificationSystem" = "_IndustryClassHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.IndustryClassificationSystem" AND 
+	     "Industry" = "_IndustryClassHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.Industry"
+	     
+);

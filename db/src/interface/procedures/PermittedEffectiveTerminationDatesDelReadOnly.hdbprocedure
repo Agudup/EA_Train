@@ -1,0 +1,295 @@
+PROCEDURE "sap.fsdm.procedures::PermittedEffectiveTerminationDatesDelReadOnly" (IN ROW "sap.fsdm.tabletypes::PermittedEffectiveTerminationDatesTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::PermittedEffectiveTerminationDatesTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::PermittedEffectiveTerminationDatesTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_TerminationOption.SequenceNumber=' || TO_VARCHAR("ASSOC_TerminationOption.SequenceNumber") || ' ' ||
+                'ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_TerminationOption._Trade.IDSystem=' || TO_VARCHAR("ASSOC_TerminationOption._Trade.IDSystem") || ' ' ||
+                'ASSOC_TerminationOption._Trade.TradeID=' || TO_VARCHAR("ASSOC_TerminationOption._Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_TerminationOption.SequenceNumber",
+                        "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_TerminationOption._Trade.IDSystem",
+                        "IN"."ASSOC_TerminationOption._Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_TerminationOption.SequenceNumber",
+                        "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_TerminationOption._Trade.IDSystem",
+                        "IN"."ASSOC_TerminationOption._Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_TerminationOption.SequenceNumber",
+                        "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_TerminationOption._Trade.IDSystem",
+                        "ASSOC_TerminationOption._Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_TerminationOption.SequenceNumber",
+                                    "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_TerminationOption._Trade.IDSystem",
+                                    "IN"."ASSOC_TerminationOption._Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_TerminationOption.SequenceNumber",
+                                    "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_TerminationOption._Trade.IDSystem",
+                                    "IN"."ASSOC_TerminationOption._Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "SequenceNumber",
+            "ASSOC_TerminationOption.SequenceNumber",
+            "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+            "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+            "ASSOC_TerminationOption._Trade.IDSystem",
+            "ASSOC_TerminationOption._Trade.TradeID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::PermittedEffectiveTerminationDates" WHERE
+            (
+            "SequenceNumber" ,
+            "ASSOC_TerminationOption.SequenceNumber" ,
+            "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+            "ASSOC_TerminationOption._Trade.IDSystem" ,
+            "ASSOC_TerminationOption._Trade.TradeID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_TerminationOption.SequenceNumber",
+            "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_TerminationOption._Trade.IDSystem",
+            "OLD"."ASSOC_TerminationOption._Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::PermittedEffectiveTerminationDates" as "OLD"
+        on
+                              ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                              ( "IN"."ASSOC_TerminationOption.SequenceNumber" = "OLD"."ASSOC_TerminationOption.SequenceNumber" or "IN"."ASSOC_TerminationOption.SequenceNumber" is null ) and
+                              ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."ASSOC_TerminationOption._Trade.IDSystem" = "OLD"."ASSOC_TerminationOption._Trade.IDSystem" or "IN"."ASSOC_TerminationOption._Trade.IDSystem" is null ) and
+                              ( "IN"."ASSOC_TerminationOption._Trade.TradeID" = "OLD"."ASSOC_TerminationOption._Trade.TradeID" or "IN"."ASSOC_TerminationOption._Trade.TradeID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "SequenceNumber",
+        "ASSOC_TerminationOption.SequenceNumber",
+        "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_TerminationOption._Trade.IDSystem",
+        "ASSOC_TerminationOption._Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "EndDay",
+        "EndMonth",
+        "EndYear",
+        "RepetitionPeriodLength",
+        "RepetitionPeriodTimeUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_TerminationOption.SequenceNumber" as "ASSOC_TerminationOption.SequenceNumber" ,
+            "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" as "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_TerminationOption._Trade.IDSystem" as "ASSOC_TerminationOption._Trade.IDSystem" ,
+            "OLD_ASSOC_TerminationOption._Trade.TradeID" as "ASSOC_TerminationOption._Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_EndDay" as "EndDay" ,
+            "OLD_EndMonth" as "EndMonth" ,
+            "OLD_EndYear" as "EndYear" ,
+            "OLD_RepetitionPeriodLength" as "RepetitionPeriodLength" ,
+            "OLD_RepetitionPeriodTimeUnit" as "RepetitionPeriodTimeUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_TerminationOption.SequenceNumber",
+                        "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_TerminationOption._Trade.IDSystem",
+                        "OLD"."ASSOC_TerminationOption._Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_TerminationOption.SequenceNumber" as "OLD_ASSOC_TerminationOption.SequenceNumber",
+                                "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_TerminationOption._Trade.IDSystem" as "OLD_ASSOC_TerminationOption._Trade.IDSystem",
+                                "OLD"."ASSOC_TerminationOption._Trade.TradeID" as "OLD_ASSOC_TerminationOption._Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."EndDay" as "OLD_EndDay",
+                                "OLD"."EndMonth" as "OLD_EndMonth",
+                                "OLD"."EndYear" as "OLD_EndYear",
+                                "OLD"."RepetitionPeriodLength" as "OLD_RepetitionPeriodLength",
+                                "OLD"."RepetitionPeriodTimeUnit" as "OLD_RepetitionPeriodTimeUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PermittedEffectiveTerminationDates" as "OLD"
+            on
+                                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                      ( "IN"."ASSOC_TerminationOption.SequenceNumber" = "OLD"."ASSOC_TerminationOption.SequenceNumber" or "IN"."ASSOC_TerminationOption.SequenceNumber" is null ) and
+                                      ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_TerminationOption._Trade.IDSystem" = "OLD"."ASSOC_TerminationOption._Trade.IDSystem" or "IN"."ASSOC_TerminationOption._Trade.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_TerminationOption._Trade.TradeID" = "OLD"."ASSOC_TerminationOption._Trade.TradeID" or "IN"."ASSOC_TerminationOption._Trade.TradeID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_TerminationOption.SequenceNumber" as "ASSOC_TerminationOption.SequenceNumber",
+            "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" as "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_TerminationOption._Trade.IDSystem" as "ASSOC_TerminationOption._Trade.IDSystem",
+            "OLD_ASSOC_TerminationOption._Trade.TradeID" as "ASSOC_TerminationOption._Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_EndDay" as "EndDay",
+            "OLD_EndMonth" as "EndMonth",
+            "OLD_EndYear" as "EndYear",
+            "OLD_RepetitionPeriodLength" as "RepetitionPeriodLength",
+            "OLD_RepetitionPeriodTimeUnit" as "RepetitionPeriodTimeUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_TerminationOption.SequenceNumber",
+                        "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_TerminationOption._Trade.IDSystem",
+                        "OLD"."ASSOC_TerminationOption._Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_TerminationOption.SequenceNumber" as "OLD_ASSOC_TerminationOption.SequenceNumber",
+                                "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_TerminationOption._Trade.IDSystem" as "OLD_ASSOC_TerminationOption._Trade.IDSystem",
+                                "OLD"."ASSOC_TerminationOption._Trade.TradeID" as "OLD_ASSOC_TerminationOption._Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."EndDay" as "OLD_EndDay",
+                                "OLD"."EndMonth" as "OLD_EndMonth",
+                                "OLD"."EndYear" as "OLD_EndYear",
+                                "OLD"."RepetitionPeriodLength" as "OLD_RepetitionPeriodLength",
+                                "OLD"."RepetitionPeriodTimeUnit" as "OLD_RepetitionPeriodTimeUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PermittedEffectiveTerminationDates" as "OLD"
+            on
+               ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+               ( "IN"."ASSOC_TerminationOption.SequenceNumber" = "OLD"."ASSOC_TerminationOption.SequenceNumber" or "IN"."ASSOC_TerminationOption.SequenceNumber" is null ) and
+               ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" is null ) and
+               ( "IN"."ASSOC_TerminationOption._Trade.IDSystem" = "OLD"."ASSOC_TerminationOption._Trade.IDSystem" or "IN"."ASSOC_TerminationOption._Trade.IDSystem" is null ) and
+               ( "IN"."ASSOC_TerminationOption._Trade.TradeID" = "OLD"."ASSOC_TerminationOption._Trade.TradeID" or "IN"."ASSOC_TerminationOption._Trade.TradeID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

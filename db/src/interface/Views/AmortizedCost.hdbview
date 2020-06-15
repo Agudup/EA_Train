@@ -1,0 +1,35 @@
+view "sap.fsdm.Views::AmortizedCost_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "ACCalculationMethod" as "ACCalculationMethod",
+      "_AccountingSystem.AccountingSystemID" as "_AccountingSystem_AccountingSystemID",
+      "_FinancialContract.FinancialContractID" as "_FinancialContract_FinancialContractID",
+      "_FinancialContract.IDSystem" as "_FinancialContract_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_InvestmentAccount.FinancialContractID" as "_InvestmentAccount_FinancialContractID",
+      "_InvestmentAccount.IDSystem" as "_InvestmentAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AC1PaymentCurrency" as "AC1PaymentCurrency",
+      "AC1PositionCurrency" as "AC1PositionCurrency",
+      "AC1TimeInPaymentCurrency" as "AC1TimeInPaymentCurrency",
+      "AC1TimeInPositionCurrency" as "AC1TimeInPositionCurrency",
+      "ACCPaymentCurrency" as "ACCPaymentCurrency",
+      "ACCPositionCurrency" as "ACCPositionCurrency",
+      "ACCrossEffectInPaymentCurrency" as "ACCrossEffectInPaymentCurrency",
+      "ACCrossEffectInPositionCurrency" as "ACCrossEffectInPositionCurrency",
+      "ACInPaymentCurrency" as "ACInPaymentCurrency",
+      "ACInPositionCurrency" as "ACInPositionCurrency",
+      "ACPaymentCurrency" as "ACPaymentCurrency",
+      "ACPositionCurrency" as "ACPositionCurrency",
+      "EffectiveInterestRate" as "EffectiveInterestRate",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::AmortizedCost"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

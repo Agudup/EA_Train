@@ -1,0 +1,70 @@
+view "sap.fsdm.SQLViews::PledgedObject_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_Pledge.FinancialContractID" ,
+      "ASSOC_Pledge.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType" ,
+      "ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" ,
+      "ASSOC_PledgedFinancialContract.FinancialContractID" ,
+      "ASSOC_PledgedFinancialContract.IDSystem" ,
+      "ASSOC_PledgedPhysicalAsset.PhysicalAssetID" ,
+      "ASSOC_PledgedReceivable.ReceivableID" ,
+      "ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID" ,
+      "InitialCollateralValue" ,
+      "InitialCollateralValueCurrency" ,
+      "PledgeOfFinancialContractCategory" ,
+      "PledgedAmount" ,
+      "PledgedAmountCurrency" ,
+      "PledgedObjectCategory" ,
+      "PledgedPercentage" ,
+      "ThirdPartyAccountIdentificationSystem" ,
+      "ThirdPartyBankAccountCurrency" ,
+      "ThirdPartyBankAccountHolderName" ,
+      "ThirdPartyBankAccountID" ,
+      "ThirdPartyBankID" ,
+      "ThirdPartyBankIdentificationSystem" ,
+      "ThirdPartyBankName" ,
+      "ThirdPartyIBAN" ,
+      "ThirdPartySWIFT" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PledgedObject"
+with associations
+(
+	join "sap.fsdm.SQLViews::PledgedFinancialInstruments_View" as "_PledgedFinancialInstruments__PledgedObject"
+	  on "ASSOC_Pledge.FinancialContractID" = "_PledgedFinancialInstruments__PledgedObject"."_PledgedObject.ASSOC_Pledge.FinancialContractID" AND 
+	     "ASSOC_Pledge.IDSystem" = "_PledgedFinancialInstruments__PledgedObject"."_PledgedObject.ASSOC_Pledge.IDSystem" AND 
+	     "SequenceNumber" = "_PledgedFinancialInstruments__PledgedObject"."_PledgedObject.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_Pledge"
+	  on "ASSOC_Pledge"."IDSystem" = "ASSOC_Pledge.IDSystem" AND 
+	     "ASSOC_Pledge"."FinancialContractID" = "ASSOC_Pledge.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartnerRelation_View" as "ASSOC_PledgedBusinessInterest"
+	  on "ASSOC_PledgedBusinessInterest"."ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_PledgedBusinessInterest.ASSOC_SourceInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_PledgedBusinessInterest"."ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" = "ASSOC_PledgedBusinessInterest.ASSOC_TargetInBusinessPartnerRelation.BusinessPartnerID" AND 
+	     "ASSOC_PledgedBusinessInterest"."BusinessPartnerRelationType" = "ASSOC_PledgedBusinessInterest.BusinessPartnerRelationType"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_PledgedFinancialContract"
+	  on "ASSOC_PledgedFinancialContract"."FinancialContractID" = "ASSOC_PledgedFinancialContract.FinancialContractID" AND 
+	     "ASSOC_PledgedFinancialContract"."IDSystem" = "ASSOC_PledgedFinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PhysicalAsset_View" as "ASSOC_PledgedPhysicalAsset"
+	  on "ASSOC_PledgedPhysicalAsset"."PhysicalAssetID" = "ASSOC_PledgedPhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_PledgedReceivable"
+	  on "ASSOC_PledgedReceivable"."ReceivableID" = "ASSOC_PledgedReceivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_ReceivableRepresentingPledgedAccount"
+	  on "ASSOC_ReceivableRepresentingPledgedAccount"."ReceivableID" = "ASSOC_ReceivableRepresentingPledgedAccount.ReceivableID"
+	     
+);

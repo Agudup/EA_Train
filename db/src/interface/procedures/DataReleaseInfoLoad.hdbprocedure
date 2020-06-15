@@ -1,0 +1,45 @@
+PROCEDURE "sap.fsdm.procedures::DataReleaseInfoLoad" (IN ROW "sap.fsdm.tabletypes::DataReleaseInfoTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+delete from "sap.fsdm::DataReleaseInfo" WHERE("FiscalPeriod" ,
+"KeyDate" ,
+"Object" 
+)in ( select     ( case when "FiscalPeriod" is null then '' else "FiscalPeriod" end ) as "FiscalPeriod",
+    ( case when "KeyDate" is null then '0001-01-01' else "KeyDate" end ) as "KeyDate",
+    ( case when "Object" is null then '' else "Object" end ) as "Object"
+from :row );
+
+--Insert ALL the input data
+insert into "sap.fsdm::DataReleaseInfo"  (
+"FiscalPeriod",
+"KeyDate",
+"Object",
+"DecisionDate",
+"DecisionDatePlanned",
+"ReleaseTimestamp",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+     ( case when "FiscalPeriod" is null then '' else "FiscalPeriod" end ) as "FiscalPeriod",
+    ( case when "KeyDate" is null then '0001-01-01' else "KeyDate" end ) as "KeyDate",
+    ( case when "Object" is null then '' else "Object" end ) as "Object",
+  "DecisionDate"  ,
+  "DecisionDatePlanned"  ,
+  "ReleaseTimestamp"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

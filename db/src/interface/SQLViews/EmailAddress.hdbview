@@ -1,0 +1,24 @@
+view "sap.fsdm.SQLViews::EmailAddress_View" 
+as select
+      "EmailAddressType" ,
+      "SequenceNumber" ,
+      "ASSOC_Partner.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EmailAddress" ,
+      "IsPreferred" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::EmailAddress"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Partner"
+	  on "ASSOC_Partner"."BusinessPartnerID" = "ASSOC_Partner.BusinessPartnerID"
+	     
+);

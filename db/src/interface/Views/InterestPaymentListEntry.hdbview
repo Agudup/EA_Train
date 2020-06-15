@@ -1,0 +1,33 @@
+view "sap.fsdm.Views::InterestPaymentListEntry_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "InterestPaymentDate" as "InterestPaymentDate",
+      "ASSOC_InterestPaymentList.SequenceNumber" as "ASSOC_InterestPaymentList_SequenceNumber",
+      "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_InterestPaymentList_ASSOC_CcyOfMultiCcyAccnt_PositionCurrency",
+      "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_InterestPaymentList_ASSOC_CcyOfMultiCcyAccnt_ASSOC_MultiCcyAccnt_FinancialContractID",
+      "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_InterestPaymentList_ASSOC_CcyOfMultiCcyAccnt_ASSOC_MultiCcyAccnt_IDSystem",
+      "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_InterestPaymentList_ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" as "ASSOC_InterestPaymentList_ASSOC_FinancialContract_IDSystem",
+      "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" as "ASSOC_InterestPaymentList__DebtInstrument_FinancialInstrumentID",
+      "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" as "ASSOC_InterestPaymentList__OptionOfReferenceRateSpecification_ComponentNumber",
+      "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "ASSOC_InterestPaymentList__OptionOfReferenceRateSpecification__InterestRateOption_FinancialContractID",
+      "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "ASSOC_InterestPaymentList__OptionOfReferenceRateSpecification__InterestRateOption_IDSystem",
+      "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" as "ASSOC_InterestPaymentList__OptionOfStrikeSpecification_ComponentNumber",
+      "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "ASSOC_InterestPaymentList__OptionOfStrikeSpecification__InterestRateOption_FinancialContractID",
+      "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "ASSOC_InterestPaymentList__OptionOfStrikeSpecification__InterestRateOption_IDSystem",
+      "ASSOC_InterestPaymentList._Trade.IDSystem" as "ASSOC_InterestPaymentList__Trade_IDSystem",
+      "ASSOC_InterestPaymentList._Trade.TradeID" as "ASSOC_InterestPaymentList__Trade_TradeID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "InterestAmount" as "InterestAmount",
+      "InterestPaymentCurrency" as "InterestPaymentCurrency",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::InterestPaymentListEntry"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

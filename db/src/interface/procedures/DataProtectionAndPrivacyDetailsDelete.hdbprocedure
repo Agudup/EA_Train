@@ -1,0 +1,18 @@
+PROCEDURE "sap.fsdm.procedures::DataProtectionAndPrivacyDetailsDelete" (IN ROW "sap.fsdm.tabletypes::DataProtectionAndPrivacyDetailsTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::DataProtectionAndPrivacyDetails" WHERE("ASSOC_BusinessPartner.BusinessPartnerID" ,
+"_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" 
+)in ( select "ASSOC_BusinessPartner.BusinessPartnerID" ,
+"_FinancialContract.FinancialContractID" ,
+"_FinancialContract.IDSystem" 
+from :ROW );
+
+
+END

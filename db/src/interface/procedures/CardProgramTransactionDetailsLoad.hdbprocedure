@@ -1,0 +1,49 @@
+PROCEDURE "sap.fsdm.procedures::CardProgramTransactionDetailsLoad" (IN ROW "sap.fsdm.tabletypes::CardProgramTransactionDetailsTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+delete from "sap.fsdm::CardProgramTransactionDetails" WHERE("CardProgramID" ,
+"ASSOC_BusinessTransactionItem.IDSystem" ,
+"ASSOC_BusinessTransactionItem.ItemNumber" ,
+"ASSOC_BusinessTransactionItem.SettlementID" 
+)in ( select     ( case when "CardProgramID" is null then '' else "CardProgramID" end ) as "CardProgramID",
+    ( case when "ASSOC_BusinessTransactionItem.IDSystem" is null then '' else "ASSOC_BusinessTransactionItem.IDSystem" end ) as "ASSOC_BusinessTransactionItem.IDSystem",
+    ( case when "ASSOC_BusinessTransactionItem.ItemNumber" is null then -1 else "ASSOC_BusinessTransactionItem.ItemNumber" end ) as "ASSOC_BusinessTransactionItem.ItemNumber",
+    ( case when "ASSOC_BusinessTransactionItem.SettlementID" is null then '' else "ASSOC_BusinessTransactionItem.SettlementID" end ) as "ASSOC_BusinessTransactionItem.SettlementID"
+from :row );
+
+--Insert ALL the input data
+insert into "sap.fsdm::CardProgramTransactionDetails"  (
+"CardProgramID",
+"ASSOC_BusinessTransactionItem.IDSystem",
+"ASSOC_BusinessTransactionItem.ItemNumber",
+"ASSOC_BusinessTransactionItem.SettlementID",
+"CardProgramAmountCurrency",
+"CardProgramAmountFromTransaction",
+"CardProgramPointsFromTransaction",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+     ( case when "CardProgramID" is null then '' else "CardProgramID" end ) as "CardProgramID",
+    ( case when "ASSOC_BusinessTransactionItem.IDSystem" is null then '' else "ASSOC_BusinessTransactionItem.IDSystem" end ) as "ASSOC_BusinessTransactionItem.IDSystem",
+    ( case when "ASSOC_BusinessTransactionItem.ItemNumber" is null then -1 else "ASSOC_BusinessTransactionItem.ItemNumber" end ) as "ASSOC_BusinessTransactionItem.ItemNumber",
+    ( case when "ASSOC_BusinessTransactionItem.SettlementID" is null then '' else "ASSOC_BusinessTransactionItem.SettlementID" end ) as "ASSOC_BusinessTransactionItem.SettlementID",
+  "CardProgramAmountCurrency"  ,
+  "CardProgramAmountFromTransaction"  ,
+  "CardProgramPointsFromTransaction"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

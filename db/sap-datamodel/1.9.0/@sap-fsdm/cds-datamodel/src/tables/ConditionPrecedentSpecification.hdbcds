@@ -1,0 +1,77 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"SetOfPreconditions";
+
+entity "ConditionPrecedentSpecification" {
+    key "SequenceNumber"                : Integer;
+    key "ASSOC_SetOfPreconditions"      : association to SetOfPreconditions {
+                                                                              PreconditionSetNumber,
+                                                                              ASSOC_CancellationOption,
+                                                                              ASSOC_Fee,
+                                                                              ASSOC_Interest,
+                                                                              ASSOC_StandardCancellationOption,
+                                                                              ASSOC_StandardFee,
+                                                                              ASSOC_StdIntrst,
+                                                                              _PandLParticipation,
+                                                                              _RedemptionRight
+                                                                            } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                        not null;
+        "SystemValidTo"                 : UTCTimestamp                        not null;
+        "BoundaryUnit"                  : String(10);
+        "FinancialCriterion"            : String(40);
+        "LowerBoundary"                 : Decimal(34, 6);
+        "LowerBoundaryCount"            : Integer;
+        "LowerBoundaryPercentage"       : Decimal(15, 11);
+        "LowerNonnumericalBoundary"     : String(40);
+        "UpperBoundary"                 : Decimal(34, 6);
+        "UpperBoundaryCount"            : Integer;
+        "UpperBoundaryPercentage"       : Decimal(15, 11);
+        "UpperNonnumericalBoundary"     : String(40);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ConditionPrecedentSpecification_Historical" {
+    "SequenceNumber"                : Integer                             not null;
+    "ASSOC_SetOfPreconditions"      : association to SetOfPreconditions {
+                                                                          PreconditionSetNumber,
+                                                                          ASSOC_CancellationOption,
+                                                                          ASSOC_Fee,
+                                                                          ASSOC_Interest,
+                                                                          ASSOC_StandardCancellationOption,
+                                                                          ASSOC_StandardFee,
+                                                                          ASSOC_StdIntrst,
+                                                                          _PandLParticipation,
+                                                                          _RedemptionRight
+                                                                        } not null;
+    "BusinessValidFrom"             : LocalDate                           not null;
+    "BusinessValidTo"               : LocalDate                           not null;
+    "SystemValidFrom"               : UTCTimestamp                        not null;
+    "SystemValidTo"                 : UTCTimestamp                        not null;
+    "BoundaryUnit"                  : String(10);
+    "FinancialCriterion"            : String(40);
+    "LowerBoundary"                 : Decimal(34, 6);
+    "LowerBoundaryCount"            : Integer;
+    "LowerBoundaryPercentage"       : Decimal(15, 11);
+    "LowerNonnumericalBoundary"     : String(40);
+    "UpperBoundary"                 : Decimal(34, 6);
+    "UpperBoundaryCount"            : Integer;
+    "UpperBoundaryPercentage"       : Decimal(15, 11);
+    "UpperNonnumericalBoundary"     : String(40);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,35 @@
+PROCEDURE "sap.fsdm.procedures::CommodityReferencePriceDelete" (IN ROW "sap.fsdm.tabletypes::CommodityReferencePriceTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ReferencePriceID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning   --delete matching data in current tabledelete from "sap.fsdm::CommodityReferencePrice" WHERE("ReferencePriceID" 
+)in ( select 
+"OLD"."ReferencePriceID"  as "ReferencePriceID" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::CommodityReferencePrice" AS "OLD"
+  ON
+  ( "IN"."ReferencePriceID" = "OLD"."ReferencePriceID" or "IN"."ReferencePriceID" is null ) 
+);
+
+END

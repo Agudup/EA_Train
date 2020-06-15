@@ -1,0 +1,64 @@
+PROCEDURE "sap.fsdm.procedures::EquityAnalystRecommendationEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::EquityAnalystRecommendationTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::EquityAnalystRecommendationTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::EquityAnalystRecommendationTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "Analyst" is null and
+                         "Firm" is null and
+                         "PublicationDate" is null and
+                         "_EquityInstrument.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"Analyst",
+"Firm",
+"PublicationDate",
+"_EquityInstrument.FinancialInstrumentID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::EquityAnalystRecommendation" WHERE("Analyst" ,
+"Firm" ,
+"PublicationDate" ,
+"_EquityInstrument.FinancialInstrumentID" 
+)in ( select "Analyst" ,
+"Firm" ,
+"PublicationDate" ,
+"_EquityInstrument.FinancialInstrumentID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"Analyst",
+"Firm",
+"PublicationDate",
+"_EquityInstrument.FinancialInstrumentID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::EquityAnalystRecommendation_Historical" WHERE("Analyst" ,
+"Firm" ,
+"PublicationDate" ,
+"_EquityInstrument.FinancialInstrumentID" 
+)in ( select "Analyst" ,
+"Firm" ,
+"PublicationDate" ,
+"_EquityInstrument.FinancialInstrumentID" 
+from :ROW );
+
+END

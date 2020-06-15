@@ -1,0 +1,34 @@
+view "sap.fsdm.SQLViews::PermittedEffectiveTerminationDates_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_TerminationOption.SequenceNumber" ,
+      "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_TerminationOption._Trade.IDSystem" ,
+      "ASSOC_TerminationOption._Trade.TradeID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EndDay" ,
+      "EndMonth" ,
+      "EndYear" ,
+      "RepetitionPeriodLength" ,
+      "RepetitionPeriodTimeUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PermittedEffectiveTerminationDates"
+with associations
+(
+	join "sap.fsdm.SQLViews::CancellationOption_View" as "ASSOC_TerminationOption"
+	  on "ASSOC_TerminationOption"."_Trade.TradeID" = "ASSOC_TerminationOption._Trade.TradeID" AND 
+	     "ASSOC_TerminationOption"."_Trade.IDSystem" = "ASSOC_TerminationOption._Trade.IDSystem" AND 
+	     "ASSOC_TerminationOption"."SequenceNumber" = "ASSOC_TerminationOption.SequenceNumber" AND 
+	     "ASSOC_TerminationOption"."ASSOC_FinancialContract.IDSystem" = "ASSOC_TerminationOption.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_TerminationOption"."ASSOC_FinancialContract.FinancialContractID" = "ASSOC_TerminationOption.ASSOC_FinancialContract.FinancialContractID"
+	     
+);

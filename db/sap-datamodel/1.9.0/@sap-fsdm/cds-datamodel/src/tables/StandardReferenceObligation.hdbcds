@@ -1,0 +1,40 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "StandardReferenceObligation" {
+    key "_BusinessPartner"                       : association to BusinessPartner { BusinessPartnerID }         not null;
+    key "_FinancialInstrument"                   : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                      : UTCTimestamp;
+    key "BusinessValidTo"                        : UTCTimestamp;
+        "SystemValidFrom"                        : UTCTimestamp                                                 not null;
+        "SystemValidTo"                          : UTCTimestamp                                                 not null;
+        "StandardReferenceObligationREDPairCode" : String(9);
+        "SourceSystemID"                         : String(128);
+        "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+        "ChangingUserInSourceSystem"             : String(128);
+        "ChangingProcessType"                    : String(40);
+        "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "StandardReferenceObligation_Historical" {
+    "_BusinessPartner"                       : association to BusinessPartner { BusinessPartnerID }         not null;
+    "_FinancialInstrument"                   : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                      : UTCTimestamp                                                 not null;
+    "BusinessValidTo"                        : UTCTimestamp                                                 not null;
+    "SystemValidFrom"                        : UTCTimestamp                                                 not null;
+    "SystemValidTo"                          : UTCTimestamp                                                 not null;
+    "StandardReferenceObligationREDPairCode" : String(9);
+    "SourceSystemID"                         : String(128);
+    "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+    "ChangingUserInSourceSystem"             : String(128);
+    "ChangingProcessType"                    : String(40);
+    "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};

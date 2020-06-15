@@ -1,0 +1,22 @@
+view "sap.fsdm.Views::CommunicationEventStatus_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CommunicationEventStatusCategory" as "CommunicationEventStatusCategory",
+      "ASSOC_CommunicationEvent.CommunicationEventID" as "ASSOC_CommunicationEvent_CommunicationEventID",
+      "ASSOC_CommunicationEvent.IDSystem" as "ASSOC_CommunicationEvent_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_StatusChanger.BusinessPartnerID" as "ASSOC_StatusChanger_BusinessPartnerID",
+      "FollowUpCommunicationNote" as "FollowUpCommunicationNote",
+      "Status" as "Status",
+      "StatusChangeReason" as "StatusChangeReason",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CommunicationEventStatus"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

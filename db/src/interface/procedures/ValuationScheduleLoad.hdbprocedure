@@ -1,0 +1,341 @@
+PROCEDURE "sap.fsdm.procedures::ValuationScheduleLoad" (IN ROW "sap.fsdm.tabletypes::ValuationScheduleTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                '_TotalReturnSwapReturnLeg._Swap.FinancialContractID=' || TO_VARCHAR("_TotalReturnSwapReturnLeg._Swap.FinancialContractID") || ' ' ||
+                '_TotalReturnSwapReturnLeg._Swap.IDSystem=' || TO_VARCHAR("_TotalReturnSwapReturnLeg._Swap.IDSystem") || ' ' ||
+                '_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID=' || TO_VARCHAR("_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID") || ' ' ||
+                '_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID=' || TO_VARCHAR("_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                        "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                        "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                        "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                        "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                        "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                        "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                        "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                                    "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                                    "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                                    "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                                    "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                                    "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                                    "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ValuationSchedule" (
+        "SequenceNumber",
+        "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+        "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+        "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+        "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "FirstValuationDate",
+        "LastValuationDate",
+        "ValuationDate",
+        "ValuationPeriodLength",
+        "ValuationPeriodUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD__TotalReturnSwapReturnLeg._Swap.FinancialContractID" as "_TotalReturnSwapReturnLeg._Swap.FinancialContractID" ,
+            "OLD__TotalReturnSwapReturnLeg._Swap.IDSystem" as "_TotalReturnSwapReturnLeg._Swap.IDSystem" ,
+            "OLD__TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" as "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" ,
+            "OLD__TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" as "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BusinessCalendar" as "BusinessCalendar" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_FirstValuationDate" as "FirstValuationDate" ,
+            "OLD_LastValuationDate" as "LastValuationDate" ,
+            "OLD_ValuationDate" as "ValuationDate" ,
+            "OLD_ValuationPeriodLength" as "ValuationPeriodLength" ,
+            "OLD_ValuationPeriodUnit" as "ValuationPeriodUnit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                        "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                        "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" as "OLD__TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                                "OLD"."_TotalReturnSwapReturnLeg._Swap.IDSystem" as "OLD__TotalReturnSwapReturnLeg._Swap.IDSystem",
+                                "OLD"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" as "OLD__TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                                "OLD"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" as "OLD__TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."FirstValuationDate" as "OLD_FirstValuationDate",
+                                "OLD"."LastValuationDate" as "OLD_LastValuationDate",
+                                "OLD"."ValuationDate" as "OLD_ValuationDate",
+                                "OLD"."ValuationPeriodLength" as "OLD_ValuationPeriodLength",
+                                "OLD"."ValuationPeriodUnit" as "OLD_ValuationPeriodUnit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ValuationSchedule" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" end ) = "OLD"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem" end ) = "OLD"."_TotalReturnSwapReturnLeg._Swap.IDSystem" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" end ) = "OLD"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" end ) = "OLD"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ValuationSchedule" (
+        "SequenceNumber",
+        "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+        "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+        "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+        "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "FirstValuationDate",
+        "LastValuationDate",
+        "ValuationDate",
+        "ValuationPeriodLength",
+        "ValuationPeriodUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD__TotalReturnSwapReturnLeg._Swap.FinancialContractID" as "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+            "OLD__TotalReturnSwapReturnLeg._Swap.IDSystem" as "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+            "OLD__TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" as "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+            "OLD__TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" as "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_FirstValuationDate" as "FirstValuationDate",
+            "OLD_LastValuationDate" as "LastValuationDate",
+            "OLD_ValuationDate" as "ValuationDate",
+            "OLD_ValuationPeriodLength" as "ValuationPeriodLength",
+            "OLD_ValuationPeriodUnit" as "ValuationPeriodUnit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                        "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+                        "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                        "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" as "OLD__TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+                        "OLD"."_TotalReturnSwapReturnLeg._Swap.IDSystem" as "OLD__TotalReturnSwapReturnLeg._Swap.IDSystem",
+                        "OLD"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" as "OLD__TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+                        "OLD"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" as "OLD__TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                        "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                        "OLD"."FirstValuationDate" as "OLD_FirstValuationDate",
+                        "OLD"."LastValuationDate" as "OLD_LastValuationDate",
+                        "OLD"."ValuationDate" as "OLD_ValuationDate",
+                        "OLD"."ValuationPeriodLength" as "OLD_ValuationPeriodLength",
+                        "OLD"."ValuationPeriodUnit" as "OLD_ValuationPeriodUnit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ValuationSchedule" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" end ) = "OLD"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem" end ) = "OLD"."_TotalReturnSwapReturnLeg._Swap.IDSystem" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" end ) = "OLD"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" and
+                ( case when "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" end ) = "OLD"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ValuationSchedule"
+    where (
+        "SequenceNumber",
+        "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+        "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+        "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+        "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+            "OLD"."_TotalReturnSwapReturnLeg._Swap.IDSystem",
+            "OLD"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+            "OLD"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ValuationSchedule" as "OLD"
+        on
+           ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+           ( case when "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" end ) = "OLD"."_TotalReturnSwapReturnLeg._Swap.FinancialContractID" and
+           ( case when "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Swap.IDSystem" end ) = "OLD"."_TotalReturnSwapReturnLeg._Swap.IDSystem" and
+           ( case when "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" end ) = "OLD"."_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" and
+           ( case when "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" is null then '' else "IN"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" end ) = "OLD"."_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::ValuationSchedule" (
+        "SequenceNumber",
+        "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+        "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+        "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+        "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "FirstValuationDate",
+        "LastValuationDate",
+        "ValuationDate",
+        "ValuationPeriodLength",
+        "ValuationPeriodUnit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "_TotalReturnSwapReturnLeg._Swap.FinancialContractID" is null then '' else "_TotalReturnSwapReturnLeg._Swap.FinancialContractID" end ) as "_TotalReturnSwapReturnLeg._Swap.FinancialContractID",
+            ( case when "_TotalReturnSwapReturnLeg._Swap.IDSystem" is null then '' else "_TotalReturnSwapReturnLeg._Swap.IDSystem" end ) as "_TotalReturnSwapReturnLeg._Swap.IDSystem",
+            ( case when "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" is null then '' else "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID" end ) as "_TotalReturnSwapReturnLeg._Underlying.FinancialInstrumentID",
+            ( case when "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" is null then '' else "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID" end ) as "_TotalReturnSwapReturnLeg._UnderlyingIndex.IndexID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "BusinessCalendar"  ,
+            "BusinessDayConvention"  ,
+            "FirstValuationDate"  ,
+            "LastValuationDate"  ,
+            "ValuationDate"  ,
+            "ValuationPeriodLength"  ,
+            "ValuationPeriodUnit"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

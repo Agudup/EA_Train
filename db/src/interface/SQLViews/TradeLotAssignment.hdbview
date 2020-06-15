@@ -1,0 +1,31 @@
+view "sap.fsdm.SQLViews::TradeLotAssignment_View" 
+as select
+      "LotID" ,
+      "_AccountingSystemOfTradeLotAssignment.AccountingSystemID" ,
+      "_Trade.IDSystem" ,
+      "_Trade.TradeID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "NominalAmount" ,
+      "NominalAmountCurrency" ,
+      "Quantity" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TradeLotAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystemOfTradeLotAssignment"
+	  on "_AccountingSystemOfTradeLotAssignment"."AccountingSystemID" = "_AccountingSystemOfTradeLotAssignment.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::Trade_View" as "_Trade"
+	  on "_Trade"."IDSystem" = "_Trade.IDSystem" AND 
+	     "_Trade"."TradeID" = "_Trade.TradeID"
+	     
+);

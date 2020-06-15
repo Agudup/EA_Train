@@ -1,0 +1,25 @@
+view "sap.fsdm.Views::StandardPaymentIntervalListEntry_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PeriodUntilPaymentIntervalEnd" as "PeriodUntilPaymentIntervalEnd",
+      "PeriodUntilPaymentIntervalStart" as "PeriodUntilPaymentIntervalStart",
+      "ASSOC_StandardPaymentIntervalList.SequenceNumber" as "ASSOC_StandardPaymentIntervalList_SequenceNumber",
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.FinancialStandardProductID" as "ASSOC_StandardPaymentIntervalList_ASSOC_FinancialStandardProduct_FinancialStandardProductID",
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.IDSystem" as "ASSOC_StandardPaymentIntervalList_ASSOC_FinancialStandardProduct_IDSystem",
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.PricingScheme" as "ASSOC_StandardPaymentIntervalList_ASSOC_FinancialStandardProduct_PricingScheme",
+      "ASSOC_StandardPaymentIntervalList.ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardPaymentIntervalList_ASSOC_FinancialStandardProduct_ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "PaymentAmount" as "PaymentAmount",
+      "PaymentCurrency" as "PaymentCurrency",
+      "PaymentPercentage" as "PaymentPercentage",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::StandardPaymentIntervalListEntry"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

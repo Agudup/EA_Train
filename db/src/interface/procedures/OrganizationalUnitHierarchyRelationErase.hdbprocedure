@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::OrganizationalUnitHierarchyRelationErase" (IN ROW "sap.fsdm.tabletypes::OrganizationalUnitHierarchyRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "OrganizationalUnitHierarchyID" is null and
+                         "ASSOC_Child.OrganizationalUnitID" is null and
+                         "ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null and
+                         "ASSOC_Parent.OrganizationalUnitID" is null and
+                         "ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::OrganizationalUnitHierarchyRelation" WHERE
+("OrganizationalUnitHierarchyID" ,
+"ASSOC_Child.OrganizationalUnitID" ,
+"ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_Parent.OrganizationalUnitID" ,
+"ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+)in ( select "OLD"."OrganizationalUnitHierarchyID" ,
+"OLD"."ASSOC_Child.OrganizationalUnitID" ,
+"OLD"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."ASSOC_Parent.OrganizationalUnitID" ,
+"OLD"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::OrganizationalUnitHierarchyRelation" "OLD"
+on
+  ( "IN"."OrganizationalUnitHierarchyID" = "OLD"."OrganizationalUnitHierarchyID" or "IN"."OrganizationalUnitHierarchyID" is null ) and
+  ( "IN"."ASSOC_Child.OrganizationalUnitID" = "OLD"."ASSOC_Child.OrganizationalUnitID" or "IN"."ASSOC_Child.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_Parent.OrganizationalUnitID" = "OLD"."ASSOC_Parent.OrganizationalUnitID" or "IN"."ASSOC_Parent.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::OrganizationalUnitHierarchyRelation_Historical" WHERE
+("OrganizationalUnitHierarchyID" ,
+"ASSOC_Child.OrganizationalUnitID" ,
+"ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"ASSOC_Parent.OrganizationalUnitID" ,
+"ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+)in ( select "OLD"."OrganizationalUnitHierarchyID" ,
+"OLD"."ASSOC_Child.OrganizationalUnitID" ,
+"OLD"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+"OLD"."ASSOC_Parent.OrganizationalUnitID" ,
+"OLD"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::OrganizationalUnitHierarchyRelation_Historical" "OLD"
+on
+  ( "IN"."OrganizationalUnitHierarchyID" = "OLD"."OrganizationalUnitHierarchyID" or "IN"."OrganizationalUnitHierarchyID" is null ) and
+  ( "IN"."ASSOC_Child.OrganizationalUnitID" = "OLD"."ASSOC_Child.OrganizationalUnitID" or "IN"."ASSOC_Child.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_Child.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_Parent.OrganizationalUnitID" = "OLD"."ASSOC_Parent.OrganizationalUnitID" or "IN"."ASSOC_Parent.OrganizationalUnitID" is null ) and
+  ( "IN"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "OLD"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" or "IN"."ASSOC_Parent.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null ) 
+);
+
+END

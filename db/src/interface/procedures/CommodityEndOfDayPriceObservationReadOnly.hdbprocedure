@@ -1,0 +1,302 @@
+PROCEDURE "sap.fsdm.procedures::CommodityEndOfDayPriceObservationReadOnly" (IN ROW "sap.fsdm.tabletypes::CommodityEndOfDayPriceObservationTT", OUT CURR_DEL "sap.fsdm.tabletypes::CommodityEndOfDayPriceObservationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::CommodityEndOfDayPriceObservationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PriceDataProvider=' || TO_VARCHAR("PriceDataProvider") || ' ' ||
+                'PriceSeriesType=' || TO_VARCHAR("PriceSeriesType") || ' ' ||
+                '_Commodity.CommodityID=' || TO_VARCHAR("_Commodity.CommodityID") || ' ' ||
+                '_Exchange.MarketIdentifierCode=' || TO_VARCHAR("_Exchange.MarketIdentifierCode") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."_Commodity.CommodityID",
+                        "IN"."_Exchange.MarketIdentifierCode"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."_Commodity.CommodityID",
+                        "IN"."_Exchange.MarketIdentifierCode"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PriceDataProvider",
+                        "PriceSeriesType",
+                        "_Commodity.CommodityID",
+                        "_Exchange.MarketIdentifierCode"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."_Commodity.CommodityID",
+                                    "IN"."_Exchange.MarketIdentifierCode"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PriceDataProvider",
+                                    "IN"."PriceSeriesType",
+                                    "IN"."_Commodity.CommodityID",
+                                    "IN"."_Exchange.MarketIdentifierCode"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "_Commodity.CommodityID",
+        "_Exchange.MarketIdentifierCode",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::CommodityEndOfDayPriceObservation" WHERE
+        (            "PriceDataProvider" ,
+            "PriceSeriesType" ,
+            "_Commodity.CommodityID" ,
+            "_Exchange.MarketIdentifierCode" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."PriceDataProvider",
+            "OLD"."PriceSeriesType",
+            "OLD"."_Commodity.CommodityID",
+            "OLD"."_Exchange.MarketIdentifierCode",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::CommodityEndOfDayPriceObservation" as "OLD"
+            on
+               ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+               ( case when "IN"."PriceSeriesType" is null then '' else "IN"."PriceSeriesType" end ) = "OLD"."PriceSeriesType" and
+               ( case when "IN"."_Commodity.CommodityID" is null then '' else "IN"."_Commodity.CommodityID" end ) = "OLD"."_Commodity.CommodityID" and
+               ( case when "IN"."_Exchange.MarketIdentifierCode" is null then '' else "IN"."_Exchange.MarketIdentifierCode" end ) = "OLD"."_Exchange.MarketIdentifierCode" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "PriceDataProvider",
+        "PriceSeriesType",
+        "_Commodity.CommodityID",
+        "_Exchange.MarketIdentifierCode",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_CommodityReferencePrice.ReferencePriceID",
+        "Close",
+        "Currency",
+        "High",
+        "Low",
+        "Open",
+        "PriceNotationForm",
+        "Quantity",
+        "Unit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "PriceDataProvider" is null then '' else "PriceDataProvider" end ) as "PriceDataProvider",
+                    ( case when "PriceSeriesType" is null then '' else "PriceSeriesType" end ) as "PriceSeriesType",
+                    ( case when "_Commodity.CommodityID" is null then '' else "_Commodity.CommodityID" end ) as "_Commodity.CommodityID",
+                    ( case when "_Exchange.MarketIdentifierCode" is null then '' else "_Exchange.MarketIdentifierCode" end ) as "_Exchange.MarketIdentifierCode",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "_CommodityReferencePrice.ReferencePriceID"  ,
+                    "Close"  ,
+                    "Currency"  ,
+                    "High"  ,
+                    "Low"  ,
+                    "Open"  ,
+                    "PriceNotationForm"  ,
+                    "Quantity"  ,
+                    "Unit"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_PriceDataProvider" as "PriceDataProvider" ,
+                    "OLD_PriceSeriesType" as "PriceSeriesType" ,
+                    "OLD__Commodity.CommodityID" as "_Commodity.CommodityID" ,
+                    "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD__CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice.ReferencePriceID" ,
+                    "OLD_Close" as "Close" ,
+                    "OLD_Currency" as "Currency" ,
+                    "OLD_High" as "High" ,
+                    "OLD_Low" as "Low" ,
+                    "OLD_Open" as "Open" ,
+                    "OLD_PriceNotationForm" as "PriceNotationForm" ,
+                    "OLD_Quantity" as "Quantity" ,
+                    "OLD_Unit" as "Unit" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."_Commodity.CommodityID",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                                "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                                "OLD"."_Commodity.CommodityID" as "OLD__Commodity.CommodityID",
+                                "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."_CommodityReferencePrice.ReferencePriceID" as "OLD__CommodityReferencePrice.ReferencePriceID",
+                                "OLD"."Close" as "OLD_Close",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."High" as "OLD_High",
+                                "OLD"."Low" as "OLD_Low",
+                                "OLD"."Open" as "OLD_Open",
+                                "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                                "OLD"."Quantity" as "OLD_Quantity",
+                                "OLD"."Unit" as "OLD_Unit",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CommodityEndOfDayPriceObservation" as "OLD"
+            on
+                ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+                ( case when "IN"."PriceSeriesType" is null then '' else "IN"."PriceSeriesType" end ) = "OLD"."PriceSeriesType" and
+                ( case when "IN"."_Commodity.CommodityID" is null then '' else "IN"."_Commodity.CommodityID" end ) = "OLD"."_Commodity.CommodityID" and
+                ( case when "IN"."_Exchange.MarketIdentifierCode" is null then '' else "IN"."_Exchange.MarketIdentifierCode" end ) = "OLD"."_Exchange.MarketIdentifierCode" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_PriceDataProvider" as "PriceDataProvider",
+            "OLD_PriceSeriesType" as "PriceSeriesType",
+            "OLD__Commodity.CommodityID" as "_Commodity.CommodityID",
+            "OLD__Exchange.MarketIdentifierCode" as "_Exchange.MarketIdentifierCode",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__CommodityReferencePrice.ReferencePriceID" as "_CommodityReferencePrice.ReferencePriceID",
+            "OLD_Close" as "Close",
+            "OLD_Currency" as "Currency",
+            "OLD_High" as "High",
+            "OLD_Low" as "Low",
+            "OLD_Open" as "Open",
+            "OLD_PriceNotationForm" as "PriceNotationForm",
+            "OLD_Quantity" as "Quantity",
+            "OLD_Unit" as "Unit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."PriceDataProvider",
+                        "IN"."PriceSeriesType",
+                        "IN"."_Commodity.CommodityID",
+                        "IN"."_Exchange.MarketIdentifierCode",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."PriceDataProvider" as "OLD_PriceDataProvider",
+                        "OLD"."PriceSeriesType" as "OLD_PriceSeriesType",
+                        "OLD"."_Commodity.CommodityID" as "OLD__Commodity.CommodityID",
+                        "OLD"."_Exchange.MarketIdentifierCode" as "OLD__Exchange.MarketIdentifierCode",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."_CommodityReferencePrice.ReferencePriceID" as "OLD__CommodityReferencePrice.ReferencePriceID",
+                        "OLD"."Close" as "OLD_Close",
+                        "OLD"."Currency" as "OLD_Currency",
+                        "OLD"."High" as "OLD_High",
+                        "OLD"."Low" as "OLD_Low",
+                        "OLD"."Open" as "OLD_Open",
+                        "OLD"."PriceNotationForm" as "OLD_PriceNotationForm",
+                        "OLD"."Quantity" as "OLD_Quantity",
+                        "OLD"."Unit" as "OLD_Unit",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CommodityEndOfDayPriceObservation" as "OLD"
+            on
+                ( case when "IN"."PriceDataProvider" is null then '' else "IN"."PriceDataProvider" end ) = "OLD"."PriceDataProvider" and
+                ( case when "IN"."PriceSeriesType" is null then '' else "IN"."PriceSeriesType" end ) = "OLD"."PriceSeriesType" and
+                ( case when "IN"."_Commodity.CommodityID" is null then '' else "IN"."_Commodity.CommodityID" end ) = "OLD"."_Commodity.CommodityID" and
+                ( case when "IN"."_Exchange.MarketIdentifierCode" is null then '' else "IN"."_Exchange.MarketIdentifierCode" end ) = "OLD"."_Exchange.MarketIdentifierCode" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

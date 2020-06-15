@@ -1,0 +1,58 @@
+PROCEDURE "sap.fsdm.procedures::LockingErase" (IN ROW "sap.fsdm.tabletypes::LockingTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "LockingType" is null and
+                         "_LockingOfFinancialContract.FinancialContractID" is null and
+                         "_LockingOfFinancialContract.IDSystem" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::Locking" WHERE
+("LockingType" ,
+"_LockingOfFinancialContract.FinancialContractID" ,
+"_LockingOfFinancialContract.IDSystem" 
+)in ( select "OLD"."LockingType" ,
+"OLD"."_LockingOfFinancialContract.FinancialContractID" ,
+"OLD"."_LockingOfFinancialContract.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::Locking" "OLD"
+on
+  ( "IN"."LockingType" = "OLD"."LockingType" or "IN"."LockingType" is null ) and
+  ( "IN"."_LockingOfFinancialContract.FinancialContractID" = "OLD"."_LockingOfFinancialContract.FinancialContractID" or "IN"."_LockingOfFinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_LockingOfFinancialContract.IDSystem" = "OLD"."_LockingOfFinancialContract.IDSystem" or "IN"."_LockingOfFinancialContract.IDSystem" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::Locking_Historical" WHERE
+("LockingType" ,
+"_LockingOfFinancialContract.FinancialContractID" ,
+"_LockingOfFinancialContract.IDSystem" 
+)in ( select "OLD"."LockingType" ,
+"OLD"."_LockingOfFinancialContract.FinancialContractID" ,
+"OLD"."_LockingOfFinancialContract.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::Locking_Historical" "OLD"
+on
+  ( "IN"."LockingType" = "OLD"."LockingType" or "IN"."LockingType" is null ) and
+  ( "IN"."_LockingOfFinancialContract.FinancialContractID" = "OLD"."_LockingOfFinancialContract.FinancialContractID" or "IN"."_LockingOfFinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_LockingOfFinancialContract.IDSystem" = "OLD"."_LockingOfFinancialContract.IDSystem" or "IN"."_LockingOfFinancialContract.IDSystem" is null ) 
+);
+
+END

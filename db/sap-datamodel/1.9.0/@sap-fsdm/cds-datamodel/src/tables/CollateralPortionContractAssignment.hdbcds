@@ -1,0 +1,60 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CollateralPortion";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "CollateralPortionContractAssignment" {
+    key "ASSOC_CollateralPortion"                  : association to CollateralPortion {
+                                                                                        PortionNumber,
+                                                                                        ASSOC_CollateralAgreement
+                                                                                      } not null;
+    key "ASSOC_CollateralizedFinancialContract"    : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      } not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                       not null;
+        "SystemValidTo"                            : UTCTimestamp                       not null;
+        "AgreedProtectionAmount"                   : Decimal(34, 6);
+        "AgreedProtectionAmountCurrency"           : String(3);
+        "CoveragePercentage"                       : Decimal(15, 11);
+        "RankAmongCollateralsCoveringTheContract"  : Integer;
+        "RankAmongContractsCoveredByTheCollateral" : Integer;
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CollateralPortionContractAssignment_Historical" {
+    "ASSOC_CollateralPortion"                  : association to CollateralPortion {
+                                                                                    PortionNumber,
+                                                                                    ASSOC_CollateralAgreement
+                                                                                  } not null;
+    "ASSOC_CollateralizedFinancialContract"    : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  } not null;
+    "BusinessValidFrom"                        : LocalDate                          not null;
+    "BusinessValidTo"                          : LocalDate                          not null;
+    "SystemValidFrom"                          : UTCTimestamp                       not null;
+    "SystemValidTo"                            : UTCTimestamp                       not null;
+    "AgreedProtectionAmount"                   : Decimal(34, 6);
+    "AgreedProtectionAmountCurrency"           : String(3);
+    "CoveragePercentage"                       : Decimal(15, 11);
+    "RankAmongCollateralsCoveringTheContract"  : Integer;
+    "RankAmongContractsCoveredByTheCollateral" : Integer;
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

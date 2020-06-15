@@ -1,0 +1,45 @@
+view "sap.fsdm.SQLViews::EligibleCollateral_View" 
+as select
+      "Scheme" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_InstrumentClass.InstrumentClass" ,
+      "_InstrumentClass.InstrumentClassificationSystem" ,
+      "_MasterAgreement.FinancialContractID" ,
+      "_MasterAgreement.IDSystem" ,
+      "_Organization.BusinessPartnerID" ,
+      "_ProductCatalogItem.ProductCatalogItem" ,
+      "_ProductCatalogItem._ProductCatalog.CatalogID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "EligibilityStatus" ,
+      "Haircut" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::EligibleCollateral"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClass_View" as "_InstrumentClass"
+	  on "_InstrumentClass"."InstrumentClass" = "_InstrumentClass.InstrumentClass" AND 
+	     "_InstrumentClass"."InstrumentClassificationSystem" = "_InstrumentClass.InstrumentClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_MasterAgreement"
+	  on "_MasterAgreement"."FinancialContractID" = "_MasterAgreement.FinancialContractID" AND 
+	     "_MasterAgreement"."IDSystem" = "_MasterAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_Organization"
+	  on "_Organization"."BusinessPartnerID" = "_Organization.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogItem_View" as "_ProductCatalogItem"
+	  on "_ProductCatalogItem"."ProductCatalogItem" = "_ProductCatalogItem.ProductCatalogItem" AND 
+	     "_ProductCatalogItem"."_ProductCatalog.CatalogID" = "_ProductCatalogItem._ProductCatalog.CatalogID"
+	     
+);

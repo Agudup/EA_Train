@@ -1,0 +1,99 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartnerRelation";
+using "sap"."fsdm"::"Receivable";
+
+entity "AssignedRightAsCollateral" {
+    key "SequenceNumber"                                  : Integer;
+    key "ASSOC_SimpleCollateralAgreement"                 : association to FinancialContract {
+                                                                                               FinancialContractID,
+                                                                                               IDSystem
+                                                                                             }          not null;
+    key "BusinessValidFrom"                               : LocalDate;
+    key "BusinessValidTo"                                 : LocalDate;
+        "SystemValidFrom"                                 : UTCTimestamp                                not null;
+        "SystemValidTo"                                   : UTCTimestamp                                not null;
+        "ASSOC_AssignedBusinessInterest"                  : association to BusinessPartnerRelation {
+                                                                                                     BusinessPartnerRelationType,
+                                                                                                     ASSOC_SourceInBusinessPartnerRelation,
+                                                                                                     ASSOC_TargetInBusinessPartnerRelation
+                                                                                                   };
+        "ASSOC_AssignedFinancialContract"                 : association to FinancialContract {
+                                                                                               FinancialContractID,
+                                                                                               IDSystem
+                                                                                             };
+        "ASSOC_AssignedReceivable"                        : association to Receivable { ReceivableID };
+        "ASSOC_ReceivableRepresentingAssignedBankAccount" : association to Receivable { ReceivableID };
+        "AssignedAmount"                                  : Decimal(34, 6);
+        "AssignedAmountCurrency"                          : String(3);
+        "AssignedPercentage"                              : Decimal(15, 11);
+        "AssignmentOfRightCategory"                       : String(120);
+        "InitialCollateralValue"                          : Decimal(34, 6);
+        "InitialCollateralValueCurrency"                  : String(3);
+        "RoleOfObligorInAssignedContract"                 : String(50);
+        "ThirdPartyAccountIdentificationSystem"           : String(128);
+        "ThirdPartyBankAccountCurrency"                   : String(3);
+        "ThirdPartyBankAccountHolderName"                 : String(256);
+        "ThirdPartyBankAccountID"                         : String(128);
+        "ThirdPartyBankID"                                : String(128);
+        "ThirdPartyBankIdentificationSystem"              : String(128);
+        "ThirdPartyBankName"                              : String(256);
+        "ThirdPartyIBAN"                                  : String(128);
+        "ThirdPartySWIFT"                                 : String(128);
+        "SourceSystemID"                                  : String(128);
+        "ChangeTimestampInSourceSystem"                   : UTCTimestamp;
+        "ChangingUserInSourceSystem"                      : String(128);
+        "ChangingProcessType"                             : String(40);
+        "ChangingProcessID"                               : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "AssignedRightAsCollateral_Historical" {
+    "SequenceNumber"                                  : Integer                                     not null;
+    "ASSOC_SimpleCollateralAgreement"                 : association to FinancialContract {
+                                                                                           FinancialContractID,
+                                                                                           IDSystem
+                                                                                         }          not null;
+    "BusinessValidFrom"                               : LocalDate                                   not null;
+    "BusinessValidTo"                                 : LocalDate                                   not null;
+    "SystemValidFrom"                                 : UTCTimestamp                                not null;
+    "SystemValidTo"                                   : UTCTimestamp                                not null;
+    "ASSOC_AssignedBusinessInterest"                  : association to BusinessPartnerRelation {
+                                                                                                 BusinessPartnerRelationType,
+                                                                                                 ASSOC_SourceInBusinessPartnerRelation,
+                                                                                                 ASSOC_TargetInBusinessPartnerRelation
+                                                                                               };
+    "ASSOC_AssignedFinancialContract"                 : association to FinancialContract {
+                                                                                           FinancialContractID,
+                                                                                           IDSystem
+                                                                                         };
+    "ASSOC_AssignedReceivable"                        : association to Receivable { ReceivableID };
+    "ASSOC_ReceivableRepresentingAssignedBankAccount" : association to Receivable { ReceivableID };
+    "AssignedAmount"                                  : Decimal(34, 6);
+    "AssignedAmountCurrency"                          : String(3);
+    "AssignedPercentage"                              : Decimal(15, 11);
+    "AssignmentOfRightCategory"                       : String(120);
+    "InitialCollateralValue"                          : Decimal(34, 6);
+    "InitialCollateralValueCurrency"                  : String(3);
+    "RoleOfObligorInAssignedContract"                 : String(50);
+    "ThirdPartyAccountIdentificationSystem"           : String(128);
+    "ThirdPartyBankAccountCurrency"                   : String(3);
+    "ThirdPartyBankAccountHolderName"                 : String(256);
+    "ThirdPartyBankAccountID"                         : String(128);
+    "ThirdPartyBankID"                                : String(128);
+    "ThirdPartyBankIdentificationSystem"              : String(128);
+    "ThirdPartyBankName"                              : String(256);
+    "ThirdPartyIBAN"                                  : String(128);
+    "ThirdPartySWIFT"                                 : String(128);
+    "SourceSystemID"                                  : String(128);
+    "ChangeTimestampInSourceSystem"                   : UTCTimestamp;
+    "ChangingUserInSourceSystem"                      : String(128);
+    "ChangingProcessType"                             : String(40);
+    "ChangingProcessID"                               : String(128);
+}
+technical configuration {
+    column store;
+};

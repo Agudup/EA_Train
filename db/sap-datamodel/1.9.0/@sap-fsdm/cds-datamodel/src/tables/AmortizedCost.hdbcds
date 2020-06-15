@@ -1,0 +1,83 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "AmortizedCost" {
+    key "ACCalculationMethod"             : String(20);
+    key "_AccountingSystem"               : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialContract"              : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }                           not null;
+    key "_FinancialInstrument"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_InvestmentAccount"              : association to FinancialContract {
+                                                                               FinancialContractID,
+                                                                               IDSystem
+                                                                             }                           not null;
+    key "BusinessValidFrom"               : LocalDate;
+    key "BusinessValidTo"                 : LocalDate;
+        "SystemValidFrom"                 : UTCTimestamp                                                 not null;
+        "SystemValidTo"                   : UTCTimestamp                                                 not null;
+        "AC1PaymentCurrency"              : String(3);
+        "AC1PositionCurrency"             : String(3);
+        "AC1TimeInPaymentCurrency"        : Decimal(34, 6);
+        "AC1TimeInPositionCurrency"       : Decimal(34, 6);
+        "ACCPaymentCurrency"              : String(3);
+        "ACCPositionCurrency"             : String(3);
+        "ACCrossEffectInPaymentCurrency"  : Decimal(34, 6);
+        "ACCrossEffectInPositionCurrency" : Decimal(34, 6);
+        "ACInPaymentCurrency"             : Decimal(34, 6);
+        "ACInPositionCurrency"            : Decimal(34, 6);
+        "ACPaymentCurrency"               : String(3);
+        "ACPositionCurrency"              : String(3);
+        "EffectiveInterestRate"           : Decimal(15, 11);
+        "SourceSystemID"                  : String(128);
+        "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+        "ChangingUserInSourceSystem"      : String(128);
+        "ChangingProcessType"             : String(40);
+        "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "AmortizedCost_Historical" {
+    "ACCalculationMethod"             : String(20)                                                   not null;
+    "_AccountingSystem"               : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialContract"              : association to FinancialContract {
+                                                                           FinancialContractID,
+                                                                           IDSystem
+                                                                         }                           not null;
+    "_FinancialInstrument"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_InvestmentAccount"              : association to FinancialContract {
+                                                                           FinancialContractID,
+                                                                           IDSystem
+                                                                         }                           not null;
+    "BusinessValidFrom"               : LocalDate                                                    not null;
+    "BusinessValidTo"                 : LocalDate                                                    not null;
+    "SystemValidFrom"                 : UTCTimestamp                                                 not null;
+    "SystemValidTo"                   : UTCTimestamp                                                 not null;
+    "AC1PaymentCurrency"              : String(3);
+    "AC1PositionCurrency"             : String(3);
+    "AC1TimeInPaymentCurrency"        : Decimal(34, 6);
+    "AC1TimeInPositionCurrency"       : Decimal(34, 6);
+    "ACCPaymentCurrency"              : String(3);
+    "ACCPositionCurrency"             : String(3);
+    "ACCrossEffectInPaymentCurrency"  : Decimal(34, 6);
+    "ACCrossEffectInPositionCurrency" : Decimal(34, 6);
+    "ACInPaymentCurrency"             : Decimal(34, 6);
+    "ACInPositionCurrency"            : Decimal(34, 6);
+    "ACPaymentCurrency"               : String(3);
+    "ACPositionCurrency"              : String(3);
+    "EffectiveInterestRate"           : Decimal(15, 11);
+    "SourceSystemID"                  : String(128);
+    "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+    "ChangingUserInSourceSystem"      : String(128);
+    "ChangingProcessType"             : String(40);
+    "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,76 @@
+view "sap.fsdm.SQLViews::Position_View" 
+as select
+      "Currency" ,
+      "ExpirationDate" ,
+      "LotID" ,
+      "PutOrCall" ,
+      "StrikePrice" ,
+      "ValuationMethod" ,
+      "_AccountingSystem.AccountingSystemID" ,
+      "_Collection.CollectionID" ,
+      "_Collection.IDSystem" ,
+      "_DerivativesAccount.FinancialContractID" ,
+      "_DerivativesAccount.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_SecuritiesAccount.FinancialContractID" ,
+      "_SecuritiesAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Accrual" ,
+      "AccrualCurrency" ,
+      "AveragePaidPrice" ,
+      "AveragePaidPriceCurrency" ,
+      "FuturesPrice" ,
+      "FuturesPriceCurrency" ,
+      "InventoryValuationMethod" ,
+      "LendingValue" ,
+      "LendingValueCurrency" ,
+      "LongPosition" ,
+      "MarketValue" ,
+      "MarketValueCurrency" ,
+      "NetPosition" ,
+      "NominalAmount" ,
+      "NominalAmountCurrency" ,
+      "OptionPremium" ,
+      "OptionPremiumCurrency" ,
+      "PositionAmount" ,
+      "PositionCategory" ,
+      "Price" ,
+      "PriceCurrency" ,
+      "PurchasePrice" ,
+      "PurchasePriceCurrency" ,
+      "Quantity" ,
+      "SecurityPositionCategory" ,
+      "ShortPosition" ,
+      "StrikePriceCurrency" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Position"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystem"
+	  on "_AccountingSystem"."AccountingSystemID" = "_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::Collection_View" as "_Collection"
+	  on "_Collection"."CollectionID" = "_Collection.CollectionID" AND 
+	     "_Collection"."IDSystem" = "_Collection.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_DerivativesAccount"
+	  on "_DerivativesAccount"."IDSystem" = "_DerivativesAccount.IDSystem" AND 
+	     "_DerivativesAccount"."FinancialContractID" = "_DerivativesAccount.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_SecuritiesAccount"
+	  on "_SecuritiesAccount"."FinancialContractID" = "_SecuritiesAccount.FinancialContractID" AND 
+	     "_SecuritiesAccount"."IDSystem" = "_SecuritiesAccount.IDSystem"
+	     
+);

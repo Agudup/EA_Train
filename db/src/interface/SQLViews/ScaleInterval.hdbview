@@ -1,0 +1,118 @@
+view "sap.fsdm.SQLViews::ScaleInterval_View" 
+as select
+      "ASSOC_FeeSpecification.SequenceNumber" ,
+      "ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" ,
+      "ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" ,
+      "ASSOC_FeeSpecification._Trade.IDSystem" ,
+      "ASSOC_FeeSpecification._Trade.TradeID" ,
+      "ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" ,
+      "ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" ,
+      "ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" ,
+      "ASSOC_InterestSpecification.SequenceNumber" ,
+      "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+      "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" ,
+      "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" ,
+      "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+      "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+      "ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" ,
+      "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+      "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+      "ASSOC_InterestSpecification._Trade.IDSystem" ,
+      "ASSOC_InterestSpecification._Trade.TradeID" ,
+      "ASSOC_StandardFee.SequenceNumber" ,
+      "ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" ,
+      "ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" ,
+      "ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "ASSOC_StandardInterest.SequenceNumber" ,
+      "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" ,
+      "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" ,
+      "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" ,
+      "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" ,
+      "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" ,
+      "ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" ,
+      "ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" ,
+      "ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" ,
+      "ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" ,
+      "_PnLParticipation.SequenceNumber" ,
+      "_PnLParticipation._ParticipationCert.FinancialInstrumentID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BoundaryAmountCurrency" ,
+      "LowerBoundaryAmount" ,
+      "LowerBoundaryCount" ,
+      "ScaleBaseAggregationMethod" ,
+      "ScaleBaseType" ,
+      "ScalingMethod" ,
+      "UpperBoundaryAmount" ,
+      "UpperBoundaryCount" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ScaleInterval"
+with associations
+(
+	join "sap.fsdm.SQLViews::Fee_View" as "ASSOC_FeeSpecification"
+	  on "ASSOC_FeeSpecification"."_TrancheInSyndication._SyndicationAgreement.IDSystem" = "ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.IDSystem" AND 
+	     "ASSOC_FeeSpecification"."_TrancheInSyndication._SyndicationAgreement.FinancialContractID" = "ASSOC_FeeSpecification._TrancheInSyndication._SyndicationAgreement.FinancialContractID" AND 
+	     "ASSOC_FeeSpecification"."_TrancheInSyndication.TrancheSequenceNumber" = "ASSOC_FeeSpecification._TrancheInSyndication.TrancheSequenceNumber" AND 
+	     "ASSOC_FeeSpecification"."_Trade.TradeID" = "ASSOC_FeeSpecification._Trade.TradeID" AND 
+	     "ASSOC_FeeSpecification"."_Trade.IDSystem" = "ASSOC_FeeSpecification._Trade.IDSystem" AND 
+	     "ASSOC_FeeSpecification"."SequenceNumber" = "ASSOC_FeeSpecification.SequenceNumber" AND 
+	     "ASSOC_FeeSpecification"."ASSOC_TransferOrder.TransferOrderID" = "ASSOC_FeeSpecification.ASSOC_TransferOrder.TransferOrderID" AND 
+	     "ASSOC_FeeSpecification"."ASSOC_TransferOrder.IDSystem" = "ASSOC_FeeSpecification.ASSOC_TransferOrder.IDSystem" AND 
+	     "ASSOC_FeeSpecification"."ASSOC_FinancialContract.IDSystem" = "ASSOC_FeeSpecification.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FeeSpecification"."ASSOC_FinancialContract.FinancialContractID" = "ASSOC_FeeSpecification.ASSOC_FinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::Interest_View" as "ASSOC_InterestSpecification"
+	  on "ASSOC_InterestSpecification"."_Trade.TradeID" = "ASSOC_InterestSpecification._Trade.TradeID" AND 
+	     "ASSOC_InterestSpecification"."_Trade.IDSystem" = "ASSOC_InterestSpecification._Trade.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "ASSOC_InterestSpecification._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfStrikeSpecification.ComponentNumber" = "ASSOC_InterestSpecification._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_InterestSpecification"."_OptionOfReferenceRateSpecification.ComponentNumber" = "ASSOC_InterestSpecification._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "ASSOC_InterestSpecification"."_DebtInstrument.FinancialInstrumentID" = "ASSOC_InterestSpecification._DebtInstrument.FinancialInstrumentID" AND 
+	     "ASSOC_InterestSpecification"."SequenceNumber" = "ASSOC_InterestSpecification.SequenceNumber" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_FinancialContract.IDSystem" = "ASSOC_InterestSpecification.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_FinancialContract.FinancialContractID" = "ASSOC_InterestSpecification.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_InterestSpecification"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_InterestSpecification.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardFee_View" as "ASSOC_StandardFee"
+	  on "ASSOC_StandardFee"."SequenceNumber" = "ASSOC_StandardFee.SequenceNumber" AND 
+	     "ASSOC_StandardFee"."ASSOC_StandardProduct.PricingScheme" = "ASSOC_StandardFee.ASSOC_StandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardFee"."ASSOC_StandardProduct.IDSystem" = "ASSOC_StandardFee.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardFee"."ASSOC_StandardProduct.FinancialStandardProductID" = "ASSOC_StandardFee.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardFee"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardFee.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::StandardInterest_View" as "ASSOC_StandardInterest"
+	  on "ASSOC_StandardInterest"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardInterest"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" = "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardInterest"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" = "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" AND 
+	     "ASSOC_StandardInterest"."ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" = "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" AND 
+	     "ASSOC_StandardInterest"."ASSOC_PosCcyOfStdAcc.PositionCurrency" = "ASSOC_StandardInterest.ASSOC_PosCcyOfStdAcc.PositionCurrency" AND 
+	     "ASSOC_StandardInterest"."ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" = "ASSOC_StandardInterest.ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "ASSOC_StandardInterest"."ASSOC_StandardProduct.FinancialStandardProductID" = "ASSOC_StandardInterest.ASSOC_StandardProduct.FinancialStandardProductID" AND 
+	     "ASSOC_StandardInterest"."ASSOC_StandardProduct.IDSystem" = "ASSOC_StandardInterest.ASSOC_StandardProduct.IDSystem" AND 
+	     "ASSOC_StandardInterest"."ASSOC_StandardProduct.PricingScheme" = "ASSOC_StandardInterest.ASSOC_StandardProduct.PricingScheme" AND 
+	     "ASSOC_StandardInterest"."SequenceNumber" = "ASSOC_StandardInterest.SequenceNumber"
+	     ,
+	join "sap.fsdm.SQLViews::ProfitAndLossParticipation_View" as "_PnLParticipation"
+	  on "_PnLParticipation"."_ParticipationCert.FinancialInstrumentID" = "_PnLParticipation._ParticipationCert.FinancialInstrumentID" AND 
+	     "_PnLParticipation"."SequenceNumber" = "_PnLParticipation.SequenceNumber"
+	     
+);

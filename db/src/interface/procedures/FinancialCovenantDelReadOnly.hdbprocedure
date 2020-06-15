@@ -1,0 +1,303 @@
+PROCEDURE "sap.fsdm.procedures::FinancialCovenantDelReadOnly" (IN ROW "sap.fsdm.tabletypes::FinancialCovenantTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::FinancialCovenantTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::FinancialCovenantTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "SequenceNumber",
+            "ASSOC_FinancialContract.FinancialContractID",
+            "ASSOC_FinancialContract.IDSystem",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::FinancialCovenant" WHERE
+            (
+            "SequenceNumber" ,
+            "ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_FinancialContract.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::FinancialCovenant" as "OLD"
+        on
+                              ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "SequenceNumber",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "BoundaryUnit",
+        "CovenantBreachEffectType",
+        "CovenantFulfilledEffectType",
+        "CovenantType",
+        "Criterion",
+        "CriterionApplicableFrom",
+        "CriterionApplicableTo",
+        "FirstRegularMonitoringDate",
+        "LowerBoundary",
+        "LowerBoundaryCount",
+        "LowerBoundaryPercentage",
+        "LowerNonnumericalBoundary",
+        "MonitoringPeriodLength",
+        "MonitoringPeriodLengthTimeUnit",
+        "UpperBoundary",
+        "UpperBoundaryCount",
+        "UpperBoundaryPercentage",
+        "UpperNonnumericalBoundary",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_BoundaryUnit" as "BoundaryUnit" ,
+            "OLD_CovenantBreachEffectType" as "CovenantBreachEffectType" ,
+            "OLD_CovenantFulfilledEffectType" as "CovenantFulfilledEffectType" ,
+            "OLD_CovenantType" as "CovenantType" ,
+            "OLD_Criterion" as "Criterion" ,
+            "OLD_CriterionApplicableFrom" as "CriterionApplicableFrom" ,
+            "OLD_CriterionApplicableTo" as "CriterionApplicableTo" ,
+            "OLD_FirstRegularMonitoringDate" as "FirstRegularMonitoringDate" ,
+            "OLD_LowerBoundary" as "LowerBoundary" ,
+            "OLD_LowerBoundaryCount" as "LowerBoundaryCount" ,
+            "OLD_LowerBoundaryPercentage" as "LowerBoundaryPercentage" ,
+            "OLD_LowerNonnumericalBoundary" as "LowerNonnumericalBoundary" ,
+            "OLD_MonitoringPeriodLength" as "MonitoringPeriodLength" ,
+            "OLD_MonitoringPeriodLengthTimeUnit" as "MonitoringPeriodLengthTimeUnit" ,
+            "OLD_UpperBoundary" as "UpperBoundary" ,
+            "OLD_UpperBoundaryCount" as "UpperBoundaryCount" ,
+            "OLD_UpperBoundaryPercentage" as "UpperBoundaryPercentage" ,
+            "OLD_UpperNonnumericalBoundary" as "UpperNonnumericalBoundary" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BoundaryUnit" as "OLD_BoundaryUnit",
+                                "OLD"."CovenantBreachEffectType" as "OLD_CovenantBreachEffectType",
+                                "OLD"."CovenantFulfilledEffectType" as "OLD_CovenantFulfilledEffectType",
+                                "OLD"."CovenantType" as "OLD_CovenantType",
+                                "OLD"."Criterion" as "OLD_Criterion",
+                                "OLD"."CriterionApplicableFrom" as "OLD_CriterionApplicableFrom",
+                                "OLD"."CriterionApplicableTo" as "OLD_CriterionApplicableTo",
+                                "OLD"."FirstRegularMonitoringDate" as "OLD_FirstRegularMonitoringDate",
+                                "OLD"."LowerBoundary" as "OLD_LowerBoundary",
+                                "OLD"."LowerBoundaryCount" as "OLD_LowerBoundaryCount",
+                                "OLD"."LowerBoundaryPercentage" as "OLD_LowerBoundaryPercentage",
+                                "OLD"."LowerNonnumericalBoundary" as "OLD_LowerNonnumericalBoundary",
+                                "OLD"."MonitoringPeriodLength" as "OLD_MonitoringPeriodLength",
+                                "OLD"."MonitoringPeriodLengthTimeUnit" as "OLD_MonitoringPeriodLengthTimeUnit",
+                                "OLD"."UpperBoundary" as "OLD_UpperBoundary",
+                                "OLD"."UpperBoundaryCount" as "OLD_UpperBoundaryCount",
+                                "OLD"."UpperBoundaryPercentage" as "OLD_UpperBoundaryPercentage",
+                                "OLD"."UpperNonnumericalBoundary" as "OLD_UpperNonnumericalBoundary",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialCovenant" as "OLD"
+            on
+                                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_BoundaryUnit" as "BoundaryUnit",
+            "OLD_CovenantBreachEffectType" as "CovenantBreachEffectType",
+            "OLD_CovenantFulfilledEffectType" as "CovenantFulfilledEffectType",
+            "OLD_CovenantType" as "CovenantType",
+            "OLD_Criterion" as "Criterion",
+            "OLD_CriterionApplicableFrom" as "CriterionApplicableFrom",
+            "OLD_CriterionApplicableTo" as "CriterionApplicableTo",
+            "OLD_FirstRegularMonitoringDate" as "FirstRegularMonitoringDate",
+            "OLD_LowerBoundary" as "LowerBoundary",
+            "OLD_LowerBoundaryCount" as "LowerBoundaryCount",
+            "OLD_LowerBoundaryPercentage" as "LowerBoundaryPercentage",
+            "OLD_LowerNonnumericalBoundary" as "LowerNonnumericalBoundary",
+            "OLD_MonitoringPeriodLength" as "MonitoringPeriodLength",
+            "OLD_MonitoringPeriodLengthTimeUnit" as "MonitoringPeriodLengthTimeUnit",
+            "OLD_UpperBoundary" as "UpperBoundary",
+            "OLD_UpperBoundaryCount" as "UpperBoundaryCount",
+            "OLD_UpperBoundaryPercentage" as "UpperBoundaryPercentage",
+            "OLD_UpperNonnumericalBoundary" as "UpperNonnumericalBoundary",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."BoundaryUnit" as "OLD_BoundaryUnit",
+                                "OLD"."CovenantBreachEffectType" as "OLD_CovenantBreachEffectType",
+                                "OLD"."CovenantFulfilledEffectType" as "OLD_CovenantFulfilledEffectType",
+                                "OLD"."CovenantType" as "OLD_CovenantType",
+                                "OLD"."Criterion" as "OLD_Criterion",
+                                "OLD"."CriterionApplicableFrom" as "OLD_CriterionApplicableFrom",
+                                "OLD"."CriterionApplicableTo" as "OLD_CriterionApplicableTo",
+                                "OLD"."FirstRegularMonitoringDate" as "OLD_FirstRegularMonitoringDate",
+                                "OLD"."LowerBoundary" as "OLD_LowerBoundary",
+                                "OLD"."LowerBoundaryCount" as "OLD_LowerBoundaryCount",
+                                "OLD"."LowerBoundaryPercentage" as "OLD_LowerBoundaryPercentage",
+                                "OLD"."LowerNonnumericalBoundary" as "OLD_LowerNonnumericalBoundary",
+                                "OLD"."MonitoringPeriodLength" as "OLD_MonitoringPeriodLength",
+                                "OLD"."MonitoringPeriodLengthTimeUnit" as "OLD_MonitoringPeriodLengthTimeUnit",
+                                "OLD"."UpperBoundary" as "OLD_UpperBoundary",
+                                "OLD"."UpperBoundaryCount" as "OLD_UpperBoundaryCount",
+                                "OLD"."UpperBoundaryPercentage" as "OLD_UpperBoundaryPercentage",
+                                "OLD"."UpperNonnumericalBoundary" as "OLD_UpperNonnumericalBoundary",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::FinancialCovenant" as "OLD"
+            on
+               ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+               ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

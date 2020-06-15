@@ -1,0 +1,57 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CaseReserve";
+
+entity "CaseReserveItem" {
+    key "ReserveChangeDate"             : LocalDate;
+    key "_CaseReserve"                  : association to CaseReserve { Type } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                        not null;
+        "SystemValidTo"                 : UTCTimestamp                        not null;
+        "_CaseReserveItem"              : association to CaseReserveItem {
+                                                                           ReserveChangeDate,
+                                                                           _CaseReserve
+                                                                         };
+        "Amount"                        : Decimal(34, 6);
+        "Currency"                      : String(3);
+        "PostingDate"                   : LocalDate;
+        "ReserveChangeReason"           : String(40);
+        "ReversedIndicator"             : Boolean;
+        "Type"                          : String(40);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CaseReserveItem_Historical" {
+    "ReserveChangeDate"             : LocalDate                           not null;
+    "_CaseReserve"                  : association to CaseReserve { Type } not null;
+    "BusinessValidFrom"             : LocalDate                           not null;
+    "BusinessValidTo"               : LocalDate                           not null;
+    "_CaseReserveItem"              : association to CaseReserveItem {
+                                                                       ReserveChangeDate,
+                                                                       _CaseReserve
+                                                                     };
+    "SystemValidFrom"               : UTCTimestamp                        not null;
+    "SystemValidTo"                 : UTCTimestamp                        not null;
+    "Amount"                        : Decimal(34, 6);
+    "Currency"                      : String(3);
+    "PostingDate"                   : LocalDate;
+    "ReserveChangeReason"           : String(40);
+    "ReversedIndicator"             : Boolean;
+    "Type"                          : String(40);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

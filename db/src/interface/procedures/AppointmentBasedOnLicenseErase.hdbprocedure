@@ -1,0 +1,79 @@
+PROCEDURE "sap.fsdm.procedures::AppointmentBasedOnLicenseErase" (IN ROW "sap.fsdm.tabletypes::AppointmentBasedOnLicenseTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_Appointment.SequenceNumber" is null and
+                         "_Appointment._IndividualPerson.BusinessPartnerID" is null and
+                         "_License.Authority" is null and
+                         "_License.IDSystem" is null and
+                         "_License.SubjectOfLicenseIdentifier" is null and
+                         "_License._BusinessPartner.BusinessPartnerID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::AppointmentBasedOnLicense" WHERE
+("_Appointment.SequenceNumber" ,
+"_Appointment._IndividualPerson.BusinessPartnerID" ,
+"_License.Authority" ,
+"_License.IDSystem" ,
+"_License.SubjectOfLicenseIdentifier" ,
+"_License._BusinessPartner.BusinessPartnerID" 
+)in ( select "OLD"."_Appointment.SequenceNumber" ,
+"OLD"."_Appointment._IndividualPerson.BusinessPartnerID" ,
+"OLD"."_License.Authority" ,
+"OLD"."_License.IDSystem" ,
+"OLD"."_License.SubjectOfLicenseIdentifier" ,
+"OLD"."_License._BusinessPartner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::AppointmentBasedOnLicense" "OLD"
+on
+  ( "IN"."_Appointment.SequenceNumber" = "OLD"."_Appointment.SequenceNumber" or "IN"."_Appointment.SequenceNumber" is null ) and
+  ( "IN"."_Appointment._IndividualPerson.BusinessPartnerID" = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" or "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null ) and
+  ( "IN"."_License.Authority" = "OLD"."_License.Authority" or "IN"."_License.Authority" is null ) and
+  ( "IN"."_License.IDSystem" = "OLD"."_License.IDSystem" or "IN"."_License.IDSystem" is null ) and
+  ( "IN"."_License.SubjectOfLicenseIdentifier" = "OLD"."_License.SubjectOfLicenseIdentifier" or "IN"."_License.SubjectOfLicenseIdentifier" is null ) and
+  ( "IN"."_License._BusinessPartner.BusinessPartnerID" = "OLD"."_License._BusinessPartner.BusinessPartnerID" or "IN"."_License._BusinessPartner.BusinessPartnerID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::AppointmentBasedOnLicense_Historical" WHERE
+("_Appointment.SequenceNumber" ,
+"_Appointment._IndividualPerson.BusinessPartnerID" ,
+"_License.Authority" ,
+"_License.IDSystem" ,
+"_License.SubjectOfLicenseIdentifier" ,
+"_License._BusinessPartner.BusinessPartnerID" 
+)in ( select "OLD"."_Appointment.SequenceNumber" ,
+"OLD"."_Appointment._IndividualPerson.BusinessPartnerID" ,
+"OLD"."_License.Authority" ,
+"OLD"."_License.IDSystem" ,
+"OLD"."_License.SubjectOfLicenseIdentifier" ,
+"OLD"."_License._BusinessPartner.BusinessPartnerID" 
+from :ROW "IN"
+inner join "sap.fsdm::AppointmentBasedOnLicense_Historical" "OLD"
+on
+  ( "IN"."_Appointment.SequenceNumber" = "OLD"."_Appointment.SequenceNumber" or "IN"."_Appointment.SequenceNumber" is null ) and
+  ( "IN"."_Appointment._IndividualPerson.BusinessPartnerID" = "OLD"."_Appointment._IndividualPerson.BusinessPartnerID" or "IN"."_Appointment._IndividualPerson.BusinessPartnerID" is null ) and
+  ( "IN"."_License.Authority" = "OLD"."_License.Authority" or "IN"."_License.Authority" is null ) and
+  ( "IN"."_License.IDSystem" = "OLD"."_License.IDSystem" or "IN"."_License.IDSystem" is null ) and
+  ( "IN"."_License.SubjectOfLicenseIdentifier" = "OLD"."_License.SubjectOfLicenseIdentifier" or "IN"."_License.SubjectOfLicenseIdentifier" is null ) and
+  ( "IN"."_License._BusinessPartner.BusinessPartnerID" = "OLD"."_License._BusinessPartner.BusinessPartnerID" or "IN"."_License._BusinessPartner.BusinessPartnerID" is null ) 
+);
+
+END

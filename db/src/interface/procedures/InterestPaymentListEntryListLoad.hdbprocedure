@@ -1,0 +1,517 @@
+PROCEDURE "sap.fsdm.procedures::InterestPaymentListEntryListLoad" (IN ROW "sap.fsdm.tabletypes::InterestPaymentListEntryTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'InterestPaymentDate=' || TO_VARCHAR("InterestPaymentDate") || ' ' ||
+                'ASSOC_InterestPaymentList.SequenceNumber=' || TO_VARCHAR("ASSOC_InterestPaymentList.SequenceNumber") || ' ' ||
+                'ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency=' || TO_VARCHAR("ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency") || ' ' ||
+                'ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                'ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID=' || TO_VARCHAR("ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID") || ' ' ||
+                'ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber=' || TO_VARCHAR("ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber") || ' ' ||
+                'ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID=' || TO_VARCHAR("ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID") || ' ' ||
+                'ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem=' || TO_VARCHAR("ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem") || ' ' ||
+                'ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber=' || TO_VARCHAR("ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber") || ' ' ||
+                'ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID=' || TO_VARCHAR("ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID") || ' ' ||
+                'ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem=' || TO_VARCHAR("ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem") || ' ' ||
+                'ASSOC_InterestPaymentList._Trade.IDSystem=' || TO_VARCHAR("ASSOC_InterestPaymentList._Trade.IDSystem") || ' ' ||
+                'ASSOC_InterestPaymentList._Trade.TradeID=' || TO_VARCHAR("ASSOC_InterestPaymentList._Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."InterestPaymentDate",
+                        "IN"."ASSOC_InterestPaymentList.SequenceNumber",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._Trade.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."InterestPaymentDate",
+                        "IN"."ASSOC_InterestPaymentList.SequenceNumber",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._Trade.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "InterestPaymentDate",
+                        "ASSOC_InterestPaymentList.SequenceNumber",
+                        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "ASSOC_InterestPaymentList._Trade.IDSystem",
+                        "ASSOC_InterestPaymentList._Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."InterestPaymentDate",
+                                    "IN"."ASSOC_InterestPaymentList.SequenceNumber",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._Trade.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."InterestPaymentDate",
+                                    "IN"."ASSOC_InterestPaymentList.SequenceNumber",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                    "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._Trade.IDSystem",
+                                    "IN"."ASSOC_InterestPaymentList._Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InterestPaymentListEntry" (
+        "InterestPaymentDate",
+        "ASSOC_InterestPaymentList.SequenceNumber",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InterestAmount",
+        "InterestPaymentCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InterestPaymentDate" as "InterestPaymentDate" ,
+            "OLD_ASSOC_InterestPaymentList.SequenceNumber" as "ASSOC_InterestPaymentList.SequenceNumber" ,
+            "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+            "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" as "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" as "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" ,
+            "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" ,
+            "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+            "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+            "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" ,
+            "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+            "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+            "OLD_ASSOC_InterestPaymentList._Trade.IDSystem" as "ASSOC_InterestPaymentList._Trade.IDSystem" ,
+            "OLD_ASSOC_InterestPaymentList._Trade.TradeID" as "ASSOC_InterestPaymentList._Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_InterestAmount" as "InterestAmount" ,
+            "OLD_InterestPaymentCurrency" as "InterestPaymentCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_InterestPaymentList._Trade.TradeID",
+                        "IN"."ASSOC_InterestPaymentList._Trade.IDSystem",
+                        "IN"."InterestPaymentDate",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."InterestPaymentDate" as "OLD_InterestPaymentDate",
+                                "OLD"."ASSOC_InterestPaymentList.SequenceNumber" as "OLD_ASSOC_InterestPaymentList.SequenceNumber",
+                                "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                                "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                                "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" as "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                                "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                                "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                                "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" as "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                                "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                                "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                                "OLD"."ASSOC_InterestPaymentList._Trade.IDSystem" as "OLD_ASSOC_InterestPaymentList._Trade.IDSystem",
+                                "OLD"."ASSOC_InterestPaymentList._Trade.TradeID" as "OLD_ASSOC_InterestPaymentList._Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."InterestAmount" as "OLD_InterestAmount",
+                                "OLD"."InterestPaymentCurrency" as "OLD_InterestPaymentCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InterestPaymentListEntry" as "OLD"
+            on
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" end ) = "OLD"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" and
+                ( case when "IN"."ASSOC_InterestPaymentList._Trade.TradeID" is null then '' else "IN"."ASSOC_InterestPaymentList._Trade.TradeID" end ) = "OLD"."ASSOC_InterestPaymentList._Trade.TradeID" and
+                ( case when "IN"."ASSOC_InterestPaymentList._Trade.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._Trade.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._Trade.IDSystem" and
+                ( case when "IN"."InterestPaymentDate" is null then '0001-01-01' else "IN"."InterestPaymentDate" end ) = "OLD"."InterestPaymentDate" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InterestPaymentListEntry" (
+        "InterestPaymentDate",
+        "ASSOC_InterestPaymentList.SequenceNumber",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InterestAmount",
+        "InterestPaymentCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_InterestPaymentDate" as "InterestPaymentDate",
+            "OLD_ASSOC_InterestPaymentList.SequenceNumber" as "ASSOC_InterestPaymentList.SequenceNumber",
+            "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" as "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" as "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" as "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+            "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+            "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+            "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "OLD_ASSOC_InterestPaymentList._Trade.IDSystem" as "ASSOC_InterestPaymentList._Trade.IDSystem",
+            "OLD_ASSOC_InterestPaymentList._Trade.TradeID" as "ASSOC_InterestPaymentList._Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_InterestAmount" as "InterestAmount",
+            "OLD_InterestPaymentCurrency" as "InterestPaymentCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "IN"."ASSOC_InterestPaymentList._Trade.TradeID",
+                        "IN"."ASSOC_InterestPaymentList._Trade.IDSystem",
+                        "IN"."InterestPaymentDate",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."InterestPaymentDate" as "OLD_InterestPaymentDate",
+                        "OLD"."ASSOC_InterestPaymentList.SequenceNumber" as "OLD_ASSOC_InterestPaymentList.SequenceNumber",
+                        "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" as "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+                        "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" as "OLD_ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+                        "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" as "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+                        "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+                        "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" as "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+                        "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" as "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+                        "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" as "OLD_ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+                        "OLD"."ASSOC_InterestPaymentList._Trade.IDSystem" as "OLD_ASSOC_InterestPaymentList._Trade.IDSystem",
+                        "OLD"."ASSOC_InterestPaymentList._Trade.TradeID" as "OLD_ASSOC_InterestPaymentList._Trade.TradeID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."InterestAmount" as "OLD_InterestAmount",
+                        "OLD"."InterestPaymentCurrency" as "OLD_InterestPaymentCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InterestPaymentListEntry" as "OLD"
+            on
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" end ) = "OLD"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" and
+                ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" and
+                ( case when "IN"."ASSOC_InterestPaymentList._Trade.TradeID" is null then '' else "IN"."ASSOC_InterestPaymentList._Trade.TradeID" end ) = "OLD"."ASSOC_InterestPaymentList._Trade.TradeID" and
+                ( case when "IN"."ASSOC_InterestPaymentList._Trade.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._Trade.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._Trade.IDSystem" and
+                ( case when "IN"."InterestPaymentDate" is null then '0001-01-01' else "IN"."InterestPaymentDate" end ) = "OLD"."InterestPaymentDate" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InterestPaymentListEntry"
+    where (
+        "InterestPaymentDate",
+        "ASSOC_InterestPaymentList.SequenceNumber",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."InterestPaymentDate",
+            "OLD"."ASSOC_InterestPaymentList.SequenceNumber",
+            "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+            "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+            "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+            "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            "OLD"."ASSOC_InterestPaymentList._Trade.IDSystem",
+            "OLD"."ASSOC_InterestPaymentList._Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InterestPaymentListEntry" as "OLD"
+        on
+           ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" and
+           ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" and
+           ( case when "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "IN"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" end ) = "OLD"."ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" and
+           ( case when "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" and
+           ( case when "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" and
+           ( case when "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" and
+           ( case when "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" and
+           ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" and
+           ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" and
+           ( case when "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null then '' else "IN"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" end ) = "OLD"."ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" and
+           ( case when "IN"."ASSOC_InterestPaymentList._Trade.TradeID" is null then '' else "IN"."ASSOC_InterestPaymentList._Trade.TradeID" end ) = "OLD"."ASSOC_InterestPaymentList._Trade.TradeID" and
+           ( case when "IN"."ASSOC_InterestPaymentList._Trade.IDSystem" is null then '' else "IN"."ASSOC_InterestPaymentList._Trade.IDSystem" end ) = "OLD"."ASSOC_InterestPaymentList._Trade.IDSystem" and
+           ( case when "IN"."InterestPaymentDate" is null then '0001-01-01' else "IN"."InterestPaymentDate" end ) = "OLD"."InterestPaymentDate" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::InterestPaymentListEntry" (
+        "InterestPaymentDate",
+        "ASSOC_InterestPaymentList.SequenceNumber",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+        "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+        "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.IDSystem",
+        "ASSOC_InterestPaymentList._Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InterestAmount",
+        "InterestPaymentCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "InterestPaymentDate" is null then '0001-01-01' else "InterestPaymentDate" end ) as "InterestPaymentDate",
+            ( case when "ASSOC_InterestPaymentList.SequenceNumber" is null then -1 else "ASSOC_InterestPaymentList.SequenceNumber" end ) as "ASSOC_InterestPaymentList.SequenceNumber",
+            ( case when "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" is null then '' else "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" end ) as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency",
+            ( case when "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" end ) as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID",
+            ( case when "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" end ) as "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem",
+            ( case when "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID",
+            ( case when "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem",
+            ( case when "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" is null then '' else "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" end ) as "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID",
+            ( case when "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" is null then -1 else "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" end ) as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber",
+            ( case when "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" is null then '' else "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" end ) as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID",
+            ( case when "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" is null then '' else "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" end ) as "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem",
+            ( case when "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" is null then -1 else "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" end ) as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber",
+            ( case when "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" is null then '' else "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" end ) as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID",
+            ( case when "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" is null then '' else "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" end ) as "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem",
+            ( case when "ASSOC_InterestPaymentList._Trade.IDSystem" is null then '' else "ASSOC_InterestPaymentList._Trade.IDSystem" end ) as "ASSOC_InterestPaymentList._Trade.IDSystem",
+            ( case when "ASSOC_InterestPaymentList._Trade.TradeID" is null then '' else "ASSOC_InterestPaymentList._Trade.TradeID" end ) as "ASSOC_InterestPaymentList._Trade.TradeID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "InterestAmount"  ,
+            "InterestPaymentCurrency"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

@@ -1,0 +1,38 @@
+view "sap.fsdm.Views::CreditRiskAdjustment_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CalculationMethod" as "CalculationMethod",
+      "IndicatorResultBeforeChange" as "IndicatorResultBeforeChange",
+      "LotID" as "LotID",
+      "RiskProvisionScenario" as "RiskProvisionScenario",
+      "RiskProvisionType" as "RiskProvisionType",
+      "ASSOC_AccountingSystem.AccountingSystemID" as "ASSOC_AccountingSystem_AccountingSystemID",
+      "ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract_FinancialContractID",
+      "ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract_IDSystem",
+      "ASSOC_PositionCurrencyOfMultiCurrencyContract.PositionCurrency" as "ASSOC_PositionCurrencyOfMultiCurrencyContract_PositionCurrency",
+      "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyOfMultiCurrencyContract_ASSOC_MultiCcyAccnt_FinancialContractID",
+      "ASSOC_PositionCurrencyOfMultiCurrencyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyOfMultiCurrencyContract_ASSOC_MultiCcyAccnt_IDSystem",
+      "_FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument_FinancialInstrumentID",
+      "_InvestmentAccount.FinancialContractID" as "_InvestmentAccount_FinancialContractID",
+      "_InvestmentAccount.IDSystem" as "_InvestmentAccount_IDSystem",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "CalculationCurrency" as "CalculationCurrency",
+      "CreditRiskAdjustedEffectiveInterestRate" as "CreditRiskAdjustedEffectiveInterestRate",
+      "NominalAmount" as "NominalAmount",
+      "PositionCurrency" as "PositionCurrency",
+      "Quantity" as "Quantity",
+      "RiskProvisionInCalculationCurrency" as "RiskProvisionInCalculationCurrency",
+      "RiskProvisionInPositionCurrency" as "RiskProvisionInPositionCurrency",
+      "Significance" as "Significance",
+      "Unit" as "Unit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::CreditRiskAdjustment"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

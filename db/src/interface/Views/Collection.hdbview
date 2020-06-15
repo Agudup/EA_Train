@@ -1,0 +1,32 @@
+view "sap.fsdm.Views::Collection_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CollectionID" as "CollectionID",
+      "IDSystem" as "IDSystem",
+      "_Client.BusinessPartnerID" as "_Client_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_EmployeeResponsibleForPortfolio.BusinessPartnerID" as "_EmployeeResponsibleForPortfolio_BusinessPartnerID",
+      "_OrganizationalUnit.OrganizationalUnitID" as "_OrganizationalUnit_OrganizationalUnitID",
+      "_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+      "CollateralPoolCoveringType" as "CollateralPoolCoveringType",
+      "CollateralPoolType" as "CollateralPoolType",
+      "CollectionCategory" as "CollectionCategory",
+      "CollectionName" as "CollectionName",
+      "CountryOfCollateralPoolCovering" as "CountryOfCollateralPoolCovering",
+      "Distributed" as "Distributed",
+      "FinancialInstrumentPortfolioType" as "FinancialInstrumentPortfolioType",
+      "InvestmentObjective" as "InvestmentObjective",
+      "ManagingUnit" as "ManagingUnit",
+      "PortfolioCategory" as "PortfolioCategory",
+      "TradingDeskType" as "TradingDeskType",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::Collection"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

@@ -1,0 +1,71 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Exchange";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"CommodityReferencePrice";
+
+entity "EndOfDayListedDerivativePriceObservation" {
+    key "ExpirationDate"                                   : LocalDate;
+    key "PriceDataProvider"                                : String(256)                                                  default '';
+    key "PriceSeriesType"                                  : String(40)                                                   default '';
+    key "PutOrCall"                                        : String(4)                                                    default '';
+    key "StrikePrice"                                      : Decimal(34, 6)                                               default 0;
+    key "_Exchange"                                        : association to Exchange { MarketIdentifierCode }             not null;
+    key "_FinancialInstrument"                             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"                                : LocalDate;
+    key "BusinessValidTo"                                  : LocalDate;
+        "SystemValidFrom"                                  : UTCTimestamp                                                 not null;
+        "SystemValidTo"                                    : UTCTimestamp                                                 not null;
+        "_CommodityReferencePrice"                         : association to CommodityReferencePrice { ReferencePriceID };
+        "Close"                                            : Decimal(34, 6);
+        "Currency"                                         : String(3);
+        "EndOfDayListedDerivativePriceObservationCategory" : String(50);
+        "High"                                             : Decimal(34, 6);
+        "Low"                                              : Decimal(34, 6);
+        "Open"                                             : Decimal(34, 6);
+        "OpenInterest"                                     : Integer64;
+        "PriceNotationForm"                                : String(40);
+        "StrikePriceCurrency"                              : String(3);
+        "Volume"                                           : Decimal(34, 6);
+        "SourceSystemID"                                   : String(128);
+        "ChangeTimestampInSourceSystem"                    : UTCTimestamp;
+        "ChangingUserInSourceSystem"                       : String(128);
+        "ChangingProcessType"                              : String(40);
+        "ChangingProcessID"                                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "EndOfDayListedDerivativePriceObservation_Historical" {
+    "ExpirationDate"                                   : LocalDate                                                    not null;
+    "PriceDataProvider"                                : String(256)                                                  default '' not null;
+    "PriceSeriesType"                                  : String(40)                                                   default '' not null;
+    "PutOrCall"                                        : String(4)                                                    default '' not null;
+    "StrikePrice"                                      : Decimal(34, 6)                                               default 0 not null;
+    "_Exchange"                                        : association to Exchange { MarketIdentifierCode }             not null;
+    "_FinancialInstrument"                             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"                                : LocalDate                                                    not null;
+    "BusinessValidTo"                                  : LocalDate                                                    not null;
+    "SystemValidFrom"                                  : UTCTimestamp                                                 not null;
+    "SystemValidTo"                                    : UTCTimestamp                                                 not null;
+    "_CommodityReferencePrice"                         : association to CommodityReferencePrice { ReferencePriceID };
+    "Close"                                            : Decimal(34, 6);
+    "Currency"                                         : String(3);
+    "EndOfDayListedDerivativePriceObservationCategory" : String(50);
+    "High"                                             : Decimal(34, 6);
+    "Low"                                              : Decimal(34, 6);
+    "Open"                                             : Decimal(34, 6);
+    "OpenInterest"                                     : Integer64;
+    "PriceNotationForm"                                : String(40);
+    "StrikePriceCurrency"                              : String(3);
+    "Volume"                                           : Decimal(34, 6);
+    "SourceSystemID"                                   : String(128);
+    "ChangeTimestampInSourceSystem"                    : UTCTimestamp;
+    "ChangingUserInSourceSystem"                       : String(128);
+    "ChangingProcessType"                              : String(40);
+    "ChangingProcessID"                                : String(128);
+}
+technical configuration {
+    column store;
+};

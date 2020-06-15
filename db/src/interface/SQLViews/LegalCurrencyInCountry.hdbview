@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::LegalCurrencyInCountry_View" 
+as select
+      "ASSOC_Country.GeographicalStructureID" ,
+      "ASSOC_Country.GeographicalUnitID" ,
+      "ASSOC_Currency.CurrencyCode" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::LegalCurrencyInCountry"
+with associations
+(
+	join "sap.fsdm.SQLViews::GeographicalUnit_View" as "ASSOC_Country"
+	  on "ASSOC_Country"."GeographicalStructureID" = "ASSOC_Country.GeographicalStructureID" AND 
+	     "ASSOC_Country"."GeographicalUnitID" = "ASSOC_Country.GeographicalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::Currency_View" as "ASSOC_Currency"
+	  on "ASSOC_Currency"."CurrencyCode" = "ASSOC_Currency.CurrencyCode"
+	     
+);

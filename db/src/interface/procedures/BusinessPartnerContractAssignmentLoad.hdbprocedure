@@ -1,0 +1,472 @@
+PROCEDURE "sap.fsdm.procedures::BusinessPartnerContractAssignmentLoad" (IN ROW "sap.fsdm.tabletypes::BusinessPartnerContractAssignmentTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Role=' || TO_VARCHAR("Role") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PartnerInParticipation.BusinessPartnerID=' || TO_VARCHAR("ASSOC_PartnerInParticipation.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Role",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Role",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Role",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PartnerInParticipation.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Role",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Role",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::BusinessPartnerContractAssignment" (
+        "Role",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PartnerInParticipation.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Address.AddressType",
+        "_Address.SequenceNumber",
+        "_Address.ASSOC_BankingChannel.BankingChannelID",
+        "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Address._Claim.ID",
+        "_Address._Claim.IDSystem",
+        "AutomobileAssociationMember",
+        "BusinessPartnerContractAssignmentCategory",
+        "BusinessPartnerMakingTheOffer",
+        "ContractDataOwner",
+        "MainCounterparty",
+        "MainIndicator",
+        "MarginPeriod",
+        "MarginPeriodTimeUnit",
+        "MinimumTransferAmount",
+        "MinimumTransferAmountCurrency",
+        "OwnerOccupiedPropertyType",
+        "PowerOfAttorneyIndicator",
+        "RoundingAmount",
+        "RoundingAmountCurrency",
+        "TariffGroup",
+        "ThresholdAmount",
+        "ThresholdAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Role" as "Role" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_PartnerInParticipation.BusinessPartnerID" as "ASSOC_PartnerInParticipation.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__Address.AddressType" as "_Address.AddressType" ,
+            "OLD__Address.SequenceNumber" as "_Address.SequenceNumber" ,
+            "OLD__Address.ASSOC_BankingChannel.BankingChannelID" as "_Address.ASSOC_BankingChannel.BankingChannelID" ,
+            "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+            "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+            "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "OLD__Address._Claim.ID" as "_Address._Claim.ID" ,
+            "OLD__Address._Claim.IDSystem" as "_Address._Claim.IDSystem" ,
+            "OLD_AutomobileAssociationMember" as "AutomobileAssociationMember" ,
+            "OLD_BusinessPartnerContractAssignmentCategory" as "BusinessPartnerContractAssignmentCategory" ,
+            "OLD_BusinessPartnerMakingTheOffer" as "BusinessPartnerMakingTheOffer" ,
+            "OLD_ContractDataOwner" as "ContractDataOwner" ,
+            "OLD_MainCounterparty" as "MainCounterparty" ,
+            "OLD_MainIndicator" as "MainIndicator" ,
+            "OLD_MarginPeriod" as "MarginPeriod" ,
+            "OLD_MarginPeriodTimeUnit" as "MarginPeriodTimeUnit" ,
+            "OLD_MinimumTransferAmount" as "MinimumTransferAmount" ,
+            "OLD_MinimumTransferAmountCurrency" as "MinimumTransferAmountCurrency" ,
+            "OLD_OwnerOccupiedPropertyType" as "OwnerOccupiedPropertyType" ,
+            "OLD_PowerOfAttorneyIndicator" as "PowerOfAttorneyIndicator" ,
+            "OLD_RoundingAmount" as "RoundingAmount" ,
+            "OLD_RoundingAmountCurrency" as "RoundingAmountCurrency" ,
+            "OLD_TariffGroup" as "TariffGroup" ,
+            "OLD_ThresholdAmount" as "ThresholdAmount" ,
+            "OLD_ThresholdAmountCurrency" as "ThresholdAmountCurrency" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."Role",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Role" as "OLD_Role",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_PartnerInParticipation.BusinessPartnerID" as "OLD_ASSOC_PartnerInParticipation.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."_Address.AddressType" as "OLD__Address.AddressType",
+                                "OLD"."_Address.SequenceNumber" as "OLD__Address.SequenceNumber",
+                                "OLD"."_Address.ASSOC_BankingChannel.BankingChannelID" as "OLD__Address.ASSOC_BankingChannel.BankingChannelID",
+                                "OLD"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                "OLD"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                "OLD"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                                "OLD"."_Address._Claim.ID" as "OLD__Address._Claim.ID",
+                                "OLD"."_Address._Claim.IDSystem" as "OLD__Address._Claim.IDSystem",
+                                "OLD"."AutomobileAssociationMember" as "OLD_AutomobileAssociationMember",
+                                "OLD"."BusinessPartnerContractAssignmentCategory" as "OLD_BusinessPartnerContractAssignmentCategory",
+                                "OLD"."BusinessPartnerMakingTheOffer" as "OLD_BusinessPartnerMakingTheOffer",
+                                "OLD"."ContractDataOwner" as "OLD_ContractDataOwner",
+                                "OLD"."MainCounterparty" as "OLD_MainCounterparty",
+                                "OLD"."MainIndicator" as "OLD_MainIndicator",
+                                "OLD"."MarginPeriod" as "OLD_MarginPeriod",
+                                "OLD"."MarginPeriodTimeUnit" as "OLD_MarginPeriodTimeUnit",
+                                "OLD"."MinimumTransferAmount" as "OLD_MinimumTransferAmount",
+                                "OLD"."MinimumTransferAmountCurrency" as "OLD_MinimumTransferAmountCurrency",
+                                "OLD"."OwnerOccupiedPropertyType" as "OLD_OwnerOccupiedPropertyType",
+                                "OLD"."PowerOfAttorneyIndicator" as "OLD_PowerOfAttorneyIndicator",
+                                "OLD"."RoundingAmount" as "OLD_RoundingAmount",
+                                "OLD"."RoundingAmountCurrency" as "OLD_RoundingAmountCurrency",
+                                "OLD"."TariffGroup" as "OLD_TariffGroup",
+                                "OLD"."ThresholdAmount" as "OLD_ThresholdAmount",
+                                "OLD"."ThresholdAmountCurrency" as "OLD_ThresholdAmountCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BusinessPartnerContractAssignment" as "OLD"
+            on
+                ( case when "IN"."Role" is null then '' else "IN"."Role" end ) = "OLD"."Role" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID" is null then '' else "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID" end ) = "OLD"."ASSOC_PartnerInParticipation.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::BusinessPartnerContractAssignment" (
+        "Role",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PartnerInParticipation.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Address.AddressType",
+        "_Address.SequenceNumber",
+        "_Address.ASSOC_BankingChannel.BankingChannelID",
+        "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Address._Claim.ID",
+        "_Address._Claim.IDSystem",
+        "AutomobileAssociationMember",
+        "BusinessPartnerContractAssignmentCategory",
+        "BusinessPartnerMakingTheOffer",
+        "ContractDataOwner",
+        "MainCounterparty",
+        "MainIndicator",
+        "MarginPeriod",
+        "MarginPeriodTimeUnit",
+        "MinimumTransferAmount",
+        "MinimumTransferAmountCurrency",
+        "OwnerOccupiedPropertyType",
+        "PowerOfAttorneyIndicator",
+        "RoundingAmount",
+        "RoundingAmountCurrency",
+        "TariffGroup",
+        "ThresholdAmount",
+        "ThresholdAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_Role" as "Role",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PartnerInParticipation.BusinessPartnerID" as "ASSOC_PartnerInParticipation.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__Address.AddressType" as "_Address.AddressType",
+            "OLD__Address.SequenceNumber" as "_Address.SequenceNumber",
+            "OLD__Address.ASSOC_BankingChannel.BankingChannelID" as "_Address.ASSOC_BankingChannel.BankingChannelID",
+            "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+            "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+            "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD__Address._Claim.ID" as "_Address._Claim.ID",
+            "OLD__Address._Claim.IDSystem" as "_Address._Claim.IDSystem",
+            "OLD_AutomobileAssociationMember" as "AutomobileAssociationMember",
+            "OLD_BusinessPartnerContractAssignmentCategory" as "BusinessPartnerContractAssignmentCategory",
+            "OLD_BusinessPartnerMakingTheOffer" as "BusinessPartnerMakingTheOffer",
+            "OLD_ContractDataOwner" as "ContractDataOwner",
+            "OLD_MainCounterparty" as "MainCounterparty",
+            "OLD_MainIndicator" as "MainIndicator",
+            "OLD_MarginPeriod" as "MarginPeriod",
+            "OLD_MarginPeriodTimeUnit" as "MarginPeriodTimeUnit",
+            "OLD_MinimumTransferAmount" as "MinimumTransferAmount",
+            "OLD_MinimumTransferAmountCurrency" as "MinimumTransferAmountCurrency",
+            "OLD_OwnerOccupiedPropertyType" as "OwnerOccupiedPropertyType",
+            "OLD_PowerOfAttorneyIndicator" as "PowerOfAttorneyIndicator",
+            "OLD_RoundingAmount" as "RoundingAmount",
+            "OLD_RoundingAmountCurrency" as "RoundingAmountCurrency",
+            "OLD_TariffGroup" as "TariffGroup",
+            "OLD_ThresholdAmount" as "ThresholdAmount",
+            "OLD_ThresholdAmountCurrency" as "ThresholdAmountCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."Role",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."Role" as "OLD_Role",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                        "OLD"."ASSOC_PartnerInParticipation.BusinessPartnerID" as "OLD_ASSOC_PartnerInParticipation.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."_Address.AddressType" as "OLD__Address.AddressType",
+                        "OLD"."_Address.SequenceNumber" as "OLD__Address.SequenceNumber",
+                        "OLD"."_Address.ASSOC_BankingChannel.BankingChannelID" as "OLD__Address.ASSOC_BankingChannel.BankingChannelID",
+                        "OLD"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "OLD"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "OLD"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."_Address._Claim.ID" as "OLD__Address._Claim.ID",
+                        "OLD"."_Address._Claim.IDSystem" as "OLD__Address._Claim.IDSystem",
+                        "OLD"."AutomobileAssociationMember" as "OLD_AutomobileAssociationMember",
+                        "OLD"."BusinessPartnerContractAssignmentCategory" as "OLD_BusinessPartnerContractAssignmentCategory",
+                        "OLD"."BusinessPartnerMakingTheOffer" as "OLD_BusinessPartnerMakingTheOffer",
+                        "OLD"."ContractDataOwner" as "OLD_ContractDataOwner",
+                        "OLD"."MainCounterparty" as "OLD_MainCounterparty",
+                        "OLD"."MainIndicator" as "OLD_MainIndicator",
+                        "OLD"."MarginPeriod" as "OLD_MarginPeriod",
+                        "OLD"."MarginPeriodTimeUnit" as "OLD_MarginPeriodTimeUnit",
+                        "OLD"."MinimumTransferAmount" as "OLD_MinimumTransferAmount",
+                        "OLD"."MinimumTransferAmountCurrency" as "OLD_MinimumTransferAmountCurrency",
+                        "OLD"."OwnerOccupiedPropertyType" as "OLD_OwnerOccupiedPropertyType",
+                        "OLD"."PowerOfAttorneyIndicator" as "OLD_PowerOfAttorneyIndicator",
+                        "OLD"."RoundingAmount" as "OLD_RoundingAmount",
+                        "OLD"."RoundingAmountCurrency" as "OLD_RoundingAmountCurrency",
+                        "OLD"."TariffGroup" as "OLD_TariffGroup",
+                        "OLD"."ThresholdAmount" as "OLD_ThresholdAmount",
+                        "OLD"."ThresholdAmountCurrency" as "OLD_ThresholdAmountCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::BusinessPartnerContractAssignment" as "OLD"
+            on
+                ( case when "IN"."Role" is null then '' else "IN"."Role" end ) = "OLD"."Role" and
+                ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+                ( case when "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID" is null then '' else "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID" end ) = "OLD"."ASSOC_PartnerInParticipation.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::BusinessPartnerContractAssignment"
+    where (
+        "Role",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PartnerInParticipation.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."Role",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PartnerInParticipation.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::BusinessPartnerContractAssignment" as "OLD"
+        on
+           ( case when "IN"."Role" is null then '' else "IN"."Role" end ) = "OLD"."Role" and
+           ( case when "IN"."ASSOC_FinancialContract.FinancialContractID" is null then '' else "IN"."ASSOC_FinancialContract.FinancialContractID" end ) = "OLD"."ASSOC_FinancialContract.FinancialContractID" and
+           ( case when "IN"."ASSOC_FinancialContract.IDSystem" is null then '' else "IN"."ASSOC_FinancialContract.IDSystem" end ) = "OLD"."ASSOC_FinancialContract.IDSystem" and
+           ( case when "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID" is null then '' else "IN"."ASSOC_PartnerInParticipation.BusinessPartnerID" end ) = "OLD"."ASSOC_PartnerInParticipation.BusinessPartnerID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::BusinessPartnerContractAssignment" (
+        "Role",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PartnerInParticipation.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Address.AddressType",
+        "_Address.SequenceNumber",
+        "_Address.ASSOC_BankingChannel.BankingChannelID",
+        "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Address._Claim.ID",
+        "_Address._Claim.IDSystem",
+        "AutomobileAssociationMember",
+        "BusinessPartnerContractAssignmentCategory",
+        "BusinessPartnerMakingTheOffer",
+        "ContractDataOwner",
+        "MainCounterparty",
+        "MainIndicator",
+        "MarginPeriod",
+        "MarginPeriodTimeUnit",
+        "MinimumTransferAmount",
+        "MinimumTransferAmountCurrency",
+        "OwnerOccupiedPropertyType",
+        "PowerOfAttorneyIndicator",
+        "RoundingAmount",
+        "RoundingAmountCurrency",
+        "TariffGroup",
+        "ThresholdAmount",
+        "ThresholdAmountCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "Role" is null then '' else "Role" end ) as "Role",
+            ( case when "ASSOC_FinancialContract.FinancialContractID" is null then '' else "ASSOC_FinancialContract.FinancialContractID" end ) as "ASSOC_FinancialContract.FinancialContractID",
+            ( case when "ASSOC_FinancialContract.IDSystem" is null then '' else "ASSOC_FinancialContract.IDSystem" end ) as "ASSOC_FinancialContract.IDSystem",
+            ( case when "ASSOC_PartnerInParticipation.BusinessPartnerID" is null then '' else "ASSOC_PartnerInParticipation.BusinessPartnerID" end ) as "ASSOC_PartnerInParticipation.BusinessPartnerID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "_Address.AddressType"  ,
+            "_Address.SequenceNumber"  ,
+            "_Address.ASSOC_BankingChannel.BankingChannelID"  ,
+            "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID"  ,
+            "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID"  ,
+            "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+            "_Address.ASSOC_PhysicalAsset.PhysicalAssetID"  ,
+            "_Address._Claim.ID"  ,
+            "_Address._Claim.IDSystem"  ,
+            "AutomobileAssociationMember"  ,
+            "BusinessPartnerContractAssignmentCategory"  ,
+            "BusinessPartnerMakingTheOffer"  ,
+            "ContractDataOwner"  ,
+            "MainCounterparty"  ,
+            "MainIndicator"  ,
+            "MarginPeriod"  ,
+            "MarginPeriodTimeUnit"  ,
+            "MinimumTransferAmount"  ,
+            "MinimumTransferAmountCurrency"  ,
+            "OwnerOccupiedPropertyType"  ,
+            "PowerOfAttorneyIndicator"  ,
+            "RoundingAmount"  ,
+            "RoundingAmountCurrency"  ,
+            "TariffGroup"  ,
+            "ThresholdAmount"  ,
+            "ThresholdAmountCurrency"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

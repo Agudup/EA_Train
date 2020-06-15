@@ -1,0 +1,343 @@
+PROCEDURE "sap.fsdm.procedures::NursingInsuranceBenefitLoad" (IN ROW "sap.fsdm.tabletypes::NursingInsuranceBenefitTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'NursingCareLevel=' || TO_VARCHAR("NursingCareLevel") || ' ' ||
+                '_AnnuityCoverage.ID=' || TO_VARCHAR("_AnnuityCoverage.ID") || ' ' ||
+                '_AnnuityCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_AnnuityCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_AnnuityCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_AnnuityCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."NursingCareLevel",
+                        "IN"."_AnnuityCoverage.ID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."NursingCareLevel",
+                        "IN"."_AnnuityCoverage.ID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "NursingCareLevel",
+                        "_AnnuityCoverage.ID",
+                        "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "_AnnuityCoverage._InsuranceContract.IDSystem",
+                        "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."NursingCareLevel",
+                                    "IN"."_AnnuityCoverage.ID",
+                                    "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_AnnuityCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."NursingCareLevel",
+                                    "IN"."_AnnuityCoverage.ID",
+                                    "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_AnnuityCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::NursingInsuranceBenefit" (
+        "NursingCareLevel",
+        "_AnnuityCoverage.ID",
+        "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_AnnuityCoverage._InsuranceContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InpatientBenefitPercent",
+        "OutpatientBenefitPercent",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_NursingCareLevel" as "NursingCareLevel" ,
+            "OLD__AnnuityCoverage.ID" as "_AnnuityCoverage.ID" ,
+            "OLD__AnnuityCoverage._InsuranceContract.FinancialContractID" as "_AnnuityCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__AnnuityCoverage._InsuranceContract.IDSystem" as "_AnnuityCoverage._InsuranceContract.IDSystem" ,
+            "OLD__AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_InpatientBenefitPercent" as "InpatientBenefitPercent" ,
+            "OLD_OutpatientBenefitPercent" as "OutpatientBenefitPercent" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."NursingCareLevel",
+                        "IN"."_AnnuityCoverage.ID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."NursingCareLevel" as "OLD_NursingCareLevel",
+                                "OLD"."_AnnuityCoverage.ID" as "OLD__AnnuityCoverage.ID",
+                                "OLD"."_AnnuityCoverage._InsuranceContract.FinancialContractID" as "OLD__AnnuityCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_AnnuityCoverage._InsuranceContract.IDSystem" as "OLD__AnnuityCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."InpatientBenefitPercent" as "OLD_InpatientBenefitPercent",
+                                "OLD"."OutpatientBenefitPercent" as "OLD_OutpatientBenefitPercent",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::NursingInsuranceBenefit" as "OLD"
+            on
+                ( case when "IN"."NursingCareLevel" is null then '' else "IN"."NursingCareLevel" end ) = "OLD"."NursingCareLevel" and
+                ( case when "IN"."_AnnuityCoverage.ID" is null then '' else "IN"."_AnnuityCoverage.ID" end ) = "OLD"."_AnnuityCoverage.ID" and
+                ( case when "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_AnnuityCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_AnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_AnnuityCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_AnnuityCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::NursingInsuranceBenefit" (
+        "NursingCareLevel",
+        "_AnnuityCoverage.ID",
+        "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_AnnuityCoverage._InsuranceContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InpatientBenefitPercent",
+        "OutpatientBenefitPercent",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_NursingCareLevel" as "NursingCareLevel",
+            "OLD__AnnuityCoverage.ID" as "_AnnuityCoverage.ID",
+            "OLD__AnnuityCoverage._InsuranceContract.FinancialContractID" as "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+            "OLD__AnnuityCoverage._InsuranceContract.IDSystem" as "_AnnuityCoverage._InsuranceContract.IDSystem",
+            "OLD__AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_InpatientBenefitPercent" as "InpatientBenefitPercent",
+            "OLD_OutpatientBenefitPercent" as "OutpatientBenefitPercent",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."NursingCareLevel",
+                        "IN"."_AnnuityCoverage.ID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuranceContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."NursingCareLevel" as "OLD_NursingCareLevel",
+                        "OLD"."_AnnuityCoverage.ID" as "OLD__AnnuityCoverage.ID",
+                        "OLD"."_AnnuityCoverage._InsuranceContract.FinancialContractID" as "OLD__AnnuityCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_AnnuityCoverage._InsuranceContract.IDSystem" as "OLD__AnnuityCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."InpatientBenefitPercent" as "OLD_InpatientBenefitPercent",
+                        "OLD"."OutpatientBenefitPercent" as "OLD_OutpatientBenefitPercent",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::NursingInsuranceBenefit" as "OLD"
+            on
+                ( case when "IN"."NursingCareLevel" is null then '' else "IN"."NursingCareLevel" end ) = "OLD"."NursingCareLevel" and
+                ( case when "IN"."_AnnuityCoverage.ID" is null then '' else "IN"."_AnnuityCoverage.ID" end ) = "OLD"."_AnnuityCoverage.ID" and
+                ( case when "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_AnnuityCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_AnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_AnnuityCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_AnnuityCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::NursingInsuranceBenefit"
+    where (
+        "NursingCareLevel",
+        "_AnnuityCoverage.ID",
+        "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_AnnuityCoverage._InsuranceContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."NursingCareLevel",
+            "OLD"."_AnnuityCoverage.ID",
+            "OLD"."_AnnuityCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_AnnuityCoverage._InsuranceContract.IDSystem",
+            "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::NursingInsuranceBenefit" as "OLD"
+        on
+           ( case when "IN"."NursingCareLevel" is null then '' else "IN"."NursingCareLevel" end ) = "OLD"."NursingCareLevel" and
+           ( case when "IN"."_AnnuityCoverage.ID" is null then '' else "IN"."_AnnuityCoverage.ID" end ) = "OLD"."_AnnuityCoverage.ID" and
+           ( case when "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_AnnuityCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_AnnuityCoverage._InsuranceContract.FinancialContractID" and
+           ( case when "IN"."_AnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_AnnuityCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_AnnuityCoverage._InsuranceContract.IDSystem" and
+           ( case when "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+           ( case when "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" and
+           ( case when "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::NursingInsuranceBenefit" (
+        "NursingCareLevel",
+        "_AnnuityCoverage.ID",
+        "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+        "_AnnuityCoverage._InsuranceContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "InpatientBenefitPercent",
+        "OutpatientBenefitPercent",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "NursingCareLevel" is null then '' else "NursingCareLevel" end ) as "NursingCareLevel",
+            ( case when "_AnnuityCoverage.ID" is null then '' else "_AnnuityCoverage.ID" end ) as "_AnnuityCoverage.ID",
+            ( case when "_AnnuityCoverage._InsuranceContract.FinancialContractID" is null then '' else "_AnnuityCoverage._InsuranceContract.FinancialContractID" end ) as "_AnnuityCoverage._InsuranceContract.FinancialContractID",
+            ( case when "_AnnuityCoverage._InsuranceContract.IDSystem" is null then '' else "_AnnuityCoverage._InsuranceContract.IDSystem" end ) as "_AnnuityCoverage._InsuranceContract.IDSystem",
+            ( case when "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) as "_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            ( case when "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" end ) as "_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem",
+            ( case when "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) as "_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "InpatientBenefitPercent"  ,
+            "OutpatientBenefitPercent"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

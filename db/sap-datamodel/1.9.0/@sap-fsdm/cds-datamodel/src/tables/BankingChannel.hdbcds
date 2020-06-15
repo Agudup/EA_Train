@@ -1,0 +1,64 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CashInventory";
+using "sap"."fsdm"::"OrganizationalUnit";
+
+entity "BankingChannel" {
+    key "BankingChannelID"              : String(128);
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp not null;
+        "SystemValidTo"                 : UTCTimestamp not null;
+        "ASSOC_BranchOfTerminal"        : association to BankingChannel { BankingChannelID };
+        "ASSOC_CashInventory"           : association to CashInventory {
+                                                                         CashAccountID,
+                                                                         IDSystem
+                                                                       };
+        "ASSOC_OrgUnitManagingChannel"  : association to OrganizationalUnit {
+                                                                              OrganizationalUnitID,
+                                                                              ASSOC_OrganizationHostingOrganizationalUnit
+                                                                            };
+        "AuthenticationMethod"          : String(10);
+        "BankingChannelCategory"        : String(40);
+        "Description"                   : String(256);
+        "TerminalType"                  : String(40);
+        "URL"                           : String(255);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BankingChannel_Historical" {
+    "BankingChannelID"              : String(128)  not null;
+    "BusinessValidFrom"             : LocalDate    not null;
+    "BusinessValidTo"               : LocalDate    not null;
+    "SystemValidFrom"               : UTCTimestamp not null;
+    "SystemValidTo"                 : UTCTimestamp not null;
+    "ASSOC_BranchOfTerminal"        : association to BankingChannel { BankingChannelID };
+    "ASSOC_CashInventory"           : association to CashInventory {
+                                                                     CashAccountID,
+                                                                     IDSystem
+                                                                   };
+    "ASSOC_OrgUnitManagingChannel"  : association to OrganizationalUnit {
+                                                                          OrganizationalUnitID,
+                                                                          ASSOC_OrganizationHostingOrganizationalUnit
+                                                                        };
+    "AuthenticationMethod"          : String(10);
+    "BankingChannelCategory"        : String(40);
+    "Description"                   : String(256);
+    "TerminalType"                  : String(40);
+    "URL"                           : String(255);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

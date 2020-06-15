@@ -1,0 +1,68 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"BusinessPartner";
+
+entity "CollateralPortion" {
+    key "PortionNumber"                            : Integer;
+    key "ASSOC_CollateralAgreement"                : association to FinancialContract {
+                                                                                        FinancialContractID,
+                                                                                        IDSystem
+                                                                                      }                    not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                                          not null;
+        "SystemValidTo"                            : UTCTimestamp                                          not null;
+        "ASSOC_CoveredObligorInCaseOfFullCoverage" : association to BusinessPartner { BusinessPartnerID };
+        "_Creditor"                                : association to BusinessPartner { BusinessPartnerID };
+        "AgreedCoverageEndDate"                    : LocalDate;
+        "AgreedCoverageStartDate"                  : LocalDate;
+        "CollateralPortionCoverageCategory"        : String(150);
+        "CoveredPercentageOfObligations"           : Decimal(15, 11);
+        "MaximumCollateralPortionAmount"           : Decimal(34, 6);
+        "MaximumCollateralPortionAmountCurrency"   : String(3);
+        "PercentageOfTotalCollateralForPortion"    : Decimal(15, 11);
+        "PortionName"                              : String(256);
+        "RankAgainstOtherPortions"                 : Integer;
+        "RoleOfCreditor"                           : String(50);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CollateralPortion_Historical" {
+    "PortionNumber"                            : Integer                                               not null;
+    "ASSOC_CollateralAgreement"                : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                    not null;
+    "BusinessValidFrom"                        : LocalDate                                             not null;
+    "BusinessValidTo"                          : LocalDate                                             not null;
+    "SystemValidFrom"                          : UTCTimestamp                                          not null;
+    "SystemValidTo"                            : UTCTimestamp                                          not null;
+    "ASSOC_CoveredObligorInCaseOfFullCoverage" : association to BusinessPartner { BusinessPartnerID };
+    "_Creditor"                                : association to BusinessPartner { BusinessPartnerID };
+    "AgreedCoverageEndDate"                    : LocalDate;
+    "AgreedCoverageStartDate"                  : LocalDate;
+    "CollateralPortionCoverageCategory"        : String(150);
+    "CoveredPercentageOfObligations"           : Decimal(15, 11);
+    "MaximumCollateralPortionAmount"           : Decimal(34, 6);
+    "MaximumCollateralPortionAmountCurrency"   : String(3);
+    "PercentageOfTotalCollateralForPortion"    : Decimal(15, 11);
+    "PortionName"                              : String(256);
+    "RankAgainstOtherPortions"                 : Integer;
+    "RoleOfCreditor"                           : String(50);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

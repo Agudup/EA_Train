@@ -1,0 +1,414 @@
+PROCEDURE "sap.fsdm.procedures::DueSettlementListDelReadOnly" (IN ROW "sap.fsdm.tabletypes::DueSettlementTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::DueSettlementTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::DueSettlementTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'DueDate=' || TO_VARCHAR("DueDate") || ' ' ||
+                'DueSettlementsDeterminationMethod=' || TO_VARCHAR("DueSettlementsDeterminationMethod") || ' ' ||
+                'ItemNumber=' || TO_VARCHAR("ItemNumber") || ' ' ||
+                'Scenario=' || TO_VARCHAR("Scenario") || ' ' ||
+                'ASSOC_FinancialContract.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContract.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContract.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContract.IDSystem") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                '_Collection.CollectionID=' || TO_VARCHAR("_Collection.CollectionID") || ' ' ||
+                '_Collection.IDSystem=' || TO_VARCHAR("_Collection.IDSystem") || ' ' ||
+                '_FinancialInstrument.FinancialInstrumentID=' || TO_VARCHAR("_FinancialInstrument.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."DueDate",
+                        "IN"."DueSettlementsDeterminationMethod",
+                        "IN"."ItemNumber",
+                        "IN"."Scenario",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."DueDate",
+                        "IN"."DueSettlementsDeterminationMethod",
+                        "IN"."ItemNumber",
+                        "IN"."Scenario",
+                        "IN"."ASSOC_FinancialContract.FinancialContractID",
+                        "IN"."ASSOC_FinancialContract.IDSystem",
+                        "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_Collection.CollectionID",
+                        "IN"."_Collection.IDSystem",
+                        "IN"."_FinancialInstrument.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "DueDate",
+                        "DueSettlementsDeterminationMethod",
+                        "ItemNumber",
+                        "Scenario",
+                        "ASSOC_FinancialContract.FinancialContractID",
+                        "ASSOC_FinancialContract.IDSystem",
+                        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "_Collection.CollectionID",
+                        "_Collection.IDSystem",
+                        "_FinancialInstrument.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."DueDate",
+                                    "IN"."DueSettlementsDeterminationMethod",
+                                    "IN"."ItemNumber",
+                                    "IN"."Scenario",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."DueDate",
+                                    "IN"."DueSettlementsDeterminationMethod",
+                                    "IN"."ItemNumber",
+                                    "IN"."Scenario",
+                                    "IN"."ASSOC_FinancialContract.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContract.IDSystem",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_Collection.CollectionID",
+                                    "IN"."_Collection.IDSystem",
+                                    "IN"."_FinancialInstrument.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "DueDate",
+            "DueSettlementsDeterminationMethod",
+            "ItemNumber",
+            "Scenario",
+            "ASSOC_FinancialContract.FinancialContractID",
+            "ASSOC_FinancialContract.IDSystem",
+            "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "_Collection.CollectionID",
+            "_Collection.IDSystem",
+            "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::DueSettlement" WHERE
+            (
+            "DueDate" ,
+            "DueSettlementsDeterminationMethod" ,
+            "ItemNumber" ,
+            "Scenario" ,
+            "ASSOC_FinancialContract.FinancialContractID" ,
+            "ASSOC_FinancialContract.IDSystem" ,
+            "ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+            "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "_Collection.CollectionID" ,
+            "_Collection.IDSystem" ,
+            "_FinancialInstrument.FinancialInstrumentID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."DueDate",
+            "OLD"."DueSettlementsDeterminationMethod",
+            "OLD"."ItemNumber",
+            "OLD"."Scenario",
+            "OLD"."ASSOC_FinancialContract.FinancialContractID",
+            "OLD"."ASSOC_FinancialContract.IDSystem",
+            "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."_Collection.CollectionID",
+            "OLD"."_Collection.IDSystem",
+            "OLD"."_FinancialInstrument.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::DueSettlement" as "OLD"
+        on
+                              ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                              ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                              ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                              ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                              ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                              ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                              ( "IN"."DueDate" = "OLD"."DueDate" or "IN"."DueDate" is null ) and
+                              ( "IN"."DueSettlementsDeterminationMethod" = "OLD"."DueSettlementsDeterminationMethod" or "IN"."DueSettlementsDeterminationMethod" is null ) and
+                              ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "DueDate",
+        "DueSettlementsDeterminationMethod",
+        "ItemNumber",
+        "Scenario",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+        "_Collection.CollectionID",
+        "_Collection.IDSystem",
+        "_FinancialInstrument.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_SettlementAccount.FinancialContractID",
+        "ASSOC_SettlementAccount.IDSystem",
+        "Currency",
+        "DueAmount",
+        "PostingDirection",
+        "TransactionType",
+        "UnsignedDueAmount",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_DueDate" as "DueDate" ,
+            "OLD_DueSettlementsDeterminationMethod" as "DueSettlementsDeterminationMethod" ,
+            "OLD_ItemNumber" as "ItemNumber" ,
+            "OLD_Scenario" as "Scenario" ,
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount.PositionCurrency" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID" ,
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem" ,
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_SettlementAccount.FinancialContractID" as "ASSOC_SettlementAccount.FinancialContractID" ,
+            "OLD_ASSOC_SettlementAccount.IDSystem" as "ASSOC_SettlementAccount.IDSystem" ,
+            "OLD_Currency" as "Currency" ,
+            "OLD_DueAmount" as "DueAmount" ,
+            "OLD_PostingDirection" as "PostingDirection" ,
+            "OLD_TransactionType" as "TransactionType" ,
+            "OLD_UnsignedDueAmount" as "UnsignedDueAmount" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "OLD"."DueDate",
+                        "OLD"."DueSettlementsDeterminationMethod",
+                        "OLD"."Scenario",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."DueDate" as "OLD_DueDate",
+                                "OLD"."DueSettlementsDeterminationMethod" as "OLD_DueSettlementsDeterminationMethod",
+                                "OLD"."ItemNumber" as "OLD_ItemNumber",
+                                "OLD"."Scenario" as "OLD_Scenario",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" as "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_SettlementAccount.FinancialContractID" as "OLD_ASSOC_SettlementAccount.FinancialContractID",
+                                "OLD"."ASSOC_SettlementAccount.IDSystem" as "OLD_ASSOC_SettlementAccount.IDSystem",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."DueAmount" as "OLD_DueAmount",
+                                "OLD"."PostingDirection" as "OLD_PostingDirection",
+                                "OLD"."TransactionType" as "OLD_TransactionType",
+                                "OLD"."UnsignedDueAmount" as "OLD_UnsignedDueAmount",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::DueSettlement" as "OLD"
+            on
+                                      ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+                                      ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+                                      ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+                                      ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+                                      ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+                                      ( "IN"."DueDate" = "OLD"."DueDate" or "IN"."DueDate" is null ) and
+                                      ( "IN"."DueSettlementsDeterminationMethod" = "OLD"."DueSettlementsDeterminationMethod" or "IN"."DueSettlementsDeterminationMethod" is null ) and
+                                      ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_DueDate" as "DueDate",
+            "OLD_DueSettlementsDeterminationMethod" as "DueSettlementsDeterminationMethod",
+            "OLD_ItemNumber" as "ItemNumber",
+            "OLD_Scenario" as "Scenario",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency" as "ASSOC_PositionCurrencyForAccount.PositionCurrency",
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD__Collection.CollectionID" as "_Collection.CollectionID",
+            "OLD__Collection.IDSystem" as "_Collection.IDSystem",
+            "OLD__FinancialInstrument.FinancialInstrumentID" as "_FinancialInstrument.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_SettlementAccount.FinancialContractID" as "ASSOC_SettlementAccount.FinancialContractID",
+            "OLD_ASSOC_SettlementAccount.IDSystem" as "ASSOC_SettlementAccount.IDSystem",
+            "OLD_Currency" as "Currency",
+            "OLD_DueAmount" as "DueAmount",
+            "OLD_PostingDirection" as "PostingDirection",
+            "OLD_TransactionType" as "TransactionType",
+            "OLD_UnsignedDueAmount" as "UnsignedDueAmount",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_Collection.IDSystem",
+                        "OLD"."_Collection.CollectionID",
+                        "OLD"."_FinancialInstrument.FinancialInstrumentID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                        "OLD"."DueDate",
+                        "OLD"."DueSettlementsDeterminationMethod",
+                        "OLD"."Scenario",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."DueDate" as "OLD_DueDate",
+                                "OLD"."DueSettlementsDeterminationMethod" as "OLD_DueSettlementsDeterminationMethod",
+                                "OLD"."ItemNumber" as "OLD_ItemNumber",
+                                "OLD"."Scenario" as "OLD_Scenario",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" as "OLD_ASSOC_PositionCurrencyForAccount.PositionCurrency",
+                                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."_Collection.CollectionID" as "OLD__Collection.CollectionID",
+                                "OLD"."_Collection.IDSystem" as "OLD__Collection.IDSystem",
+                                "OLD"."_FinancialInstrument.FinancialInstrumentID" as "OLD__FinancialInstrument.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_SettlementAccount.FinancialContractID" as "OLD_ASSOC_SettlementAccount.FinancialContractID",
+                                "OLD"."ASSOC_SettlementAccount.IDSystem" as "OLD_ASSOC_SettlementAccount.IDSystem",
+                                "OLD"."Currency" as "OLD_Currency",
+                                "OLD"."DueAmount" as "OLD_DueAmount",
+                                "OLD"."PostingDirection" as "OLD_PostingDirection",
+                                "OLD"."TransactionType" as "OLD_TransactionType",
+                                "OLD"."UnsignedDueAmount" as "OLD_UnsignedDueAmount",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::DueSettlement" as "OLD"
+            on
+               ( "IN"."ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_FinancialContract.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_FinancialContract.IDSystem" is null ) and
+               ( "IN"."_Collection.IDSystem" = "OLD"."_Collection.IDSystem" or "IN"."_Collection.IDSystem" is null ) and
+               ( "IN"."_Collection.CollectionID" = "OLD"."_Collection.CollectionID" or "IN"."_Collection.CollectionID" is null ) and
+               ( "IN"."_FinancialInstrument.FinancialInstrumentID" = "OLD"."_FinancialInstrument.FinancialInstrumentID" or "IN"."_FinancialInstrument.FinancialInstrumentID" is null ) and
+               ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCurrencyForAccount.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+               ( "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" = "OLD"."ASSOC_PositionCurrencyForAccount.PositionCurrency" or "IN"."ASSOC_PositionCurrencyForAccount.PositionCurrency" is null ) and
+               ( "IN"."DueDate" = "OLD"."DueDate" or "IN"."DueDate" is null ) and
+               ( "IN"."DueSettlementsDeterminationMethod" = "OLD"."DueSettlementsDeterminationMethod" or "IN"."DueSettlementsDeterminationMethod" is null ) and
+               ( "IN"."Scenario" = "OLD"."Scenario" or "IN"."Scenario" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,47 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"Index";
+
+entity "TotalReturnSwapReturnLeg" {
+    key "_Swap"                         : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_Underlying"                   : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_UnderlyingIndex"              : association to Index { IndexID }                             not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "TotalReturnSwapReturnLeg_Historical" {
+    "_Swap"                         : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_Underlying"                   : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_UnderlyingIndex"              : association to Index { IndexID }                             not null;
+    "BusinessValidFrom"             : UTCTimestamp                                                 not null;
+    "BusinessValidTo"               : UTCTimestamp                                                 not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

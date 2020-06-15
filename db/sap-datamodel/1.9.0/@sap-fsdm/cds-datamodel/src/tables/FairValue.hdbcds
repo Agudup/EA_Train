@@ -1,0 +1,87 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "FairValue" {
+    key "FVCalculationMethod"           : String(20);
+    key "IndicatorResultBeforeChange"   : Boolean;
+    key "_AccountingSystem"             : association to AccountingSystem { AccountingSystemID }       not null;
+    key "_FinancialContract"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_InvestmentAccount"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           }                           not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "FairValueInFunctionalCurrency" : Decimal(34, 6);
+        "FairValueInGroupCurrency"      : Decimal(34, 6);
+        "FairValueInHardCurrency"       : Decimal(34, 6);
+        "FairValueInIndexlCurrency"     : Decimal(34, 6);
+        "FairValueInLocalCurrency"      : Decimal(34, 6);
+        "FairValueInPaymentCurrency"    : Decimal(34, 6);
+        "FairValueInPositionCurrency"   : Decimal(34, 6);
+        "FunctionalCurrency"            : String(3);
+        "GroupCurrency"                 : String(3);
+        "HardCurrency"                  : String(3);
+        "IndexCurrency"                 : String(3);
+        "LocalCurrency"                 : String(3);
+        "PaymentCurrency"               : String(3);
+        "PositionCurrency"              : String(3);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FairValue_Historical" {
+    "FVCalculationMethod"           : String(20)                                                   not null;
+    "IndicatorResultBeforeChange"   : Boolean                                                      not null;
+    "_AccountingSystem"             : association to AccountingSystem { AccountingSystemID }       not null;
+    "_FinancialContract"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_InvestmentAccount"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       }                           not null;
+    "BusinessValidFrom"             : LocalDate                                                    not null;
+    "BusinessValidTo"               : LocalDate                                                    not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "FairValueInFunctionalCurrency" : Decimal(34, 6);
+    "FairValueInGroupCurrency"      : Decimal(34, 6);
+    "FairValueInHardCurrency"       : Decimal(34, 6);
+    "FairValueInIndexlCurrency"     : Decimal(34, 6);
+    "FairValueInLocalCurrency"      : Decimal(34, 6);
+    "FairValueInPaymentCurrency"    : Decimal(34, 6);
+    "FairValueInPositionCurrency"   : Decimal(34, 6);
+    "FunctionalCurrency"            : String(3);
+    "GroupCurrency"                 : String(3);
+    "HardCurrency"                  : String(3);
+    "IndexCurrency"                 : String(3);
+    "LocalCurrency"                 : String(3);
+    "PaymentCurrency"               : String(3);
+    "PositionCurrency"              : String(3);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

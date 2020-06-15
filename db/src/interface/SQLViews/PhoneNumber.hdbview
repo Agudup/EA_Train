@@ -1,0 +1,34 @@
+view "sap.fsdm.SQLViews::PhoneNumber_View" 
+as select
+      "PhoneNumberType" ,
+      "SequenceNumber" ,
+      "ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+      "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+      "ASSOC_Partner.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AreaCode" ,
+      "ContactPersonName" ,
+      "CountryCallingNumber" ,
+      "ExtensionNumber" ,
+      "IsPreferred" ,
+      "PhoneNumber" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PhoneNumber"
+with associations
+(
+	join "sap.fsdm.SQLViews::OrganizationalUnit_View" as "ASSOC_OrganizationalUnit"
+	  on "ASSOC_OrganizationalUnit"."ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" = "ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" AND 
+	     "ASSOC_OrganizationalUnit"."OrganizationalUnitID" = "ASSOC_OrganizationalUnit.OrganizationalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Partner"
+	  on "ASSOC_Partner"."BusinessPartnerID" = "ASSOC_Partner.BusinessPartnerID"
+	     
+);

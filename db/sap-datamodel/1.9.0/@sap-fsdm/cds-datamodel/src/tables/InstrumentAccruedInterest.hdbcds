@@ -1,0 +1,60 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "InstrumentAccruedInterest" {
+    key "AccrualType"                   : String(40);
+    key "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "_SecuritiesAccount"            : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           };
+        "AmountInPaymentCurrency"       : Decimal(38, 11);
+        "AmountInPositionCurrency"      : Decimal(38, 11);
+        "NominalAmount"                 : Decimal(34, 6);
+        "NominalAmountCurrency"         : String(3);
+        "PaymentCurrency"               : String(3);
+        "PositionCurrency"              : String(3);
+        "Quantity"                      : Decimal(34, 6);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InstrumentAccruedInterest_Historical" {
+    "AccrualType"                   : String(40)                                                   not null;
+    "_FinancialInstrument"          : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"             : UTCTimestamp                                                 not null;
+    "BusinessValidTo"               : UTCTimestamp                                                 not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "_SecuritiesAccount"            : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       };
+    "AmountInPaymentCurrency"       : Decimal(38, 11);
+    "AmountInPositionCurrency"      : Decimal(38, 11);
+    "NominalAmount"                 : Decimal(34, 6);
+    "NominalAmountCurrency"         : String(3);
+    "PaymentCurrency"               : String(3);
+    "PositionCurrency"              : String(3);
+    "Quantity"                      : Decimal(34, 6);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

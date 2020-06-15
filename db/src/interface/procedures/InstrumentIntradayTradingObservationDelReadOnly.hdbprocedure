@@ -1,0 +1,32 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentIntradayTradingObservationDelReadOnly" (IN ROW "sap.fsdm.tabletypes::InstrumentIntradayTradingObservationTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::InstrumentIntradayTradingObservationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"PriceDataProvider",
+"PriceSeriesType",
+"SequenceNumber",
+"Timestamp",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID"
+from "sap.fsdm::InstrumentIntradayTradingObservation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+from :ROW );
+
+
+END

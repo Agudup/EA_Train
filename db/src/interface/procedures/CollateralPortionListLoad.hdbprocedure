@@ -1,0 +1,334 @@
+PROCEDURE "sap.fsdm.procedures::CollateralPortionListLoad" (IN ROW "sap.fsdm.tabletypes::CollateralPortionTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PortionNumber=' || TO_VARCHAR("PortionNumber") || ' ' ||
+                'ASSOC_CollateralAgreement.FinancialContractID=' || TO_VARCHAR("ASSOC_CollateralAgreement.FinancialContractID") || ' ' ||
+                'ASSOC_CollateralAgreement.IDSystem=' || TO_VARCHAR("ASSOC_CollateralAgreement.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PortionNumber",
+                        "IN"."ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PortionNumber",
+                        "IN"."ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralAgreement.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PortionNumber",
+                        "ASSOC_CollateralAgreement.FinancialContractID",
+                        "ASSOC_CollateralAgreement.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PortionNumber",
+                                    "IN"."ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PortionNumber",
+                                    "IN"."ASSOC_CollateralAgreement.FinancialContractID",
+                                    "IN"."ASSOC_CollateralAgreement.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::CollateralPortion" (
+        "PortionNumber",
+        "ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID",
+        "_Creditor.BusinessPartnerID",
+        "AgreedCoverageEndDate",
+        "AgreedCoverageStartDate",
+        "CollateralPortionCoverageCategory",
+        "CoveredPercentageOfObligations",
+        "MaximumCollateralPortionAmount",
+        "MaximumCollateralPortionAmountCurrency",
+        "PercentageOfTotalCollateralForPortion",
+        "PortionName",
+        "RankAgainstOtherPortions",
+        "RoleOfCreditor",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PortionNumber" as "PortionNumber" ,
+            "OLD_ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralAgreement.FinancialContractID" ,
+            "OLD_ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralAgreement.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" as "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" ,
+            "OLD__Creditor.BusinessPartnerID" as "_Creditor.BusinessPartnerID" ,
+            "OLD_AgreedCoverageEndDate" as "AgreedCoverageEndDate" ,
+            "OLD_AgreedCoverageStartDate" as "AgreedCoverageStartDate" ,
+            "OLD_CollateralPortionCoverageCategory" as "CollateralPortionCoverageCategory" ,
+            "OLD_CoveredPercentageOfObligations" as "CoveredPercentageOfObligations" ,
+            "OLD_MaximumCollateralPortionAmount" as "MaximumCollateralPortionAmount" ,
+            "OLD_MaximumCollateralPortionAmountCurrency" as "MaximumCollateralPortionAmountCurrency" ,
+            "OLD_PercentageOfTotalCollateralForPortion" as "PercentageOfTotalCollateralForPortion" ,
+            "OLD_PortionName" as "PortionName" ,
+            "OLD_RankAgainstOtherPortions" as "RankAgainstOtherPortions" ,
+            "OLD_RoleOfCreditor" as "RoleOfCreditor" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."PortionNumber" as "OLD_PortionNumber",
+                                "OLD"."ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralAgreement.FinancialContractID",
+                                "OLD"."ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralAgreement.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" as "OLD_ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID",
+                                "OLD"."_Creditor.BusinessPartnerID" as "OLD__Creditor.BusinessPartnerID",
+                                "OLD"."AgreedCoverageEndDate" as "OLD_AgreedCoverageEndDate",
+                                "OLD"."AgreedCoverageStartDate" as "OLD_AgreedCoverageStartDate",
+                                "OLD"."CollateralPortionCoverageCategory" as "OLD_CollateralPortionCoverageCategory",
+                                "OLD"."CoveredPercentageOfObligations" as "OLD_CoveredPercentageOfObligations",
+                                "OLD"."MaximumCollateralPortionAmount" as "OLD_MaximumCollateralPortionAmount",
+                                "OLD"."MaximumCollateralPortionAmountCurrency" as "OLD_MaximumCollateralPortionAmountCurrency",
+                                "OLD"."PercentageOfTotalCollateralForPortion" as "OLD_PercentageOfTotalCollateralForPortion",
+                                "OLD"."PortionName" as "OLD_PortionName",
+                                "OLD"."RankAgainstOtherPortions" as "OLD_RankAgainstOtherPortions",
+                                "OLD"."RoleOfCreditor" as "OLD_RoleOfCreditor",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CollateralPortion" as "OLD"
+            on
+                ( case when "IN"."ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CollateralAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CollateralAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CollateralAgreement.IDSystem" is null then '' else "IN"."ASSOC_CollateralAgreement.IDSystem" end ) = "OLD"."ASSOC_CollateralAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::CollateralPortion" (
+        "PortionNumber",
+        "ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID",
+        "_Creditor.BusinessPartnerID",
+        "AgreedCoverageEndDate",
+        "AgreedCoverageStartDate",
+        "CollateralPortionCoverageCategory",
+        "CoveredPercentageOfObligations",
+        "MaximumCollateralPortionAmount",
+        "MaximumCollateralPortionAmountCurrency",
+        "PercentageOfTotalCollateralForPortion",
+        "PortionName",
+        "RankAgainstOtherPortions",
+        "RoleOfCreditor",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PortionNumber" as "PortionNumber",
+            "OLD_ASSOC_CollateralAgreement.FinancialContractID" as "ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD_ASSOC_CollateralAgreement.IDSystem" as "ASSOC_CollateralAgreement.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" as "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID",
+            "OLD__Creditor.BusinessPartnerID" as "_Creditor.BusinessPartnerID",
+            "OLD_AgreedCoverageEndDate" as "AgreedCoverageEndDate",
+            "OLD_AgreedCoverageStartDate" as "AgreedCoverageStartDate",
+            "OLD_CollateralPortionCoverageCategory" as "CollateralPortionCoverageCategory",
+            "OLD_CoveredPercentageOfObligations" as "CoveredPercentageOfObligations",
+            "OLD_MaximumCollateralPortionAmount" as "MaximumCollateralPortionAmount",
+            "OLD_MaximumCollateralPortionAmountCurrency" as "MaximumCollateralPortionAmountCurrency",
+            "OLD_PercentageOfTotalCollateralForPortion" as "PercentageOfTotalCollateralForPortion",
+            "OLD_PortionName" as "PortionName",
+            "OLD_RankAgainstOtherPortions" as "RankAgainstOtherPortions",
+            "OLD_RoleOfCreditor" as "RoleOfCreditor",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ASSOC_CollateralAgreement.FinancialContractID",
+                        "IN"."ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."PortionNumber" as "OLD_PortionNumber",
+                        "OLD"."ASSOC_CollateralAgreement.FinancialContractID" as "OLD_ASSOC_CollateralAgreement.FinancialContractID",
+                        "OLD"."ASSOC_CollateralAgreement.IDSystem" as "OLD_ASSOC_CollateralAgreement.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID" as "OLD_ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID",
+                        "OLD"."_Creditor.BusinessPartnerID" as "OLD__Creditor.BusinessPartnerID",
+                        "OLD"."AgreedCoverageEndDate" as "OLD_AgreedCoverageEndDate",
+                        "OLD"."AgreedCoverageStartDate" as "OLD_AgreedCoverageStartDate",
+                        "OLD"."CollateralPortionCoverageCategory" as "OLD_CollateralPortionCoverageCategory",
+                        "OLD"."CoveredPercentageOfObligations" as "OLD_CoveredPercentageOfObligations",
+                        "OLD"."MaximumCollateralPortionAmount" as "OLD_MaximumCollateralPortionAmount",
+                        "OLD"."MaximumCollateralPortionAmountCurrency" as "OLD_MaximumCollateralPortionAmountCurrency",
+                        "OLD"."PercentageOfTotalCollateralForPortion" as "OLD_PercentageOfTotalCollateralForPortion",
+                        "OLD"."PortionName" as "OLD_PortionName",
+                        "OLD"."RankAgainstOtherPortions" as "OLD_RankAgainstOtherPortions",
+                        "OLD"."RoleOfCreditor" as "OLD_RoleOfCreditor",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CollateralPortion" as "OLD"
+            on
+                ( case when "IN"."ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CollateralAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CollateralAgreement.FinancialContractID" and
+                ( case when "IN"."ASSOC_CollateralAgreement.IDSystem" is null then '' else "IN"."ASSOC_CollateralAgreement.IDSystem" end ) = "OLD"."ASSOC_CollateralAgreement.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::CollateralPortion"
+    where (
+        "PortionNumber",
+        "ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."PortionNumber",
+            "OLD"."ASSOC_CollateralAgreement.FinancialContractID",
+            "OLD"."ASSOC_CollateralAgreement.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CollateralPortion" as "OLD"
+        on
+           ( case when "IN"."ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "IN"."ASSOC_CollateralAgreement.FinancialContractID" end ) = "OLD"."ASSOC_CollateralAgreement.FinancialContractID" and
+           ( case when "IN"."ASSOC_CollateralAgreement.IDSystem" is null then '' else "IN"."ASSOC_CollateralAgreement.IDSystem" end ) = "OLD"."ASSOC_CollateralAgreement.IDSystem" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::CollateralPortion" (
+        "PortionNumber",
+        "ASSOC_CollateralAgreement.FinancialContractID",
+        "ASSOC_CollateralAgreement.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID",
+        "_Creditor.BusinessPartnerID",
+        "AgreedCoverageEndDate",
+        "AgreedCoverageStartDate",
+        "CollateralPortionCoverageCategory",
+        "CoveredPercentageOfObligations",
+        "MaximumCollateralPortionAmount",
+        "MaximumCollateralPortionAmountCurrency",
+        "PercentageOfTotalCollateralForPortion",
+        "PortionName",
+        "RankAgainstOtherPortions",
+        "RoleOfCreditor",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "PortionNumber" is null then -1 else "PortionNumber" end ) as "PortionNumber",
+            ( case when "ASSOC_CollateralAgreement.FinancialContractID" is null then '' else "ASSOC_CollateralAgreement.FinancialContractID" end ) as "ASSOC_CollateralAgreement.FinancialContractID",
+            ( case when "ASSOC_CollateralAgreement.IDSystem" is null then '' else "ASSOC_CollateralAgreement.IDSystem" end ) as "ASSOC_CollateralAgreement.IDSystem",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "ASSOC_CoveredObligorInCaseOfFullCoverage.BusinessPartnerID"  ,
+            "_Creditor.BusinessPartnerID"  ,
+            "AgreedCoverageEndDate"  ,
+            "AgreedCoverageStartDate"  ,
+            "CollateralPortionCoverageCategory"  ,
+            "CoveredPercentageOfObligations"  ,
+            "MaximumCollateralPortionAmount"  ,
+            "MaximumCollateralPortionAmountCurrency"  ,
+            "PercentageOfTotalCollateralForPortion"  ,
+            "PortionName"  ,
+            "RankAgainstOtherPortions"  ,
+            "RoleOfCreditor"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

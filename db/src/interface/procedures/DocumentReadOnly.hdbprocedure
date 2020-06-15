@@ -1,0 +1,308 @@
+PROCEDURE "sap.fsdm.procedures::DocumentReadOnly" (IN ROW "sap.fsdm.tabletypes::DocumentTT", OUT CURR_DEL "sap.fsdm.tabletypes::DocumentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::DocumentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'DocumentID=' || TO_VARCHAR("DocumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."DocumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."DocumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "DocumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."DocumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."DocumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "DocumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::Document" WHERE
+        (            "DocumentID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."DocumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::Document" as "OLD"
+            on
+               ( case when "IN"."DocumentID" is null then '' else "IN"."DocumentID" end ) = "OLD"."DocumentID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "DocumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ASSOC_BusinessPartner.BusinessPartnerID",
+        "ASSOC_CommunicationEvent.CommunicationEventID",
+        "ASSOC_CommunicationEvent.IDSystem",
+        "ASSOC_FinancialContract.FinancialContractID",
+        "ASSOC_FinancialContract.IDSystem",
+        "_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID",
+        "_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "DocumentComment",
+        "DocumentIssuingAuthority",
+        "DocumentIssuingCountry",
+        "DocumentLabel",
+        "DocumentLink",
+        "DocumentLocation",
+        "DocumentSystem",
+        "DocumentType",
+        "DocumentValidFrom",
+        "ExpiryDate",
+        "Status",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "DocumentID" is null then '' else "DocumentID" end ) as "DocumentID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "ASSOC_BusinessPartner.BusinessPartnerID"  ,
+                    "ASSOC_CommunicationEvent.CommunicationEventID"  ,
+                    "ASSOC_CommunicationEvent.IDSystem"  ,
+                    "ASSOC_FinancialContract.FinancialContractID"  ,
+                    "ASSOC_FinancialContract.IDSystem"  ,
+                    "_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID"  ,
+                    "_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem"  ,
+                    "_Trade.IDSystem"  ,
+                    "_Trade.TradeID"  ,
+                    "DocumentComment"  ,
+                    "DocumentIssuingAuthority"  ,
+                    "DocumentIssuingCountry"  ,
+                    "DocumentLabel"  ,
+                    "DocumentLink"  ,
+                    "DocumentLocation"  ,
+                    "DocumentSystem"  ,
+                    "DocumentType"  ,
+                    "DocumentValidFrom"  ,
+                    "ExpiryDate"  ,
+                    "Status"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_DocumentID" as "DocumentID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID" ,
+                    "OLD_ASSOC_CommunicationEvent.CommunicationEventID" as "ASSOC_CommunicationEvent.CommunicationEventID" ,
+                    "OLD_ASSOC_CommunicationEvent.IDSystem" as "ASSOC_CommunicationEvent.IDSystem" ,
+                    "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID" ,
+                    "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem" ,
+                    "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" as "_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" ,
+                    "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem" as "_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem" ,
+                    "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+                    "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+                    "OLD_DocumentComment" as "DocumentComment" ,
+                    "OLD_DocumentIssuingAuthority" as "DocumentIssuingAuthority" ,
+                    "OLD_DocumentIssuingCountry" as "DocumentIssuingCountry" ,
+                    "OLD_DocumentLabel" as "DocumentLabel" ,
+                    "OLD_DocumentLink" as "DocumentLink" ,
+                    "OLD_DocumentLocation" as "DocumentLocation" ,
+                    "OLD_DocumentSystem" as "DocumentSystem" ,
+                    "OLD_DocumentType" as "DocumentType" ,
+                    "OLD_DocumentValidFrom" as "DocumentValidFrom" ,
+                    "OLD_ExpiryDate" as "ExpiryDate" ,
+                    "OLD_Status" as "Status" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."DocumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."DocumentID" as "OLD_DocumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                                "OLD"."ASSOC_CommunicationEvent.CommunicationEventID" as "OLD_ASSOC_CommunicationEvent.CommunicationEventID",
+                                "OLD"."ASSOC_CommunicationEvent.IDSystem" as "OLD_ASSOC_CommunicationEvent.IDSystem",
+                                "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                                "OLD"."_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" as "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID",
+                                "OLD"."_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem" as "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."DocumentComment" as "OLD_DocumentComment",
+                                "OLD"."DocumentIssuingAuthority" as "OLD_DocumentIssuingAuthority",
+                                "OLD"."DocumentIssuingCountry" as "OLD_DocumentIssuingCountry",
+                                "OLD"."DocumentLabel" as "OLD_DocumentLabel",
+                                "OLD"."DocumentLink" as "OLD_DocumentLink",
+                                "OLD"."DocumentLocation" as "OLD_DocumentLocation",
+                                "OLD"."DocumentSystem" as "OLD_DocumentSystem",
+                                "OLD"."DocumentType" as "OLD_DocumentType",
+                                "OLD"."DocumentValidFrom" as "OLD_DocumentValidFrom",
+                                "OLD"."ExpiryDate" as "OLD_ExpiryDate",
+                                "OLD"."Status" as "OLD_Status",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Document" as "OLD"
+            on
+                ( case when "IN"."DocumentID" is null then '' else "IN"."DocumentID" end ) = "OLD"."DocumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_DocumentID" as "DocumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner.BusinessPartnerID",
+            "OLD_ASSOC_CommunicationEvent.CommunicationEventID" as "ASSOC_CommunicationEvent.CommunicationEventID",
+            "OLD_ASSOC_CommunicationEvent.IDSystem" as "ASSOC_CommunicationEvent.IDSystem",
+            "OLD_ASSOC_FinancialContract.FinancialContractID" as "ASSOC_FinancialContract.FinancialContractID",
+            "OLD_ASSOC_FinancialContract.IDSystem" as "ASSOC_FinancialContract.IDSystem",
+            "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" as "_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID",
+            "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem" as "_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "OLD_DocumentComment" as "DocumentComment",
+            "OLD_DocumentIssuingAuthority" as "DocumentIssuingAuthority",
+            "OLD_DocumentIssuingCountry" as "DocumentIssuingCountry",
+            "OLD_DocumentLabel" as "DocumentLabel",
+            "OLD_DocumentLink" as "DocumentLink",
+            "OLD_DocumentLocation" as "DocumentLocation",
+            "OLD_DocumentSystem" as "DocumentSystem",
+            "OLD_DocumentType" as "DocumentType",
+            "OLD_DocumentValidFrom" as "DocumentValidFrom",
+            "OLD_ExpiryDate" as "ExpiryDate",
+            "OLD_Status" as "Status",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."DocumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."DocumentID" as "OLD_DocumentID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" as "OLD_ASSOC_BusinessPartner.BusinessPartnerID",
+                        "OLD"."ASSOC_CommunicationEvent.CommunicationEventID" as "OLD_ASSOC_CommunicationEvent.CommunicationEventID",
+                        "OLD"."ASSOC_CommunicationEvent.IDSystem" as "OLD_ASSOC_CommunicationEvent.IDSystem",
+                        "OLD"."ASSOC_FinancialContract.FinancialContractID" as "OLD_ASSOC_FinancialContract.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContract.IDSystem" as "OLD_ASSOC_FinancialContract.IDSystem",
+                        "OLD"."_PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID" as "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.FinancialContractID",
+                        "OLD"."_PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem" as "OLD__PurchasedReceivable._ReceivablePurchaseAgreement.IDSystem",
+                        "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                        "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                        "OLD"."DocumentComment" as "OLD_DocumentComment",
+                        "OLD"."DocumentIssuingAuthority" as "OLD_DocumentIssuingAuthority",
+                        "OLD"."DocumentIssuingCountry" as "OLD_DocumentIssuingCountry",
+                        "OLD"."DocumentLabel" as "OLD_DocumentLabel",
+                        "OLD"."DocumentLink" as "OLD_DocumentLink",
+                        "OLD"."DocumentLocation" as "OLD_DocumentLocation",
+                        "OLD"."DocumentSystem" as "OLD_DocumentSystem",
+                        "OLD"."DocumentType" as "OLD_DocumentType",
+                        "OLD"."DocumentValidFrom" as "OLD_DocumentValidFrom",
+                        "OLD"."ExpiryDate" as "OLD_ExpiryDate",
+                        "OLD"."Status" as "OLD_Status",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Document" as "OLD"
+            on
+                ( case when "IN"."DocumentID" is null then '' else "IN"."DocumentID" end ) = "OLD"."DocumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

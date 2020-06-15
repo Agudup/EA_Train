@@ -1,0 +1,51 @@
+view "sap.fsdm.SQLViews::InterestPaymentListEntry_View" 
+as select
+      "InterestPaymentDate" ,
+      "ASSOC_InterestPaymentList.SequenceNumber" ,
+      "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" ,
+      "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+      "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" ,
+      "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" ,
+      "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" ,
+      "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" ,
+      "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" ,
+      "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" ,
+      "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" ,
+      "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" ,
+      "ASSOC_InterestPaymentList._Trade.IDSystem" ,
+      "ASSOC_InterestPaymentList._Trade.TradeID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "InterestAmount" ,
+      "InterestPaymentCurrency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InterestPaymentListEntry"
+with associations
+(
+	join "sap.fsdm.SQLViews::Interest_View" as "ASSOC_InterestPaymentList"
+	  on "ASSOC_InterestPaymentList"."_Trade.TradeID" = "ASSOC_InterestPaymentList._Trade.TradeID" AND 
+	     "ASSOC_InterestPaymentList"."_Trade.IDSystem" = "ASSOC_InterestPaymentList._Trade.IDSystem" AND 
+	     "ASSOC_InterestPaymentList"."_OptionOfStrikeSpecification._InterestRateOption.IDSystem" = "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.IDSystem" AND 
+	     "ASSOC_InterestPaymentList"."_OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" = "ASSOC_InterestPaymentList._OptionOfStrikeSpecification._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_InterestPaymentList"."_OptionOfStrikeSpecification.ComponentNumber" = "ASSOC_InterestPaymentList._OptionOfStrikeSpecification.ComponentNumber" AND 
+	     "ASSOC_InterestPaymentList"."_OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" = "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.IDSystem" AND 
+	     "ASSOC_InterestPaymentList"."_OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" = "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification._InterestRateOption.FinancialContractID" AND 
+	     "ASSOC_InterestPaymentList"."_OptionOfReferenceRateSpecification.ComponentNumber" = "ASSOC_InterestPaymentList._OptionOfReferenceRateSpecification.ComponentNumber" AND 
+	     "ASSOC_InterestPaymentList"."_DebtInstrument.FinancialInstrumentID" = "ASSOC_InterestPaymentList._DebtInstrument.FinancialInstrumentID" AND 
+	     "ASSOC_InterestPaymentList"."SequenceNumber" = "ASSOC_InterestPaymentList.SequenceNumber" AND 
+	     "ASSOC_InterestPaymentList"."ASSOC_FinancialContract.IDSystem" = "ASSOC_InterestPaymentList.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_InterestPaymentList"."ASSOC_FinancialContract.FinancialContractID" = "ASSOC_InterestPaymentList.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_InterestPaymentList"."ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" = "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.PositionCurrency" AND 
+	     "ASSOC_InterestPaymentList"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" = "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.IDSystem" AND 
+	     "ASSOC_InterestPaymentList"."ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID" = "ASSOC_InterestPaymentList.ASSOC_CcyOfMultiCcyAccnt.ASSOC_MultiCcyAccnt.FinancialContractID"
+	     
+);

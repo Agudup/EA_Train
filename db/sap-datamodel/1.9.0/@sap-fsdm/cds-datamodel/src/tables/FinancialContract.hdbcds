@@ -1,0 +1,1169 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BankingChannel";
+using "sap"."fsdm"::"ContractBundle";
+using "sap"."fsdm"::"FinancialStandardProduct";
+using "sap"."fsdm"::"PhysicalAsset";
+using "sap"."fsdm"::"Commodity";
+using "sap"."fsdm"::"CommodityReferencePrice";
+using "sap"."fsdm"::"Exchange";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"Fund";
+using "sap"."fsdm"::"IndexSpecification";
+using "sap"."fsdm"::"InsuredObject";
+using "sap"."fsdm"::"InvestmentFundShareSelection";
+using "sap"."fsdm"::"InsuranceCoverage";
+using "sap"."fsdm"::"PensionPlan";
+using "sap"."fsdm"::"ReferenceRate";
+using "sap"."fsdm"::"SafeDepositLocker";
+using "sap"."fsdm"::"TrancheInSyndication";
+
+entity "FinancialContract" {
+    key "FinancialContractID"                                    : String(128)  default '';
+    key "IDSystem"                                               : String(40)   default '';
+    key "BusinessValidFrom"                                      : LocalDate;
+    key "BusinessValidTo"                                        : LocalDate;
+        "SystemValidFrom"                                        : UTCTimestamp not null;
+        "SystemValidTo"                                          : UTCTimestamp not null;
+        "ASSOC_BankingChannel"                                   : association to BankingChannel { BankingChannelID };
+        "ASSOC_CombinedCollateralAgreement"                      : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "ASSOC_ContractBundle"                                   : association to ContractBundle { ContractBundleID };
+        "ASSOC_FacilityOfDrawing"                                : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "ASSOC_FacilityOfSubFacility"                            : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "ASSOC_FinancialStandardProduct"                         : association to FinancialStandardProduct {
+                                                                                                             FinancialStandardProductID,
+                                                                                                             IDSystem,
+                                                                                                             PricingScheme,
+                                                                                                             ASSOC_Company
+                                                                                                           };
+        "ASSOC_LocalSettlementAccountForCreditCard"              : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "ASSOC_PhysicalAsset"                                    : association to PhysicalAsset { PhysicalAssetID };
+        "ASSOC_SettlementAccountForDebitCard"                    : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_Commodity"                                             : association to Commodity { CommodityID };
+        "_CommodityReferencePrice"                               : association to CommodityReferencePrice { ReferencePriceID };
+        "_Exchange"                                              : association to Exchange { MarketIdentifierCode };
+        "_FinancialInstrument"                                   : association to FinancialInstrument { FinancialInstrumentID };
+        "_Fund"                                                  : association to Fund {
+                                                                                         FundID,
+                                                                                         _InvestmentCorporation
+                                                                                       };
+        "_IndexSpecification"                                    : association to IndexSpecification {
+                                                                                                       _Index,
+                                                                                                       _LifeAndAnnuityInsuranceCoverage
+                                                                                                     };
+        "_InsuranceApplication"                                  : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_InsuranceContract"                                     : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_InsuranceProduct"                                      : association to FinancialStandardProduct {
+                                                                                                             FinancialStandardProductID,
+                                                                                                             IDSystem,
+                                                                                                             PricingScheme,
+                                                                                                             ASSOC_Company
+                                                                                                           };
+        "_InsuredObject"                                         : association to InsuredObject {
+                                                                                                  _FinancialContract,
+                                                                                                  _PhysicalAsset
+                                                                                                };
+        "_InvestmentFundShareSelection"                          : association to InvestmentFundShareSelection {
+                                                                                                                 _InvestmentFundShare,
+                                                                                                                 _LifeAndAnnuityInsuranceCoverage
+                                                                                                               };
+        "_Leg2Commodity"                                         : association to Commodity { CommodityID };
+        "_Leg2CommodityReferencePrice"                           : association to CommodityReferencePrice { ReferencePriceID };
+        "_LentFinancialInstrument"                               : association to FinancialInstrument { FinancialInstrumentID };
+        "_LifeAndAnnuityInsuranceCoverage"                       : association to InsuranceCoverage {
+                                                                                                      ID,
+                                                                                                      _InsuranceContract,
+                                                                                                      _InsuredObject
+                                                                                                    };
+    /**
+    *@Deprecated
+    *@Reason: No longer needed and has been replaced by the Master Agreement Contract Assignment entity, which is used to assign a financial contract to a master agreement. The Master Agreement Contract Assignment entity has the Main Account attribute, which indicates which of the assigned financial contracts represents the main account.
+    *@ReplacedBy: Attribute Main Account at Entity Master Agreement Contract Assignment
+    */
+    "_MainAccount"                                               : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+    /**
+    *@Deprecated
+    *@Reason: There was a 1: n relationship between the Financial Contract and the Master Agreement entites, but n:m relationships might be needed between those entities. Therefore, the deprecated relationship has been replaced by a more general n:m relationship, which is modeled by use of the Master Agreement Contract Assignment entity and the Master Agreement Assigned To Financial Contract and Financial Contract Assigned to Master Agreement relationships.
+    *@ReplacedBy: the Master Agreement Contract Assignment entity and the Master Agreement Assigned To Financial Contract and Financial Contract Assigned to Master Agreement relationships.
+    */
+    "_MasterAgreement"                                           : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+    /**
+    *@Deprecated
+    *@Reason: 1:N Relationship is replaced by a N:M Relationship
+    *@ReplacedBy: New Relationships Loan Assigned to Financial Contract Relation and Participation Agreement Assigned to Financial Contract Relation which are used in conjunction with Entity Financial Contract Relation and its  attribute Financial Contract RelationType to model a N:M assignment between Loans and Participation Agreements.
+    */
+    "_ParticipationAgreement"                                    : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_PensionPlan"                                           : association to PensionPlan {
+                                                                                                ID,
+                                                                                                _RetirementPlan
+                                                                                              };
+        "_ReferenceRate"                                         : association to ReferenceRate { ReferenceRateID };
+        "_ReferenceRateWithLongerTenor"                          : association to ReferenceRate { ReferenceRateID };
+        "_ReinsuranceMasterContract"                             : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_SafeDepositLocker"                                     : association to SafeDepositLocker {
+                                                                                                      LockerID,
+                                                                                                      _SafeDepositLockerBranch
+                                                                                                    };
+        "_SecuritiesAccountOfAssignedFinancialInstrument"        : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_SecuritiesAccountOfLentFinancialInstrument"            : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_SyndicationAgreement"                                  : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_SyndicationCommitment"                                 : association to FinancialContract {
+                                                                                                      FinancialContractID,
+                                                                                                      IDSystem
+                                                                                                    };
+        "_TrancheInSyndication"                                  : association to TrancheInSyndication {
+                                                                                                         TrancheSequenceNumber,
+                                                                                                         _SyndicationAgreement
+                                                                                                       };
+        "_Underlying"                                            : association to FinancialInstrument { FinancialInstrumentID };
+        "AccountCategory"                                        : String(40);
+        "AccountCurrency"                                        : String(3);
+        "AccountIdentificationSystem"                            : String(128);
+        "AccountValueWithdrawalRule"                             : String(40);
+        "AccountingDataBasisIndicator"                           : Boolean;
+        "AccrualAmount"                                          : Decimal(34, 6);
+        "AccrualAmountCurrency"                                  : String(3);
+        "AcquisitionYear"                                        : Integer;
+        "ActionAgainstBeneficiaryNotRequired"                    : Boolean;
+        "AgreedNewEndDateAfterProlongation"                      : LocalDate;
+        "AgreementEndDate"                                       : LocalDate;
+        "AgreementStartDate"                                     : LocalDate;
+        "AmortizationType"                                       : String(40);
+        "AmountInTradedCurrency"                                 : Decimal(34, 6);
+        "ApplicableLaw"                                          : String(256);
+        "ApplicableRules"                                        : String(50);
+        "ApprovalDate"                                           : LocalDate;
+        "ApprovedNominalAmount"                                  : Decimal(34, 6);
+        "AssignmentDisclosedToObligor"                           : Boolean;
+        "AssignmentOfClaimsType"                                 : String(40);
+        "AttachmentPoint"                                        : Decimal(34, 5);
+        "BankAccountCurrency"                                    : String(3);
+        "BankAccountHolderName"                                  : String(256);
+        "BankAccountID"                                          : String(128);
+        "BankGuaranteeType"                                      : String(50);
+        "BankID"                                                 : String(128);
+        "BankIdentificationSystem"                               : String(128);
+        "BankName"                                               : String(256);
+        "BenchmarkID"                                            : String(256);
+        "BondNotional"                                           : Decimal(34, 6);
+        "BondNotionalCurrency"                                   : String(3);
+        "BoundIndicator"                                         : Boolean;
+        "BrokerIsLiable"                                         : Boolean;
+        "BusinessCalendar"                                       : String(10);
+        "BusinessClass"                                          : String(40);
+        "BusinessClassCode"                                      : String(40);
+        "BusinessDayConvention"                                  : String(40);
+        "BusinessDirectionCode"                                  : String(40);
+        "BuyerAllowedToRetainCollateral"                         : Boolean;
+        "BuyerCanChooseCashSettlement"                           : Boolean;
+        "CancellationDate"                                       : LocalDate;
+        "CancellationReason"                                     : String(40);
+        "CancellationStatus"                                     : String(40);
+        "CapitalCompensationIndicator"                           : Boolean;
+        "CardAccountManagedByThirdParty"                         : Boolean;
+        "CardAgreementCategory"                                  : String(40);
+        "CashPoolingIndicator"                                   : Boolean;
+        "CashSettlement"                                         : Boolean;
+        "CashSettlementDate"                                     : LocalDate;
+        "CashSettlementMethod"                                   : String(30);
+        "CashSettlementTime"                                     : LocalTime;
+        "CashSettlementTimeZone"                                 : String(5);
+        "CedentAccountForRetentionIndicator"                     : Boolean;
+        "CedentFinancialReportingFrequencyCode"                  : String(40);
+        "CedentOriginCountry"                                    : String(2);
+        "CedentPremiumPaymentFrequency"                          : String(40);
+        "CharacteristicCategoryCode"                             : String(40);
+        "CharacteristicSubCategoryCode"                          : String(40);
+        "ClaimAdministrationClauseCode"                          : String(40);
+        "CleanPrice"                                             : Decimal(34, 6);
+        "CloseOutNettingIndicator"                               : Boolean;
+        "ClosingDate"                                            : LocalDate;
+        "CollateralAgreementCategory"                            : String(40);
+        "CollateralType"                                         : String(60);
+        "CollectionAmount"                                       : Decimal(34, 6);
+        "CollectionAmountCurrency"                               : String(3);
+        "CollectionPlace"                                        : String(256);
+        "CommitmentAmount"                                       : Decimal(34, 6);
+        "CommitmentAmountCurrency"                               : String(3);
+        "CommitmentEndDate"                                      : LocalDate;
+        "CommitmentStartDate"                                    : LocalDate;
+        "CommitmentType"                                         : String(40);
+        "CommunicatedEffectiveInterestRate"                      : Decimal(15, 11);
+        "CommunicatedEffectiveInterestRateMethod"                : String(20);
+        "CommutationProcessingType"                              : String(40);
+        "ConfirmedAmount"                                        : Decimal(34, 6);
+        "ConfirmedAmountCurrency"                                : String(3);
+        "ContractAmount"                                         : Decimal(34, 6);
+        "ContractAmountCurrency"                                 : String(3);
+        "ContractualCurrency"                                    : String(3);
+        "CreditAvailableByMethod"                                : String(50);
+        "CreditAvailableWithRole"                                : String(50);
+        "CreditCardCategorybyCardAccount"                        : String(40);
+        "CreditCardCategorybySettlementAccount"                  : String(40);
+        "CreditDefaultSwapCategory"                              : String(40);
+        "CreditSubstitute"                                       : Boolean;
+        "CurePeriodLength"                                       : Decimal(34, 6);
+        "CurePeriodTimeUnit"                                     : String(12);
+        "CurrentDepositEndDate"                                  : LocalDate;
+        "CustomerFacingBankAccountID"                            : String(128);
+        "CustomerFacingBankAccountIdentificationSystem"          : String(128);
+        "CustomerFacingBankID"                                   : String(128);
+        "CustomerFacingBankIdentificationSystem"                 : String(128);
+        "DayCountConvention"                                     : String(20);
+        "DeliveryDate"                                           : LocalDate;
+        "DenominationCurrency"                                   : String(3);
+        "DenominationCurrencyOfInstrumentBorrowed"               : String(3);
+        "DenominationCurrencyOfInstrumentLent"                   : String(3);
+        "DepositStartDate"                                       : LocalDate;
+        "Description"                                            : String(256);
+        "DescriptionOfRequiredDocuments"                         : String(200);
+        "DirtyPrice"                                             : Decimal(34, 6);
+        "Discount"                                               : Decimal(15, 11);
+        "DiscountAmount"                                         : Decimal(34, 6);
+        "DiscountAmountCurrency"                                 : String(3);
+        "DiscountPeriodLength"                                   : Decimal(34, 6);
+        "DiscountPeriodTimeUnit"                                 : String(12);
+        "DiscountingMethod"                                      : String(20);
+        "DistributionChannel"                                    : String(40);
+        "DocumentaryCollectionType"                              : String(50);
+        "DueDate"                                                : LocalDate;
+    /**
+    *
+    */
+    "DueDayMonth"                                                : String(5);
+        "EffectiveDate"                                          : LocalDate;
+        "EndDate"                                                : LocalDate;
+        "EndOfCedentAccountingPeriodDayMonth"                    : String(5);
+        "Enforceable"                                            : Boolean;
+        "EquityInvestmentEndDate"                                : LocalDate;
+        "EquityInvestmentStartDate"                              : LocalDate;
+        "EquityStakePercentage"                                  : Decimal(15, 11);
+        "EquityVotingRightsPercentage"                           : Decimal(15, 11);
+        "ExerciseMethod"                                         : String(30);
+        "ExerciseStyle"                                          : String(10);
+        "ExhaustionPoint"                                        : Decimal(34, 5);
+        "ExpectedMaturityDate"                                   : LocalDate;
+        "ExpirationDate"                                         : LocalDate;
+        "ExpirationTime"                                         : LocalTime;
+        "ExpirationTimeZone"                                     : String(5);
+        "ExpiryDate"                                             : LocalDate;
+        "ExpiryPlace"                                            : String(256);
+        "FRAFixingDate"                                          : LocalDate;
+        "FacilityEndDate"                                        : LocalDate;
+        "FacilityPurpose"                                        : String(80);
+        "FacilityStartDate"                                      : LocalDate;
+        "FacilityType"                                           : String(40);
+        "FactoringAgreementType"                                 : String(100);
+        "FinancialContractCategory"                              : String(50);
+        "FinancialContractType"                                  : String(40);
+        "FinancingAmountCurrency"                                : String(3);
+        "FirstAccrualStartDate"                                  : LocalDate;
+        "FirstCouponPaymentDate"                                 : LocalDate;
+        "FirstSettlementDate"                                    : LocalDate;
+        "FixedDepositRepayableAmount"                            : Decimal(34, 6);
+        "FixedRate"                                              : Decimal(34, 6);
+        "FixingLagLength"                                        : Decimal(34, 6);
+        "FixingLagTimeUnit"                                      : String(12);
+        "ForClientTrades"                                        : Boolean;
+        "FormofParticipation"                                    : String(40);
+        "ForwardPrice"                                           : Decimal(34, 6);
+        "ForwardPriceAdjustment"                                 : Boolean;
+        "ForwardPriceCurrency"                                   : String(3);
+        "FrontingIndicator"                                      : Boolean;
+        "GoverningLawCountry"                                    : String(2);
+        "GracePeriod"                                            : Integer;
+        "GrossInvoiceAmount"                                     : Decimal(34, 6);
+        "GrossInvoiceAmountCurrency"                             : String(3);
+        "GuaranteeCategory"                                      : String(40);
+        "GuaranteePercentage"                                    : Decimal(15, 11);
+        "GuaranteeSettlementCurrency"                            : String(3);
+        "HedgePurpose"                                           : String(30);
+        "IBAN"                                                   : String(128);
+        "IncomeTaxExemptionAmount"                               : Decimal(34, 6);
+        "IncomeTaxExemptionPercent"                              : Decimal(15, 11);
+        "IncomeTaxExemptionType"                                 : String(40);
+        "IndexMultiplier"                                        : Decimal(34, 6);
+        "IndexMultiplierCurrency"                                : String(3);
+        "InitialPaymentAmount"                                   : Decimal(34, 6);
+        "InitialPaymentCurrency"                                 : String(3);
+        "InitialPaymentPayer"                                    : String(50);
+        "InsuranceContractEndDate"                               : LocalDate;
+        "InsuranceContractEndTime"                               : LocalTime;
+        "InsuranceContractEndTimeZoneCode"                       : String(5);
+        "InsuranceContractStartDate"                             : LocalDate;
+        "InsuranceContractStartTime"                             : LocalTime;
+        "InsuranceContractStartTimeZoneCode"                     : String(5);
+        "InsuranceTaxExemptionType"                              : String(40);
+        "InsuredLoanAmount"                                      : Decimal(34, 6);
+        "IntendedAssetLiability"                                 : String(40);
+        "InterestRateOptionType"                                 : String(40);
+        "InterestRateSwapCategory"                               : String(40);
+        "InterimPrincipalExchange"                               : Boolean;
+        "Interpolation"                                          : Boolean;
+        "InterpolationRoundingPrecision"                         : Integer;
+        "IntraGroupRetroCessionType"                             : String(40);
+        "InvoiceDiscountingAgreementType"                        : String(100);
+        "IsBankruptcyRemote"                                     : Boolean;
+        "IsCorporateCard"                                        : Boolean;
+        "IsLegallyUncertain"                                     : Boolean;
+        "IsNegotiable"                                           : Boolean;
+        "IsStandby"                                              : Boolean;
+        "IssueDate"                                              : LocalDate;
+        "IssueRegion"                                            : String(50);
+        "LatestShipmentDate"                                     : LocalDate;
+        "LeaseTermEnd"                                           : LocalDate;
+        "LeaseTermStart"                                         : LocalDate;
+        "Leg1NotionalAmount"                                     : Decimal(34, 6);
+        "Leg1NotionalAmountCurrency"                             : String(3);
+        "Leg2AgainstLeg1FXRate"                                  : Decimal(34, 6);
+        "Leg2NotionalAmount"                                     : Decimal(34, 6);
+        "Leg2NotionalAmountCurrency"                             : String(3);
+        "LegWithAdjustedPrincipal"                               : Integer;
+        "LetterOfCreditCategory"                                 : String(24);
+        "LetterOfCreditType"                                     : String(50);
+        "LifeAndAnnuityInsuranceContractCategory"                : String(40);
+        "LifeAndAnnuityNatureCode"                               : String(40);
+        "LifecycleStatus"                                        : String(40);
+        "LifecycleStatusChangeDate"                              : LocalDate;
+        "LifecycleStatusReason"                                  : String(256);
+        "LoanInsuranceProtectionLevel"                           : String(10);
+        "LockerClientKeyWithBank"                                : Boolean;
+        "LockerKeyID"                                            : String(100);
+        "ManufacturedPayments"                                   : Boolean;
+        "MarginType"                                             : String(40);
+        "MasterAgreementCategory"                                : String(40);
+        "MaterialStartDate"                                      : LocalDate;
+        "MaterialStartTime"                                      : LocalTime;
+        "MaterialStartTimeZone"                                  : String(5);
+        "MaturityDate"                                           : LocalDate;
+        "MaximumCollateralAmount"                                : Decimal(34, 6);
+        "MaximumCollateralAmountCurrency"                        : String(3);
+        "MaximumNotionalAmount"                                  : Decimal(34, 6);
+        "MinimumSettlementPercentage"                            : Decimal(15, 11);
+        "MultilinePolicyCategory"                                : String(40);
+        "NOutOfMToDefault"                                       : Integer;
+        "NToDefault"                                             : Integer;
+        "NatureCode"                                             : String(40);
+        "NetPayingSecuritiesAllowed"                             : Boolean;
+        "NettedSettlement"                                       : Boolean;
+        "NettingPeriodEndDate"                                   : LocalDate;
+        "NettingPeriodStartDate"                                 : LocalDate;
+        "NettingProvision"                                       : Boolean;
+        "NewPolicyCancellationDate"                              : LocalDate;
+        "NominalAmount"                                          : Decimal(34, 6);
+        "NominalAmountCurrency"                                  : String(3);
+        "NominalAmountOfInstrumentBorrowed"                      : Decimal(34, 6);
+        "NominalAmountOfInstrumentLent"                          : Decimal(34, 6);
+        "NominalAmountOfInstrumentsSold"                         : Decimal(34, 6);
+        "NoticePeriodLength"                                     : Decimal(34, 6);
+        "NoticePeriodTimeUnit"                                   : String(12);
+        "NotionalAmount"                                         : Decimal(34, 6);
+        "NotionalAmountCurrency"                                 : String(3);
+        "NotionalCashPoolingIndicator"                           : Boolean;
+        "NotionalInTradedCurrency"                               : Decimal(34, 6);
+        "NotionalQuantity"                                       : Decimal(34, 6);
+        "NotionalQuantityUnit"                                   : String(10);
+        "OTCDerivativeContractCategory"                          : String(40);
+        "OffShoreIndicator"                                      : Boolean;
+        "OfferValidityEndDate"                                   : LocalDate;
+        "OfferValidityStartDate"                                 : LocalDate;
+        "OpenMaturity"                                           : Boolean;
+        "OpeningDate"                                            : LocalDate;
+        "OptionCategory"                                         : String(40);
+        "OptionMarginingStyle"                                   : String(30);
+        "OptionPremium"                                          : Decimal(34, 6);
+        "OptionPremiumCurrency"                                  : String(3);
+        "OptionPremiumPaymentDate"                               : LocalDate;
+    /**
+    *@Deprecated
+    *@Reason: Harmonization of data fields for Option Premium attribute
+    *@ReplacedBy: Option Premium attribute
+    */
+    "OptionPrice"                                                : Decimal(34, 6);
+    /**
+    *@Deprecated
+    *@Reason: Harmonization of data fields for Option Premium attribute
+    *@ReplacedBy: Option Premium Currency attribute
+    */
+    "OptionPriceCurrency"                                        : String(3);
+        "OriginalDepositEndDate"                                 : LocalDate;
+        "OriginalInvestmentAmount"                               : Decimal(34, 6);
+        "OriginalNotionalAmount"                                 : Decimal(34, 6);
+        "OriginalSigningDate"                                    : LocalDate;
+        "OverpaymentPermitted"                                   : Boolean;
+        "POCIAcquisitionStatus"                                  : String(40);
+        "PartialDrawingsPermitted"                               : Boolean;
+        "PartialPaymentMethod"                                   : String(20);
+        "PartialShipmentAllowed"                                 : Boolean;
+        "ParticipationEndDate"                                   : LocalDate;
+        "ParticipationStartDate"                                 : LocalDate;
+        "PayrollAccount"                                         : Boolean;
+        "PlaceOfJurisdiction"                                    : String(256);
+        "PolicyholderOriginCountry"                              : String(2);
+        "PoolFactor"                                             : Decimal(15, 11);
+        "PremiumAnnualTaxAmount"                                 : Decimal(34, 6);
+        "PremiumBenefitCalculationRule"                          : String(40);
+        "PremiumGrossAnnualAmount"                               : Decimal(34, 6);
+        "PremiumGrossPeriodAmount"                               : Decimal(34, 6);
+        "PremiumPaymentFrequency"                                : String(40);
+        "PremiumPaymentMode"                                     : String(40);
+        "PresentationPeriod"                                     : Decimal(34, 6);
+        "PresentationPeriodUnit"                                 : String(12);
+        "PricePerTradedCurrencyUnit"                             : Decimal(34, 6);
+        "PricePerTradedCurrencyUnitFirstSettlement"              : Decimal(34, 6);
+        "PricePerTradedCurrencyUnitSecondSettlement"             : Decimal(34, 6);
+        "PriceQuotationType"                                     : String(40);
+        "PrincipalAdjustedForFXRate"                             : Boolean;
+        "PrincipalAdjustmentLagLength"                           : Integer;
+        "PrincipalExchangeAtEnd"                                 : Boolean;
+        "PrincipalExchangeAtStart"                               : Boolean;
+        "ProfitTransferAgreementExists"                          : Boolean;
+        "PromotionalLoanProgramID"                               : String(100);
+        "PropertyandCasualtyContractCategory"                    : String(40);
+        "PurchaseDate"                                           : LocalDate;
+        "PurchasePricePerInstrument"                             : Decimal(34, 6);
+        "Purpose"                                                : String(256);
+        "PurposeType"                                            : String(60);
+        "PutOrCall"                                              : String(4);
+        "QLACIndicator"                                          : Boolean;
+        "Quantity"                                               : Decimal(34, 6);
+        "QuantityBorrowed"                                       : Decimal(34, 6);
+        "QuantityLent"                                           : Decimal(34, 6);
+        "QuantitySold"                                           : Decimal(34, 6);
+        "QuotationType"                                          : String(40);
+        "QuoteCurrency"                                          : String(3);
+        "RMDLifeExpancy"                                         : Decimal(4, 1);
+        "RMDLifeExpectancyTable"                                 : String(40);
+        "RankAgainstOtherCollateralAgreements"                   : Integer;
+        "RateRoundingPrecision"                                  : Integer;
+        "ReceiptDate"                                            : LocalDate;
+        "ReceivablePurchaseAgreementCategory"                    : String(100);
+        "Recourse"                                               : Boolean;
+        "RecoursePercentage"                                     : Decimal(15, 11);
+        "ReferenceMasterAgreement"                               : String(256);
+        "RepoInterestAmount"                                     : Decimal(34, 6);
+        "RepoToMaturity"                                         : Boolean;
+        "RepurchaseDate"                                         : LocalDate;
+        "RepurchasePricePerInstrument"                           : Decimal(34, 6);
+        "ResaleAllowed"                                          : Boolean;
+        "Revocable"                                              : Boolean;
+        "RiskCountry"                                            : String(2);
+        "RiskStatus"                                             : String(40);
+        "RoundingMethodAmount"                                   : String(20);
+        "RoundingMethodInterpolation"                            : String(20);
+        "RoundingMethodReferenceRate"                            : String(10);
+        "SWIFT"                                                  : String(128);
+        "SavingsSchemeCurrency"                                  : String(3);
+        "SecondSettlementDate"                                   : LocalDate;
+        "SecuritiesLendingEndDate"                               : LocalDate;
+        "SecuritiesLendingStartDate"                             : LocalDate;
+        "SegregatedAccountBeneficiaryID"                         : String(128);
+        "SegregatedAccountBeneficiaryName"                       : String(256);
+        "SelfAdvised"                                            : Boolean;
+        "SellBuyBackAllowed"                                     : Boolean;
+        "SellerCanChooseCashSettlement"                          : Boolean;
+        "Seniority"                                              : String(40);
+        "ServiceAgreementCategory"                               : String(50);
+        "SettlementAccountManagedByThirdParty"                   : Boolean;
+        "SettlementAmount"                                       : Decimal(34, 6);
+        "SettlementBusinessCalendar"                             : String(10);
+        "SettlementBusinessDayConvention"                        : String(40);
+        "SettlementCurrency"                                     : String(3);
+        "SettlementDate"                                         : LocalDate;
+        "SettlementDirectDebitStatus"                            : String(40);
+        "SettlementFXRate"                                       : Decimal(34, 6);
+        "SettlementInArrears"                                    : Boolean;
+        "SettlementMethod"                                       : String(20);
+        "SettlementNettingIndicator"                             : Boolean;
+        "SettlementNettingPeriod"                                : Decimal(34, 6);
+        "SettlementNettingPeriodTimeUnit"                        : String(12);
+        "SettlementPeriodLength"                                 : Integer;
+        "SettlementPeriodTimeUnit"                               : String(10);
+        "SignatureDate"                                          : LocalDate;
+        "SignatureMethod"                                        : String(40);
+        "SimpleCollateralCategory"                               : String(40);
+        "SingleCurrencyAccountCategory"                          : String(40);
+        "SpecializedLendingType"                                 : String(100);
+        "SpecifiedPrice"                                         : String(100);
+        "SpecifiedPriceforLeg1"                                  : String(100);
+        "SpecifiedPriceforLeg2"                                  : String(100);
+        "SpreadOverBenchmark"                                    : Decimal(15, 11);
+        "StartDate"                                              : LocalDate;
+        "StartOfCedentAccountingPeriodDate"                      : LocalDate;
+        "StatementofAccountFrequency"                            : String(40);
+        "StrikePrice"                                            : Decimal(34, 6);
+        "StrikePriceCurrency"                                    : String(3);
+        "StrikePriceInQuotePerUnitTraded"                        : Decimal(34, 6);
+        "SubmissionChannel"                                      : String(40);
+        "SwapCategory"                                           : String(40);
+        "SwaptionDirection"                                      : String(20);
+        "SyndicatedContractIdentifier"                           : String(128);
+        "SyndicatedRefinancingIsPermitted"                       : Boolean;
+        "SyndicationAmount"                                      : Decimal(34, 6);
+        "SyndicationAmountCurrency"                              : String(3);
+        "TariffAnnualAmount"                                     : Decimal(34, 6);
+        "TariffPeriodAmount"                                     : Decimal(34, 6);
+        "TechnicalAccountingLevelCode"                           : String(40);
+        "TerminationDate"                                        : LocalDate;
+        "TotalFinancingAmount"                                   : Decimal(34, 6);
+        "TotalNotionalQuantity"                                  : Decimal(34, 6);
+        "TotalNotionalQuantityUnit"                              : String(10);
+        "TotalPurchasePrice"                                     : Decimal(34, 6);
+        "TotalRepayableAmount"                                   : Decimal(34, 6);
+        "TotalRepayableAmountCurrency"                           : String(3);
+        "TotalRepurchasePrice"                                   : Decimal(34, 6);
+        "TotalReturnSwapCategory"                                : String(40);
+        "TradedCurrency"                                         : String(3);
+        "TransShipmentAllowed"                                   : Boolean;
+        "TransactionalAccount"                                   : Boolean;
+        "TypeOfPledge"                                           : String(40);
+        "TypeOfSyndicate"                                        : String(40);
+        "TypeOfSyndication"                                      : String(40);
+        "UnderlyingEffectiveDate"                                : LocalDate;
+        "UnderlyingLegsHaveSameDirection"                        : Boolean;
+        "UnderlyingNettedSettlement"                             : Boolean;
+        "UnderlyingNotional"                                     : Decimal(34, 6);
+        "UnderlyingNotionalCurrency"                             : String(3);
+        "UnderlyingQuantity"                                     : Decimal(34, 6);
+        "UnderlyingSettlementCurrency"                           : String(3);
+        "UnderlyingSpecifiedPrice"                               : String(100);
+        "UnderlyingTerminationDate"                              : LocalDate;
+        "UnderlyingTotalNotionalQuantity"                        : Decimal(34, 6);
+        "UnderlyingTotalNotionalQuantityUnit"                    : String(10);
+        "UnderwritingDate"                                       : LocalDate;
+        "Unit"                                                   : String(10);
+        "UnitOfQuantityBorrowed"                                 : String(10);
+        "UnitofQuantityLent"                                     : String(10);
+        "UseAsCollateralPermitted"                               : Boolean;
+        "ValuationBusinessCalendar"                              : String(10);
+        "ValuationBusinessDayConvention"                         : String(40);
+        "Version"                                                : String(256);
+        "WithRecourse"                                           : Boolean;
+        "Yield"                                                  : Decimal(15, 11);
+        "isReinsuranceContract_ReinsuranceTechnicalCategoryCode" : String(40);
+        "SourceSystemID"                                         : String(128);
+        "ChangeTimestampInSourceSystem"                          : UTCTimestamp;
+        "ChangingUserInSourceSystem"                             : String(128);
+        "ChangingProcessType"                                    : String(40);
+        "ChangingProcessID"                                      : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FinancialContract_Historical" {
+    "FinancialContractID"                                    : String(128)  default '' not null;
+    "IDSystem"                                               : String(40)   default '' not null;
+    "BusinessValidFrom"                                      : LocalDate    not null;
+    "BusinessValidTo"                                        : LocalDate    not null;
+    "SystemValidFrom"                                        : UTCTimestamp not null;
+    "SystemValidTo"                                          : UTCTimestamp not null;
+    "ASSOC_BankingChannel"                                   : association to BankingChannel { BankingChannelID };
+    "ASSOC_CombinedCollateralAgreement"                      : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "ASSOC_ContractBundle"                                   : association to ContractBundle { ContractBundleID };
+    "ASSOC_FacilityOfDrawing"                                : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "ASSOC_FacilityOfSubFacility"                            : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "ASSOC_FinancialStandardProduct"                         : association to FinancialStandardProduct {
+                                                                                                         FinancialStandardProductID,
+                                                                                                         IDSystem,
+                                                                                                         PricingScheme,
+                                                                                                         ASSOC_Company
+                                                                                                       };
+    "ASSOC_LocalSettlementAccountForCreditCard"              : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "ASSOC_PhysicalAsset"                                    : association to PhysicalAsset { PhysicalAssetID };
+    "ASSOC_SettlementAccountForDebitCard"                    : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_Commodity"                                             : association to Commodity { CommodityID };
+    "_CommodityReferencePrice"                               : association to CommodityReferencePrice { ReferencePriceID };
+    "_Exchange"                                              : association to Exchange { MarketIdentifierCode };
+    "_FinancialInstrument"                                   : association to FinancialInstrument { FinancialInstrumentID };
+    "_Fund"                                                  : association to Fund {
+                                                                                     FundID,
+                                                                                     _InvestmentCorporation
+                                                                                   };
+    "_IndexSpecification"                                    : association to IndexSpecification {
+                                                                                                   _Index,
+                                                                                                   _LifeAndAnnuityInsuranceCoverage
+                                                                                                 };
+    "_InsuranceApplication"                                  : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_InsuranceContract"                                     : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_InsuranceProduct"                                      : association to FinancialStandardProduct {
+                                                                                                         FinancialStandardProductID,
+                                                                                                         IDSystem,
+                                                                                                         PricingScheme,
+                                                                                                         ASSOC_Company
+                                                                                                       };
+    "_InsuredObject"                                         : association to InsuredObject {
+                                                                                              _FinancialContract,
+                                                                                              _PhysicalAsset
+                                                                                            };
+    "_InvestmentFundShareSelection"                          : association to InvestmentFundShareSelection {
+                                                                                                             _InvestmentFundShare,
+                                                                                                             _LifeAndAnnuityInsuranceCoverage
+                                                                                                           };
+    "_Leg2Commodity"                                         : association to Commodity { CommodityID };
+    "_Leg2CommodityReferencePrice"                           : association to CommodityReferencePrice { ReferencePriceID };
+    "_LentFinancialInstrument"                               : association to FinancialInstrument { FinancialInstrumentID };
+    "_LifeAndAnnuityInsuranceCoverage"                       : association to InsuranceCoverage {
+                                                                                                  ID,
+                                                                                                  _InsuranceContract,
+                                                                                                  _InsuredObject
+                                                                                                };
+    /**
+    *@Deprecated
+    *@Reason: No longer needed and has been replaced by the Master Agreement Contract Assignment entity, which is used to assign a financial contract to a master agreement. The Master Agreement Contract Assignment entity has the Main Account attribute, which indicates which of the assigned financial contracts represents the main account.
+    *@ReplacedBy: Attribute Main Account at Entity Master Agreement Contract Assignment
+    */
+    "_MainAccount"                                           : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    /**
+    *@Deprecated
+    *@Reason: There was a 1: n relationship between the Financial Contract and the Master Agreement entites, but n:m relationships might be needed between those entities. Therefore, the deprecated relationship has been replaced by a more general n:m relationship, which is modeled by use of the Master Agreement Contract Assignment entity and the Master Agreement Assigned To Financial Contract and Financial Contract Assigned to Master Agreement relationships.
+    *@ReplacedBy: the Master Agreement Contract Assignment entity and the Master Agreement Assigned To Financial Contract and Financial Contract Assigned to Master Agreement relationships.
+    */
+    "_MasterAgreement"                                       : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    /**
+    *@Deprecated
+    *@Reason: 1:N Relationship is replaced by a N:M Relationship
+    *@ReplacedBy: New Relationships Loan Assigned to Financial Contract Relation and Participation Agreement Assigned to Financial Contract Relation which are used in conjunction with Entity Financial Contract Relation and its  attribute Financial Contract RelationType to model a N:M assignment between Loans and Participation Agreements.
+    */
+    "_ParticipationAgreement"                                : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_PensionPlan"                                           : association to PensionPlan {
+                                                                                            ID,
+                                                                                            _RetirementPlan
+                                                                                          };
+    "_ReferenceRate"                                         : association to ReferenceRate { ReferenceRateID };
+    "_ReferenceRateWithLongerTenor"                          : association to ReferenceRate { ReferenceRateID };
+    "_ReinsuranceMasterContract"                             : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_SafeDepositLocker"                                     : association to SafeDepositLocker {
+                                                                                                  LockerID,
+                                                                                                  _SafeDepositLockerBranch
+                                                                                                };
+    "_SecuritiesAccountOfAssignedFinancialInstrument"        : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_SecuritiesAccountOfLentFinancialInstrument"            : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_SyndicationAgreement"                                  : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_SyndicationCommitment"                                 : association to FinancialContract {
+                                                                                                  FinancialContractID,
+                                                                                                  IDSystem
+                                                                                                };
+    "_TrancheInSyndication"                                  : association to TrancheInSyndication {
+                                                                                                     TrancheSequenceNumber,
+                                                                                                     _SyndicationAgreement
+                                                                                                   };
+    "_Underlying"                                            : association to FinancialInstrument { FinancialInstrumentID };
+    "AccountCategory"                                        : String(40);
+    "AccountCurrency"                                        : String(3);
+    "AccountIdentificationSystem"                            : String(128);
+    "AccountValueWithdrawalRule"                             : String(40);
+    "AccountingDataBasisIndicator"                           : Boolean;
+    "AccrualAmount"                                          : Decimal(34, 6);
+    "AccrualAmountCurrency"                                  : String(3);
+    "AcquisitionYear"                                        : Integer;
+    "ActionAgainstBeneficiaryNotRequired"                    : Boolean;
+    "AgreedNewEndDateAfterProlongation"                      : LocalDate;
+    "AgreementEndDate"                                       : LocalDate;
+    "AgreementStartDate"                                     : LocalDate;
+    "AmortizationType"                                       : String(40);
+    "AmountInTradedCurrency"                                 : Decimal(34, 6);
+    "ApplicableLaw"                                          : String(256);
+    "ApplicableRules"                                        : String(50);
+    "ApprovalDate"                                           : LocalDate;
+    "ApprovedNominalAmount"                                  : Decimal(34, 6);
+    "AssignmentDisclosedToObligor"                           : Boolean;
+    "AssignmentOfClaimsType"                                 : String(40);
+    "AttachmentPoint"                                        : Decimal(34, 5);
+    "BankAccountCurrency"                                    : String(3);
+    "BankAccountHolderName"                                  : String(256);
+    "BankAccountID"                                          : String(128);
+    "BankGuaranteeType"                                      : String(50);
+    "BankID"                                                 : String(128);
+    "BankIdentificationSystem"                               : String(128);
+    "BankName"                                               : String(256);
+    "BenchmarkID"                                            : String(256);
+    "BondNotional"                                           : Decimal(34, 6);
+    "BondNotionalCurrency"                                   : String(3);
+    "BoundIndicator"                                         : Boolean;
+    "BrokerIsLiable"                                         : Boolean;
+    "BusinessCalendar"                                       : String(10);
+    "BusinessClass"                                          : String(40);
+    "BusinessClassCode"                                      : String(40);
+    "BusinessDayConvention"                                  : String(40);
+    "BusinessDirectionCode"                                  : String(40);
+    "BuyerAllowedToRetainCollateral"                         : Boolean;
+    "BuyerCanChooseCashSettlement"                           : Boolean;
+    "CancellationDate"                                       : LocalDate;
+    "CancellationReason"                                     : String(40);
+    "CancellationStatus"                                     : String(40);
+    "CapitalCompensationIndicator"                           : Boolean;
+    "CardAccountManagedByThirdParty"                         : Boolean;
+    "CardAgreementCategory"                                  : String(40);
+    "CashPoolingIndicator"                                   : Boolean;
+    "CashSettlement"                                         : Boolean;
+    "CashSettlementDate"                                     : LocalDate;
+    "CashSettlementMethod"                                   : String(30);
+    "CashSettlementTime"                                     : LocalTime;
+    "CashSettlementTimeZone"                                 : String(5);
+    "CedentAccountForRetentionIndicator"                     : Boolean;
+    "CedentFinancialReportingFrequencyCode"                  : String(40);
+    "CedentOriginCountry"                                    : String(2);
+    "CedentPremiumPaymentFrequency"                          : String(40);
+    "CharacteristicCategoryCode"                             : String(40);
+    "CharacteristicSubCategoryCode"                          : String(40);
+    "ClaimAdministrationClauseCode"                          : String(40);
+    "CleanPrice"                                             : Decimal(34, 6);
+    "CloseOutNettingIndicator"                               : Boolean;
+    "ClosingDate"                                            : LocalDate;
+    "CollateralAgreementCategory"                            : String(40);
+    "CollateralType"                                         : String(60);
+    "CollectionAmount"                                       : Decimal(34, 6);
+    "CollectionAmountCurrency"                               : String(3);
+    "CollectionPlace"                                        : String(256);
+    "CommitmentAmount"                                       : Decimal(34, 6);
+    "CommitmentAmountCurrency"                               : String(3);
+    "CommitmentEndDate"                                      : LocalDate;
+    "CommitmentStartDate"                                    : LocalDate;
+    "CommitmentType"                                         : String(40);
+    "CommunicatedEffectiveInterestRate"                      : Decimal(15, 11);
+    "CommunicatedEffectiveInterestRateMethod"                : String(20);
+    "CommutationProcessingType"                              : String(40);
+    "ConfirmedAmount"                                        : Decimal(34, 6);
+    "ConfirmedAmountCurrency"                                : String(3);
+    "ContractAmount"                                         : Decimal(34, 6);
+    "ContractAmountCurrency"                                 : String(3);
+    "ContractualCurrency"                                    : String(3);
+    "CreditAvailableByMethod"                                : String(50);
+    "CreditAvailableWithRole"                                : String(50);
+    "CreditCardCategorybyCardAccount"                        : String(40);
+    "CreditCardCategorybySettlementAccount"                  : String(40);
+    "CreditDefaultSwapCategory"                              : String(40);
+    "CreditSubstitute"                                       : Boolean;
+    "CurePeriodLength"                                       : Decimal(34, 6);
+    "CurePeriodTimeUnit"                                     : String(12);
+    "CurrentDepositEndDate"                                  : LocalDate;
+    "CustomerFacingBankAccountID"                            : String(128);
+    "CustomerFacingBankAccountIdentificationSystem"          : String(128);
+    "CustomerFacingBankID"                                   : String(128);
+    "CustomerFacingBankIdentificationSystem"                 : String(128);
+    "DayCountConvention"                                     : String(20);
+    "DeliveryDate"                                           : LocalDate;
+    "DenominationCurrency"                                   : String(3);
+    "DenominationCurrencyOfInstrumentBorrowed"               : String(3);
+    "DenominationCurrencyOfInstrumentLent"                   : String(3);
+    "DepositStartDate"                                       : LocalDate;
+    "Description"                                            : String(256);
+    "DescriptionOfRequiredDocuments"                         : String(200);
+    "DirtyPrice"                                             : Decimal(34, 6);
+    "Discount"                                               : Decimal(15, 11);
+    "DiscountAmount"                                         : Decimal(34, 6);
+    "DiscountAmountCurrency"                                 : String(3);
+    "DiscountPeriodLength"                                   : Decimal(34, 6);
+    "DiscountPeriodTimeUnit"                                 : String(12);
+    "DiscountingMethod"                                      : String(20);
+    "DistributionChannel"                                    : String(40);
+    "DocumentaryCollectionType"                              : String(50);
+    "DueDate"                                                : LocalDate;
+    /**
+    *
+    */
+    "DueDayMonth"                                            : String(5);
+    "EffectiveDate"                                          : LocalDate;
+    "EndDate"                                                : LocalDate;
+    "EndOfCedentAccountingPeriodDayMonth"                    : String(5);
+    "Enforceable"                                            : Boolean;
+    "EquityInvestmentEndDate"                                : LocalDate;
+    "EquityInvestmentStartDate"                              : LocalDate;
+    "EquityStakePercentage"                                  : Decimal(15, 11);
+    "EquityVotingRightsPercentage"                           : Decimal(15, 11);
+    "ExerciseMethod"                                         : String(30);
+    "ExerciseStyle"                                          : String(10);
+    "ExhaustionPoint"                                        : Decimal(34, 5);
+    "ExpectedMaturityDate"                                   : LocalDate;
+    "ExpirationDate"                                         : LocalDate;
+    "ExpirationTime"                                         : LocalTime;
+    "ExpirationTimeZone"                                     : String(5);
+    "ExpiryDate"                                             : LocalDate;
+    "ExpiryPlace"                                            : String(256);
+    "FRAFixingDate"                                          : LocalDate;
+    "FacilityEndDate"                                        : LocalDate;
+    "FacilityPurpose"                                        : String(80);
+    "FacilityStartDate"                                      : LocalDate;
+    "FacilityType"                                           : String(40);
+    "FactoringAgreementType"                                 : String(100);
+    "FinancialContractCategory"                              : String(50);
+    "FinancialContractType"                                  : String(40);
+    "FinancingAmountCurrency"                                : String(3);
+    "FirstAccrualStartDate"                                  : LocalDate;
+    "FirstCouponPaymentDate"                                 : LocalDate;
+    "FirstSettlementDate"                                    : LocalDate;
+    "FixedDepositRepayableAmount"                            : Decimal(34, 6);
+    "FixedRate"                                              : Decimal(34, 6);
+    "FixingLagLength"                                        : Decimal(34, 6);
+    "FixingLagTimeUnit"                                      : String(12);
+    "ForClientTrades"                                        : Boolean;
+    "FormofParticipation"                                    : String(40);
+    "ForwardPrice"                                           : Decimal(34, 6);
+    "ForwardPriceAdjustment"                                 : Boolean;
+    "ForwardPriceCurrency"                                   : String(3);
+    "FrontingIndicator"                                      : Boolean;
+    "GoverningLawCountry"                                    : String(2);
+    "GracePeriod"                                            : Integer;
+    "GrossInvoiceAmount"                                     : Decimal(34, 6);
+    "GrossInvoiceAmountCurrency"                             : String(3);
+    "GuaranteeCategory"                                      : String(40);
+    "GuaranteePercentage"                                    : Decimal(15, 11);
+    "GuaranteeSettlementCurrency"                            : String(3);
+    "HedgePurpose"                                           : String(30);
+    "IBAN"                                                   : String(128);
+    "IncomeTaxExemptionAmount"                               : Decimal(34, 6);
+    "IncomeTaxExemptionPercent"                              : Decimal(15, 11);
+    "IncomeTaxExemptionType"                                 : String(40);
+    "IndexMultiplier"                                        : Decimal(34, 6);
+    "IndexMultiplierCurrency"                                : String(3);
+    "InitialPaymentAmount"                                   : Decimal(34, 6);
+    "InitialPaymentCurrency"                                 : String(3);
+    "InitialPaymentPayer"                                    : String(50);
+    "InsuranceContractEndDate"                               : LocalDate;
+    "InsuranceContractEndTime"                               : LocalTime;
+    "InsuranceContractEndTimeZoneCode"                       : String(5);
+    "InsuranceContractStartDate"                             : LocalDate;
+    "InsuranceContractStartTime"                             : LocalTime;
+    "InsuranceContractStartTimeZoneCode"                     : String(5);
+    "InsuranceTaxExemptionType"                              : String(40);
+    "InsuredLoanAmount"                                      : Decimal(34, 6);
+    "IntendedAssetLiability"                                 : String(40);
+    "InterestRateOptionType"                                 : String(40);
+    "InterestRateSwapCategory"                               : String(40);
+    "InterimPrincipalExchange"                               : Boolean;
+    "Interpolation"                                          : Boolean;
+    "InterpolationRoundingPrecision"                         : Integer;
+    "IntraGroupRetroCessionType"                             : String(40);
+    "InvoiceDiscountingAgreementType"                        : String(100);
+    "IsBankruptcyRemote"                                     : Boolean;
+    "IsCorporateCard"                                        : Boolean;
+    "IsLegallyUncertain"                                     : Boolean;
+    "IsNegotiable"                                           : Boolean;
+    "IsStandby"                                              : Boolean;
+    "IssueDate"                                              : LocalDate;
+    "IssueRegion"                                            : String(50);
+    "LatestShipmentDate"                                     : LocalDate;
+    "LeaseTermEnd"                                           : LocalDate;
+    "LeaseTermStart"                                         : LocalDate;
+    "Leg1NotionalAmount"                                     : Decimal(34, 6);
+    "Leg1NotionalAmountCurrency"                             : String(3);
+    "Leg2AgainstLeg1FXRate"                                  : Decimal(34, 6);
+    "Leg2NotionalAmount"                                     : Decimal(34, 6);
+    "Leg2NotionalAmountCurrency"                             : String(3);
+    "LegWithAdjustedPrincipal"                               : Integer;
+    "LetterOfCreditCategory"                                 : String(24);
+    "LetterOfCreditType"                                     : String(50);
+    "LifeAndAnnuityInsuranceContractCategory"                : String(40);
+    "LifeAndAnnuityNatureCode"                               : String(40);
+    "LifecycleStatus"                                        : String(40);
+    "LifecycleStatusChangeDate"                              : LocalDate;
+    "LifecycleStatusReason"                                  : String(256);
+    "LoanInsuranceProtectionLevel"                           : String(10);
+    "LockerClientKeyWithBank"                                : Boolean;
+    "LockerKeyID"                                            : String(100);
+    "ManufacturedPayments"                                   : Boolean;
+    "MarginType"                                             : String(40);
+    "MasterAgreementCategory"                                : String(40);
+    "MaterialStartDate"                                      : LocalDate;
+    "MaterialStartTime"                                      : LocalTime;
+    "MaterialStartTimeZone"                                  : String(5);
+    "MaturityDate"                                           : LocalDate;
+    "MaximumCollateralAmount"                                : Decimal(34, 6);
+    "MaximumCollateralAmountCurrency"                        : String(3);
+    "MaximumNotionalAmount"                                  : Decimal(34, 6);
+    "MinimumSettlementPercentage"                            : Decimal(15, 11);
+    "MultilinePolicyCategory"                                : String(40);
+    "NOutOfMToDefault"                                       : Integer;
+    "NToDefault"                                             : Integer;
+    "NatureCode"                                             : String(40);
+    "NetPayingSecuritiesAllowed"                             : Boolean;
+    "NettedSettlement"                                       : Boolean;
+    "NettingPeriodEndDate"                                   : LocalDate;
+    "NettingPeriodStartDate"                                 : LocalDate;
+    "NettingProvision"                                       : Boolean;
+    "NewPolicyCancellationDate"                              : LocalDate;
+    "NominalAmount"                                          : Decimal(34, 6);
+    "NominalAmountCurrency"                                  : String(3);
+    "NominalAmountOfInstrumentBorrowed"                      : Decimal(34, 6);
+    "NominalAmountOfInstrumentLent"                          : Decimal(34, 6);
+    "NominalAmountOfInstrumentsSold"                         : Decimal(34, 6);
+    "NoticePeriodLength"                                     : Decimal(34, 6);
+    "NoticePeriodTimeUnit"                                   : String(12);
+    "NotionalAmount"                                         : Decimal(34, 6);
+    "NotionalAmountCurrency"                                 : String(3);
+    "NotionalCashPoolingIndicator"                           : Boolean;
+    "NotionalInTradedCurrency"                               : Decimal(34, 6);
+    "NotionalQuantity"                                       : Decimal(34, 6);
+    "NotionalQuantityUnit"                                   : String(10);
+    "OTCDerivativeContractCategory"                          : String(40);
+    "OffShoreIndicator"                                      : Boolean;
+    "OfferValidityEndDate"                                   : LocalDate;
+    "OfferValidityStartDate"                                 : LocalDate;
+    "OpenMaturity"                                           : Boolean;
+    "OpeningDate"                                            : LocalDate;
+    "OptionCategory"                                         : String(40);
+    "OptionMarginingStyle"                                   : String(30);
+    "OptionPremium"                                          : Decimal(34, 6);
+    "OptionPremiumCurrency"                                  : String(3);
+    "OptionPremiumPaymentDate"                               : LocalDate;
+    /**
+    *@Deprecated
+    *@Reason: Harmonization of data fields for Option Premium attribute
+    *@ReplacedBy: Option Premium attribute
+    */
+    "OptionPrice"                                            : Decimal(34, 6);
+    /**
+    *@Deprecated
+    *@Reason: Harmonization of data fields for Option Premium attribute
+    *@ReplacedBy: Option Premium Currency attribute
+    */
+    "OptionPriceCurrency"                                    : String(3);
+    "OriginalDepositEndDate"                                 : LocalDate;
+    "OriginalInvestmentAmount"                               : Decimal(34, 6);
+    "OriginalNotionalAmount"                                 : Decimal(34, 6);
+    "OriginalSigningDate"                                    : LocalDate;
+    "OverpaymentPermitted"                                   : Boolean;
+    "POCIAcquisitionStatus"                                  : String(40);
+    "PartialDrawingsPermitted"                               : Boolean;
+    "PartialPaymentMethod"                                   : String(20);
+    "PartialShipmentAllowed"                                 : Boolean;
+    "ParticipationEndDate"                                   : LocalDate;
+    "ParticipationStartDate"                                 : LocalDate;
+    "PayrollAccount"                                         : Boolean;
+    "PlaceOfJurisdiction"                                    : String(256);
+    "PolicyholderOriginCountry"                              : String(2);
+    "PoolFactor"                                             : Decimal(15, 11);
+    "PremiumAnnualTaxAmount"                                 : Decimal(34, 6);
+    "PremiumBenefitCalculationRule"                          : String(40);
+    "PremiumGrossAnnualAmount"                               : Decimal(34, 6);
+    "PremiumGrossPeriodAmount"                               : Decimal(34, 6);
+    "PremiumPaymentFrequency"                                : String(40);
+    "PremiumPaymentMode"                                     : String(40);
+    "PresentationPeriod"                                     : Decimal(34, 6);
+    "PresentationPeriodUnit"                                 : String(12);
+    "PricePerTradedCurrencyUnit"                             : Decimal(34, 6);
+    "PricePerTradedCurrencyUnitFirstSettlement"              : Decimal(34, 6);
+    "PricePerTradedCurrencyUnitSecondSettlement"             : Decimal(34, 6);
+    "PriceQuotationType"                                     : String(40);
+    "PrincipalAdjustedForFXRate"                             : Boolean;
+    "PrincipalAdjustmentLagLength"                           : Integer;
+    "PrincipalExchangeAtEnd"                                 : Boolean;
+    "PrincipalExchangeAtStart"                               : Boolean;
+    "ProfitTransferAgreementExists"                          : Boolean;
+    "PromotionalLoanProgramID"                               : String(100);
+    "PropertyandCasualtyContractCategory"                    : String(40);
+    "PurchaseDate"                                           : LocalDate;
+    "PurchasePricePerInstrument"                             : Decimal(34, 6);
+    "Purpose"                                                : String(256);
+    "PurposeType"                                            : String(60);
+    "PutOrCall"                                              : String(4);
+    "QLACIndicator"                                          : Boolean;
+    "Quantity"                                               : Decimal(34, 6);
+    "QuantityBorrowed"                                       : Decimal(34, 6);
+    "QuantityLent"                                           : Decimal(34, 6);
+    "QuantitySold"                                           : Decimal(34, 6);
+    "QuotationType"                                          : String(40);
+    "QuoteCurrency"                                          : String(3);
+    "RMDLifeExpancy"                                         : Decimal(4, 1);
+    "RMDLifeExpectancyTable"                                 : String(40);
+    "RankAgainstOtherCollateralAgreements"                   : Integer;
+    "RateRoundingPrecision"                                  : Integer;
+    "ReceiptDate"                                            : LocalDate;
+    "ReceivablePurchaseAgreementCategory"                    : String(100);
+    "Recourse"                                               : Boolean;
+    "RecoursePercentage"                                     : Decimal(15, 11);
+    "ReferenceMasterAgreement"                               : String(256);
+    "RepoInterestAmount"                                     : Decimal(34, 6);
+    "RepoToMaturity"                                         : Boolean;
+    "RepurchaseDate"                                         : LocalDate;
+    "RepurchasePricePerInstrument"                           : Decimal(34, 6);
+    "ResaleAllowed"                                          : Boolean;
+    "Revocable"                                              : Boolean;
+    "RiskCountry"                                            : String(2);
+    "RiskStatus"                                             : String(40);
+    "RoundingMethodAmount"                                   : String(20);
+    "RoundingMethodInterpolation"                            : String(20);
+    "RoundingMethodReferenceRate"                            : String(10);
+    "SWIFT"                                                  : String(128);
+    "SavingsSchemeCurrency"                                  : String(3);
+    "SecondSettlementDate"                                   : LocalDate;
+    "SecuritiesLendingEndDate"                               : LocalDate;
+    "SecuritiesLendingStartDate"                             : LocalDate;
+    "SegregatedAccountBeneficiaryID"                         : String(128);
+    "SegregatedAccountBeneficiaryName"                       : String(256);
+    "SelfAdvised"                                            : Boolean;
+    "SellBuyBackAllowed"                                     : Boolean;
+    "SellerCanChooseCashSettlement"                          : Boolean;
+    "Seniority"                                              : String(40);
+    "ServiceAgreementCategory"                               : String(50);
+    "SettlementAccountManagedByThirdParty"                   : Boolean;
+    "SettlementAmount"                                       : Decimal(34, 6);
+    "SettlementBusinessCalendar"                             : String(10);
+    "SettlementBusinessDayConvention"                        : String(40);
+    "SettlementCurrency"                                     : String(3);
+    "SettlementDate"                                         : LocalDate;
+    "SettlementDirectDebitStatus"                            : String(40);
+    "SettlementFXRate"                                       : Decimal(34, 6);
+    "SettlementInArrears"                                    : Boolean;
+    "SettlementMethod"                                       : String(20);
+    "SettlementNettingIndicator"                             : Boolean;
+    "SettlementNettingPeriod"                                : Decimal(34, 6);
+    "SettlementNettingPeriodTimeUnit"                        : String(12);
+    "SettlementPeriodLength"                                 : Integer;
+    "SettlementPeriodTimeUnit"                               : String(10);
+    "SignatureDate"                                          : LocalDate;
+    "SignatureMethod"                                        : String(40);
+    "SimpleCollateralCategory"                               : String(40);
+    "SingleCurrencyAccountCategory"                          : String(40);
+    "SpecializedLendingType"                                 : String(100);
+    "SpecifiedPrice"                                         : String(100);
+    "SpecifiedPriceforLeg1"                                  : String(100);
+    "SpecifiedPriceforLeg2"                                  : String(100);
+    "SpreadOverBenchmark"                                    : Decimal(15, 11);
+    "StartDate"                                              : LocalDate;
+    "StartOfCedentAccountingPeriodDate"                      : LocalDate;
+    "StatementofAccountFrequency"                            : String(40);
+    "StrikePrice"                                            : Decimal(34, 6);
+    "StrikePriceCurrency"                                    : String(3);
+    "StrikePriceInQuotePerUnitTraded"                        : Decimal(34, 6);
+    "SubmissionChannel"                                      : String(40);
+    "SwapCategory"                                           : String(40);
+    "SwaptionDirection"                                      : String(20);
+    "SyndicatedContractIdentifier"                           : String(128);
+    "SyndicatedRefinancingIsPermitted"                       : Boolean;
+    "SyndicationAmount"                                      : Decimal(34, 6);
+    "SyndicationAmountCurrency"                              : String(3);
+    "TariffAnnualAmount"                                     : Decimal(34, 6);
+    "TariffPeriodAmount"                                     : Decimal(34, 6);
+    "TechnicalAccountingLevelCode"                           : String(40);
+    "TerminationDate"                                        : LocalDate;
+    "TotalFinancingAmount"                                   : Decimal(34, 6);
+    "TotalNotionalQuantity"                                  : Decimal(34, 6);
+    "TotalNotionalQuantityUnit"                              : String(10);
+    "TotalPurchasePrice"                                     : Decimal(34, 6);
+    "TotalRepayableAmount"                                   : Decimal(34, 6);
+    "TotalRepayableAmountCurrency"                           : String(3);
+    "TotalRepurchasePrice"                                   : Decimal(34, 6);
+    "TotalReturnSwapCategory"                                : String(40);
+    "TradedCurrency"                                         : String(3);
+    "TransShipmentAllowed"                                   : Boolean;
+    "TransactionalAccount"                                   : Boolean;
+    "TypeOfPledge"                                           : String(40);
+    "TypeOfSyndicate"                                        : String(40);
+    "TypeOfSyndication"                                      : String(40);
+    "UnderlyingEffectiveDate"                                : LocalDate;
+    "UnderlyingLegsHaveSameDirection"                        : Boolean;
+    "UnderlyingNettedSettlement"                             : Boolean;
+    "UnderlyingNotional"                                     : Decimal(34, 6);
+    "UnderlyingNotionalCurrency"                             : String(3);
+    "UnderlyingQuantity"                                     : Decimal(34, 6);
+    "UnderlyingSettlementCurrency"                           : String(3);
+    "UnderlyingSpecifiedPrice"                               : String(100);
+    "UnderlyingTerminationDate"                              : LocalDate;
+    "UnderlyingTotalNotionalQuantity"                        : Decimal(34, 6);
+    "UnderlyingTotalNotionalQuantityUnit"                    : String(10);
+    "UnderwritingDate"                                       : LocalDate;
+    "Unit"                                                   : String(10);
+    "UnitOfQuantityBorrowed"                                 : String(10);
+    "UnitofQuantityLent"                                     : String(10);
+    "UseAsCollateralPermitted"                               : Boolean;
+    "ValuationBusinessCalendar"                              : String(10);
+    "ValuationBusinessDayConvention"                         : String(40);
+    "Version"                                                : String(256);
+    "WithRecourse"                                           : Boolean;
+    "Yield"                                                  : Decimal(15, 11);
+    "isReinsuranceContract_ReinsuranceTechnicalCategoryCode" : String(40);
+    "SourceSystemID"                                         : String(128);
+    "ChangeTimestampInSourceSystem"                          : UTCTimestamp;
+    "ChangingUserInSourceSystem"                             : String(128);
+    "ChangingProcessType"                                    : String(40);
+    "ChangingProcessID"                                      : String(128);
+}
+technical configuration {
+    column store;
+};

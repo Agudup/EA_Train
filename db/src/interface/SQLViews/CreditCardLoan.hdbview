@@ -1,0 +1,44 @@
+view "sap.fsdm.SQLViews::CreditCardLoan_View" 
+as select
+      "ID" ,
+      "_CreditCardAgreement.FinancialContractID" ,
+      "_CreditCardAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CreationDate" ,
+      "Description" ,
+      "LoanAmount" ,
+      "LoanAmountCurrency" ,
+      "NumberOfInstallments" ,
+      "Status" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CreditCardLoan"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_CreditCardAgreement"
+	  on "_CreditCardAgreement"."FinancialContractID" = "_CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardAgreement"."IDSystem" = "_CreditCardAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::MonetaryBalance_View" as "_MonetaryBalance__CreditCardLoan"
+	  on "ID" = "_MonetaryBalance__CreditCardLoan"."_CreditCardLoan.ID" AND 
+	     "_CreditCardAgreement.FinancialContractID" = "_MonetaryBalance__CreditCardLoan"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardAgreement.IDSystem" = "_MonetaryBalance__CreditCardLoan"."_CreditCardLoan._CreditCardAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::PaymentSchedule_View" as "_PaymentSchedule__CreditCardLoan"
+	  on "ID" = "_PaymentSchedule__CreditCardLoan"."_CreditCardLoan.ID" AND 
+	     "_CreditCardAgreement.FinancialContractID" = "_PaymentSchedule__CreditCardLoan"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardAgreement.IDSystem" = "_PaymentSchedule__CreditCardLoan"."_CreditCardLoan._CreditCardAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement__CreditCardLoan"
+	  on "ID" = "_Settlement__CreditCardLoan"."_CreditCardLoan.ID" AND 
+	     "_CreditCardAgreement.FinancialContractID" = "_Settlement__CreditCardLoan"."_CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardAgreement.IDSystem" = "_Settlement__CreditCardLoan"."_CreditCardLoan._CreditCardAgreement.IDSystem"
+	     
+);

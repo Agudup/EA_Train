@@ -1,0 +1,63 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "ConversionRight" {
+    key "SequenceNumber"                           : Integer;
+    key "_DebtInstrument"                          : association to FinancialInstrument { FinancialInstrumentID }  not null;
+    key "BusinessValidFrom"                        : LocalDate;
+    key "BusinessValidTo"                          : LocalDate;
+        "SystemValidFrom"                          : UTCTimestamp                                                  not null;
+        "SystemValidTo"                            : UTCTimestamp                                                  not null;
+        "_ConversionTarget"                        : association to FinancialInstrument { FinancialInstrumentID };
+        "BearerCashSettlementOption"               : Boolean;
+        "ConversionPeriodEndDate"                  : LocalDate;
+        "ConversionPeriodStartDate"                : LocalDate;
+        "ConversionRightHolder"                    : String(50);
+        "ConversionTargetIsPreferredOrCommonStock" : Boolean;
+        "ConversionTargetIssuer"                   : String(256);
+        "ConversionTargetParValueCurrency"         : String(3);
+        "ConversionTargetParValuePerUnit"          : Decimal(34, 6);
+        "IssuerCashSettlementOption"               : Boolean;
+        "PrespecifiedConversionPrice"              : Decimal(34, 6);
+        "PrespecifiedConversionRatio"              : Decimal(34, 6);
+        "ReferenceSharePrice"                      : Decimal(34, 6);
+        "SourceSystemID"                           : String(128);
+        "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+        "ChangingUserInSourceSystem"               : String(128);
+        "ChangingProcessType"                      : String(40);
+        "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ConversionRight_Historical" {
+    "SequenceNumber"                           : Integer                                                       not null;
+    "_DebtInstrument"                          : association to FinancialInstrument { FinancialInstrumentID }  not null;
+    "BusinessValidFrom"                        : LocalDate                                                     not null;
+    "BusinessValidTo"                          : LocalDate                                                     not null;
+    "SystemValidFrom"                          : UTCTimestamp                                                  not null;
+    "SystemValidTo"                            : UTCTimestamp                                                  not null;
+    "_ConversionTarget"                        : association to FinancialInstrument { FinancialInstrumentID };
+    "BearerCashSettlementOption"               : Boolean;
+    "ConversionPeriodEndDate"                  : LocalDate;
+    "ConversionPeriodStartDate"                : LocalDate;
+    "ConversionRightHolder"                    : String(50);
+    "ConversionTargetIsPreferredOrCommonStock" : Boolean;
+    "ConversionTargetIssuer"                   : String(256);
+    "ConversionTargetParValueCurrency"         : String(3);
+    "ConversionTargetParValuePerUnit"          : Decimal(34, 6);
+    "IssuerCashSettlementOption"               : Boolean;
+    "PrespecifiedConversionPrice"              : Decimal(34, 6);
+    "PrespecifiedConversionRatio"              : Decimal(34, 6);
+    "ReferenceSharePrice"                      : Decimal(34, 6);
+    "SourceSystemID"                           : String(128);
+    "ChangeTimestampInSourceSystem"            : UTCTimestamp;
+    "ChangingUserInSourceSystem"               : String(128);
+    "ChangingProcessType"                      : String(40);
+    "ChangingProcessID"                        : String(128);
+}
+technical configuration {
+    column store;
+};

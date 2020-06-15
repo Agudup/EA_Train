@@ -1,0 +1,45 @@
+view "sap.fsdm.SQLViews::FinancialContractDelegation_View" 
+as select
+      "DelegatedRole" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_Delegator.BusinessPartnerID" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::FinancialContractDelegation"
+with associations
+(
+	join "sap.fsdm.SQLViews::AgreedLimit_View" as "_AgreedLimit_ASSOC_FinancialContractDelegation"
+	  on "DelegatedRole" = "_AgreedLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.DelegatedRole" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_AgreedLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_AgreedLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_Delegator.BusinessPartnerID" = "_AgreedLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" AND 
+	     "ASSOC_BusinessPartner.BusinessPartnerID" = "_AgreedLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::EffectiveLimit_View" as "_EffectiveLimit_ASSOC_FinancialContractDelegation"
+	  on "ASSOC_BusinessPartner.BusinessPartnerID" = "_EffectiveLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_BusinessPartner.BusinessPartnerID" AND 
+	     "ASSOC_Delegator.BusinessPartnerID" = "_EffectiveLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_Delegator.BusinessPartnerID" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_EffectiveLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_EffectiveLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.ASSOC_FinancialContract.IDSystem" AND 
+	     "DelegatedRole" = "_EffectiveLimit_ASSOC_FinancialContractDelegation"."ASSOC_FinancialContractDelegation.DelegatedRole"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_Delegator"
+	  on "ASSOC_Delegator"."BusinessPartnerID" = "ASSOC_Delegator.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     
+);

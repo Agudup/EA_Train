@@ -1,0 +1,272 @@
+PROCEDURE "sap.fsdm.procedures::TradeReferenceIDLoad" (IN ROW "sap.fsdm.tabletypes::TradeReferenceIDTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ReferenceIDType=' || TO_VARCHAR("ReferenceIDType") || ' ' ||
+                'SystemID=' || TO_VARCHAR("SystemID") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ReferenceIDType",
+                        "IN"."SystemID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ReferenceIDType",
+                        "IN"."SystemID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ReferenceIDType",
+                        "SystemID",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ReferenceIDType",
+                                    "IN"."SystemID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ReferenceIDType",
+                                    "IN"."SystemID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::TradeReferenceID" (
+        "ReferenceIDType",
+        "SystemID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ReferenceID",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ReferenceIDType" as "ReferenceIDType" ,
+            "OLD_SystemID" as "SystemID" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ReferenceID" as "ReferenceID" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."ReferenceIDType",
+                        "IN"."SystemID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."ReferenceIDType" as "OLD_ReferenceIDType",
+                                "OLD"."SystemID" as "OLD_SystemID",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ReferenceID" as "OLD_ReferenceID",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeReferenceID" as "OLD"
+            on
+                ( case when "IN"."ReferenceIDType" is null then '' else "IN"."ReferenceIDType" end ) = "OLD"."ReferenceIDType" and
+                ( case when "IN"."SystemID" is null then '' else "IN"."SystemID" end ) = "OLD"."SystemID" and
+                ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" and
+                ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::TradeReferenceID" (
+        "ReferenceIDType",
+        "SystemID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ReferenceID",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ReferenceIDType" as "ReferenceIDType",
+            "OLD_SystemID" as "SystemID",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ReferenceID" as "ReferenceID",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."ReferenceIDType",
+                        "IN"."SystemID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."ReferenceIDType" as "OLD_ReferenceIDType",
+                        "OLD"."SystemID" as "OLD_SystemID",
+                        "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                        "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."ReferenceID" as "OLD_ReferenceID",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::TradeReferenceID" as "OLD"
+            on
+                ( case when "IN"."ReferenceIDType" is null then '' else "IN"."ReferenceIDType" end ) = "OLD"."ReferenceIDType" and
+                ( case when "IN"."SystemID" is null then '' else "IN"."SystemID" end ) = "OLD"."SystemID" and
+                ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" and
+                ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::TradeReferenceID"
+    where (
+        "ReferenceIDType",
+        "SystemID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ReferenceIDType",
+            "OLD"."SystemID",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::TradeReferenceID" as "OLD"
+        on
+           ( case when "IN"."ReferenceIDType" is null then '' else "IN"."ReferenceIDType" end ) = "OLD"."ReferenceIDType" and
+           ( case when "IN"."SystemID" is null then '' else "IN"."SystemID" end ) = "OLD"."SystemID" and
+           ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" and
+           ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::TradeReferenceID" (
+        "ReferenceIDType",
+        "SystemID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ReferenceID",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "ReferenceIDType" is null then '' else "ReferenceIDType" end ) as "ReferenceIDType",
+            ( case when "SystemID" is null then '' else "SystemID" end ) as "SystemID",
+            ( case when "_Trade.IDSystem" is null then '' else "_Trade.IDSystem" end ) as "_Trade.IDSystem",
+            ( case when "_Trade.TradeID" is null then '' else "_Trade.TradeID" end ) as "_Trade.TradeID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "ReferenceID"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

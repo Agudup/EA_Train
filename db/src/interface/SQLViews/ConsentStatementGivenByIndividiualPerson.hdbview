@@ -1,0 +1,25 @@
+view "sap.fsdm.SQLViews::ConsentStatementGivenByIndividiualPerson_View" 
+as select
+      "_ConsentStatement.ConsentStatementID" ,
+      "_IndividualPerson.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ConsentGiven" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ConsentStatementGivenByIndividiualPerson"
+with associations
+(
+	join "sap.fsdm.SQLViews::ConsentStatement_View" as "_ConsentStatement"
+	  on "_ConsentStatement"."ConsentStatementID" = "_ConsentStatement.ConsentStatementID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_IndividualPerson"
+	  on "_IndividualPerson"."BusinessPartnerID" = "_IndividualPerson.BusinessPartnerID"
+	     
+);

@@ -1,0 +1,274 @@
+PROCEDURE "sap.fsdm.procedures::RegionReadOnly" (IN ROW "sap.fsdm.tabletypes::RegionTT", OUT CURR_DEL "sap.fsdm.tabletypes::RegionTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::RegionTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'Region=' || TO_VARCHAR("Region") || ' ' ||
+                '_ReinsuranceCoverage.CoverageID=' || TO_VARCHAR("_ReinsuranceCoverage.CoverageID") || ' ' ||
+                '_ReinsuranceCoverage.SectionID=' || TO_VARCHAR("_ReinsuranceCoverage.SectionID") || ' ' ||
+                '_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID=' || TO_VARCHAR("_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID") || ' ' ||
+                '_ReinsuranceCoverage._ReinsuranceContract.IDSystem=' || TO_VARCHAR("_ReinsuranceCoverage._ReinsuranceContract.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."Region",
+                        "IN"."_ReinsuranceCoverage.CoverageID",
+                        "IN"."_ReinsuranceCoverage.SectionID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."Region",
+                        "IN"."_ReinsuranceCoverage.CoverageID",
+                        "IN"."_ReinsuranceCoverage.SectionID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "Region",
+                        "_ReinsuranceCoverage.CoverageID",
+                        "_ReinsuranceCoverage.SectionID",
+                        "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."Region",
+                                    "IN"."_ReinsuranceCoverage.CoverageID",
+                                    "IN"."_ReinsuranceCoverage.SectionID",
+                                    "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."Region",
+                                    "IN"."_ReinsuranceCoverage.CoverageID",
+                                    "IN"."_ReinsuranceCoverage.SectionID",
+                                    "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                    "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "Region",
+        "_ReinsuranceCoverage.CoverageID",
+        "_ReinsuranceCoverage.SectionID",
+        "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::Region" WHERE
+        (            "Region" ,
+            "_ReinsuranceCoverage.CoverageID" ,
+            "_ReinsuranceCoverage.SectionID" ,
+            "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+            "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."Region",
+            "OLD"."_ReinsuranceCoverage.CoverageID",
+            "OLD"."_ReinsuranceCoverage.SectionID",
+            "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::Region" as "OLD"
+            on
+               ( case when "IN"."Region" is null then '' else "IN"."Region" end ) = "OLD"."Region" and
+               ( case when "IN"."_ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_ReinsuranceCoverage.CoverageID" end ) = "OLD"."_ReinsuranceCoverage.CoverageID" and
+               ( case when "IN"."_ReinsuranceCoverage.SectionID" is null then '' else "IN"."_ReinsuranceCoverage.SectionID" end ) = "OLD"."_ReinsuranceCoverage.SectionID" and
+               ( case when "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+               ( case when "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "Region",
+        "_ReinsuranceCoverage.CoverageID",
+        "_ReinsuranceCoverage.SectionID",
+        "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+        "_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "DefaultIndicator",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "Region" is null then '' else "Region" end ) as "Region",
+                    ( case when "_ReinsuranceCoverage.CoverageID" is null then '' else "_ReinsuranceCoverage.CoverageID" end ) as "_ReinsuranceCoverage.CoverageID",
+                    ( case when "_ReinsuranceCoverage.SectionID" is null then '' else "_ReinsuranceCoverage.SectionID" end ) as "_ReinsuranceCoverage.SectionID",
+                    ( case when "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) as "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                    ( case when "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) as "_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "DefaultIndicator"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_Region" as "Region" ,
+                    "OLD__ReinsuranceCoverage.CoverageID" as "_ReinsuranceCoverage.CoverageID" ,
+                    "OLD__ReinsuranceCoverage.SectionID" as "_ReinsuranceCoverage.SectionID" ,
+                    "OLD__ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+                    "OLD__ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_DefaultIndicator" as "DefaultIndicator" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."Region",
+                        "IN"."_ReinsuranceCoverage.CoverageID",
+                        "IN"."_ReinsuranceCoverage.SectionID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."Region" as "OLD_Region",
+                                "OLD"."_ReinsuranceCoverage.CoverageID" as "OLD__ReinsuranceCoverage.CoverageID",
+                                "OLD"."_ReinsuranceCoverage.SectionID" as "OLD__ReinsuranceCoverage.SectionID",
+                                "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                                "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."DefaultIndicator" as "OLD_DefaultIndicator",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Region" as "OLD"
+            on
+                ( case when "IN"."Region" is null then '' else "IN"."Region" end ) = "OLD"."Region" and
+                ( case when "IN"."_ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_ReinsuranceCoverage.CoverageID" end ) = "OLD"."_ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_ReinsuranceCoverage.SectionID" is null then '' else "IN"."_ReinsuranceCoverage.SectionID" end ) = "OLD"."_ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_Region" as "Region",
+            "OLD__ReinsuranceCoverage.CoverageID" as "_ReinsuranceCoverage.CoverageID",
+            "OLD__ReinsuranceCoverage.SectionID" as "_ReinsuranceCoverage.SectionID",
+            "OLD__ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+            "OLD__ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_DefaultIndicator" as "DefaultIndicator",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."Region",
+                        "IN"."_ReinsuranceCoverage.CoverageID",
+                        "IN"."_ReinsuranceCoverage.SectionID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."Region" as "OLD_Region",
+                        "OLD"."_ReinsuranceCoverage.CoverageID" as "OLD__ReinsuranceCoverage.CoverageID",
+                        "OLD"."_ReinsuranceCoverage.SectionID" as "OLD__ReinsuranceCoverage.SectionID",
+                        "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" as "OLD__ReinsuranceCoverage._ReinsuranceContract.FinancialContractID",
+                        "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" as "OLD__ReinsuranceCoverage._ReinsuranceContract.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."DefaultIndicator" as "OLD_DefaultIndicator",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::Region" as "OLD"
+            on
+                ( case when "IN"."Region" is null then '' else "IN"."Region" end ) = "OLD"."Region" and
+                ( case when "IN"."_ReinsuranceCoverage.CoverageID" is null then '' else "IN"."_ReinsuranceCoverage.CoverageID" end ) = "OLD"."_ReinsuranceCoverage.CoverageID" and
+                ( case when "IN"."_ReinsuranceCoverage.SectionID" is null then '' else "IN"."_ReinsuranceCoverage.SectionID" end ) = "OLD"."_ReinsuranceCoverage.SectionID" and
+                ( case when "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" is null then '' else "IN"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" end ) = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" and
+                ( case when "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" is null then '' else "IN"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" end ) = "OLD"."_ReinsuranceCoverage._ReinsuranceContract.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

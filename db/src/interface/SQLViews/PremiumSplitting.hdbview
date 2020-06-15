@@ -1,0 +1,51 @@
+view "sap.fsdm.SQLViews::PremiumSplitting_View" 
+as select
+      "ComponentType" ,
+      "_InsuranceCoverage.ID" ,
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "_InsuranceCoverageOption.Type" ,
+      "_InsuranceCoverageOption._InsuranceCoverage.ID" ,
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" ,
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Amount" ,
+      "AnalysisPeriodEndDate" ,
+      "AnalysisPeriodStartDate" ,
+      "Currency" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PremiumSplitting"
+with associations
+(
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_InsuranceCoverage"
+	  on "_InsuranceCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.IDSystem" = "_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceCoverage"."_InsuranceContract.FinancialContractID" = "_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceCoverage"."ID" = "_InsuranceCoverage.ID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverageOption_View" as "_InsuranceCoverageOption"
+	  on "_InsuranceCoverageOption"."Type" = "_InsuranceCoverageOption.Type" AND 
+	     "_InsuranceCoverageOption"."_InsuranceCoverage.ID" = "_InsuranceCoverageOption._InsuranceCoverage.ID" AND 
+	     "_InsuranceCoverageOption"."_InsuranceCoverage._InsuranceContract.FinancialContractID" = "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceCoverageOption"."_InsuranceCoverage._InsuranceContract.IDSystem" = "_InsuranceCoverageOption._InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceCoverageOption"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceCoverageOption"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuranceCoverageOption"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverageOption._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

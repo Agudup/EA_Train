@@ -1,0 +1,35 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Exchange";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "InstrumentIntradayTradingObservation" {
+    key "PriceDataProvider"               : String(256)                                                  default '';
+    key "PriceSeriesType"                 : String(40)                                                   default '';
+    key "SequenceNumber"                  : Integer;
+    key "Timestamp"                       : UTCTimestamp;
+    key "_Exchange"                       : association to Exchange { MarketIdentifierCode }             not null;
+    key "_FinancialInstrument"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+        "Accrual"                         : Decimal(34, 6);
+        "AddOn"                           : String(25);
+        "CleanDirtyIndicator"             : String(20);
+        "CumOrEx"                         : String(3);
+        "Currency"                        : String(3);
+        "InstrumentIntradayPriceCategory" : String(50);
+        "Price"                           : Decimal(34, 6);
+        "PriceNotationForm"               : String(40);
+        "PriceType"                       : String(40);
+        "Quantity"                        : Decimal(34, 6);
+        "TickID"                          : String(40);
+        "TickNominalAmount"               : Decimal(34, 6);
+        "TickNominalAmountCurrency"       : String(3);
+        "Unit"                            : String(10);
+        "SourceSystemID"                  : String(128);
+        "ChangeTimestampInSourceSystem"   : UTCTimestamp;
+        "ChangingUserInSourceSystem"      : String(128);
+        "ChangingProcessType"             : String(40);
+        "ChangingProcessID"               : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,41 @@
+PROCEDURE "sap.fsdm.procedures::CommodityReferencePriceLoad" (IN ROW "sap.fsdm.tabletypes::CommodityReferencePriceTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+delete from "sap.fsdm::CommodityReferencePrice" WHERE("ReferencePriceID" 
+)in ( select     ( case when "ReferencePriceID" is null then '' else "ReferencePriceID" end ) as "ReferencePriceID"
+from :row );
+
+--Insert ALL the input data
+insert into "sap.fsdm::CommodityReferencePrice"  (
+"ReferencePriceID",
+"_Commodity.CommodityID",
+"Currency",
+"PriceSource",
+"ReferencePriceDescription",
+"Unit",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+)  ( select 
+     ( case when "ReferencePriceID" is null then '' else "ReferencePriceID" end ) as "ReferencePriceID",
+  "_Commodity.CommodityID"  ,
+  "Currency"  ,
+  "PriceSource"  ,
+  "ReferencePriceDescription"  ,
+  "Unit"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

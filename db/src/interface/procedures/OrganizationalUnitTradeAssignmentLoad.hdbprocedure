@@ -1,0 +1,285 @@
+PROCEDURE "sap.fsdm.procedures::OrganizationalUnitTradeAssignmentLoad" (IN ROW "sap.fsdm.tabletypes::OrganizationalUnitTradeAssignmentTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'RoleOfOrganizationalUnit=' || TO_VARCHAR("RoleOfOrganizationalUnit") || ' ' ||
+                '_OrgUnit.OrganizationalUnitID=' || TO_VARCHAR("_OrgUnit.OrganizationalUnitID") || ' ' ||
+                '_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID=' || TO_VARCHAR("_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID") || ' ' ||
+                '_Trade.IDSystem=' || TO_VARCHAR("_Trade.IDSystem") || ' ' ||
+                '_Trade.TradeID=' || TO_VARCHAR("_Trade.TradeID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."RoleOfOrganizationalUnit",
+                        "IN"."_OrgUnit.OrganizationalUnitID",
+                        "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."RoleOfOrganizationalUnit",
+                        "IN"."_OrgUnit.OrganizationalUnitID",
+                        "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "RoleOfOrganizationalUnit",
+                        "_OrgUnit.OrganizationalUnitID",
+                        "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "_Trade.IDSystem",
+                        "_Trade.TradeID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."RoleOfOrganizationalUnit",
+                                    "IN"."_OrgUnit.OrganizationalUnitID",
+                                    "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."RoleOfOrganizationalUnit",
+                                    "IN"."_OrgUnit.OrganizationalUnitID",
+                                    "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                    "IN"."_Trade.IDSystem",
+                                    "IN"."_Trade.TradeID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::OrganizationalUnitTradeAssignment" (
+        "RoleOfOrganizationalUnit",
+        "_OrgUnit.OrganizationalUnitID",
+        "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_RoleOfOrganizationalUnit" as "RoleOfOrganizationalUnit" ,
+            "OLD__OrgUnit.OrganizationalUnitID" as "_OrgUnit.OrganizationalUnitID" ,
+            "OLD__OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem" ,
+            "OLD__Trade.TradeID" as "_Trade.TradeID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."RoleOfOrganizationalUnit",
+                        "IN"."_OrgUnit.OrganizationalUnitID",
+                        "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."RoleOfOrganizationalUnit" as "OLD_RoleOfOrganizationalUnit",
+                                "OLD"."_OrgUnit.OrganizationalUnitID" as "OLD__OrgUnit.OrganizationalUnitID",
+                                "OLD"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                                "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::OrganizationalUnitTradeAssignment" as "OLD"
+            on
+                ( case when "IN"."RoleOfOrganizationalUnit" is null then '' else "IN"."RoleOfOrganizationalUnit" end ) = "OLD"."RoleOfOrganizationalUnit" and
+                ( case when "IN"."_OrgUnit.OrganizationalUnitID" is null then '' else "IN"."_OrgUnit.OrganizationalUnitID" end ) = "OLD"."_OrgUnit.OrganizationalUnitID" and
+                ( case when "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) = "OLD"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" and
+                ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" and
+                ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::OrganizationalUnitTradeAssignment" (
+        "RoleOfOrganizationalUnit",
+        "_OrgUnit.OrganizationalUnitID",
+        "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_RoleOfOrganizationalUnit" as "RoleOfOrganizationalUnit",
+            "OLD__OrgUnit.OrganizationalUnitID" as "_OrgUnit.OrganizationalUnitID",
+            "OLD__OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD__Trade.IDSystem" as "_Trade.IDSystem",
+            "OLD__Trade.TradeID" as "_Trade.TradeID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."RoleOfOrganizationalUnit",
+                        "IN"."_OrgUnit.OrganizationalUnitID",
+                        "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "IN"."_Trade.IDSystem",
+                        "IN"."_Trade.TradeID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."RoleOfOrganizationalUnit" as "OLD_RoleOfOrganizationalUnit",
+                        "OLD"."_OrgUnit.OrganizationalUnitID" as "OLD__OrgUnit.OrganizationalUnitID",
+                        "OLD"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."_Trade.IDSystem" as "OLD__Trade.IDSystem",
+                        "OLD"."_Trade.TradeID" as "OLD__Trade.TradeID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::OrganizationalUnitTradeAssignment" as "OLD"
+            on
+                ( case when "IN"."RoleOfOrganizationalUnit" is null then '' else "IN"."RoleOfOrganizationalUnit" end ) = "OLD"."RoleOfOrganizationalUnit" and
+                ( case when "IN"."_OrgUnit.OrganizationalUnitID" is null then '' else "IN"."_OrgUnit.OrganizationalUnitID" end ) = "OLD"."_OrgUnit.OrganizationalUnitID" and
+                ( case when "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) = "OLD"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" and
+                ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" and
+                ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::OrganizationalUnitTradeAssignment"
+    where (
+        "RoleOfOrganizationalUnit",
+        "_OrgUnit.OrganizationalUnitID",
+        "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."RoleOfOrganizationalUnit",
+            "OLD"."_OrgUnit.OrganizationalUnitID",
+            "OLD"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD"."_Trade.IDSystem",
+            "OLD"."_Trade.TradeID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::OrganizationalUnitTradeAssignment" as "OLD"
+        on
+           ( case when "IN"."RoleOfOrganizationalUnit" is null then '' else "IN"."RoleOfOrganizationalUnit" end ) = "OLD"."RoleOfOrganizationalUnit" and
+           ( case when "IN"."_OrgUnit.OrganizationalUnitID" is null then '' else "IN"."_OrgUnit.OrganizationalUnitID" end ) = "OLD"."_OrgUnit.OrganizationalUnitID" and
+           ( case when "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "IN"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) = "OLD"."_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" and
+           ( case when "IN"."_Trade.IDSystem" is null then '' else "IN"."_Trade.IDSystem" end ) = "OLD"."_Trade.IDSystem" and
+           ( case when "IN"."_Trade.TradeID" is null then '' else "IN"."_Trade.TradeID" end ) = "OLD"."_Trade.TradeID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::OrganizationalUnitTradeAssignment" (
+        "RoleOfOrganizationalUnit",
+        "_OrgUnit.OrganizationalUnitID",
+        "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Trade.IDSystem",
+        "_Trade.TradeID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "RoleOfOrganizationalUnit" is null then '' else "RoleOfOrganizationalUnit" end ) as "RoleOfOrganizationalUnit",
+            ( case when "_OrgUnit.OrganizationalUnitID" is null then '' else "_OrgUnit.OrganizationalUnitID" end ) as "_OrgUnit.OrganizationalUnitID",
+            ( case when "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" is null then '' else "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" end ) as "_OrgUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            ( case when "_Trade.IDSystem" is null then '' else "_Trade.IDSystem" end ) as "_Trade.IDSystem",
+            ( case when "_Trade.TradeID" is null then '' else "_Trade.TradeID" end ) as "_Trade.TradeID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

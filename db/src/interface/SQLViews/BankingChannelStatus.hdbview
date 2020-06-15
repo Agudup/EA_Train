@@ -1,0 +1,27 @@
+view "sap.fsdm.SQLViews::BankingChannelStatus_View" 
+as select
+      "ChannelStatusCategory" ,
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_ChannelStatusChanger.BusinessPartnerID" ,
+      "Status" ,
+      "StatusChangeReason" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::BankingChannelStatus"
+with associations
+(
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_ChannelStatusChanger"
+	  on "ASSOC_ChannelStatusChanger"."BusinessPartnerID" = "ASSOC_ChannelStatusChanger.BusinessPartnerID"
+	     
+);

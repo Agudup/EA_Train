@@ -1,0 +1,72 @@
+PROCEDURE "sap.fsdm.procedures::StandardProductInProductBundleErase" (IN ROW "sap.fsdm.tabletypes::StandardProductInProductBundleTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_FinancialStandardProduct.FinancialStandardProductID" is null and
+                         "ASSOC_FinancialStandardProduct.IDSystem" is null and
+                         "ASSOC_FinancialStandardProduct.PricingScheme" is null and
+                         "ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null and
+                         "ASSOC_ProductBundle.ProductBundleID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::StandardProductInProductBundle" WHERE
+("ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+"ASSOC_FinancialStandardProduct.IDSystem" ,
+"ASSOC_FinancialStandardProduct.PricingScheme" ,
+"ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_ProductBundle.ProductBundleID" 
+)in ( select "OLD"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+"OLD"."ASSOC_FinancialStandardProduct.IDSystem" ,
+"OLD"."ASSOC_FinancialStandardProduct.PricingScheme" ,
+"OLD"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"OLD"."ASSOC_ProductBundle.ProductBundleID" 
+from :ROW "IN"
+inner join "sap.fsdm::StandardProductInProductBundle" "OLD"
+on
+  ( "IN"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" or "IN"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+  ( "IN"."ASSOC_FinancialStandardProduct.IDSystem" = "OLD"."ASSOC_FinancialStandardProduct.IDSystem" or "IN"."ASSOC_FinancialStandardProduct.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialStandardProduct.PricingScheme" = "OLD"."ASSOC_FinancialStandardProduct.PricingScheme" or "IN"."ASSOC_FinancialStandardProduct.PricingScheme" is null ) and
+  ( "IN"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_ProductBundle.ProductBundleID" = "OLD"."ASSOC_ProductBundle.ProductBundleID" or "IN"."ASSOC_ProductBundle.ProductBundleID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::StandardProductInProductBundle_Historical" WHERE
+("ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+"ASSOC_FinancialStandardProduct.IDSystem" ,
+"ASSOC_FinancialStandardProduct.PricingScheme" ,
+"ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"ASSOC_ProductBundle.ProductBundleID" 
+)in ( select "OLD"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" ,
+"OLD"."ASSOC_FinancialStandardProduct.IDSystem" ,
+"OLD"."ASSOC_FinancialStandardProduct.PricingScheme" ,
+"OLD"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" ,
+"OLD"."ASSOC_ProductBundle.ProductBundleID" 
+from :ROW "IN"
+inner join "sap.fsdm::StandardProductInProductBundle_Historical" "OLD"
+on
+  ( "IN"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" = "OLD"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" or "IN"."ASSOC_FinancialStandardProduct.FinancialStandardProductID" is null ) and
+  ( "IN"."ASSOC_FinancialStandardProduct.IDSystem" = "OLD"."ASSOC_FinancialStandardProduct.IDSystem" or "IN"."ASSOC_FinancialStandardProduct.IDSystem" is null ) and
+  ( "IN"."ASSOC_FinancialStandardProduct.PricingScheme" = "OLD"."ASSOC_FinancialStandardProduct.PricingScheme" or "IN"."ASSOC_FinancialStandardProduct.PricingScheme" is null ) and
+  ( "IN"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" = "OLD"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" or "IN"."ASSOC_FinancialStandardProduct.ASSOC_Company.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_ProductBundle.ProductBundleID" = "OLD"."ASSOC_ProductBundle.ProductBundleID" or "IN"."ASSOC_ProductBundle.ProductBundleID" is null ) 
+);
+
+END

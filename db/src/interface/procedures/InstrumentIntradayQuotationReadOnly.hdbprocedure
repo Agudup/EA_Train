@@ -1,0 +1,94 @@
+PROCEDURE "sap.fsdm.procedures::InstrumentIntradayQuotationReadOnly" (IN ROW "sap.fsdm.tabletypes::InstrumentIntradayQuotationTT" , OUT CURR_DEL "sap.fsdm.tabletypes::InstrumentIntradayQuotationTT_Out", OUT CURR_INS "sap.fsdm.tabletypes::InstrumentIntradayQuotationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"PriceDataProvider",
+"PriceSeriesType",
+"SequenceNumber",
+"Timestamp",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID",
+"AskQuantity",
+"BestAsk",
+"BestBid",
+"BidQuantity",
+"Currency",
+"InstrumentIntradayQuotationCategory",
+"NetAssetValue",
+"NetAssetValueCurrency",
+"PriceNotationForm",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from "sap.fsdm::InstrumentIntradayQuotation" WHERE("PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+)in ( select "PriceDataProvider" ,
+"PriceSeriesType" ,
+"SequenceNumber" ,
+"Timestamp" ,
+"_Exchange.MarketIdentifierCode" ,
+"_FinancialInstrument.FinancialInstrumentID" 
+from :ROW );
+
+
+--Insert ALL the input data 
+
+CURR_INS = select 
+"PriceDataProvider",
+"PriceSeriesType",
+"SequenceNumber",
+"Timestamp",
+"_Exchange.MarketIdentifierCode",
+"_FinancialInstrument.FinancialInstrumentID",
+"AskQuantity",
+"BestAsk",
+"BestBid",
+"BidQuantity",
+"Currency",
+"InstrumentIntradayQuotationCategory",
+"NetAssetValue",
+"NetAssetValueCurrency",
+"PriceNotationForm",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from( select 
+   "PriceDataProvider"  ,
+  "PriceSeriesType"  ,
+  "SequenceNumber"  ,
+  "Timestamp"  ,
+  "_Exchange.MarketIdentifierCode"  ,
+  "_FinancialInstrument.FinancialInstrumentID"  ,
+  "AskQuantity"  ,
+  "BestAsk"  ,
+  "BestBid"  ,
+  "BidQuantity"  ,
+  "Currency"  ,
+  "InstrumentIntradayQuotationCategory"  ,
+  "NetAssetValue"  ,
+  "NetAssetValueCurrency"  ,
+  "PriceNotationForm"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :ROW );
+
+
+
+END

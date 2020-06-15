@@ -1,0 +1,135 @@
+PROCEDURE "sap.fsdm.procedures::InsuranceTechnicalAccountMovementErase" (IN ROW "sap.fsdm.tabletypes::InsuranceTechnicalAccountMovementTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ID" is null and
+                         "_Coverage.ID" is null and
+                         "_Coverage._InsuranceContract.FinancialContractID" is null and
+                         "_Coverage._InsuranceContract.IDSystem" is null and
+                         "_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_Coverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null and
+                         "_Option.Type" is null and
+                         "_Option._InsuranceCoverage.ID" is null and
+                         "_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null and
+                         "_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null and
+                         "_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::InsuranceTechnicalAccountMovement" WHERE
+("ID" ,
+"_Coverage.ID" ,
+"_Coverage._InsuranceContract.FinancialContractID" ,
+"_Coverage._InsuranceContract.IDSystem" ,
+"_Coverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_Coverage._InsuredObject._FinancialContract.IDSystem" ,
+"_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"_Option.Type" ,
+"_Option._InsuranceCoverage.ID" ,
+"_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_Option._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."ID" ,
+"OLD"."_Coverage.ID" ,
+"OLD"."_Coverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_Coverage._InsuranceContract.IDSystem" ,
+"OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"OLD"."_Option.Type" ,
+"OLD"."_Option._InsuranceCoverage.ID" ,
+"OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::InsuranceTechnicalAccountMovement" "OLD"
+on
+  ( "IN"."ID" = "OLD"."ID" or "IN"."ID" is null ) and
+  ( "IN"."_Coverage.ID" = "OLD"."_Coverage.ID" or "IN"."_Coverage.ID" is null ) and
+  ( "IN"."_Coverage._InsuranceContract.FinancialContractID" = "OLD"."_Coverage._InsuranceContract.FinancialContractID" or "IN"."_Coverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Coverage._InsuranceContract.IDSystem" = "OLD"."_Coverage._InsuranceContract.IDSystem" or "IN"."_Coverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) and
+  ( "IN"."_Option.Type" = "OLD"."_Option.Type" or "IN"."_Option.Type" is null ) and
+  ( "IN"."_Option._InsuranceCoverage.ID" = "OLD"."_Option._InsuranceCoverage.ID" or "IN"."_Option._InsuranceCoverage.ID" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::InsuranceTechnicalAccountMovement_Historical" WHERE
+("ID" ,
+"_Coverage.ID" ,
+"_Coverage._InsuranceContract.FinancialContractID" ,
+"_Coverage._InsuranceContract.IDSystem" ,
+"_Coverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_Coverage._InsuredObject._FinancialContract.IDSystem" ,
+"_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"_Option.Type" ,
+"_Option._InsuranceCoverage.ID" ,
+"_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_Option._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."ID" ,
+"OLD"."_Coverage.ID" ,
+"OLD"."_Coverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_Coverage._InsuranceContract.IDSystem" ,
+"OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+"OLD"."_Option.Type" ,
+"OLD"."_Option._InsuranceCoverage.ID" ,
+"OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" ,
+"OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::InsuranceTechnicalAccountMovement_Historical" "OLD"
+on
+  ( "IN"."ID" = "OLD"."ID" or "IN"."ID" is null ) and
+  ( "IN"."_Coverage.ID" = "OLD"."_Coverage.ID" or "IN"."_Coverage.ID" is null ) and
+  ( "IN"."_Coverage._InsuranceContract.FinancialContractID" = "OLD"."_Coverage._InsuranceContract.FinancialContractID" or "IN"."_Coverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Coverage._InsuranceContract.IDSystem" = "OLD"."_Coverage._InsuranceContract.IDSystem" or "IN"."_Coverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_Coverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_Coverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) and
+  ( "IN"."_Option.Type" = "OLD"."_Option.Type" or "IN"."_Option.Type" is null ) and
+  ( "IN"."_Option._InsuranceCoverage.ID" = "OLD"."_Option._InsuranceCoverage.ID" or "IN"."_Option._InsuranceCoverage.ID" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" = "OLD"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" or "IN"."_Option._InsuranceCoverage._InsuranceContract.FinancialContractID" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" = "OLD"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" or "IN"."_Option._InsuranceCoverage._InsuranceContract.IDSystem" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" or "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" = "OLD"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" or "IN"."_Option._InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null ) and
+  ( "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" = "OLD"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" or "IN"."_Option._InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

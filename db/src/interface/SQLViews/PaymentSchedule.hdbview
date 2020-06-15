@@ -1,0 +1,97 @@
+view "sap.fsdm.SQLViews::PaymentSchedule_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "ASSOC_Receivable.ReceivableID" ,
+      "_CreditCardLoan.ID" ,
+      "_CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+      "_CreditCardLoan._CreditCardAgreement.IDSystem" ,
+      "_DebtInstrument.FinancialInstrumentID" ,
+      "_InterestRateOptionComponent.ComponentNumber" ,
+      "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+      "_InterestRateOptionComponent._InterestRateOption.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "BulletPaymentAmount" ,
+      "BulletPaymentCurrency" ,
+      "BulletPaymentDate" ,
+      "BusinessCalendar" ,
+      "BusinessDayConvention" ,
+      "DayOfMonthOfPayment" ,
+      "FirstPaymentDate" ,
+      "InstallmentAmount" ,
+      "InstallmentCurrency" ,
+      "InstallmentLagPeriodLength" ,
+      "InstallmentLagTimeUnit" ,
+      "InstallmentPeriodLength" ,
+      "InstallmentPeriodTimeUnit" ,
+      "InstallmentsRelativeToInterestPaymentDates" ,
+      "LastPaymentDate" ,
+      "PartialPaymentRequestsPermitted" ,
+      "PaymentScheduleCategory" ,
+      "PaymentScheduleRole" ,
+      "PaymentScheduleStartDate" ,
+      "PaymentScheduleType" ,
+      "PaymentToBeRequested" ,
+      "ProRataSinking" ,
+      "RepaymentBySinking" ,
+      "RoleOfPayer" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::PaymentSchedule"
+with associations
+(
+	join "sap.fsdm.SQLViews::PaymentIntervalListEntry_View" as "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"
+	  on "_InterestRateOptionComponent._InterestRateOption.IDSystem" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" AND 
+	     "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" AND 
+	     "_InterestRateOptionComponent.ComponentNumber" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" AND 
+	     "_CreditCardLoan._CreditCardAgreement.IDSystem" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" AND 
+	     "_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardLoan.ID" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" AND 
+	     "SequenceNumber" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList.SequenceNumber" AND 
+	     "ASSOC_Receivable.ReceivableID" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_PaymentIntervalListEntry_ASSOC_PaymentIntervalList"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::PaymentListEntry_View" as "_PaymentListEntry_ASSOC_PaymentList"
+	  on "_InterestRateOptionComponent._InterestRateOption.IDSystem" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.IDSystem" AND 
+	     "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" AND 
+	     "_InterestRateOptionComponent.ComponentNumber" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._InterestRateOptionComponent.ComponentNumber" AND 
+	     "_DebtInstrument.FinancialInstrumentID" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._DebtInstrument.FinancialInstrumentID" AND 
+	     "_CreditCardLoan._CreditCardAgreement.IDSystem" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.IDSystem" AND 
+	     "_CreditCardLoan._CreditCardAgreement.FinancialContractID" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardLoan.ID" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList._CreditCardLoan.ID" AND 
+	     "SequenceNumber" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList.SequenceNumber" AND 
+	     "ASSOC_Receivable.ReceivableID" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList.ASSOC_Receivable.ReceivableID" AND 
+	     "ASSOC_FinancialContract.IDSystem" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList.ASSOC_FinancialContract.IDSystem" AND 
+	     "ASSOC_FinancialContract.FinancialContractID" = "_PaymentListEntry_ASSOC_PaymentList"."ASSOC_PaymentList.ASSOC_FinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Receivable_View" as "ASSOC_Receivable"
+	  on "ASSOC_Receivable"."ReceivableID" = "ASSOC_Receivable.ReceivableID"
+	     ,
+	join "sap.fsdm.SQLViews::CreditCardLoan_View" as "_CreditCardLoan"
+	  on "_CreditCardLoan"."ID" = "_CreditCardLoan.ID" AND 
+	     "_CreditCardLoan"."_CreditCardAgreement.FinancialContractID" = "_CreditCardLoan._CreditCardAgreement.FinancialContractID" AND 
+	     "_CreditCardLoan"."_CreditCardAgreement.IDSystem" = "_CreditCardLoan._CreditCardAgreement.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_DebtInstrument"
+	  on "_DebtInstrument"."FinancialInstrumentID" = "_DebtInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::InterestRateOptionComponent_View" as "_InterestRateOptionComponent"
+	  on "_InterestRateOptionComponent"."ComponentNumber" = "_InterestRateOptionComponent.ComponentNumber" AND 
+	     "_InterestRateOptionComponent"."_InterestRateOption.FinancialContractID" = "_InterestRateOptionComponent._InterestRateOption.FinancialContractID" AND 
+	     "_InterestRateOptionComponent"."_InterestRateOption.IDSystem" = "_InterestRateOptionComponent._InterestRateOption.IDSystem"
+	     
+);

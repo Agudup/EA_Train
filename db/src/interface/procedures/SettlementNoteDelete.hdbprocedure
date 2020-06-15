@@ -1,0 +1,47 @@
+PROCEDURE "sap.fsdm.procedures::SettlementNoteDelete" (IN ROW "sap.fsdm.tabletypes::SettlementNoteTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "SequenceNumber" is null and
+                         "ASSOC_SettlementItem.IDSystem" is null and
+                         "ASSOC_SettlementItem.ItemNumber" is null and
+                         "ASSOC_SettlementItem.SettlementID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+  --System Dimension versioning   --delete matching data in current tabledelete from "sap.fsdm::SettlementNote" WHERE("SequenceNumber" ,
+"ASSOC_SettlementItem.IDSystem" ,
+"ASSOC_SettlementItem.ItemNumber" ,
+"ASSOC_SettlementItem.SettlementID" 
+)in ( select 
+"OLD"."SequenceNumber"  as "SequenceNumber" ,
+"OLD"."ASSOC_SettlementItem.IDSystem"  as "ASSOC_SettlementItem.IDSystem" ,
+"OLD"."ASSOC_SettlementItem.ItemNumber"  as "ASSOC_SettlementItem.ItemNumber" ,
+"OLD"."ASSOC_SettlementItem.SettlementID"  as "ASSOC_SettlementItem.SettlementID" 
+  FROM :ROW AS "IN"
+  INNER JOIN  "sap.fsdm::SettlementNote" AS "OLD"
+  ON
+  ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+  ( "IN"."ASSOC_SettlementItem.IDSystem" = "OLD"."ASSOC_SettlementItem.IDSystem" or "IN"."ASSOC_SettlementItem.IDSystem" is null ) and
+  ( "IN"."ASSOC_SettlementItem.ItemNumber" = "OLD"."ASSOC_SettlementItem.ItemNumber" or "IN"."ASSOC_SettlementItem.ItemNumber" is null ) and
+  ( "IN"."ASSOC_SettlementItem.SettlementID" = "OLD"."ASSOC_SettlementItem.SettlementID" or "IN"."ASSOC_SettlementItem.SettlementID" is null ) 
+);
+
+END

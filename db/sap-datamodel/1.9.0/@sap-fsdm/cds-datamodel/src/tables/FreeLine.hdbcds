@@ -1,0 +1,78 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AgreedLimit";
+using "sap"."fsdm"::"EffectiveLimit";
+
+entity "FreeLine" {
+    key "ASSOC_AgreedLimit"             : association to AgreedLimit {
+                                                                       SequenceNumber,
+                                                                       ASSOC_CardIssue,
+                                                                       ASSOC_ContactWithLimitedPowerOfAttorney,
+                                                                       ASSOC_FinancialContract,
+                                                                       ASSOC_FinancialContractDelegation,
+                                                                       ASSOC_PositionCcyOfMultiCcyAccnt,
+                                                                       _TrancheInSyndication
+                                                                     }    not null;
+    key "ASSOC_EffectiveLimit"          : association to EffectiveLimit {
+                                                                          LimitType,
+                                                                          ASSOC_BusinessPartner,
+                                                                          ASSOC_CardIssue,
+                                                                          ASSOC_FinancialContract,
+                                                                          ASSOC_FinancialContractDelegation,
+                                                                          ASSOC_OrganizationalUnit,
+                                                                          ASSOC_PositionCcyOfMultiCcyContract
+                                                                        } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                    not null;
+        "SystemValidTo"                 : UTCTimestamp                    not null;
+        "FreeLine"                      : Decimal(34, 6);
+        "FreeLineCurrency"              : String(3);
+        "Utilization"                   : Decimal(34, 6);
+        "UtilizationCurrency"           : String(3);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "FreeLine_Historical" {
+    "ASSOC_AgreedLimit"             : association to AgreedLimit {
+                                                                   SequenceNumber,
+                                                                   ASSOC_CardIssue,
+                                                                   ASSOC_ContactWithLimitedPowerOfAttorney,
+                                                                   ASSOC_FinancialContract,
+                                                                   ASSOC_FinancialContractDelegation,
+                                                                   ASSOC_PositionCcyOfMultiCcyAccnt,
+                                                                   _TrancheInSyndication
+                                                                 }    not null;
+    "ASSOC_EffectiveLimit"          : association to EffectiveLimit {
+                                                                      LimitType,
+                                                                      ASSOC_BusinessPartner,
+                                                                      ASSOC_CardIssue,
+                                                                      ASSOC_FinancialContract,
+                                                                      ASSOC_FinancialContractDelegation,
+                                                                      ASSOC_OrganizationalUnit,
+                                                                      ASSOC_PositionCcyOfMultiCcyContract
+                                                                    } not null;
+    "BusinessValidFrom"             : LocalDate                       not null;
+    "BusinessValidTo"               : LocalDate                       not null;
+    "SystemValidFrom"               : UTCTimestamp                    not null;
+    "SystemValidTo"                 : UTCTimestamp                    not null;
+    "FreeLine"                      : Decimal(34, 6);
+    "FreeLineCurrency"              : String(3);
+    "Utilization"                   : Decimal(34, 6);
+    "UtilizationCurrency"           : String(3);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

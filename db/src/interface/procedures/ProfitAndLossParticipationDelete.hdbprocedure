@@ -1,0 +1,270 @@
+PROCEDURE "sap.fsdm.procedures::ProfitAndLossParticipationDelete" (IN ROW "sap.fsdm.tabletypes::ProfitAndLossParticipationTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                '_ParticipationCert.FinancialInstrumentID=' || TO_VARCHAR("_ParticipationCert.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_ParticipationCert.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."_ParticipationCert.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "_ParticipationCert.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."_ParticipationCert.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."_ParticipationCert.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::ProfitAndLossParticipation" (
+        "SequenceNumber",
+        "_ParticipationCert.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Accumulation",
+        "AssessmentBase",
+        "AssessmentPeriodLength",
+        "AssessmentPeriodTimeUnit",
+        "DeterminationCurrency",
+        "DeterminationPerCertificate",
+        "Formula",
+        "LowerLimit",
+        "Percentage",
+        "PreconditionApplies",
+        "ScaleApplies",
+        "UpperLimit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD__ParticipationCert.FinancialInstrumentID" as "_ParticipationCert.FinancialInstrumentID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_Accumulation" as "Accumulation" ,
+            "OLD_AssessmentBase" as "AssessmentBase" ,
+            "OLD_AssessmentPeriodLength" as "AssessmentPeriodLength" ,
+            "OLD_AssessmentPeriodTimeUnit" as "AssessmentPeriodTimeUnit" ,
+            "OLD_DeterminationCurrency" as "DeterminationCurrency" ,
+            "OLD_DeterminationPerCertificate" as "DeterminationPerCertificate" ,
+            "OLD_Formula" as "Formula" ,
+            "OLD_LowerLimit" as "LowerLimit" ,
+            "OLD_Percentage" as "Percentage" ,
+            "OLD_PreconditionApplies" as "PreconditionApplies" ,
+            "OLD_ScaleApplies" as "ScaleApplies" ,
+            "OLD_UpperLimit" as "UpperLimit" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."_ParticipationCert.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."_ParticipationCert.FinancialInstrumentID" as "OLD__ParticipationCert.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."Accumulation" as "OLD_Accumulation",
+                "OLD"."AssessmentBase" as "OLD_AssessmentBase",
+                "OLD"."AssessmentPeriodLength" as "OLD_AssessmentPeriodLength",
+                "OLD"."AssessmentPeriodTimeUnit" as "OLD_AssessmentPeriodTimeUnit",
+                "OLD"."DeterminationCurrency" as "OLD_DeterminationCurrency",
+                "OLD"."DeterminationPerCertificate" as "OLD_DeterminationPerCertificate",
+                "OLD"."Formula" as "OLD_Formula",
+                "OLD"."LowerLimit" as "OLD_LowerLimit",
+                "OLD"."Percentage" as "OLD_Percentage",
+                "OLD"."PreconditionApplies" as "OLD_PreconditionApplies",
+                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                "OLD"."UpperLimit" as "OLD_UpperLimit",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ProfitAndLossParticipation" as "OLD"
+            on
+                      ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                      ( "IN"."_ParticipationCert.FinancialInstrumentID" = "OLD"."_ParticipationCert.FinancialInstrumentID" or "IN"."_ParticipationCert.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::ProfitAndLossParticipation" (
+        "SequenceNumber",
+        "_ParticipationCert.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "Accumulation",
+        "AssessmentBase",
+        "AssessmentPeriodLength",
+        "AssessmentPeriodTimeUnit",
+        "DeterminationCurrency",
+        "DeterminationPerCertificate",
+        "Formula",
+        "LowerLimit",
+        "Percentage",
+        "PreconditionApplies",
+        "ScaleApplies",
+        "UpperLimit",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD__ParticipationCert.FinancialInstrumentID" as "_ParticipationCert.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_Accumulation" as "Accumulation",
+            "OLD_AssessmentBase" as "AssessmentBase",
+            "OLD_AssessmentPeriodLength" as "AssessmentPeriodLength",
+            "OLD_AssessmentPeriodTimeUnit" as "AssessmentPeriodTimeUnit",
+            "OLD_DeterminationCurrency" as "DeterminationCurrency",
+            "OLD_DeterminationPerCertificate" as "DeterminationPerCertificate",
+            "OLD_Formula" as "Formula",
+            "OLD_LowerLimit" as "LowerLimit",
+            "OLD_Percentage" as "Percentage",
+            "OLD_PreconditionApplies" as "PreconditionApplies",
+            "OLD_ScaleApplies" as "ScaleApplies",
+            "OLD_UpperLimit" as "UpperLimit",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."SequenceNumber",
+                        "OLD"."_ParticipationCert.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                "OLD"."_ParticipationCert.FinancialInstrumentID" as "OLD__ParticipationCert.FinancialInstrumentID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."Accumulation" as "OLD_Accumulation",
+                "OLD"."AssessmentBase" as "OLD_AssessmentBase",
+                "OLD"."AssessmentPeriodLength" as "OLD_AssessmentPeriodLength",
+                "OLD"."AssessmentPeriodTimeUnit" as "OLD_AssessmentPeriodTimeUnit",
+                "OLD"."DeterminationCurrency" as "OLD_DeterminationCurrency",
+                "OLD"."DeterminationPerCertificate" as "OLD_DeterminationPerCertificate",
+                "OLD"."Formula" as "OLD_Formula",
+                "OLD"."LowerLimit" as "OLD_LowerLimit",
+                "OLD"."Percentage" as "OLD_Percentage",
+                "OLD"."PreconditionApplies" as "OLD_PreconditionApplies",
+                "OLD"."ScaleApplies" as "OLD_ScaleApplies",
+                "OLD"."UpperLimit" as "OLD_UpperLimit",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::ProfitAndLossParticipation" as "OLD"
+            on
+                                                ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                                ( "IN"."_ParticipationCert.FinancialInstrumentID" = "OLD"."_ParticipationCert.FinancialInstrumentID" or "IN"."_ParticipationCert.FinancialInstrumentID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::ProfitAndLossParticipation"
+    where (
+        "SequenceNumber",
+        "_ParticipationCert.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."_ParticipationCert.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::ProfitAndLossParticipation" as "OLD"
+        on
+                                       ( "IN"."SequenceNumber" = "OLD"."SequenceNumber" or "IN"."SequenceNumber" is null ) and
+                                       ( "IN"."_ParticipationCert.FinancialInstrumentID" = "OLD"."_ParticipationCert.FinancialInstrumentID" or "IN"."_ParticipationCert.FinancialInstrumentID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

@@ -1,0 +1,484 @@
+PROCEDURE "sap.fsdm.procedures::InsuredPersonLoad" (IN ROW "sap.fsdm.tabletypes::InsuredPersonTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceOrdinalNumber=' || TO_VARCHAR("SequenceOrdinalNumber") || ' ' ||
+                '_IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("_IndividualPerson.BusinessPartnerID") || ' ' ||
+                '_InsuranceCoverage.ID=' || TO_VARCHAR("_InsuranceCoverage.ID") || ' ' ||
+                '_InsuranceCoverage._InsuranceContract.FinancialContractID=' || TO_VARCHAR("_InsuranceCoverage._InsuranceContract.FinancialContractID") || ' ' ||
+                '_InsuranceCoverage._InsuranceContract.IDSystem=' || TO_VARCHAR("_InsuranceCoverage._InsuranceContract.IDSystem") || ' ' ||
+                '_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID=' || TO_VARCHAR("_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID") || ' ' ||
+                '_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem=' || TO_VARCHAR("_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem") || ' ' ||
+                '_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceOrdinalNumber",
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "IN"."_InsuranceCoverage.ID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceOrdinalNumber",
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "IN"."_InsuranceCoverage.ID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceOrdinalNumber",
+                        "_IndividualPerson.BusinessPartnerID",
+                        "_InsuranceCoverage.ID",
+                        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceOrdinalNumber",
+                                    "IN"."_IndividualPerson.BusinessPartnerID",
+                                    "IN"."_InsuranceCoverage.ID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceOrdinalNumber",
+                                    "IN"."_IndividualPerson.BusinessPartnerID",
+                                    "IN"."_InsuranceCoverage.ID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                    "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                    "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InsuredPerson" (
+        "SequenceOrdinalNumber",
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuranceCoverage.ID",
+        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Address.AddressType",
+        "_Address.SequenceNumber",
+        "_Address.ASSOC_BankingChannel.BankingChannelID",
+        "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Address._Claim.ID",
+        "_Address._Claim.IDSystem",
+        "ActuarialAge",
+        "HeightInCentimetersAtInception",
+        "HeightInFeetAtInception",
+        "HeightInInchesAtInception",
+        "RiskGroup",
+        "WeightInKilogramsAtInception",
+        "WeightInPoundsAtInception",
+        "WeightInStonesAtInception",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceOrdinalNumber" as "SequenceOrdinalNumber" ,
+            "OLD__IndividualPerson.BusinessPartnerID" as "_IndividualPerson.BusinessPartnerID" ,
+            "OLD__InsuranceCoverage.ID" as "_InsuranceCoverage.ID" ,
+            "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage._InsuranceContract.FinancialContractID" ,
+            "OLD__InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage._InsuranceContract.IDSystem" ,
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+            "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__Address.AddressType" as "_Address.AddressType" ,
+            "OLD__Address.SequenceNumber" as "_Address.SequenceNumber" ,
+            "OLD__Address.ASSOC_BankingChannel.BankingChannelID" as "_Address.ASSOC_BankingChannel.BankingChannelID" ,
+            "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" ,
+            "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" ,
+            "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" ,
+            "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" ,
+            "OLD__Address._Claim.ID" as "_Address._Claim.ID" ,
+            "OLD__Address._Claim.IDSystem" as "_Address._Claim.IDSystem" ,
+            "OLD_ActuarialAge" as "ActuarialAge" ,
+            "OLD_HeightInCentimetersAtInception" as "HeightInCentimetersAtInception" ,
+            "OLD_HeightInFeetAtInception" as "HeightInFeetAtInception" ,
+            "OLD_HeightInInchesAtInception" as "HeightInInchesAtInception" ,
+            "OLD_RiskGroup" as "RiskGroup" ,
+            "OLD_WeightInKilogramsAtInception" as "WeightInKilogramsAtInception" ,
+            "OLD_WeightInPoundsAtInception" as "WeightInPoundsAtInception" ,
+            "OLD_WeightInStonesAtInception" as "WeightInStonesAtInception" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceOrdinalNumber",
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "IN"."_InsuranceCoverage.ID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceOrdinalNumber" as "OLD_SequenceOrdinalNumber",
+                                "OLD"."_IndividualPerson.BusinessPartnerID" as "OLD__IndividualPerson.BusinessPartnerID",
+                                "OLD"."_InsuranceCoverage.ID" as "OLD__InsuranceCoverage.ID",
+                                "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID",
+                                "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__InsuranceCoverage._InsuranceContract.IDSystem",
+                                "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                                "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                                "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."_Address.AddressType" as "OLD__Address.AddressType",
+                                "OLD"."_Address.SequenceNumber" as "OLD__Address.SequenceNumber",
+                                "OLD"."_Address.ASSOC_BankingChannel.BankingChannelID" as "OLD__Address.ASSOC_BankingChannel.BankingChannelID",
+                                "OLD"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                                "OLD"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                                "OLD"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                                "OLD"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                                "OLD"."_Address._Claim.ID" as "OLD__Address._Claim.ID",
+                                "OLD"."_Address._Claim.IDSystem" as "OLD__Address._Claim.IDSystem",
+                                "OLD"."ActuarialAge" as "OLD_ActuarialAge",
+                                "OLD"."HeightInCentimetersAtInception" as "OLD_HeightInCentimetersAtInception",
+                                "OLD"."HeightInFeetAtInception" as "OLD_HeightInFeetAtInception",
+                                "OLD"."HeightInInchesAtInception" as "OLD_HeightInInchesAtInception",
+                                "OLD"."RiskGroup" as "OLD_RiskGroup",
+                                "OLD"."WeightInKilogramsAtInception" as "OLD_WeightInKilogramsAtInception",
+                                "OLD"."WeightInPoundsAtInception" as "OLD_WeightInPoundsAtInception",
+                                "OLD"."WeightInStonesAtInception" as "OLD_WeightInStonesAtInception",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InsuredPerson" as "OLD"
+            on
+                ( case when "IN"."SequenceOrdinalNumber" is null then 0 else "IN"."SequenceOrdinalNumber" end ) = "OLD"."SequenceOrdinalNumber" and
+                ( case when "IN"."_IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_IndividualPerson.BusinessPartnerID" end ) = "OLD"."_IndividualPerson.BusinessPartnerID" and
+                ( case when "IN"."_InsuranceCoverage.ID" is null then '' else "IN"."_InsuranceCoverage.ID" end ) = "OLD"."_InsuranceCoverage.ID" and
+                ( case when "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InsuredPerson" (
+        "SequenceOrdinalNumber",
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuranceCoverage.ID",
+        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Address.AddressType",
+        "_Address.SequenceNumber",
+        "_Address.ASSOC_BankingChannel.BankingChannelID",
+        "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Address._Claim.ID",
+        "_Address._Claim.IDSystem",
+        "ActuarialAge",
+        "HeightInCentimetersAtInception",
+        "HeightInFeetAtInception",
+        "HeightInInchesAtInception",
+        "RiskGroup",
+        "WeightInKilogramsAtInception",
+        "WeightInPoundsAtInception",
+        "WeightInStonesAtInception",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceOrdinalNumber" as "SequenceOrdinalNumber",
+            "OLD__IndividualPerson.BusinessPartnerID" as "_IndividualPerson.BusinessPartnerID",
+            "OLD__InsuranceCoverage.ID" as "_InsuranceCoverage.ID",
+            "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD__InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__Address.AddressType" as "_Address.AddressType",
+            "OLD__Address.SequenceNumber" as "_Address.SequenceNumber",
+            "OLD__Address.ASSOC_BankingChannel.BankingChannelID" as "_Address.ASSOC_BankingChannel.BankingChannelID",
+            "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+            "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+            "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+            "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+            "OLD__Address._Claim.ID" as "_Address._Claim.ID",
+            "OLD__Address._Claim.IDSystem" as "_Address._Claim.IDSystem",
+            "OLD_ActuarialAge" as "ActuarialAge",
+            "OLD_HeightInCentimetersAtInception" as "HeightInCentimetersAtInception",
+            "OLD_HeightInFeetAtInception" as "HeightInFeetAtInception",
+            "OLD_HeightInInchesAtInception" as "HeightInInchesAtInception",
+            "OLD_RiskGroup" as "RiskGroup",
+            "OLD_WeightInKilogramsAtInception" as "WeightInKilogramsAtInception",
+            "OLD_WeightInPoundsAtInception" as "WeightInPoundsAtInception",
+            "OLD_WeightInStonesAtInception" as "WeightInStonesAtInception",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceOrdinalNumber",
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "IN"."_InsuranceCoverage.ID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuranceContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceOrdinalNumber" as "OLD_SequenceOrdinalNumber",
+                        "OLD"."_IndividualPerson.BusinessPartnerID" as "OLD__IndividualPerson.BusinessPartnerID",
+                        "OLD"."_InsuranceCoverage.ID" as "OLD__InsuranceCoverage.ID",
+                        "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuranceContract.FinancialContractID",
+                        "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" as "OLD__InsuranceCoverage._InsuranceContract.IDSystem",
+                        "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "OLD__InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+                        "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "OLD__InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."_Address.AddressType" as "OLD__Address.AddressType",
+                        "OLD"."_Address.SequenceNumber" as "OLD__Address.SequenceNumber",
+                        "OLD"."_Address.ASSOC_BankingChannel.BankingChannelID" as "OLD__Address.ASSOC_BankingChannel.BankingChannelID",
+                        "OLD"."_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "OLD__Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+                        "OLD"."_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "OLD__Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+                        "OLD"."_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "OLD__Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+                        "OLD"."_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "OLD__Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+                        "OLD"."_Address._Claim.ID" as "OLD__Address._Claim.ID",
+                        "OLD"."_Address._Claim.IDSystem" as "OLD__Address._Claim.IDSystem",
+                        "OLD"."ActuarialAge" as "OLD_ActuarialAge",
+                        "OLD"."HeightInCentimetersAtInception" as "OLD_HeightInCentimetersAtInception",
+                        "OLD"."HeightInFeetAtInception" as "OLD_HeightInFeetAtInception",
+                        "OLD"."HeightInInchesAtInception" as "OLD_HeightInInchesAtInception",
+                        "OLD"."RiskGroup" as "OLD_RiskGroup",
+                        "OLD"."WeightInKilogramsAtInception" as "OLD_WeightInKilogramsAtInception",
+                        "OLD"."WeightInPoundsAtInception" as "OLD_WeightInPoundsAtInception",
+                        "OLD"."WeightInStonesAtInception" as "OLD_WeightInStonesAtInception",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InsuredPerson" as "OLD"
+            on
+                ( case when "IN"."SequenceOrdinalNumber" is null then 0 else "IN"."SequenceOrdinalNumber" end ) = "OLD"."SequenceOrdinalNumber" and
+                ( case when "IN"."_IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_IndividualPerson.BusinessPartnerID" end ) = "OLD"."_IndividualPerson.BusinessPartnerID" and
+                ( case when "IN"."_InsuranceCoverage.ID" is null then '' else "IN"."_InsuranceCoverage.ID" end ) = "OLD"."_InsuranceCoverage.ID" and
+                ( case when "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" and
+                ( case when "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" and
+                ( case when "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+                ( case when "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+                ( case when "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InsuredPerson"
+    where (
+        "SequenceOrdinalNumber",
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuranceCoverage.ID",
+        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceOrdinalNumber",
+            "OLD"."_IndividualPerson.BusinessPartnerID",
+            "OLD"."_InsuranceCoverage.ID",
+            "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID",
+            "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem",
+            "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InsuredPerson" as "OLD"
+        on
+           ( case when "IN"."SequenceOrdinalNumber" is null then 0 else "IN"."SequenceOrdinalNumber" end ) = "OLD"."SequenceOrdinalNumber" and
+           ( case when "IN"."_IndividualPerson.BusinessPartnerID" is null then '' else "IN"."_IndividualPerson.BusinessPartnerID" end ) = "OLD"."_IndividualPerson.BusinessPartnerID" and
+           ( case when "IN"."_InsuranceCoverage.ID" is null then '' else "IN"."_InsuranceCoverage.ID" end ) = "OLD"."_InsuranceCoverage.ID" and
+           ( case when "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "IN"."_InsuranceCoverage._InsuranceContract.FinancialContractID" end ) = "OLD"."_InsuranceCoverage._InsuranceContract.FinancialContractID" and
+           ( case when "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "IN"."_InsuranceCoverage._InsuranceContract.IDSystem" end ) = "OLD"."_InsuranceCoverage._InsuranceContract.IDSystem" and
+           ( case when "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" and
+           ( case when "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) = "OLD"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" and
+           ( case when "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "IN"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) = "OLD"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::InsuredPerson" (
+        "SequenceOrdinalNumber",
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuranceCoverage.ID",
+        "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+        "_InsuranceCoverage._InsuranceContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+        "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+        "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_Address.AddressType",
+        "_Address.SequenceNumber",
+        "_Address.ASSOC_BankingChannel.BankingChannelID",
+        "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID",
+        "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID",
+        "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID",
+        "_Address.ASSOC_PhysicalAsset.PhysicalAssetID",
+        "_Address._Claim.ID",
+        "_Address._Claim.IDSystem",
+        "ActuarialAge",
+        "HeightInCentimetersAtInception",
+        "HeightInFeetAtInception",
+        "HeightInInchesAtInception",
+        "RiskGroup",
+        "WeightInKilogramsAtInception",
+        "WeightInPoundsAtInception",
+        "WeightInStonesAtInception",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceOrdinalNumber" is null then 0 else "SequenceOrdinalNumber" end ) as "SequenceOrdinalNumber",
+            ( case when "_IndividualPerson.BusinessPartnerID" is null then '' else "_IndividualPerson.BusinessPartnerID" end ) as "_IndividualPerson.BusinessPartnerID",
+            ( case when "_InsuranceCoverage.ID" is null then '' else "_InsuranceCoverage.ID" end ) as "_InsuranceCoverage.ID",
+            ( case when "_InsuranceCoverage._InsuranceContract.FinancialContractID" is null then '' else "_InsuranceCoverage._InsuranceContract.FinancialContractID" end ) as "_InsuranceCoverage._InsuranceContract.FinancialContractID",
+            ( case when "_InsuranceCoverage._InsuranceContract.IDSystem" is null then '' else "_InsuranceCoverage._InsuranceContract.IDSystem" end ) as "_InsuranceCoverage._InsuranceContract.IDSystem",
+            ( case when "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null then '' else "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" end ) as "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+            ( case when "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null then '' else "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" end ) as "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+            ( case when "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null then '' else "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" end ) as "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "_Address.AddressType"  ,
+            "_Address.SequenceNumber"  ,
+            "_Address.ASSOC_BankingChannel.BankingChannelID"  ,
+            "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID"  ,
+            "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID"  ,
+            "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID"  ,
+            "_Address.ASSOC_PhysicalAsset.PhysicalAssetID"  ,
+            "_Address._Claim.ID"  ,
+            "_Address._Claim.IDSystem"  ,
+            "ActuarialAge"  ,
+            "HeightInCentimetersAtInception"  ,
+            "HeightInFeetAtInception"  ,
+            "HeightInInchesAtInception"  ,
+            "RiskGroup"  ,
+            "WeightInKilogramsAtInception"  ,
+            "WeightInPoundsAtInception"  ,
+            "WeightInStonesAtInception"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

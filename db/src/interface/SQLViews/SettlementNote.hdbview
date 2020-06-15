@@ -1,0 +1,25 @@
+view "sap.fsdm.SQLViews::SettlementNote_View" 
+as select
+      "SequenceNumber" ,
+      "ASSOC_SettlementItem.IDSystem" ,
+      "ASSOC_SettlementItem.ItemNumber" ,
+      "ASSOC_SettlementItem.SettlementID" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SettlementNoteContent" ,
+      "SettlementNoteContentType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SettlementNote"
+with associations
+(
+	join "sap.fsdm.SQLViews::Settlement_View" as "ASSOC_SettlementItem"
+	  on "ASSOC_SettlementItem"."IDSystem" = "ASSOC_SettlementItem.IDSystem" AND 
+	     "ASSOC_SettlementItem"."ItemNumber" = "ASSOC_SettlementItem.ItemNumber" AND 
+	     "ASSOC_SettlementItem"."SettlementID" = "ASSOC_SettlementItem.SettlementID"
+	     
+);

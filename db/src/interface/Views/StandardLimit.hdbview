@@ -1,0 +1,32 @@
+view "sap.fsdm.Views::StandardLimit_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_PosCcyOfStdAcc.PositionCurrency" as "ASSOC_PosCcyOfStdAcc_PositionCurrency",
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.FinancialStandardProductID" as "ASSOC_PosCcyOfStdAcc_ASSOC_StdMultiCcyAcct_FinancialStandardProductID",
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.IDSystem" as "ASSOC_PosCcyOfStdAcc_ASSOC_StdMultiCcyAcct_IDSystem",
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.PricingScheme" as "ASSOC_PosCcyOfStdAcc_ASSOC_StdMultiCcyAcct_PricingScheme",
+      "ASSOC_PosCcyOfStdAcc.ASSOC_StdMultiCcyAcct.ASSOC_Company.BusinessPartnerID" as "ASSOC_PosCcyOfStdAcc_ASSOC_StdMultiCcyAcct_ASSOC_Company_BusinessPartnerID",
+      "ASSOC_StandardProduct.FinancialStandardProductID" as "ASSOC_StandardProduct_FinancialStandardProductID",
+      "ASSOC_StandardProduct.IDSystem" as "ASSOC_StandardProduct_IDSystem",
+      "ASSOC_StandardProduct.PricingScheme" as "ASSOC_StandardProduct_PricingScheme",
+      "ASSOC_StandardProduct.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardProduct_ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "LimitAmount" as "LimitAmount",
+      "LimitCurrency" as "LimitCurrency",
+      "PeriodUntilLimitValidityEnd" as "PeriodUntilLimitValidityEnd",
+      "PeriodUntilLimitValidityStart" as "PeriodUntilLimitValidityStart",
+      "RequirementForContracts" as "RequirementForContracts",
+      "StandardLimitType" as "StandardLimitType",
+      "TimeUnit" as "TimeUnit",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::StandardLimit"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

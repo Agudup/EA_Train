@@ -1,0 +1,23 @@
+view "sap.fsdm.Views::RegulatoryIndicatorForBusinessPartner_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "Criterion" as "Criterion",
+      "Regulation" as "Regulation",
+      "ASSOC_BusinessPartner.BusinessPartnerID" as "ASSOC_BusinessPartner_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "Indicator" as "Indicator",
+      "IndicatorAmount" as "IndicatorAmount",
+      "IndicatorAmountCurrency" as "IndicatorAmountCurrency",
+      "IndicatorCharValue" as "IndicatorCharValue",
+      "IndicatorDataType" as "IndicatorDataType",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::RegulatoryIndicatorForBusinessPartner"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

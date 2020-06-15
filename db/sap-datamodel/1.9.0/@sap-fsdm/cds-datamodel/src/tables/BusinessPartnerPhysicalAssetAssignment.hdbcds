@@ -1,0 +1,60 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"PhysicalAsset";
+
+entity "BusinessPartnerPhysicalAssetAssignment" {
+    key "BusinessPartnerRole"                            : String(50);
+    key "RentedPropertyType"                             : String(100)                                          default '';
+    key "ASSOC_BusinessPartner"                          : association to BusinessPartner { BusinessPartnerID } not null;
+    key "ASSOC_PhysicalAsset"                            : association to PhysicalAsset { PhysicalAssetID }     not null;
+    key "BusinessValidFrom"                              : LocalDate;
+    key "BusinessValidTo"                                : LocalDate;
+        "SystemValidFrom"                                : UTCTimestamp                                         not null;
+        "SystemValidTo"                                  : UTCTimestamp                                         not null;
+        "AcquisitionDate"                                : LocalDate;
+        "BusinessPartnerPhysicalAssetAssignmentCategory" : String(100);
+        "NetRentIncome"                                  : Decimal(34, 6);
+        "NetRentIncomeCurrency"                          : String(3);
+        "PartialOwnership"                               : Decimal(15, 11);
+        "RentalIncomePeriodLength"                       : Decimal(34, 6);
+        "RentalIncomePeriodTimeUnit"                     : String(12);
+        "RentedPropertyQuantity"                         : Decimal(34, 6);
+        "RentedPropertyUnit"                             : String(10);
+        "SourceSystemID"                                 : String(128);
+        "ChangeTimestampInSourceSystem"                  : UTCTimestamp;
+        "ChangingUserInSourceSystem"                     : String(128);
+        "ChangingProcessType"                            : String(40);
+        "ChangingProcessID"                              : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BusinessPartnerPhysicalAssetAssignment_Historical" {
+    "BusinessPartnerRole"                            : String(50)                                           not null;
+    "RentedPropertyType"                             : String(100)                                          default '' not null;
+    "ASSOC_BusinessPartner"                          : association to BusinessPartner { BusinessPartnerID } not null;
+    "ASSOC_PhysicalAsset"                            : association to PhysicalAsset { PhysicalAssetID }     not null;
+    "BusinessValidFrom"                              : LocalDate                                            not null;
+    "BusinessValidTo"                                : LocalDate                                            not null;
+    "SystemValidFrom"                                : UTCTimestamp                                         not null;
+    "SystemValidTo"                                  : UTCTimestamp                                         not null;
+    "AcquisitionDate"                                : LocalDate;
+    "BusinessPartnerPhysicalAssetAssignmentCategory" : String(100);
+    "NetRentIncome"                                  : Decimal(34, 6);
+    "NetRentIncomeCurrency"                          : String(3);
+    "PartialOwnership"                               : Decimal(15, 11);
+    "RentalIncomePeriodLength"                       : Decimal(34, 6);
+    "RentalIncomePeriodTimeUnit"                     : String(12);
+    "RentedPropertyQuantity"                         : Decimal(34, 6);
+    "RentedPropertyUnit"                             : String(10);
+    "SourceSystemID"                                 : String(128);
+    "ChangeTimestampInSourceSystem"                  : UTCTimestamp;
+    "ChangingUserInSourceSystem"                     : String(128);
+    "ChangingProcessType"                            : String(40);
+    "ChangingProcessID"                              : String(128);
+}
+technical configuration {
+    column store;
+};

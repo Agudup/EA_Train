@@ -1,0 +1,36 @@
+view "sap.fsdm.SQLViews::InstrumentClassInWeightedBasket_View" 
+as select
+      "_Basket.FinancialInstrumentID" ,
+      "_InstrumentClass.InstrumentClass" ,
+      "_InstrumentClass.InstrumentClassificationSystem" ,
+      "_ProductCatalogItem.ProductCatalogItem" ,
+      "_ProductCatalogItem._ProductCatalog.CatalogID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "NominalAmount" ,
+      "NominalAmountCurrency" ,
+      "Quantity" ,
+      "Unit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InstrumentClassInWeightedBasket"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_Basket"
+	  on "_Basket"."FinancialInstrumentID" = "_Basket.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::InstrumentClass_View" as "_InstrumentClass"
+	  on "_InstrumentClass"."InstrumentClass" = "_InstrumentClass.InstrumentClass" AND 
+	     "_InstrumentClass"."InstrumentClassificationSystem" = "_InstrumentClass.InstrumentClassificationSystem"
+	     ,
+	join "sap.fsdm.SQLViews::ProductCatalogItem_View" as "_ProductCatalogItem"
+	  on "_ProductCatalogItem"."ProductCatalogItem" = "_ProductCatalogItem.ProductCatalogItem" AND 
+	     "_ProductCatalogItem"."_ProductCatalog.CatalogID" = "_ProductCatalogItem._ProductCatalog.CatalogID"
+	     
+);

@@ -1,0 +1,38 @@
+view "sap.fsdm.SQLViews::GuaranteedMinimumBenefitSnapshot_View" 
+as select
+      "Type" ,
+      "_MainAnnuityCoverage.ID" ,
+      "_MainAnnuityCoverage._InsuranceContract.FinancialContractID" ,
+      "_MainAnnuityCoverage._InsuranceContract.IDSystem" ,
+      "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+      "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" ,
+      "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "GuaranteedBenefitAmount" ,
+      "GuaranteedMinimumBenefitSnapshotCategory" ,
+      "LastStepUpDate" ,
+      "NextEligibleElectionResetDate" ,
+      "PeriodGuaranteedIncomeRatePerMill" ,
+      "PeriodWithdrawalAmount" ,
+      "PeriodicGuaranteedWithdrawalAmount" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::GuaranteedMinimumBenefitSnapshot"
+with associations
+(
+	join "sap.fsdm.SQLViews::InsuranceCoverage_View" as "_MainAnnuityCoverage"
+	  on "_MainAnnuityCoverage"."ID" = "_MainAnnuityCoverage.ID" AND 
+	     "_MainAnnuityCoverage"."_InsuranceContract.FinancialContractID" = "_MainAnnuityCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_MainAnnuityCoverage"."_InsuranceContract.IDSystem" = "_MainAnnuityCoverage._InsuranceContract.IDSystem" AND 
+	     "_MainAnnuityCoverage"."_InsuredObject._FinancialContract.FinancialContractID" = "_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_MainAnnuityCoverage"."_InsuredObject._FinancialContract.IDSystem" = "_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_MainAnnuityCoverage"."_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     
+);

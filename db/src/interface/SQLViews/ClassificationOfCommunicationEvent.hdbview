@@ -1,0 +1,28 @@
+view "sap.fsdm.SQLViews::ClassificationOfCommunicationEvent_View" 
+as select
+      "ASSOC_CommunicationEvent.CommunicationEventID" ,
+      "ASSOC_CommunicationEvent.IDSystem" ,
+      "ASSOC_CommunicationEventClass.CommunicationEventClass" ,
+      "ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ClassificationOfCommunicationEvent"
+with associations
+(
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "ASSOC_CommunicationEvent"
+	  on "ASSOC_CommunicationEvent"."CommunicationEventID" = "ASSOC_CommunicationEvent.CommunicationEventID" AND 
+	     "ASSOC_CommunicationEvent"."IDSystem" = "ASSOC_CommunicationEvent.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CommunicationEventClass_View" as "ASSOC_CommunicationEventClass"
+	  on "ASSOC_CommunicationEventClass"."CommunicationEventClassificationSystem" = "ASSOC_CommunicationEventClass.CommunicationEventClassificationSystem" AND 
+	     "ASSOC_CommunicationEventClass"."CommunicationEventClass" = "ASSOC_CommunicationEventClass.CommunicationEventClass"
+	     
+);

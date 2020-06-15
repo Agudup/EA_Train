@@ -1,0 +1,34 @@
+view "sap.fsdm.Views::StandardProlongationOption_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceNumber" as "SequenceNumber",
+      "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" as "ASSOC_StandardFixedTermDeposit_FinancialStandardProductID",
+      "ASSOC_StandardFixedTermDeposit.IDSystem" as "ASSOC_StandardFixedTermDeposit_IDSystem",
+      "ASSOC_StandardFixedTermDeposit.PricingScheme" as "ASSOC_StandardFixedTermDeposit_PricingScheme",
+      "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardFixedTermDeposit_ASSOC_Company_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "AdditionalTermLength" as "AdditionalTermLength",
+      "AdditionalTermLengthTimeUnit" as "AdditionalTermLengthTimeUnit",
+      "AutomaticProlongation" as "AutomaticProlongation",
+      "AutomaticProlongationTriggerPeriodLength" as "AutomaticProlongationTriggerPeriodLength",
+      "AutomaticProlongationTriggerPeriodTimeUnit" as "AutomaticProlongationTriggerPeriodTimeUnit",
+      "BusinessCalendar" as "BusinessCalendar",
+      "BusinessDayConvention" as "BusinessDayConvention",
+      "NoticePeriodLength" as "NoticePeriodLength",
+      "NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+      "PeriodUntilExercisePeriodEnd" as "PeriodUntilExercisePeriodEnd",
+      "PeriodUntilExercisePeriodStart" as "PeriodUntilExercisePeriodStart",
+      "PeriodUntilTimeUnit" as "PeriodUntilTimeUnit",
+      "ProlongationOptionType" as "ProlongationOptionType",
+      "ProlongationRightHolder" as "ProlongationRightHolder",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::StandardProlongationOption"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

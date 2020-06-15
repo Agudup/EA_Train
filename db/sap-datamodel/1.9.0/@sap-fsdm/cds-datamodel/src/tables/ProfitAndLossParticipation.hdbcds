@@ -1,0 +1,61 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "ProfitAndLossParticipation" {
+    key "SequenceNumber"                : Integer                                                      default -1;
+    key "_ParticipationCert"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                                 not null;
+        "SystemValidTo"                 : UTCTimestamp                                                 not null;
+        "Accumulation"                  : Boolean;
+        "AssessmentBase"                : String(256);
+        "AssessmentPeriodLength"        : Decimal(34, 6);
+        "AssessmentPeriodTimeUnit"      : String(12);
+        "DeterminationCurrency"         : String(3);
+        "DeterminationPerCertificate"   : Boolean;
+        "Formula"                       : String(200);
+        "LowerLimit"                    : Decimal(34, 6);
+        "Percentage"                    : Decimal(15, 11);
+        "PreconditionApplies"           : Boolean;
+        "ScaleApplies"                  : Boolean;
+        "UpperLimit"                    : Decimal(34, 6);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ProfitAndLossParticipation_Historical" {
+    "SequenceNumber"                : Integer                                                      default -1 not null;
+    "_ParticipationCert"            : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "BusinessValidFrom"             : LocalDate                                                    not null;
+    "BusinessValidTo"               : LocalDate                                                    not null;
+    "SystemValidFrom"               : UTCTimestamp                                                 not null;
+    "SystemValidTo"                 : UTCTimestamp                                                 not null;
+    "Accumulation"                  : Boolean;
+    "AssessmentBase"                : String(256);
+    "AssessmentPeriodLength"        : Decimal(34, 6);
+    "AssessmentPeriodTimeUnit"      : String(12);
+    "DeterminationCurrency"         : String(3);
+    "DeterminationPerCertificate"   : Boolean;
+    "Formula"                       : String(200);
+    "LowerLimit"                    : Decimal(34, 6);
+    "Percentage"                    : Decimal(15, 11);
+    "PreconditionApplies"           : Boolean;
+    "ScaleApplies"                  : Boolean;
+    "UpperLimit"                    : Decimal(34, 6);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

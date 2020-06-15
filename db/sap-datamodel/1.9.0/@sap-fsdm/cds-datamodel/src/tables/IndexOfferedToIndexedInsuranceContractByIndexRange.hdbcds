@@ -1,0 +1,20 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Index";
+using "sap"."fsdm"::"IndexRange";
+
+entity "IndexOfferedToIndexedInsuranceContractByIndexRange" {
+    key "_Index"                        : association to Index { IndexID } not null;
+    key "_IndexRange"                   : association to IndexRange {
+                                                                      ID,
+                                                                      IDSystem
+                                                                    }      not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

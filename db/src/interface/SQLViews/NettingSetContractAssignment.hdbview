@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::NettingSetContractAssignment_View" 
+as select
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "_NettingSet.NettingSetID" ,
+      "_NettingSet._MasterAgreement.FinancialContractID" ,
+      "_NettingSet._MasterAgreement.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::NettingSetContractAssignment"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::NettingSet_View" as "_NettingSet"
+	  on "_NettingSet"."NettingSetID" = "_NettingSet.NettingSetID" AND 
+	     "_NettingSet"."_MasterAgreement.FinancialContractID" = "_NettingSet._MasterAgreement.FinancialContractID" AND 
+	     "_NettingSet"."_MasterAgreement.IDSystem" = "_NettingSet._MasterAgreement.IDSystem"
+	     
+);

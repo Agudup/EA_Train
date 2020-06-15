@@ -1,0 +1,23 @@
+PROCEDURE "sap.fsdm.procedures::InvestmentFundShareProvidedToPolicyholderByFundRangeDelReadOnly" (IN ROW "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::InvestmentFundShareProvidedToPolicyholderByFundRangeTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+CURR_DEL = select 
+"_FundRange.ID",
+"_FundRange.IDSystem",
+"_InvestmentFundShare.FinancialInstrumentID"
+from "sap.fsdm::InvestmentFundShareProvidedToPolicyholderByFundRange" WHERE("_FundRange.ID" ,
+"_FundRange.IDSystem" ,
+"_InvestmentFundShare.FinancialInstrumentID" 
+)in ( select "_FundRange.ID" ,
+"_FundRange.IDSystem" ,
+"_InvestmentFundShare.FinancialInstrumentID" 
+from :ROW );
+
+
+END

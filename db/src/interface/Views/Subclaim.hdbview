@@ -1,0 +1,26 @@
+view "sap.fsdm.Views::Subclaim_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "_Claimant._BusinessPartner.BusinessPartnerID" as "_Claimant__BusinessPartner_BusinessPartnerID",
+      "_Claimant._Claim.ID" as "_Claimant__Claim_ID",
+      "_Claimant._Claim.IDSystem" as "_Claimant__Claim_IDSystem",
+      "_InsuranceCoverage.ID" as "_InsuranceCoverage_ID",
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage__InsuranceContract_IDSystem",
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_BusinessPartner.BusinessPartnerID" as "_BusinessPartner_BusinessPartnerID",
+      "LifeCycleStatus" as "LifeCycleStatus",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::Subclaim"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

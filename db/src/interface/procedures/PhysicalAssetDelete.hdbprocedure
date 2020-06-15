@@ -1,0 +1,539 @@
+PROCEDURE "sap.fsdm.procedures::PhysicalAssetDelete" (IN ROW "sap.fsdm.tabletypes::PhysicalAssetTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'PhysicalAssetID=' || TO_VARCHAR("PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::PhysicalAsset" (
+        "PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_RealEstateProperty.PhysicalAssetID",
+        "AdequatelyInsured",
+        "AntiLockBrakeIndicator",
+        "AntiTheftDeviceType",
+        "AvailableCommercialFloorSpace",
+        "AvailableFloorSpace",
+        "AvailableFloorSpaceForVariousUsages",
+        "AvailableResidentialFloorSpace",
+        "BodyStyle",
+        "ChassisNumber",
+        "CityOfRegistration",
+        "CompletionState",
+        "CountryOfRegistration",
+        "DateOfCompletion",
+        "DateOfFirstRegistration",
+        "DepreciationRate",
+        "Description",
+        "DescriptionOfGoods",
+        "DescriptionOfLocation",
+        "DriverAirbagIndicator",
+        "ElectronicStabilityControlIndicator",
+        "EligibleForReducedRiskWeight",
+        "EngineCubicCentimeter",
+        "GrossRegisteredTons",
+        "InUseByBorrower",
+        "IsLet",
+        "LeadingRegistrationIndicator",
+        "Make",
+        "Manufacturer",
+        "Model",
+        "Name",
+        "NumberOfGarages",
+        "NumberOfParkingSpaces",
+        "NumberOfUnits",
+        "Operator",
+        "PassengerAirbagIndicator",
+        "PassiveSeatBeltIndicator",
+        "PhysicalAssetCategory",
+        "PortOfRegistry",
+        "RealEstateType",
+        "RegistrationNumber",
+        "RegistrationNumberType",
+        "RentedFloorSpace",
+        "SeasonEndMonth",
+        "SeasonStartMonth",
+        "ShipType",
+        "SideCollisionProtectionIndicator",
+        "SizeOfLot",
+        "SizeUnit",
+        "SpeedUnit",
+        "TemporaryRegistrationDuration",
+        "TopSpeed",
+        "Trim",
+        "UsageType",
+        "UsedFloorSpace",
+        "VIN",
+        "VehicleCategory",
+        "VehicleType",
+        "YearOfLastModernization",
+        "YearOfLastRefurbishment",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PhysicalAssetID" as "PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD__RealEstateProperty.PhysicalAssetID" as "_RealEstateProperty.PhysicalAssetID" ,
+            "OLD_AdequatelyInsured" as "AdequatelyInsured" ,
+            "OLD_AntiLockBrakeIndicator" as "AntiLockBrakeIndicator" ,
+            "OLD_AntiTheftDeviceType" as "AntiTheftDeviceType" ,
+            "OLD_AvailableCommercialFloorSpace" as "AvailableCommercialFloorSpace" ,
+            "OLD_AvailableFloorSpace" as "AvailableFloorSpace" ,
+            "OLD_AvailableFloorSpaceForVariousUsages" as "AvailableFloorSpaceForVariousUsages" ,
+            "OLD_AvailableResidentialFloorSpace" as "AvailableResidentialFloorSpace" ,
+            "OLD_BodyStyle" as "BodyStyle" ,
+            "OLD_ChassisNumber" as "ChassisNumber" ,
+            "OLD_CityOfRegistration" as "CityOfRegistration" ,
+            "OLD_CompletionState" as "CompletionState" ,
+            "OLD_CountryOfRegistration" as "CountryOfRegistration" ,
+            "OLD_DateOfCompletion" as "DateOfCompletion" ,
+            "OLD_DateOfFirstRegistration" as "DateOfFirstRegistration" ,
+            "OLD_DepreciationRate" as "DepreciationRate" ,
+            "OLD_Description" as "Description" ,
+            "OLD_DescriptionOfGoods" as "DescriptionOfGoods" ,
+            "OLD_DescriptionOfLocation" as "DescriptionOfLocation" ,
+            "OLD_DriverAirbagIndicator" as "DriverAirbagIndicator" ,
+            "OLD_ElectronicStabilityControlIndicator" as "ElectronicStabilityControlIndicator" ,
+            "OLD_EligibleForReducedRiskWeight" as "EligibleForReducedRiskWeight" ,
+            "OLD_EngineCubicCentimeter" as "EngineCubicCentimeter" ,
+            "OLD_GrossRegisteredTons" as "GrossRegisteredTons" ,
+            "OLD_InUseByBorrower" as "InUseByBorrower" ,
+            "OLD_IsLet" as "IsLet" ,
+            "OLD_LeadingRegistrationIndicator" as "LeadingRegistrationIndicator" ,
+            "OLD_Make" as "Make" ,
+            "OLD_Manufacturer" as "Manufacturer" ,
+            "OLD_Model" as "Model" ,
+            "OLD_Name" as "Name" ,
+            "OLD_NumberOfGarages" as "NumberOfGarages" ,
+            "OLD_NumberOfParkingSpaces" as "NumberOfParkingSpaces" ,
+            "OLD_NumberOfUnits" as "NumberOfUnits" ,
+            "OLD_Operator" as "Operator" ,
+            "OLD_PassengerAirbagIndicator" as "PassengerAirbagIndicator" ,
+            "OLD_PassiveSeatBeltIndicator" as "PassiveSeatBeltIndicator" ,
+            "OLD_PhysicalAssetCategory" as "PhysicalAssetCategory" ,
+            "OLD_PortOfRegistry" as "PortOfRegistry" ,
+            "OLD_RealEstateType" as "RealEstateType" ,
+            "OLD_RegistrationNumber" as "RegistrationNumber" ,
+            "OLD_RegistrationNumberType" as "RegistrationNumberType" ,
+            "OLD_RentedFloorSpace" as "RentedFloorSpace" ,
+            "OLD_SeasonEndMonth" as "SeasonEndMonth" ,
+            "OLD_SeasonStartMonth" as "SeasonStartMonth" ,
+            "OLD_ShipType" as "ShipType" ,
+            "OLD_SideCollisionProtectionIndicator" as "SideCollisionProtectionIndicator" ,
+            "OLD_SizeOfLot" as "SizeOfLot" ,
+            "OLD_SizeUnit" as "SizeUnit" ,
+            "OLD_SpeedUnit" as "SpeedUnit" ,
+            "OLD_TemporaryRegistrationDuration" as "TemporaryRegistrationDuration" ,
+            "OLD_TopSpeed" as "TopSpeed" ,
+            "OLD_Trim" as "Trim" ,
+            "OLD_UsageType" as "UsageType" ,
+            "OLD_UsedFloorSpace" as "UsedFloorSpace" ,
+            "OLD_VIN" as "VIN" ,
+            "OLD_VehicleCategory" as "VehicleCategory" ,
+            "OLD_VehicleType" as "VehicleType" ,
+            "OLD_YearOfLastModernization" as "YearOfLastModernization" ,
+            "OLD_YearOfLastRefurbishment" as "YearOfLastRefurbishment" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."PhysicalAssetID" as "OLD_PhysicalAssetID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_RealEstateProperty.PhysicalAssetID" as "OLD__RealEstateProperty.PhysicalAssetID",
+                "OLD"."AdequatelyInsured" as "OLD_AdequatelyInsured",
+                "OLD"."AntiLockBrakeIndicator" as "OLD_AntiLockBrakeIndicator",
+                "OLD"."AntiTheftDeviceType" as "OLD_AntiTheftDeviceType",
+                "OLD"."AvailableCommercialFloorSpace" as "OLD_AvailableCommercialFloorSpace",
+                "OLD"."AvailableFloorSpace" as "OLD_AvailableFloorSpace",
+                "OLD"."AvailableFloorSpaceForVariousUsages" as "OLD_AvailableFloorSpaceForVariousUsages",
+                "OLD"."AvailableResidentialFloorSpace" as "OLD_AvailableResidentialFloorSpace",
+                "OLD"."BodyStyle" as "OLD_BodyStyle",
+                "OLD"."ChassisNumber" as "OLD_ChassisNumber",
+                "OLD"."CityOfRegistration" as "OLD_CityOfRegistration",
+                "OLD"."CompletionState" as "OLD_CompletionState",
+                "OLD"."CountryOfRegistration" as "OLD_CountryOfRegistration",
+                "OLD"."DateOfCompletion" as "OLD_DateOfCompletion",
+                "OLD"."DateOfFirstRegistration" as "OLD_DateOfFirstRegistration",
+                "OLD"."DepreciationRate" as "OLD_DepreciationRate",
+                "OLD"."Description" as "OLD_Description",
+                "OLD"."DescriptionOfGoods" as "OLD_DescriptionOfGoods",
+                "OLD"."DescriptionOfLocation" as "OLD_DescriptionOfLocation",
+                "OLD"."DriverAirbagIndicator" as "OLD_DriverAirbagIndicator",
+                "OLD"."ElectronicStabilityControlIndicator" as "OLD_ElectronicStabilityControlIndicator",
+                "OLD"."EligibleForReducedRiskWeight" as "OLD_EligibleForReducedRiskWeight",
+                "OLD"."EngineCubicCentimeter" as "OLD_EngineCubicCentimeter",
+                "OLD"."GrossRegisteredTons" as "OLD_GrossRegisteredTons",
+                "OLD"."InUseByBorrower" as "OLD_InUseByBorrower",
+                "OLD"."IsLet" as "OLD_IsLet",
+                "OLD"."LeadingRegistrationIndicator" as "OLD_LeadingRegistrationIndicator",
+                "OLD"."Make" as "OLD_Make",
+                "OLD"."Manufacturer" as "OLD_Manufacturer",
+                "OLD"."Model" as "OLD_Model",
+                "OLD"."Name" as "OLD_Name",
+                "OLD"."NumberOfGarages" as "OLD_NumberOfGarages",
+                "OLD"."NumberOfParkingSpaces" as "OLD_NumberOfParkingSpaces",
+                "OLD"."NumberOfUnits" as "OLD_NumberOfUnits",
+                "OLD"."Operator" as "OLD_Operator",
+                "OLD"."PassengerAirbagIndicator" as "OLD_PassengerAirbagIndicator",
+                "OLD"."PassiveSeatBeltIndicator" as "OLD_PassiveSeatBeltIndicator",
+                "OLD"."PhysicalAssetCategory" as "OLD_PhysicalAssetCategory",
+                "OLD"."PortOfRegistry" as "OLD_PortOfRegistry",
+                "OLD"."RealEstateType" as "OLD_RealEstateType",
+                "OLD"."RegistrationNumber" as "OLD_RegistrationNumber",
+                "OLD"."RegistrationNumberType" as "OLD_RegistrationNumberType",
+                "OLD"."RentedFloorSpace" as "OLD_RentedFloorSpace",
+                "OLD"."SeasonEndMonth" as "OLD_SeasonEndMonth",
+                "OLD"."SeasonStartMonth" as "OLD_SeasonStartMonth",
+                "OLD"."ShipType" as "OLD_ShipType",
+                "OLD"."SideCollisionProtectionIndicator" as "OLD_SideCollisionProtectionIndicator",
+                "OLD"."SizeOfLot" as "OLD_SizeOfLot",
+                "OLD"."SizeUnit" as "OLD_SizeUnit",
+                "OLD"."SpeedUnit" as "OLD_SpeedUnit",
+                "OLD"."TemporaryRegistrationDuration" as "OLD_TemporaryRegistrationDuration",
+                "OLD"."TopSpeed" as "OLD_TopSpeed",
+                "OLD"."Trim" as "OLD_Trim",
+                "OLD"."UsageType" as "OLD_UsageType",
+                "OLD"."UsedFloorSpace" as "OLD_UsedFloorSpace",
+                "OLD"."VIN" as "OLD_VIN",
+                "OLD"."VehicleCategory" as "OLD_VehicleCategory",
+                "OLD"."VehicleType" as "OLD_VehicleType",
+                "OLD"."YearOfLastModernization" as "OLD_YearOfLastModernization",
+                "OLD"."YearOfLastRefurbishment" as "OLD_YearOfLastRefurbishment",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PhysicalAsset" as "OLD"
+            on
+                      ( "IN"."PhysicalAssetID" = "OLD"."PhysicalAssetID" or "IN"."PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::PhysicalAsset" (
+        "PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "_RealEstateProperty.PhysicalAssetID",
+        "AdequatelyInsured",
+        "AntiLockBrakeIndicator",
+        "AntiTheftDeviceType",
+        "AvailableCommercialFloorSpace",
+        "AvailableFloorSpace",
+        "AvailableFloorSpaceForVariousUsages",
+        "AvailableResidentialFloorSpace",
+        "BodyStyle",
+        "ChassisNumber",
+        "CityOfRegistration",
+        "CompletionState",
+        "CountryOfRegistration",
+        "DateOfCompletion",
+        "DateOfFirstRegistration",
+        "DepreciationRate",
+        "Description",
+        "DescriptionOfGoods",
+        "DescriptionOfLocation",
+        "DriverAirbagIndicator",
+        "ElectronicStabilityControlIndicator",
+        "EligibleForReducedRiskWeight",
+        "EngineCubicCentimeter",
+        "GrossRegisteredTons",
+        "InUseByBorrower",
+        "IsLet",
+        "LeadingRegistrationIndicator",
+        "Make",
+        "Manufacturer",
+        "Model",
+        "Name",
+        "NumberOfGarages",
+        "NumberOfParkingSpaces",
+        "NumberOfUnits",
+        "Operator",
+        "PassengerAirbagIndicator",
+        "PassiveSeatBeltIndicator",
+        "PhysicalAssetCategory",
+        "PortOfRegistry",
+        "RealEstateType",
+        "RegistrationNumber",
+        "RegistrationNumberType",
+        "RentedFloorSpace",
+        "SeasonEndMonth",
+        "SeasonStartMonth",
+        "ShipType",
+        "SideCollisionProtectionIndicator",
+        "SizeOfLot",
+        "SizeUnit",
+        "SpeedUnit",
+        "TemporaryRegistrationDuration",
+        "TopSpeed",
+        "Trim",
+        "UsageType",
+        "UsedFloorSpace",
+        "VIN",
+        "VehicleCategory",
+        "VehicleType",
+        "YearOfLastModernization",
+        "YearOfLastRefurbishment",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_PhysicalAssetID" as "PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD__RealEstateProperty.PhysicalAssetID" as "_RealEstateProperty.PhysicalAssetID",
+            "OLD_AdequatelyInsured" as "AdequatelyInsured",
+            "OLD_AntiLockBrakeIndicator" as "AntiLockBrakeIndicator",
+            "OLD_AntiTheftDeviceType" as "AntiTheftDeviceType",
+            "OLD_AvailableCommercialFloorSpace" as "AvailableCommercialFloorSpace",
+            "OLD_AvailableFloorSpace" as "AvailableFloorSpace",
+            "OLD_AvailableFloorSpaceForVariousUsages" as "AvailableFloorSpaceForVariousUsages",
+            "OLD_AvailableResidentialFloorSpace" as "AvailableResidentialFloorSpace",
+            "OLD_BodyStyle" as "BodyStyle",
+            "OLD_ChassisNumber" as "ChassisNumber",
+            "OLD_CityOfRegistration" as "CityOfRegistration",
+            "OLD_CompletionState" as "CompletionState",
+            "OLD_CountryOfRegistration" as "CountryOfRegistration",
+            "OLD_DateOfCompletion" as "DateOfCompletion",
+            "OLD_DateOfFirstRegistration" as "DateOfFirstRegistration",
+            "OLD_DepreciationRate" as "DepreciationRate",
+            "OLD_Description" as "Description",
+            "OLD_DescriptionOfGoods" as "DescriptionOfGoods",
+            "OLD_DescriptionOfLocation" as "DescriptionOfLocation",
+            "OLD_DriverAirbagIndicator" as "DriverAirbagIndicator",
+            "OLD_ElectronicStabilityControlIndicator" as "ElectronicStabilityControlIndicator",
+            "OLD_EligibleForReducedRiskWeight" as "EligibleForReducedRiskWeight",
+            "OLD_EngineCubicCentimeter" as "EngineCubicCentimeter",
+            "OLD_GrossRegisteredTons" as "GrossRegisteredTons",
+            "OLD_InUseByBorrower" as "InUseByBorrower",
+            "OLD_IsLet" as "IsLet",
+            "OLD_LeadingRegistrationIndicator" as "LeadingRegistrationIndicator",
+            "OLD_Make" as "Make",
+            "OLD_Manufacturer" as "Manufacturer",
+            "OLD_Model" as "Model",
+            "OLD_Name" as "Name",
+            "OLD_NumberOfGarages" as "NumberOfGarages",
+            "OLD_NumberOfParkingSpaces" as "NumberOfParkingSpaces",
+            "OLD_NumberOfUnits" as "NumberOfUnits",
+            "OLD_Operator" as "Operator",
+            "OLD_PassengerAirbagIndicator" as "PassengerAirbagIndicator",
+            "OLD_PassiveSeatBeltIndicator" as "PassiveSeatBeltIndicator",
+            "OLD_PhysicalAssetCategory" as "PhysicalAssetCategory",
+            "OLD_PortOfRegistry" as "PortOfRegistry",
+            "OLD_RealEstateType" as "RealEstateType",
+            "OLD_RegistrationNumber" as "RegistrationNumber",
+            "OLD_RegistrationNumberType" as "RegistrationNumberType",
+            "OLD_RentedFloorSpace" as "RentedFloorSpace",
+            "OLD_SeasonEndMonth" as "SeasonEndMonth",
+            "OLD_SeasonStartMonth" as "SeasonStartMonth",
+            "OLD_ShipType" as "ShipType",
+            "OLD_SideCollisionProtectionIndicator" as "SideCollisionProtectionIndicator",
+            "OLD_SizeOfLot" as "SizeOfLot",
+            "OLD_SizeUnit" as "SizeUnit",
+            "OLD_SpeedUnit" as "SpeedUnit",
+            "OLD_TemporaryRegistrationDuration" as "TemporaryRegistrationDuration",
+            "OLD_TopSpeed" as "TopSpeed",
+            "OLD_Trim" as "Trim",
+            "OLD_UsageType" as "UsageType",
+            "OLD_UsedFloorSpace" as "UsedFloorSpace",
+            "OLD_VIN" as "VIN",
+            "OLD_VehicleCategory" as "VehicleCategory",
+            "OLD_VehicleType" as "VehicleType",
+            "OLD_YearOfLastModernization" as "YearOfLastModernization",
+            "OLD_YearOfLastRefurbishment" as "YearOfLastRefurbishment",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."PhysicalAssetID" as "OLD_PhysicalAssetID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."_RealEstateProperty.PhysicalAssetID" as "OLD__RealEstateProperty.PhysicalAssetID",
+                "OLD"."AdequatelyInsured" as "OLD_AdequatelyInsured",
+                "OLD"."AntiLockBrakeIndicator" as "OLD_AntiLockBrakeIndicator",
+                "OLD"."AntiTheftDeviceType" as "OLD_AntiTheftDeviceType",
+                "OLD"."AvailableCommercialFloorSpace" as "OLD_AvailableCommercialFloorSpace",
+                "OLD"."AvailableFloorSpace" as "OLD_AvailableFloorSpace",
+                "OLD"."AvailableFloorSpaceForVariousUsages" as "OLD_AvailableFloorSpaceForVariousUsages",
+                "OLD"."AvailableResidentialFloorSpace" as "OLD_AvailableResidentialFloorSpace",
+                "OLD"."BodyStyle" as "OLD_BodyStyle",
+                "OLD"."ChassisNumber" as "OLD_ChassisNumber",
+                "OLD"."CityOfRegistration" as "OLD_CityOfRegistration",
+                "OLD"."CompletionState" as "OLD_CompletionState",
+                "OLD"."CountryOfRegistration" as "OLD_CountryOfRegistration",
+                "OLD"."DateOfCompletion" as "OLD_DateOfCompletion",
+                "OLD"."DateOfFirstRegistration" as "OLD_DateOfFirstRegistration",
+                "OLD"."DepreciationRate" as "OLD_DepreciationRate",
+                "OLD"."Description" as "OLD_Description",
+                "OLD"."DescriptionOfGoods" as "OLD_DescriptionOfGoods",
+                "OLD"."DescriptionOfLocation" as "OLD_DescriptionOfLocation",
+                "OLD"."DriverAirbagIndicator" as "OLD_DriverAirbagIndicator",
+                "OLD"."ElectronicStabilityControlIndicator" as "OLD_ElectronicStabilityControlIndicator",
+                "OLD"."EligibleForReducedRiskWeight" as "OLD_EligibleForReducedRiskWeight",
+                "OLD"."EngineCubicCentimeter" as "OLD_EngineCubicCentimeter",
+                "OLD"."GrossRegisteredTons" as "OLD_GrossRegisteredTons",
+                "OLD"."InUseByBorrower" as "OLD_InUseByBorrower",
+                "OLD"."IsLet" as "OLD_IsLet",
+                "OLD"."LeadingRegistrationIndicator" as "OLD_LeadingRegistrationIndicator",
+                "OLD"."Make" as "OLD_Make",
+                "OLD"."Manufacturer" as "OLD_Manufacturer",
+                "OLD"."Model" as "OLD_Model",
+                "OLD"."Name" as "OLD_Name",
+                "OLD"."NumberOfGarages" as "OLD_NumberOfGarages",
+                "OLD"."NumberOfParkingSpaces" as "OLD_NumberOfParkingSpaces",
+                "OLD"."NumberOfUnits" as "OLD_NumberOfUnits",
+                "OLD"."Operator" as "OLD_Operator",
+                "OLD"."PassengerAirbagIndicator" as "OLD_PassengerAirbagIndicator",
+                "OLD"."PassiveSeatBeltIndicator" as "OLD_PassiveSeatBeltIndicator",
+                "OLD"."PhysicalAssetCategory" as "OLD_PhysicalAssetCategory",
+                "OLD"."PortOfRegistry" as "OLD_PortOfRegistry",
+                "OLD"."RealEstateType" as "OLD_RealEstateType",
+                "OLD"."RegistrationNumber" as "OLD_RegistrationNumber",
+                "OLD"."RegistrationNumberType" as "OLD_RegistrationNumberType",
+                "OLD"."RentedFloorSpace" as "OLD_RentedFloorSpace",
+                "OLD"."SeasonEndMonth" as "OLD_SeasonEndMonth",
+                "OLD"."SeasonStartMonth" as "OLD_SeasonStartMonth",
+                "OLD"."ShipType" as "OLD_ShipType",
+                "OLD"."SideCollisionProtectionIndicator" as "OLD_SideCollisionProtectionIndicator",
+                "OLD"."SizeOfLot" as "OLD_SizeOfLot",
+                "OLD"."SizeUnit" as "OLD_SizeUnit",
+                "OLD"."SpeedUnit" as "OLD_SpeedUnit",
+                "OLD"."TemporaryRegistrationDuration" as "OLD_TemporaryRegistrationDuration",
+                "OLD"."TopSpeed" as "OLD_TopSpeed",
+                "OLD"."Trim" as "OLD_Trim",
+                "OLD"."UsageType" as "OLD_UsageType",
+                "OLD"."UsedFloorSpace" as "OLD_UsedFloorSpace",
+                "OLD"."VIN" as "OLD_VIN",
+                "OLD"."VehicleCategory" as "OLD_VehicleCategory",
+                "OLD"."VehicleType" as "OLD_VehicleType",
+                "OLD"."YearOfLastModernization" as "OLD_YearOfLastModernization",
+                "OLD"."YearOfLastRefurbishment" as "OLD_YearOfLastRefurbishment",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::PhysicalAsset" as "OLD"
+            on
+                                                ( "IN"."PhysicalAssetID" = "OLD"."PhysicalAssetID" or "IN"."PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::PhysicalAsset"
+    where (
+        "PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::PhysicalAsset" as "OLD"
+        on
+                                       ( "IN"."PhysicalAssetID" = "OLD"."PhysicalAssetID" or "IN"."PhysicalAssetID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

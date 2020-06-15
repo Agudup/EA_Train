@@ -1,0 +1,49 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"ProductCatalogItem";
+
+entity "ProductCatalogHierarchy" {
+    key "_Child"                        : association to ProductCatalogItem {
+                                                                              ProductCatalogItem,
+                                                                              _ProductCatalog
+                                                                            } not null;
+    key "_Parent"                       : association to ProductCatalogItem {
+                                                                              ProductCatalogItem,
+                                                                              _ProductCatalog
+                                                                            } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                        not null;
+        "SystemValidTo"                 : UTCTimestamp                        not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ProductCatalogHierarchy_Historical" {
+    "_Child"                        : association to ProductCatalogItem {
+                                                                          ProductCatalogItem,
+                                                                          _ProductCatalog
+                                                                        } not null;
+    "_Parent"                       : association to ProductCatalogItem {
+                                                                          ProductCatalogItem,
+                                                                          _ProductCatalog
+                                                                        } not null;
+    "BusinessValidFrom"             : LocalDate                           not null;
+    "BusinessValidTo"               : LocalDate                           not null;
+    "SystemValidFrom"               : UTCTimestamp                        not null;
+    "SystemValidTo"                 : UTCTimestamp                        not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

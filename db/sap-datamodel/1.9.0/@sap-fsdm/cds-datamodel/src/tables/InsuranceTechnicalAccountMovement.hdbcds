@@ -1,0 +1,79 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"InsuranceCoverage";
+using "sap"."fsdm"::"InsuranceCoverageOption";
+using "sap"."fsdm"::"InsuranceTechnicalAccountBalance";
+
+entity "InsuranceTechnicalAccountMovement" {
+    key "ID"                                : String(128);
+    key "_Coverage"                         : association to InsuranceCoverage {
+                                                                                 ID,
+                                                                                 _InsuranceContract,
+                                                                                 _InsuredObject
+                                                                               }                 not null;
+    key "_Option"                           : association to InsuranceCoverageOption {
+                                                                                       Type,
+                                                                                       _InsuranceCoverage
+                                                                                     }           not null;
+    key "BusinessValidFrom"                 : LocalDate;
+    key "BusinessValidTo"                   : LocalDate;
+        "SystemValidFrom"                   : UTCTimestamp                                       not null;
+        "SystemValidTo"                     : UTCTimestamp                                       not null;
+        "_InsuranceTechnicalAccountBalance" : association to InsuranceTechnicalAccountBalance {
+                                                                                                Type,
+                                                                                                _Coverage,
+                                                                                                _Option
+                                                                                              };
+        "Amount"                            : Decimal(34, 6);
+        "AnalysisPeriodEndDate"             : LocalDate;
+        "AnalysisPeriodStartDate"           : LocalDate;
+        "Category"                          : String(40);
+        "Currency"                          : String(3);
+        "Reason"                            : String(40);
+        "Type"                              : String(40);
+        "SourceSystemID"                    : String(128);
+        "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+        "ChangingUserInSourceSystem"        : String(128);
+        "ChangingProcessType"               : String(40);
+        "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "InsuranceTechnicalAccountMovement_Historical" {
+    "ID"                                : String(128)                                        not null;
+    "_Coverage"                         : association to InsuranceCoverage {
+                                                                             ID,
+                                                                             _InsuranceContract,
+                                                                             _InsuredObject
+                                                                           }                 not null;
+    "_Option"                           : association to InsuranceCoverageOption {
+                                                                                   Type,
+                                                                                   _InsuranceCoverage
+                                                                                 }           not null;
+    "BusinessValidFrom"                 : LocalDate                                          not null;
+    "BusinessValidTo"                   : LocalDate                                          not null;
+    "SystemValidFrom"                   : UTCTimestamp                                       not null;
+    "SystemValidTo"                     : UTCTimestamp                                       not null;
+    "_InsuranceTechnicalAccountBalance" : association to InsuranceTechnicalAccountBalance {
+                                                                                            Type,
+                                                                                            _Coverage,
+                                                                                            _Option
+                                                                                          };
+    "Amount"                            : Decimal(34, 6);
+    "AnalysisPeriodEndDate"             : LocalDate;
+    "AnalysisPeriodStartDate"           : LocalDate;
+    "Category"                          : String(40);
+    "Currency"                          : String(3);
+    "Reason"                            : String(40);
+    "Type"                              : String(40);
+    "SourceSystemID"                    : String(128);
+    "ChangeTimestampInSourceSystem"     : UTCTimestamp;
+    "ChangingUserInSourceSystem"        : String(128);
+    "ChangingProcessType"               : String(40);
+    "ChangingProcessID"                 : String(128);
+}
+technical configuration {
+    column store;
+};

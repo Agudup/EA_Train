@@ -1,0 +1,65 @@
+PROCEDURE "sap.fsdm.procedures::BusinessPartnerPhysicalAssetAssignmentErase" (IN ROW "sap.fsdm.tabletypes::BusinessPartnerPhysicalAssetAssignmentTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "BusinessPartnerRole" is null and
+                         "RentedPropertyType" is null and
+                         "ASSOC_BusinessPartner.BusinessPartnerID" is null and
+                         "ASSOC_PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::BusinessPartnerPhysicalAssetAssignment" WHERE
+("BusinessPartnerRole" ,
+"RentedPropertyType" ,
+"ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."BusinessPartnerRole" ,
+"OLD"."RentedPropertyType" ,
+"OLD"."ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::BusinessPartnerPhysicalAssetAssignment" "OLD"
+on
+  ( "IN"."BusinessPartnerRole" = "OLD"."BusinessPartnerRole" or "IN"."BusinessPartnerRole" is null ) and
+  ( "IN"."RentedPropertyType" = "OLD"."RentedPropertyType" or "IN"."RentedPropertyType" is null ) and
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::BusinessPartnerPhysicalAssetAssignment_Historical" WHERE
+("BusinessPartnerRole" ,
+"RentedPropertyType" ,
+"ASSOC_BusinessPartner.BusinessPartnerID" ,
+"ASSOC_PhysicalAsset.PhysicalAssetID" 
+)in ( select "OLD"."BusinessPartnerRole" ,
+"OLD"."RentedPropertyType" ,
+"OLD"."ASSOC_BusinessPartner.BusinessPartnerID" ,
+"OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" 
+from :ROW "IN"
+inner join "sap.fsdm::BusinessPartnerPhysicalAssetAssignment_Historical" "OLD"
+on
+  ( "IN"."BusinessPartnerRole" = "OLD"."BusinessPartnerRole" or "IN"."BusinessPartnerRole" is null ) and
+  ( "IN"."RentedPropertyType" = "OLD"."RentedPropertyType" or "IN"."RentedPropertyType" is null ) and
+  ( "IN"."ASSOC_BusinessPartner.BusinessPartnerID" = "OLD"."ASSOC_BusinessPartner.BusinessPartnerID" or "IN"."ASSOC_BusinessPartner.BusinessPartnerID" is null ) and
+  ( "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" = "OLD"."ASSOC_PhysicalAsset.PhysicalAssetID" or "IN"."ASSOC_PhysicalAsset.PhysicalAssetID" is null ) 
+);
+
+END

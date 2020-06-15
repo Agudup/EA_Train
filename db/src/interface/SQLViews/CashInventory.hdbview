@@ -1,0 +1,31 @@
+view "sap.fsdm.SQLViews::CashInventory_View" 
+as select
+      "CashAccountID" ,
+      "IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CashAccountType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CashInventory"
+with associations
+(
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "_BankingChannel_ASSOC_CashInventory"
+	  on "CashAccountID" = "_BankingChannel_ASSOC_CashInventory"."ASSOC_CashInventory.CashAccountID" AND 
+	     "IDSystem" = "_BankingChannel_ASSOC_CashInventory"."ASSOC_CashInventory.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::CashInventoryBalance_View" as "_CashInventoryBalance_ASSOC_CashInventory"
+	  on "CashAccountID" = "_CashInventoryBalance_ASSOC_CashInventory"."ASSOC_CashInventory.CashAccountID" AND 
+	     "IDSystem" = "_CashInventoryBalance_ASSOC_CashInventory"."ASSOC_CashInventory.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::Settlement_View" as "_Settlement_ASSOC_CashInventory"
+	  on "CashAccountID" = "_Settlement_ASSOC_CashInventory"."ASSOC_CashInventory.CashAccountID" AND 
+	     "IDSystem" = "_Settlement_ASSOC_CashInventory"."ASSOC_CashInventory.IDSystem"
+	     
+);

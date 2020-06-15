@@ -1,0 +1,65 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"Claim";
+using "sap"."fsdm"::"Subclaim";
+
+entity "Subrogation" {
+    key "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    key "_Claim"                        : association to Claim {
+                                                                 ID,
+                                                                 IDSystem
+                                                               }                               not null;
+    key "_Subclaim"                     : association to Subclaim {
+                                                                    _Claimant,
+                                                                    _InsuranceCoverage
+                                                                  }                            not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "Amount"                        : Decimal(34, 6);
+        "LiabilityPercent"              : Decimal(15, 11);
+        "LifeCycleStatusCode"           : String(40);
+        "ProbabilityPercent"            : Decimal(15, 11);
+        "Reason"                        : String(40);
+        "Type"                          : String(40);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Subrogation_Historical" {
+    "_BusinessPartner"              : association to BusinessPartner { BusinessPartnerID } not null;
+    "_Claim"                        : association to Claim {
+                                                             ID,
+                                                             IDSystem
+                                                           }                               not null;
+    "_Subclaim"                     : association to Subclaim {
+                                                                _Claimant,
+                                                                _InsuranceCoverage
+                                                              }                            not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "Amount"                        : Decimal(34, 6);
+    "LiabilityPercent"              : Decimal(15, 11);
+    "LifeCycleStatusCode"           : String(40);
+    "ProbabilityPercent"            : Decimal(15, 11);
+    "Reason"                        : String(40);
+    "Type"                          : String(40);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

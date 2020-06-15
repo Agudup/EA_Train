@@ -1,0 +1,42 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"BankingChannel";
+
+entity "DigitalBankingPlatformAccess" {
+    key "AccountName"                   : String(256);
+    key "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID } not null;
+    key "ASSOC_DigitalBankingPlatform"  : association to BankingChannel { BankingChannelID }   not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                         not null;
+        "SystemValidTo"                 : UTCTimestamp                                         not null;
+        "Status"                        : String(40);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "DigitalBankingPlatformAccess_Historical" {
+    "AccountName"                   : String(256)                                          not null;
+    "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID } not null;
+    "ASSOC_DigitalBankingPlatform"  : association to BankingChannel { BankingChannelID }   not null;
+    "BusinessValidFrom"             : LocalDate                                            not null;
+    "BusinessValidTo"               : LocalDate                                            not null;
+    "SystemValidFrom"               : UTCTimestamp                                         not null;
+    "SystemValidTo"                 : UTCTimestamp                                         not null;
+    "Status"                        : String(40);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,24 @@
+view "sap.fsdm.SQLViews::SettlementClass_View" 
+as select
+      "SettlementClass" ,
+      "SettlementClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "SettlementClassDescription" ,
+      "SettlementClassificationSystemDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::SettlementClass"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClassificationOfSettlement_View" as "_ClassificationOfSettlement_ASSOC_SettlementClass"
+	  on "SettlementClass" = "_ClassificationOfSettlement_ASSOC_SettlementClass"."ASSOC_SettlementClass.SettlementClass" AND 
+	     "SettlementClassificationSystem" = "_ClassificationOfSettlement_ASSOC_SettlementClass"."ASSOC_SettlementClass.SettlementClassificationSystem"
+	     
+);

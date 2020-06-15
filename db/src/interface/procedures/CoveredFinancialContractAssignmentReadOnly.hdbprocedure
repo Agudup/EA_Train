@@ -1,0 +1,248 @@
+PROCEDURE "sap.fsdm.procedures::CoveredFinancialContractAssignmentReadOnly" (IN ROW "sap.fsdm.tabletypes::CoveredFinancialContractAssignmentTT", OUT CURR_DEL "sap.fsdm.tabletypes::CoveredFinancialContractAssignmentTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::CoveredFinancialContractAssignmentTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_CollateralPool.CollectionID=' || TO_VARCHAR("_CollateralPool.CollectionID") || ' ' ||
+                '_CollateralPool.IDSystem=' || TO_VARCHAR("_CollateralPool.IDSystem") || ' ' ||
+                '_FinancialContract.FinancialContractID=' || TO_VARCHAR("_FinancialContract.FinancialContractID") || ' ' ||
+                '_FinancialContract.IDSystem=' || TO_VARCHAR("_FinancialContract.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_CollateralPool.CollectionID",
+                        "IN"."_CollateralPool.IDSystem",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_CollateralPool.CollectionID",
+                        "IN"."_CollateralPool.IDSystem",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_CollateralPool.CollectionID",
+                        "_CollateralPool.IDSystem",
+                        "_FinancialContract.FinancialContractID",
+                        "_FinancialContract.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_CollateralPool.CollectionID",
+                                    "IN"."_CollateralPool.IDSystem",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_CollateralPool.CollectionID",
+                                    "IN"."_CollateralPool.IDSystem",
+                                    "IN"."_FinancialContract.FinancialContractID",
+                                    "IN"."_FinancialContract.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "_CollateralPool.CollectionID",
+        "_CollateralPool.IDSystem",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::CoveredFinancialContractAssignment" WHERE
+        (            "_CollateralPool.CollectionID" ,
+            "_CollateralPool.IDSystem" ,
+            "_FinancialContract.FinancialContractID" ,
+            "_FinancialContract.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."_CollateralPool.CollectionID",
+            "OLD"."_CollateralPool.IDSystem",
+            "OLD"."_FinancialContract.FinancialContractID",
+            "OLD"."_FinancialContract.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::CoveredFinancialContractAssignment" as "OLD"
+            on
+               ( case when "IN"."_CollateralPool.CollectionID" is null then '' else "IN"."_CollateralPool.CollectionID" end ) = "OLD"."_CollateralPool.CollectionID" and
+               ( case when "IN"."_CollateralPool.IDSystem" is null then '' else "IN"."_CollateralPool.IDSystem" end ) = "OLD"."_CollateralPool.IDSystem" and
+               ( case when "IN"."_FinancialContract.FinancialContractID" is null then '' else "IN"."_FinancialContract.FinancialContractID" end ) = "OLD"."_FinancialContract.FinancialContractID" and
+               ( case when "IN"."_FinancialContract.IDSystem" is null then '' else "IN"."_FinancialContract.IDSystem" end ) = "OLD"."_FinancialContract.IDSystem" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "_CollateralPool.CollectionID",
+        "_CollateralPool.IDSystem",
+        "_FinancialContract.FinancialContractID",
+        "_FinancialContract.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "_CollateralPool.CollectionID" is null then '' else "_CollateralPool.CollectionID" end ) as "_CollateralPool.CollectionID",
+                    ( case when "_CollateralPool.IDSystem" is null then '' else "_CollateralPool.IDSystem" end ) as "_CollateralPool.IDSystem",
+                    ( case when "_FinancialContract.FinancialContractID" is null then '' else "_FinancialContract.FinancialContractID" end ) as "_FinancialContract.FinancialContractID",
+                    ( case when "_FinancialContract.IDSystem" is null then '' else "_FinancialContract.IDSystem" end ) as "_FinancialContract.IDSystem",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD__CollateralPool.CollectionID" as "_CollateralPool.CollectionID" ,
+                    "OLD__CollateralPool.IDSystem" as "_CollateralPool.IDSystem" ,
+                    "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID" ,
+                    "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."_CollateralPool.CollectionID",
+                        "IN"."_CollateralPool.IDSystem",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."_CollateralPool.CollectionID" as "OLD__CollateralPool.CollectionID",
+                                "OLD"."_CollateralPool.IDSystem" as "OLD__CollateralPool.IDSystem",
+                                "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                                "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CoveredFinancialContractAssignment" as "OLD"
+            on
+                ( case when "IN"."_CollateralPool.CollectionID" is null then '' else "IN"."_CollateralPool.CollectionID" end ) = "OLD"."_CollateralPool.CollectionID" and
+                ( case when "IN"."_CollateralPool.IDSystem" is null then '' else "IN"."_CollateralPool.IDSystem" end ) = "OLD"."_CollateralPool.IDSystem" and
+                ( case when "IN"."_FinancialContract.FinancialContractID" is null then '' else "IN"."_FinancialContract.FinancialContractID" end ) = "OLD"."_FinancialContract.FinancialContractID" and
+                ( case when "IN"."_FinancialContract.IDSystem" is null then '' else "IN"."_FinancialContract.IDSystem" end ) = "OLD"."_FinancialContract.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD__CollateralPool.CollectionID" as "_CollateralPool.CollectionID",
+            "OLD__CollateralPool.IDSystem" as "_CollateralPool.IDSystem",
+            "OLD__FinancialContract.FinancialContractID" as "_FinancialContract.FinancialContractID",
+            "OLD__FinancialContract.IDSystem" as "_FinancialContract.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."_CollateralPool.CollectionID",
+                        "IN"."_CollateralPool.IDSystem",
+                        "IN"."_FinancialContract.FinancialContractID",
+                        "IN"."_FinancialContract.IDSystem",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."_CollateralPool.CollectionID" as "OLD__CollateralPool.CollectionID",
+                        "OLD"."_CollateralPool.IDSystem" as "OLD__CollateralPool.IDSystem",
+                        "OLD"."_FinancialContract.FinancialContractID" as "OLD__FinancialContract.FinancialContractID",
+                        "OLD"."_FinancialContract.IDSystem" as "OLD__FinancialContract.IDSystem",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CoveredFinancialContractAssignment" as "OLD"
+            on
+                ( case when "IN"."_CollateralPool.CollectionID" is null then '' else "IN"."_CollateralPool.CollectionID" end ) = "OLD"."_CollateralPool.CollectionID" and
+                ( case when "IN"."_CollateralPool.IDSystem" is null then '' else "IN"."_CollateralPool.IDSystem" end ) = "OLD"."_CollateralPool.IDSystem" and
+                ( case when "IN"."_FinancialContract.FinancialContractID" is null then '' else "IN"."_FinancialContract.FinancialContractID" end ) = "OLD"."_FinancialContract.FinancialContractID" and
+                ( case when "IN"."_FinancialContract.IDSystem" is null then '' else "IN"."_FinancialContract.IDSystem" end ) = "OLD"."_FinancialContract.IDSystem" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

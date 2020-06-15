@@ -1,0 +1,46 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"FinancialContract";
+
+entity "BankEmployeeContractAssignment" {
+    key "EmployeeResponsibility"               : String(20);
+    key "ASSOC_EmployeeResponsibleForContract" : association to BusinessPartner { BusinessPartnerID } not null;
+    key "ASSOC_FinancialContract"              : association to FinancialContract {
+                                                                                    FinancialContractID,
+                                                                                    IDSystem
+                                                                                  }                   not null;
+    key "BusinessValidFrom"                    : LocalDate;
+    key "BusinessValidTo"                      : LocalDate;
+        "SystemValidFrom"                      : UTCTimestamp                                         not null;
+        "SystemValidTo"                        : UTCTimestamp                                         not null;
+        "SourceSystemID"                       : String(128);
+        "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+        "ChangingUserInSourceSystem"           : String(128);
+        "ChangingProcessType"                  : String(40);
+        "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BankEmployeeContractAssignment_Historical" {
+    "EmployeeResponsibility"               : String(20)                                           not null;
+    "ASSOC_EmployeeResponsibleForContract" : association to BusinessPartner { BusinessPartnerID } not null;
+    "ASSOC_FinancialContract"              : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                   not null;
+    "BusinessValidFrom"                    : LocalDate                                            not null;
+    "BusinessValidTo"                      : LocalDate                                            not null;
+    "SystemValidFrom"                      : UTCTimestamp                                         not null;
+    "SystemValidTo"                        : UTCTimestamp                                         not null;
+    "SourceSystemID"                       : String(128);
+    "ChangeTimestampInSourceSystem"        : UTCTimestamp;
+    "ChangingUserInSourceSystem"           : String(128);
+    "ChangingProcessType"                  : String(40);
+    "ChangingProcessID"                    : String(128);
+}
+technical configuration {
+    column store;
+};

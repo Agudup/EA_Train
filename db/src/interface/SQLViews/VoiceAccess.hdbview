@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::VoiceAccess_View" 
+as select
+      "AccountName" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_VoiceAccessSystem.BankingChannelID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "VoiceAccessStatus" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::VoiceAccess"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_VoiceAccessSystem"
+	  on "ASSOC_VoiceAccessSystem"."BankingChannelID" = "ASSOC_VoiceAccessSystem.BankingChannelID"
+	     
+);

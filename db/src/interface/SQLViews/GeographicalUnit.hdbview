@@ -1,0 +1,54 @@
+view "sap.fsdm.SQLViews::GeographicalUnit_View" 
+as select
+      "GeographicalStructureID" ,
+      "GeographicalUnitID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CountryCode" ,
+      "CountryName" ,
+      "CountryShortName" ,
+      "GeographicalUnitCategory" ,
+      "GeographicalUnitName" ,
+      "HierarchyLevel" ,
+      "ISO3CountryCode" ,
+      "NationalityDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::GeographicalUnit"
+with associations
+(
+	join "sap.fsdm.SQLViews::AddressAssignedToGeographicalUnit_View" as "_AddressAssignedToGeographicalUnit_ASSOC_GeographicalUnit"
+	  on "GeographicalUnitID" = "_AddressAssignedToGeographicalUnit_ASSOC_GeographicalUnit"."ASSOC_GeographicalUnit.GeographicalUnitID" AND 
+	     "GeographicalStructureID" = "_AddressAssignedToGeographicalUnit_ASSOC_GeographicalUnit"."ASSOC_GeographicalUnit.GeographicalStructureID"
+	     ,
+	join "sap.fsdm.SQLViews::EuropeanRegulatoryReportingForCountry_View" as "_EuropeanRegulatoryReportingForCountry__Country"
+	  on "GeographicalStructureID" = "_EuropeanRegulatoryReportingForCountry__Country"."_Country.GeographicalStructureID" AND 
+	     "GeographicalUnitID" = "_EuropeanRegulatoryReportingForCountry__Country"."_Country.GeographicalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeographicalHierarchyRelation_View" as "_GeographicalHierarchyRelation_ASSOC_Child"
+	  on "GeographicalStructureID" = "_GeographicalHierarchyRelation_ASSOC_Child"."ASSOC_Child.GeographicalStructureID" AND 
+	     "GeographicalUnitID" = "_GeographicalHierarchyRelation_ASSOC_Child"."ASSOC_Child.GeographicalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::GeographicalHierarchyRelation_View" as "_GeographicalHierarchyRelation_ASSOC_Parent"
+	  on "GeographicalUnitID" = "_GeographicalHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.GeographicalUnitID" AND 
+	     "GeographicalStructureID" = "_GeographicalHierarchyRelation_ASSOC_Parent"."ASSOC_Parent.GeographicalStructureID"
+	     ,
+	join "sap.fsdm.SQLViews::LegalCurrencyInCountry_View" as "_LegalCurrencyInCountry_ASSOC_Country"
+	  on "GeographicalStructureID" = "_LegalCurrencyInCountry_ASSOC_Country"."ASSOC_Country.GeographicalStructureID" AND 
+	     "GeographicalUnitID" = "_LegalCurrencyInCountry_ASSOC_Country"."ASSOC_Country.GeographicalUnitID"
+	     ,
+	join "sap.fsdm.SQLViews::OrgUnitGeographicalUnitResponsibility_View" as "_OrgUnitGeographicalUnitResponsibility_ASSOC_GeographicalUnit"
+	  on "GeographicalUnitID" = "_OrgUnitGeographicalUnitResponsibility_ASSOC_GeographicalUnit"."ASSOC_GeographicalUnit.GeographicalUnitID" AND 
+	     "GeographicalStructureID" = "_OrgUnitGeographicalUnitResponsibility_ASSOC_GeographicalUnit"."ASSOC_GeographicalUnit.GeographicalStructureID"
+	     ,
+	join "sap.fsdm.SQLViews::Rating_View" as "_Rating_ASSOC_GeographicalRegion"
+	  on "GeographicalStructureID" = "_Rating_ASSOC_GeographicalRegion"."ASSOC_GeographicalRegion.GeographicalStructureID" AND 
+	     "GeographicalUnitID" = "_Rating_ASSOC_GeographicalRegion"."ASSOC_GeographicalRegion.GeographicalUnitID"
+	     
+);

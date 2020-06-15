@@ -1,0 +1,275 @@
+view "sap.fsdm.SQLViews::InsuranceCoverage_View" 
+as select
+      "ID" ,
+      "_InsuranceContract.FinancialContractID" ,
+      "_InsuranceContract.IDSystem" ,
+      "_InsuredObject._FinancialContract.FinancialContractID" ,
+      "_InsuredObject._FinancialContract.IDSystem" ,
+      "_InsuredObject._PhysicalAsset.PhysicalAssetID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "_ElementaryInsuranceProduct.FinancialStandardProductID" ,
+      "_ElementaryInsuranceProduct.IDSystem" ,
+      "_ElementaryInsuranceProduct.PricingScheme" ,
+      "_ElementaryInsuranceProduct.ASSOC_Company.BusinessPartnerID" ,
+      "_FundRange.ID" ,
+      "_FundRange.IDSystem" ,
+      "_IndexRange.ID" ,
+      "_IndexRange.IDSystem" ,
+      "AccumulationPercent" ,
+      "AnnualActuarialAnnuityAmount" ,
+      "AnnuityAdvancePaymentIndicator" ,
+      "AnnuityCategory" ,
+      "AnnuityEndDate" ,
+      "AnnuityPaymentFrequency" ,
+      "AnnuityPeriodAmount" ,
+      "AnnuityStartDate" ,
+      "AnnuitySubcategory" ,
+      "BenefitAmount" ,
+      "BenefitDuration" ,
+      "BenefitDurationUnit" ,
+      "BenefitPhaseProfitSharingMethod" ,
+      "BodilyInjuryLiabilityLimitPerPersonAmount" ,
+      "BodilyInjuryliabilityLimitperAccidentAmount" ,
+      "BusinessClass" ,
+      "Category" ,
+      "ChildTermRiderAmount" ,
+      "ClassOfInsurance" ,
+      "DeathBenefitAmount" ,
+      "DeductibleAmount" ,
+      "EliminationPeriod" ,
+      "EliminationPeriodUnit" ,
+      "EndDate" ,
+      "EndTime" ,
+      "EndTimeZone" ,
+      "EndowmentBenefitAmount" ,
+      "ExtendedBenefitAmount" ,
+      "FirstAvailableAnnuitizationDate" ,
+      "FixedInterestRate" ,
+      "FreeofChargeIndicator" ,
+      "GMDBBaseWithdrawalRatePercent" ,
+      "GMDBRollupRatePercent" ,
+      "GMIBBaseWithdrawalRatePercent" ,
+      "GMIBRollupRatePercent" ,
+      "GMWBBaseWithdrawalRatePercent" ,
+      "GMWBRollupRatePercent" ,
+      "GuaranteeCertainPeriodDuration" ,
+      "GuaranteeCertainPeriodIndicator" ,
+      "GuaranteeCertainPeriodTimeUnit" ,
+      "GuaranteedPaymentEndDate" ,
+      "JointAndSurvivorAnnuityIndicator" ,
+      "JointSurvivorAnnuityReductionPercent" ,
+      "JumboRate" ,
+      "LastAvailableAnnuitizationDate" ,
+      "LifeAndAnnuityCoverageCategory" ,
+      "LifecycleStatus" ,
+      "LifetimeWithdrawalGuaranteeIndicator" ,
+      "LimitAmount" ,
+      "MainAnnuityCoverageCategory" ,
+      "MainCoverageBenefitPercent" ,
+      "MainLifeInsuranceCoverageCategoryCode" ,
+      "MaximumAnnuityAmount" ,
+      "NoClaimsClass" ,
+      "NursingCareAssessmentSystem" ,
+      "NursingCareClassificationSystem" ,
+      "PaymentFrequency" ,
+      "PeriodDeductableAmount" ,
+      "PeriodMaximumBenefitAmount" ,
+      "PortfolioGroup" ,
+      "PremiumBenefitPhase" ,
+      "PremiumExemptPhaseProfitSharingMethod" ,
+      "PremiumGrossAnnualAmount" ,
+      "PremiumGrossPeriodAmount" ,
+      "PremiumObligationPhaseProfitSharingMethod" ,
+      "PrimarySurvivorAnnuityReductionPercent" ,
+      "ProfitClass" ,
+      "ProfitSharingIndicator" ,
+      "PropertyDamageLiabilityLimitAmount" ,
+      "PropertyandCasualtyCoverageCategory" ,
+      "RegionalClass" ,
+      "RiskCode" ,
+      "StartDate" ,
+      "StartTime" ,
+      "StartTimeZone" ,
+      "SubClassOfInsurance" ,
+      "SubSubClassOfInsurance" ,
+      "SupplementaryAnnuityInsuranceCoverage" ,
+      "SupplementaryLifeCoverageCategory" ,
+      "TariffAnnualAmount" ,
+      "TariffPeriodAmount" ,
+      "TotalLimitPerAccidentAmount" ,
+      "Type" ,
+      "TypeClass" ,
+      "WaitingPeriod" ,
+      "WaitingPeriodUnit" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::InsuranceCoverage"
+with associations
+(
+	join "sap.fsdm.SQLViews::ApplicableInterestRate_View" as "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"
+	  on "ID" = "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_ApplicableInterestRate__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::BenefitsRight_View" as "_BenefitsRight__InsuranceCoverage"
+	  on "ID" = "_BenefitsRight__InsuranceCoverage"."_InsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_BenefitsRight__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_BenefitsRight__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_BenefitsRight__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_BenefitsRight__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_BenefitsRight__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__LifeAndAnnuityInsuranceCoverage"
+	  on "ID" = "_FinancialContract__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_FinancialContract__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_FinancialContract__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_FinancialContract__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_FinancialContract__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_FinancialContract__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::GuaranteedMinimumBenefitSnapshot_View" as "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"
+	  on "ID" = "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"."_MainAnnuityCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"."_MainAnnuityCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"."_MainAnnuityCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"."_MainAnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"."_MainAnnuityCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_GuaranteedMinimumBenefitSnapshot__MainAnnuityCoverage"."_MainAnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::IndexSpecification_View" as "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"
+	  on "ID" = "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_IndexSpecification__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialStandardProduct_View" as "_ElementaryInsuranceProduct"
+	  on "_ElementaryInsuranceProduct"."ASSOC_Company.BusinessPartnerID" = "_ElementaryInsuranceProduct.ASSOC_Company.BusinessPartnerID" AND 
+	     "_ElementaryInsuranceProduct"."FinancialStandardProductID" = "_ElementaryInsuranceProduct.FinancialStandardProductID" AND 
+	     "_ElementaryInsuranceProduct"."IDSystem" = "_ElementaryInsuranceProduct.IDSystem" AND 
+	     "_ElementaryInsuranceProduct"."PricingScheme" = "_ElementaryInsuranceProduct.PricingScheme"
+	     ,
+	join "sap.fsdm.SQLViews::FundRange_View" as "_FundRange"
+	  on "_FundRange"."ID" = "_FundRange.ID" AND 
+	     "_FundRange"."IDSystem" = "_FundRange.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::IndexRange_View" as "_IndexRange"
+	  on "_IndexRange"."ID" = "_IndexRange.ID" AND 
+	     "_IndexRange"."IDSystem" = "_IndexRange.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_InsuranceContract"
+	  on "_InsuranceContract"."FinancialContractID" = "_InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract"."IDSystem" = "_InsuranceContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredObject_View" as "_InsuredObject"
+	  on "_InsuredObject"."_PhysicalAsset.PhysicalAssetID" = "_InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuredObject"."_FinancialContract.IDSystem" = "_InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject"."_FinancialContract.FinancialContractID" = "_InsuredObject._FinancialContract.FinancialContractID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceCoverageOption_View" as "_InsuranceCoverageOption__InsuranceCoverage"
+	  on "ID" = "_InsuranceCoverageOption__InsuranceCoverage"."_InsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuranceCoverageOption__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuranceCoverageOption__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceCoverageOption__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuranceCoverageOption__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceCoverageOption__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceDiscount_View" as "_InsuranceDiscount__InsuranceCoverage"
+	  on "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceDiscount__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuranceDiscount__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceDiscount__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuranceDiscount__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuranceDiscount__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "ID" = "_InsuranceDiscount__InsuranceCoverage"."_InsuranceCoverage.ID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceOption_View" as "_InsuranceOption__InsuranceCoverage"
+	  on "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceOption__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuranceOption__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceOption__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuranceOption__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuranceOption__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "ID" = "_InsuranceOption__InsuranceCoverage"."_InsuranceCoverage.ID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceSurcharge_View" as "_InsuranceSurcharge__InsuranceCoverage"
+	  on "ID" = "_InsuranceSurcharge__InsuranceCoverage"."_InsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuranceSurcharge__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuranceSurcharge__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceSurcharge__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuranceSurcharge__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceSurcharge__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceTechnicalAccountBalance_View" as "_InsuranceTechnicalAccountBalance__Coverage"
+	  on "ID" = "_InsuranceTechnicalAccountBalance__Coverage"."_Coverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuranceTechnicalAccountBalance__Coverage"."_Coverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuranceTechnicalAccountBalance__Coverage"."_Coverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceTechnicalAccountBalance__Coverage"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuranceTechnicalAccountBalance__Coverage"."_Coverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceTechnicalAccountBalance__Coverage"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuranceTechnicalAccountMovement_View" as "_InsuranceTechnicalAccountMovement__Coverage"
+	  on "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuranceTechnicalAccountMovement__Coverage"."_Coverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuranceTechnicalAccountMovement__Coverage"."_Coverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuranceTechnicalAccountMovement__Coverage"."_Coverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuranceTechnicalAccountMovement__Coverage"."_Coverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuranceTechnicalAccountMovement__Coverage"."_Coverage._InsuranceContract.FinancialContractID" AND 
+	     "ID" = "_InsuranceTechnicalAccountMovement__Coverage"."_Coverage.ID"
+	     ,
+	join "sap.fsdm.SQLViews::InsuredPerson_View" as "_InsuredPerson__InsuranceCoverage"
+	  on "ID" = "_InsuredPerson__InsuranceCoverage"."_InsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InsuredPerson__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InsuredPerson__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InsuredPerson__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InsuredPerson__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InsuredPerson__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::InvestmentFundShareSelection_View" as "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"
+	  on "ID" = "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_InvestmentFundShareSelection__LifeAndAnnuityInsuranceCoverage"."_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::NursingInsuranceBenefit_View" as "_NursingInsuranceBenefit__AnnuityCoverage"
+	  on "ID" = "_NursingInsuranceBenefit__AnnuityCoverage"."_AnnuityCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_NursingInsuranceBenefit__AnnuityCoverage"."_AnnuityCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_NursingInsuranceBenefit__AnnuityCoverage"."_AnnuityCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_NursingInsuranceBenefit__AnnuityCoverage"."_AnnuityCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_NursingInsuranceBenefit__AnnuityCoverage"."_AnnuityCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_NursingInsuranceBenefit__AnnuityCoverage"."_AnnuityCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::PaidPremium_View" as "_PaidPremium__InsuranceCoverage"
+	  on "ID" = "_PaidPremium__InsuranceCoverage"."_InsuranceCoverage.ID" AND 
+	     "_InsuranceContract.FinancialContractID" = "_PaidPremium__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_PaidPremium__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_PaidPremium__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_PaidPremium__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_PaidPremium__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID"
+	     ,
+	join "sap.fsdm.SQLViews::PremiumSplitting_View" as "_PremiumSplitting__InsuranceCoverage"
+	  on "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_PremiumSplitting__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_PremiumSplitting__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_PremiumSplitting__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_PremiumSplitting__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceContract.FinancialContractID" = "_PremiumSplitting__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "ID" = "_PremiumSplitting__InsuranceCoverage"."_InsuranceCoverage.ID"
+	     ,
+	join "sap.fsdm.SQLViews::Subclaim_View" as "_Subclaim__InsuranceCoverage"
+	  on "_InsuredObject._PhysicalAsset.PhysicalAssetID" = "_Subclaim__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" AND 
+	     "_InsuredObject._FinancialContract.IDSystem" = "_Subclaim__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" AND 
+	     "_InsuredObject._FinancialContract.FinancialContractID" = "_Subclaim__InsuranceCoverage"."_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" AND 
+	     "_InsuranceContract.IDSystem" = "_Subclaim__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.IDSystem" AND 
+	     "_InsuranceContract.FinancialContractID" = "_Subclaim__InsuranceCoverage"."_InsuranceCoverage._InsuranceContract.FinancialContractID" AND 
+	     "ID" = "_Subclaim__InsuranceCoverage"."_InsuranceCoverage.ID"
+	     
+);

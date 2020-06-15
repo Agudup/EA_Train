@@ -1,0 +1,24 @@
+view "sap.fsdm.SQLViews::TradeClass_View" 
+as select
+      "TradeClass" ,
+      "TradeClassificationSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "TradeClassDescription" ,
+      "TradeClassificationDescription" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TradeClass"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClassificationOfTrade_View" as "_ClassificationOfTrade__TradeClass"
+	  on "TradeClass" = "_ClassificationOfTrade__TradeClass"."_TradeClass.TradeClass" AND 
+	     "TradeClassificationSystem" = "_ClassificationOfTrade__TradeClass"."_TradeClass.TradeClassificationSystem"
+	     
+);

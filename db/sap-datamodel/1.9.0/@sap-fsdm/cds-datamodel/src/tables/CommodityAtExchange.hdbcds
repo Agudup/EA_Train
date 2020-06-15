@@ -1,0 +1,46 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"Commodity";
+using "sap"."fsdm"::"Exchange";
+
+entity "CommodityAtExchange" {
+    key "_Commodity"                    : association to Commodity { CommodityID }         not null;
+    key "_Exchange"                     : association to Exchange { MarketIdentifierCode } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                                     not null;
+        "SystemValidTo"                 : UTCTimestamp                                     not null;
+        "CommodityIdAtExchange"         : String(128);
+        "TickSize"                      : Decimal(34, 6);
+        "TickSizeCurrency"              : String(3);
+        "Unit"                          : String(10);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CommodityAtExchange_Historical" {
+    "_Commodity"                    : association to Commodity { CommodityID }         not null;
+    "_Exchange"                     : association to Exchange { MarketIdentifierCode } not null;
+    "BusinessValidFrom"             : LocalDate                                        not null;
+    "BusinessValidTo"               : LocalDate                                        not null;
+    "SystemValidFrom"               : UTCTimestamp                                     not null;
+    "SystemValidTo"                 : UTCTimestamp                                     not null;
+    "CommodityIdAtExchange"         : String(128);
+    "TickSize"                      : Decimal(34, 6);
+    "TickSizeCurrency"              : String(3);
+    "Unit"                          : String(10);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

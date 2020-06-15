@@ -1,0 +1,562 @@
+PROCEDURE "sap.fsdm.procedures::InterestAndFeeCalculationResultListDelReadOnly" (IN ROW "sap.fsdm.tabletypes::InterestAndFeeCalculationResultTT_Del", OUT CURR_DEL "sap.fsdm.tabletypes::InterestAndFeeCalculationResultTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::InterestAndFeeCalculationResultTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'CalculationPeriodID=' || TO_VARCHAR("CalculationPeriodID") || ' ' ||
+                'InterestAndFeeCalculationMethod=' || TO_VARCHAR("InterestAndFeeCalculationMethod") || ' ' ||
+                'ItemNumber=' || TO_VARCHAR("ItemNumber") || ' ' ||
+                'ItemType=' || TO_VARCHAR("ItemType") || ' ' ||
+                'ASSOC_FinancialContractOfCalculatedItems.FinancialContractID=' || TO_VARCHAR("ASSOC_FinancialContractOfCalculatedItems.FinancialContractID") || ' ' ||
+                'ASSOC_FinancialContractOfCalculatedItems.IDSystem=' || TO_VARCHAR("ASSOC_FinancialContractOfCalculatedItems.IDSystem") || ' ' ||
+                'ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency=' || TO_VARCHAR("ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency") || ' ' ||
+                'ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."CalculationPeriodID",
+                        "IN"."InterestAndFeeCalculationMethod",
+                        "IN"."ItemNumber",
+                        "IN"."ItemType",
+                        "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                        "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."CalculationPeriodID",
+                        "IN"."InterestAndFeeCalculationMethod",
+                        "IN"."ItemNumber",
+                        "IN"."ItemType",
+                        "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                        "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "CalculationPeriodID",
+                        "InterestAndFeeCalculationMethod",
+                        "ItemNumber",
+                        "ItemType",
+                        "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                        "ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                        "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."CalculationPeriodID",
+                                    "IN"."InterestAndFeeCalculationMethod",
+                                    "IN"."ItemNumber",
+                                    "IN"."ItemType",
+                                    "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."CalculationPeriodID",
+                                    "IN"."InterestAndFeeCalculationMethod",
+                                    "IN"."ItemNumber",
+                                    "IN"."ItemType",
+                                    "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                                    "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+    CURR_DEL = select 
+            "CalculationPeriodID",
+            "InterestAndFeeCalculationMethod",
+            "ItemNumber",
+            "ItemType",
+            "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+            "ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+            "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+            "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "BusinessValidFrom",
+            "BusinessValidTo"
+        from "sap.fsdm::InterestAndFeeCalculationResult" WHERE
+            (
+            "CalculationPeriodID" ,
+            "InterestAndFeeCalculationMethod" ,
+            "ItemNumber" ,
+            "ItemType" ,
+            "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+            "ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+            "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+            "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+            
+)
+        in ( select
+            "OLD"."CalculationPeriodID",
+            "OLD"."InterestAndFeeCalculationMethod",
+            "OLD"."ItemNumber",
+            "OLD"."ItemType",
+            "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+            "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+            "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+            "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InterestAndFeeCalculationResult" as "OLD"
+        on
+                              ( "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" or "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" or "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" is null ) and
+                              ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                              ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                              ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+                              ( "IN"."InterestAndFeeCalculationMethod" = "OLD"."InterestAndFeeCalculationMethod" or "IN"."InterestAndFeeCalculationMethod" is null ) and
+                              ( "IN"."CalculationPeriodID" = "OLD"."CalculationPeriodID" or "IN"."CalculationPeriodID" is null ) and
+                              ( "IN"."ItemType" = "OLD"."ItemType" or "IN"."ItemType" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+     CURR_INS = select 
+        "CalculationPeriodID",
+        "InterestAndFeeCalculationMethod",
+        "ItemNumber",
+        "ItemType",
+        "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+        "ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+        "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "ActualBaseAmount",
+        "ActualCount",
+        "ApplicableInterestRate",
+        "BalanceAggregationMethod",
+        "BalanceAmount",
+        "BalanceAmountCurrency",
+        "BalanceType",
+        "BaseAmountCurrency",
+        "CalculatedAmountBeforeLimits",
+        "CalculatedAmountBeforeLimitsCurrency",
+        "CalculatedItemCategory",
+        "CalculationBaseType",
+        "CalculationPeriodEnd",
+        "CalculationPeriodEndDate",
+        "CalculationPeriodStart",
+        "CalculationPeriodStartDate",
+        "DueAmountInPaymentCurrency",
+        "DueAmountInPositionCurrency",
+        "EarliestConsideredPostingDate",
+        "EarliestConsideredValueDate",
+        "FeeType",
+        "InterestType",
+        "IsToBePosted",
+        "LatestConsideredPostingDate",
+        "LatestConsideredValueDate",
+        "LowerLimit",
+        "NumberOfBaseDays",
+        "NumberOfDays",
+        "PaymentCurrency",
+        "PositionCurrency",
+        "PostingCutoff",
+        "PostingDate",
+        "PostingDirection",
+        "Rate",
+        "ScaleBaseType",
+        "ScalingMethod",
+        "SettledBaseAmount",
+        "SettledCount",
+        "SettlementAccountIsDifferent",
+        "TaxableIndicator",
+        "ThresholdAmount",
+        "ThresholdAmountCurrency",
+        "UnsignedCalculatedAmountBeforeLimits",
+        "UnsignedDueAmountInPaymentCurrency",
+        "UnsignedDueAmountInPositionCurrency",
+        "UpperLimit",
+        "ValueCutoff",
+        "ValueDate",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+          from (
+          (
+          select
+            "OLD_CalculationPeriodID" as "CalculationPeriodID" ,
+            "OLD_InterestAndFeeCalculationMethod" as "InterestAndFeeCalculationMethod" ,
+            "OLD_ItemNumber" as "ItemNumber" ,
+            "OLD_ItemType" as "ItemType" ,
+            "OLD_ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" as "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" ,
+            "OLD_ASSOC_FinancialContractOfCalculatedItems.IDSystem" as "ASSOC_FinancialContractOfCalculatedItems.IDSystem" ,
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" ,
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_ActualBaseAmount" as "ActualBaseAmount" ,
+            "OLD_ActualCount" as "ActualCount" ,
+            "OLD_ApplicableInterestRate" as "ApplicableInterestRate" ,
+            "OLD_BalanceAggregationMethod" as "BalanceAggregationMethod" ,
+            "OLD_BalanceAmount" as "BalanceAmount" ,
+            "OLD_BalanceAmountCurrency" as "BalanceAmountCurrency" ,
+            "OLD_BalanceType" as "BalanceType" ,
+            "OLD_BaseAmountCurrency" as "BaseAmountCurrency" ,
+            "OLD_CalculatedAmountBeforeLimits" as "CalculatedAmountBeforeLimits" ,
+            "OLD_CalculatedAmountBeforeLimitsCurrency" as "CalculatedAmountBeforeLimitsCurrency" ,
+            "OLD_CalculatedItemCategory" as "CalculatedItemCategory" ,
+            "OLD_CalculationBaseType" as "CalculationBaseType" ,
+            "OLD_CalculationPeriodEnd" as "CalculationPeriodEnd" ,
+            "OLD_CalculationPeriodEndDate" as "CalculationPeriodEndDate" ,
+            "OLD_CalculationPeriodStart" as "CalculationPeriodStart" ,
+            "OLD_CalculationPeriodStartDate" as "CalculationPeriodStartDate" ,
+            "OLD_DueAmountInPaymentCurrency" as "DueAmountInPaymentCurrency" ,
+            "OLD_DueAmountInPositionCurrency" as "DueAmountInPositionCurrency" ,
+            "OLD_EarliestConsideredPostingDate" as "EarliestConsideredPostingDate" ,
+            "OLD_EarliestConsideredValueDate" as "EarliestConsideredValueDate" ,
+            "OLD_FeeType" as "FeeType" ,
+            "OLD_InterestType" as "InterestType" ,
+            "OLD_IsToBePosted" as "IsToBePosted" ,
+            "OLD_LatestConsideredPostingDate" as "LatestConsideredPostingDate" ,
+            "OLD_LatestConsideredValueDate" as "LatestConsideredValueDate" ,
+            "OLD_LowerLimit" as "LowerLimit" ,
+            "OLD_NumberOfBaseDays" as "NumberOfBaseDays" ,
+            "OLD_NumberOfDays" as "NumberOfDays" ,
+            "OLD_PaymentCurrency" as "PaymentCurrency" ,
+            "OLD_PositionCurrency" as "PositionCurrency" ,
+            "OLD_PostingCutoff" as "PostingCutoff" ,
+            "OLD_PostingDate" as "PostingDate" ,
+            "OLD_PostingDirection" as "PostingDirection" ,
+            "OLD_Rate" as "Rate" ,
+            "OLD_ScaleBaseType" as "ScaleBaseType" ,
+            "OLD_ScalingMethod" as "ScalingMethod" ,
+            "OLD_SettledBaseAmount" as "SettledBaseAmount" ,
+            "OLD_SettledCount" as "SettledCount" ,
+            "OLD_SettlementAccountIsDifferent" as "SettlementAccountIsDifferent" ,
+            "OLD_TaxableIndicator" as "TaxableIndicator" ,
+            "OLD_ThresholdAmount" as "ThresholdAmount" ,
+            "OLD_ThresholdAmountCurrency" as "ThresholdAmountCurrency" ,
+            "OLD_UnsignedCalculatedAmountBeforeLimits" as "UnsignedCalculatedAmountBeforeLimits" ,
+            "OLD_UnsignedDueAmountInPaymentCurrency" as "UnsignedDueAmountInPaymentCurrency" ,
+            "OLD_UnsignedDueAmountInPositionCurrency" as "UnsignedDueAmountInPositionCurrency" ,
+            "OLD_UpperLimit" as "UpperLimit" ,
+            "OLD_ValueCutoff" as "ValueCutoff" ,
+            "OLD_ValueDate" as "ValueDate" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "OLD"."InterestAndFeeCalculationMethod",
+                        "OLD"."CalculationPeriodID",
+                        "OLD"."ItemType",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."CalculationPeriodID" as "OLD_CalculationPeriodID",
+                                "OLD"."InterestAndFeeCalculationMethod" as "OLD_InterestAndFeeCalculationMethod",
+                                "OLD"."ItemNumber" as "OLD_ItemNumber",
+                                "OLD"."ItemType" as "OLD_ItemType",
+                                "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" as "OLD_ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" as "OLD_ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ActualBaseAmount" as "OLD_ActualBaseAmount",
+                                "OLD"."ActualCount" as "OLD_ActualCount",
+                                "OLD"."ApplicableInterestRate" as "OLD_ApplicableInterestRate",
+                                "OLD"."BalanceAggregationMethod" as "OLD_BalanceAggregationMethod",
+                                "OLD"."BalanceAmount" as "OLD_BalanceAmount",
+                                "OLD"."BalanceAmountCurrency" as "OLD_BalanceAmountCurrency",
+                                "OLD"."BalanceType" as "OLD_BalanceType",
+                                "OLD"."BaseAmountCurrency" as "OLD_BaseAmountCurrency",
+                                "OLD"."CalculatedAmountBeforeLimits" as "OLD_CalculatedAmountBeforeLimits",
+                                "OLD"."CalculatedAmountBeforeLimitsCurrency" as "OLD_CalculatedAmountBeforeLimitsCurrency",
+                                "OLD"."CalculatedItemCategory" as "OLD_CalculatedItemCategory",
+                                "OLD"."CalculationBaseType" as "OLD_CalculationBaseType",
+                                "OLD"."CalculationPeriodEnd" as "OLD_CalculationPeriodEnd",
+                                "OLD"."CalculationPeriodEndDate" as "OLD_CalculationPeriodEndDate",
+                                "OLD"."CalculationPeriodStart" as "OLD_CalculationPeriodStart",
+                                "OLD"."CalculationPeriodStartDate" as "OLD_CalculationPeriodStartDate",
+                                "OLD"."DueAmountInPaymentCurrency" as "OLD_DueAmountInPaymentCurrency",
+                                "OLD"."DueAmountInPositionCurrency" as "OLD_DueAmountInPositionCurrency",
+                                "OLD"."EarliestConsideredPostingDate" as "OLD_EarliestConsideredPostingDate",
+                                "OLD"."EarliestConsideredValueDate" as "OLD_EarliestConsideredValueDate",
+                                "OLD"."FeeType" as "OLD_FeeType",
+                                "OLD"."InterestType" as "OLD_InterestType",
+                                "OLD"."IsToBePosted" as "OLD_IsToBePosted",
+                                "OLD"."LatestConsideredPostingDate" as "OLD_LatestConsideredPostingDate",
+                                "OLD"."LatestConsideredValueDate" as "OLD_LatestConsideredValueDate",
+                                "OLD"."LowerLimit" as "OLD_LowerLimit",
+                                "OLD"."NumberOfBaseDays" as "OLD_NumberOfBaseDays",
+                                "OLD"."NumberOfDays" as "OLD_NumberOfDays",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."PostingCutoff" as "OLD_PostingCutoff",
+                                "OLD"."PostingDate" as "OLD_PostingDate",
+                                "OLD"."PostingDirection" as "OLD_PostingDirection",
+                                "OLD"."Rate" as "OLD_Rate",
+                                "OLD"."ScaleBaseType" as "OLD_ScaleBaseType",
+                                "OLD"."ScalingMethod" as "OLD_ScalingMethod",
+                                "OLD"."SettledBaseAmount" as "OLD_SettledBaseAmount",
+                                "OLD"."SettledCount" as "OLD_SettledCount",
+                                "OLD"."SettlementAccountIsDifferent" as "OLD_SettlementAccountIsDifferent",
+                                "OLD"."TaxableIndicator" as "OLD_TaxableIndicator",
+                                "OLD"."ThresholdAmount" as "OLD_ThresholdAmount",
+                                "OLD"."ThresholdAmountCurrency" as "OLD_ThresholdAmountCurrency",
+                                "OLD"."UnsignedCalculatedAmountBeforeLimits" as "OLD_UnsignedCalculatedAmountBeforeLimits",
+                                "OLD"."UnsignedDueAmountInPaymentCurrency" as "OLD_UnsignedDueAmountInPaymentCurrency",
+                                "OLD"."UnsignedDueAmountInPositionCurrency" as "OLD_UnsignedDueAmountInPositionCurrency",
+                                "OLD"."UpperLimit" as "OLD_UpperLimit",
+                                "OLD"."ValueCutoff" as "OLD_ValueCutoff",
+                                "OLD"."ValueDate" as "OLD_ValueDate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InterestAndFeeCalculationResult" as "OLD"
+            on
+                                      ( "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" or "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" or "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+                                      ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+                                      ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+                                      ( "IN"."InterestAndFeeCalculationMethod" = "OLD"."InterestAndFeeCalculationMethod" or "IN"."InterestAndFeeCalculationMethod" is null ) and
+                                      ( "IN"."CalculationPeriodID" = "OLD"."CalculationPeriodID" or "IN"."CalculationPeriodID" is null ) and
+                                      ( "IN"."ItemType" = "OLD"."ItemType" or "IN"."ItemType" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_"         )
+        UNION ALL
+        (
+        select
+            "OLD_CalculationPeriodID" as "CalculationPeriodID",
+            "OLD_InterestAndFeeCalculationMethod" as "InterestAndFeeCalculationMethod",
+            "OLD_ItemNumber" as "ItemNumber",
+            "OLD_ItemType" as "ItemType",
+            "OLD_ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" as "ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+            "OLD_ASSOC_FinancialContractOfCalculatedItems.IDSystem" as "ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_ActualBaseAmount" as "ActualBaseAmount",
+            "OLD_ActualCount" as "ActualCount",
+            "OLD_ApplicableInterestRate" as "ApplicableInterestRate",
+            "OLD_BalanceAggregationMethod" as "BalanceAggregationMethod",
+            "OLD_BalanceAmount" as "BalanceAmount",
+            "OLD_BalanceAmountCurrency" as "BalanceAmountCurrency",
+            "OLD_BalanceType" as "BalanceType",
+            "OLD_BaseAmountCurrency" as "BaseAmountCurrency",
+            "OLD_CalculatedAmountBeforeLimits" as "CalculatedAmountBeforeLimits",
+            "OLD_CalculatedAmountBeforeLimitsCurrency" as "CalculatedAmountBeforeLimitsCurrency",
+            "OLD_CalculatedItemCategory" as "CalculatedItemCategory",
+            "OLD_CalculationBaseType" as "CalculationBaseType",
+            "OLD_CalculationPeriodEnd" as "CalculationPeriodEnd",
+            "OLD_CalculationPeriodEndDate" as "CalculationPeriodEndDate",
+            "OLD_CalculationPeriodStart" as "CalculationPeriodStart",
+            "OLD_CalculationPeriodStartDate" as "CalculationPeriodStartDate",
+            "OLD_DueAmountInPaymentCurrency" as "DueAmountInPaymentCurrency",
+            "OLD_DueAmountInPositionCurrency" as "DueAmountInPositionCurrency",
+            "OLD_EarliestConsideredPostingDate" as "EarliestConsideredPostingDate",
+            "OLD_EarliestConsideredValueDate" as "EarliestConsideredValueDate",
+            "OLD_FeeType" as "FeeType",
+            "OLD_InterestType" as "InterestType",
+            "OLD_IsToBePosted" as "IsToBePosted",
+            "OLD_LatestConsideredPostingDate" as "LatestConsideredPostingDate",
+            "OLD_LatestConsideredValueDate" as "LatestConsideredValueDate",
+            "OLD_LowerLimit" as "LowerLimit",
+            "OLD_NumberOfBaseDays" as "NumberOfBaseDays",
+            "OLD_NumberOfDays" as "NumberOfDays",
+            "OLD_PaymentCurrency" as "PaymentCurrency",
+            "OLD_PositionCurrency" as "PositionCurrency",
+            "OLD_PostingCutoff" as "PostingCutoff",
+            "OLD_PostingDate" as "PostingDate",
+            "OLD_PostingDirection" as "PostingDirection",
+            "OLD_Rate" as "Rate",
+            "OLD_ScaleBaseType" as "ScaleBaseType",
+            "OLD_ScalingMethod" as "ScalingMethod",
+            "OLD_SettledBaseAmount" as "SettledBaseAmount",
+            "OLD_SettledCount" as "SettledCount",
+            "OLD_SettlementAccountIsDifferent" as "SettlementAccountIsDifferent",
+            "OLD_TaxableIndicator" as "TaxableIndicator",
+            "OLD_ThresholdAmount" as "ThresholdAmount",
+            "OLD_ThresholdAmountCurrency" as "ThresholdAmountCurrency",
+            "OLD_UnsignedCalculatedAmountBeforeLimits" as "UnsignedCalculatedAmountBeforeLimits",
+            "OLD_UnsignedDueAmountInPaymentCurrency" as "UnsignedDueAmountInPaymentCurrency",
+            "OLD_UnsignedDueAmountInPositionCurrency" as "UnsignedDueAmountInPositionCurrency",
+            "OLD_UpperLimit" as "UpperLimit",
+            "OLD_ValueCutoff" as "ValueCutoff",
+            "OLD_ValueDate" as "ValueDate",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                        "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                        "OLD"."InterestAndFeeCalculationMethod",
+                        "OLD"."CalculationPeriodID",
+                        "OLD"."ItemType",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                                "OLD"."CalculationPeriodID" as "OLD_CalculationPeriodID",
+                                "OLD"."InterestAndFeeCalculationMethod" as "OLD_InterestAndFeeCalculationMethod",
+                                "OLD"."ItemNumber" as "OLD_ItemNumber",
+                                "OLD"."ItemType" as "OLD_ItemType",
+                                "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" as "OLD_ASSOC_FinancialContractOfCalculatedItems.FinancialContractID",
+                                "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" as "OLD_ASSOC_FinancialContractOfCalculatedItems.IDSystem",
+                                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency",
+                                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."ActualBaseAmount" as "OLD_ActualBaseAmount",
+                                "OLD"."ActualCount" as "OLD_ActualCount",
+                                "OLD"."ApplicableInterestRate" as "OLD_ApplicableInterestRate",
+                                "OLD"."BalanceAggregationMethod" as "OLD_BalanceAggregationMethod",
+                                "OLD"."BalanceAmount" as "OLD_BalanceAmount",
+                                "OLD"."BalanceAmountCurrency" as "OLD_BalanceAmountCurrency",
+                                "OLD"."BalanceType" as "OLD_BalanceType",
+                                "OLD"."BaseAmountCurrency" as "OLD_BaseAmountCurrency",
+                                "OLD"."CalculatedAmountBeforeLimits" as "OLD_CalculatedAmountBeforeLimits",
+                                "OLD"."CalculatedAmountBeforeLimitsCurrency" as "OLD_CalculatedAmountBeforeLimitsCurrency",
+                                "OLD"."CalculatedItemCategory" as "OLD_CalculatedItemCategory",
+                                "OLD"."CalculationBaseType" as "OLD_CalculationBaseType",
+                                "OLD"."CalculationPeriodEnd" as "OLD_CalculationPeriodEnd",
+                                "OLD"."CalculationPeriodEndDate" as "OLD_CalculationPeriodEndDate",
+                                "OLD"."CalculationPeriodStart" as "OLD_CalculationPeriodStart",
+                                "OLD"."CalculationPeriodStartDate" as "OLD_CalculationPeriodStartDate",
+                                "OLD"."DueAmountInPaymentCurrency" as "OLD_DueAmountInPaymentCurrency",
+                                "OLD"."DueAmountInPositionCurrency" as "OLD_DueAmountInPositionCurrency",
+                                "OLD"."EarliestConsideredPostingDate" as "OLD_EarliestConsideredPostingDate",
+                                "OLD"."EarliestConsideredValueDate" as "OLD_EarliestConsideredValueDate",
+                                "OLD"."FeeType" as "OLD_FeeType",
+                                "OLD"."InterestType" as "OLD_InterestType",
+                                "OLD"."IsToBePosted" as "OLD_IsToBePosted",
+                                "OLD"."LatestConsideredPostingDate" as "OLD_LatestConsideredPostingDate",
+                                "OLD"."LatestConsideredValueDate" as "OLD_LatestConsideredValueDate",
+                                "OLD"."LowerLimit" as "OLD_LowerLimit",
+                                "OLD"."NumberOfBaseDays" as "OLD_NumberOfBaseDays",
+                                "OLD"."NumberOfDays" as "OLD_NumberOfDays",
+                                "OLD"."PaymentCurrency" as "OLD_PaymentCurrency",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."PostingCutoff" as "OLD_PostingCutoff",
+                                "OLD"."PostingDate" as "OLD_PostingDate",
+                                "OLD"."PostingDirection" as "OLD_PostingDirection",
+                                "OLD"."Rate" as "OLD_Rate",
+                                "OLD"."ScaleBaseType" as "OLD_ScaleBaseType",
+                                "OLD"."ScalingMethod" as "OLD_ScalingMethod",
+                                "OLD"."SettledBaseAmount" as "OLD_SettledBaseAmount",
+                                "OLD"."SettledCount" as "OLD_SettledCount",
+                                "OLD"."SettlementAccountIsDifferent" as "OLD_SettlementAccountIsDifferent",
+                                "OLD"."TaxableIndicator" as "OLD_TaxableIndicator",
+                                "OLD"."ThresholdAmount" as "OLD_ThresholdAmount",
+                                "OLD"."ThresholdAmountCurrency" as "OLD_ThresholdAmountCurrency",
+                                "OLD"."UnsignedCalculatedAmountBeforeLimits" as "OLD_UnsignedCalculatedAmountBeforeLimits",
+                                "OLD"."UnsignedDueAmountInPaymentCurrency" as "OLD_UnsignedDueAmountInPaymentCurrency",
+                                "OLD"."UnsignedDueAmountInPositionCurrency" as "OLD_UnsignedDueAmountInPositionCurrency",
+                                "OLD"."UpperLimit" as "OLD_UpperLimit",
+                                "OLD"."ValueCutoff" as "OLD_ValueCutoff",
+                                "OLD"."ValueDate" as "OLD_ValueDate",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InterestAndFeeCalculationResult" as "OLD"
+            on
+               ( "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" or "IN"."ASSOC_FinancialContractOfCalculatedItems.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" = "OLD"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" or "IN"."ASSOC_FinancialContractOfCalculatedItems.IDSystem" is null ) and
+               ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+               ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+               ( "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" = "OLD"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" or "IN"."ASSOC_PositionCcyOfMultiCcyContract.PositionCurrency" is null ) and
+               ( "IN"."InterestAndFeeCalculationMethod" = "OLD"."InterestAndFeeCalculationMethod" or "IN"."InterestAndFeeCalculationMethod" is null ) and
+               ( "IN"."CalculationPeriodID" = "OLD"."CalculationPeriodID" or "IN"."CalculationPeriodID" is null ) and
+               ( "IN"."ItemType" = "OLD"."ItemType" or "IN"."ItemType" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

@@ -1,0 +1,89 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"CommunicationEvent";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PurchasedReceivable";
+using "sap"."fsdm"::"Trade";
+
+entity "Document" {
+    key "DocumentID"                    : String(128);
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp not null;
+        "SystemValidTo"                 : UTCTimestamp not null;
+        "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_CommunicationEvent"      : association to CommunicationEvent {
+                                                                              CommunicationEventID,
+                                                                              IDSystem
+                                                                            };
+        "ASSOC_FinancialContract"       : association to FinancialContract {
+                                                                             FinancialContractID,
+                                                                             IDSystem
+                                                                           };
+        "_PurchasedReceivable"          : association to PurchasedReceivable { _ReceivablePurchaseAgreement };
+        "_Trade"                        : association to Trade {
+                                                                 IDSystem,
+                                                                 TradeID
+                                                               };
+        "DocumentComment"               : String(200);
+        "DocumentIssuingAuthority"      : String(256);
+        "DocumentIssuingCountry"        : String(2);
+        "DocumentLabel"                 : String(256);
+        "DocumentLink"                  : String(256);
+        "DocumentLocation"              : String(200);
+        "DocumentSystem"                : String(256);
+        "DocumentType"                  : String(40);
+        "DocumentValidFrom"             : LocalDate;
+        "ExpiryDate"                    : LocalDate;
+        "Status"                        : String(100);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Document_Historical" {
+    "DocumentID"                    : String(128)  not null;
+    "BusinessValidFrom"             : LocalDate    not null;
+    "BusinessValidTo"               : LocalDate    not null;
+    "SystemValidFrom"               : UTCTimestamp not null;
+    "SystemValidTo"                 : UTCTimestamp not null;
+    "ASSOC_BusinessPartner"         : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_CommunicationEvent"      : association to CommunicationEvent {
+                                                                          CommunicationEventID,
+                                                                          IDSystem
+                                                                        };
+    "ASSOC_FinancialContract"       : association to FinancialContract {
+                                                                         FinancialContractID,
+                                                                         IDSystem
+                                                                       };
+    "_PurchasedReceivable"          : association to PurchasedReceivable { _ReceivablePurchaseAgreement };
+    "_Trade"                        : association to Trade {
+                                                             IDSystem,
+                                                             TradeID
+                                                           };
+    "DocumentComment"               : String(200);
+    "DocumentIssuingAuthority"      : String(256);
+    "DocumentIssuingCountry"        : String(2);
+    "DocumentLabel"                 : String(256);
+    "DocumentLink"                  : String(256);
+    "DocumentLocation"              : String(200);
+    "DocumentSystem"                : String(256);
+    "DocumentType"                  : String(40);
+    "DocumentValidFrom"             : LocalDate;
+    "ExpiryDate"                    : LocalDate;
+    "Status"                        : String(100);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,30 @@
+view "sap.fsdm.SQLViews::CommunicationEventStatus_View" 
+as select
+      "CommunicationEventStatusCategory" ,
+      "ASSOC_CommunicationEvent.CommunicationEventID" ,
+      "ASSOC_CommunicationEvent.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_StatusChanger.BusinessPartnerID" ,
+      "FollowUpCommunicationNote" ,
+      "Status" ,
+      "StatusChangeReason" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CommunicationEventStatus"
+with associations
+(
+	join "sap.fsdm.SQLViews::CommunicationEvent_View" as "ASSOC_CommunicationEvent"
+	  on "ASSOC_CommunicationEvent"."CommunicationEventID" = "ASSOC_CommunicationEvent.CommunicationEventID" AND 
+	     "ASSOC_CommunicationEvent"."IDSystem" = "ASSOC_CommunicationEvent.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_StatusChanger"
+	  on "ASSOC_StatusChanger"."BusinessPartnerID" = "ASSOC_StatusChanger.BusinessPartnerID"
+	     
+);

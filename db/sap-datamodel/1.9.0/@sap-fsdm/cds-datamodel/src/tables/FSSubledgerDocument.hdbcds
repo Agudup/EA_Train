@@ -1,0 +1,131 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"GLAccount";
+using "sap"."fsdm"::"GLDocument";
+using "sap"."fsdm"::"IndustryClass";
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"ProductClass";
+using "sap"."fsdm"::"Settlement";
+using "sap"."fsdm"::"SubledgerAccount";
+
+entity "FSSubledgerDocument" {
+    key "CompanyCode"                        : String(4);
+    key "DocumentNumber"                     : String(60);
+    key "FiscalYear"                         : String(10);
+    key "ItemNumber"                         : Integer64;
+    key "PostingDate"                        : LocalDate;
+    key "_AccountingSystem"                  : association to AccountingSystem { AccountingSystemID }        not null;
+        "_BusinessPartner"                   : association to BusinessPartner { BusinessPartnerID };
+        "_FinancialContract"                 : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                };
+        "_FinancialInstrument"               : association to FinancialInstrument { FinancialInstrumentID };
+        "_GLAccount"                         : association to GLAccount {
+                                                                          GLAccount,
+                                                                          _ChartOfAccounts
+                                                                        };
+        "_GLDocumentItem"                    : association to GLDocument {
+                                                                           DocumentNumber,
+                                                                           FiscalYear,
+                                                                           ItemNumber,
+                                                                           Ledger,
+                                                                           PostingDate,
+                                                                           _AccountingSystem,
+                                                                           _CompanyCode
+                                                                         };
+        "_IndustryClass"                     : association to IndustryClass {
+                                                                              Industry,
+                                                                              IndustryClassificationSystem
+                                                                            };
+        "_OrganizationalUnit"                : association to OrganizationalUnit {
+                                                                                   OrganizationalUnitID,
+                                                                                   ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                 };
+    /**
+    *@Deprecated
+    *@Reason: Due to deprecation of Product Class entity
+    *@ReplacedBy: No known use case
+    */
+    "_ProductClass"                          : association to ProductClass {
+                                                                             ProductClass,
+                                                                             ProductClassificationSystem
+                                                                           };
+        "_ProfitCenter"                      : association to OrganizationalUnit {
+                                                                                   OrganizationalUnitID,
+                                                                                   ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                 };
+        "_ProfitCenterAtCounterparty"        : association to OrganizationalUnit {
+                                                                                   OrganizationalUnitID,
+                                                                                   ASSOC_OrganizationHostingOrganizationalUnit
+                                                                                 };
+        "_SecuritiesAccount"                 : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                };
+        "_SettlementItem"                    : association to Settlement {
+                                                                           IDSystem,
+                                                                           ItemNumber,
+                                                                           SettlementID
+                                                                         };
+        "_SubledgerAccount"                  : association to SubledgerAccount { SubledgerAccount };
+        "AccruingStatus"                     : String(40);
+        "AmountInFunctionalCurrency"         : Decimal(34, 6);
+        "AmountInGroupCurrency"              : Decimal(34, 6);
+        "AmountInHardCurrency"               : String(3);
+        "AmountInIndexCurrency"              : Decimal(34, 6);
+        "AmountInLocalCurrency"              : Decimal(34, 6);
+        "AssetLiabilityStatus"               : String(40);
+        "Book"                               : String(10);
+        "BusinessSegment"                    : String(40);
+        "BusinessSegmentAtCounterparty"      : String(40);
+        "ContractLifeCycleStatus"            : String(40);
+        "CreationTimestamp"                  : UTCTimestamp;
+        "DocumentDate"                       : LocalDate;
+        "FairValueLevel"                     : String(40);
+        "FiscalPeriod"                       : String(10);
+        "FunctionalCurrency"                 : String(3);
+        "GroupCurrency"                      : String(3);
+        "HardCurrency"                       : String(3);
+        "HoldingCategory"                    : String(40);
+        "ImpairmentStatus"                   : String(40);
+        "IndexCurrency"                      : String(3);
+        "InversedFlag"                       : Boolean;
+        "InvertedFlag"                       : Boolean;
+        "LifeCycleSegment"                   : String(40);
+        "LocalCurrency"                      : String(3);
+        "MarketConformityStatus"             : String(40);
+        "MovementType"                       : String(100);
+        "NominalAmount"                      : Decimal(34, 6);
+        "NominalAmountCurrency"              : String(3);
+        "PostingDirection"                   : String(6);
+        "PostingRecord"                      : String(10);
+        "ProductSegment"                     : String(40);
+        "Quantity"                           : Decimal(34, 6);
+        "RefDocumentNumber"                  : String(60);
+        "RefFiscalYear"                      : String(10);
+        "ReferenceTaxCode"                   : String(40);
+        "ResetedFlag"                        : Boolean;
+        "TaxBaseAmountInFunctionalCurrency"  : Decimal(34, 6);
+        "TaxBaseAmountInTransactionCurrency" : Decimal(34, 6);
+        "TaxCode"                            : String(10);
+        "TaxCountry"                         : String(2);
+        "TransactionAmount"                  : Decimal(34, 6);
+        "TransactionCode"                    : String(10);
+        "TransactionCurrency"                : String(3);
+        "Unit"                               : String(10);
+        "ValueDate"                          : LocalDate;
+        "WriteDownStatus"                    : String(40);
+        "SourceSystemID"                     : String(128);
+        "ChangeTimestampInSourceSystem"      : UTCTimestamp;
+        "ChangingUserInSourceSystem"         : String(128);
+        "ChangingProcessType"                : String(40);
+        "ChangingProcessID"                  : String(128);
+}
+technical configuration {
+    column store;
+};

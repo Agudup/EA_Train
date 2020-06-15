@@ -1,0 +1,23 @@
+view "sap.fsdm.Views::BusinessPartnerStatus_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "PartnerStatusCategory" as "PartnerStatusCategory",
+      "PartnerStatusType" as "PartnerStatusType",
+      "ASSOC_Partner.BusinessPartnerID" as "ASSOC_Partner_BusinessPartnerID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "ASSOC_EmployeeResponsibleForStatusChange.BusinessPartnerID" as "ASSOC_EmployeeResponsibleForStatusChange_BusinessPartnerID",
+      "AdditionalNotes" as "AdditionalNotes",
+      "NextStatusReviewDate" as "NextStatusReviewDate",
+      "Status" as "Status",
+      "StatusChangeReason" as "StatusChangeReason",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::BusinessPartnerStatus"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

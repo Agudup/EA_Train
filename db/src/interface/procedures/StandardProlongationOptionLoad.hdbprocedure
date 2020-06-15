@@ -1,0 +1,397 @@
+PROCEDURE "sap.fsdm.procedures::StandardProlongationOptionLoad" (IN ROW "sap.fsdm.tabletypes::StandardProlongationOptionTT")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'SequenceNumber=' || TO_VARCHAR("SequenceNumber") || ' ' ||
+                'ASSOC_StandardFixedTermDeposit.FinancialStandardProductID=' || TO_VARCHAR("ASSOC_StandardFixedTermDeposit.FinancialStandardProductID") || ' ' ||
+                'ASSOC_StandardFixedTermDeposit.IDSystem=' || TO_VARCHAR("ASSOC_StandardFixedTermDeposit.IDSystem") || ' ' ||
+                'ASSOC_StandardFixedTermDeposit.PricingScheme=' || TO_VARCHAR("ASSOC_StandardFixedTermDeposit.PricingScheme") || ' ' ||
+                'ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID=' || TO_VARCHAR("ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardFixedTermDeposit.IDSystem",
+                        "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+                        "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardFixedTermDeposit.IDSystem",
+                        "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+                        "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "SequenceNumber",
+                        "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                        "ASSOC_StandardFixedTermDeposit.IDSystem",
+                        "ASSOC_StandardFixedTermDeposit.PricingScheme",
+                        "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.IDSystem",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."SequenceNumber",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.IDSystem",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+                                    "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::StandardProlongationOption" (
+        "SequenceNumber",
+        "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+        "ASSOC_StandardFixedTermDeposit.IDSystem",
+        "ASSOC_StandardFixedTermDeposit.PricingScheme",
+        "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdditionalTermLength",
+        "AdditionalTermLengthTimeUnit",
+        "AutomaticProlongation",
+        "AutomaticProlongationTriggerPeriodLength",
+        "AutomaticProlongationTriggerPeriodTimeUnit",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "PeriodUntilExercisePeriodEnd",
+        "PeriodUntilExercisePeriodStart",
+        "PeriodUntilTimeUnit",
+        "ProlongationOptionType",
+        "ProlongationRightHolder",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber" ,
+            "OLD_ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" as "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" ,
+            "OLD_ASSOC_StandardFixedTermDeposit.IDSystem" as "ASSOC_StandardFixedTermDeposit.IDSystem" ,
+            "OLD_ASSOC_StandardFixedTermDeposit.PricingScheme" as "ASSOC_StandardFixedTermDeposit.PricingScheme" ,
+            "OLD_ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_AdditionalTermLength" as "AdditionalTermLength" ,
+            "OLD_AdditionalTermLengthTimeUnit" as "AdditionalTermLengthTimeUnit" ,
+            "OLD_AutomaticProlongation" as "AutomaticProlongation" ,
+            "OLD_AutomaticProlongationTriggerPeriodLength" as "AutomaticProlongationTriggerPeriodLength" ,
+            "OLD_AutomaticProlongationTriggerPeriodTimeUnit" as "AutomaticProlongationTriggerPeriodTimeUnit" ,
+            "OLD_BusinessCalendar" as "BusinessCalendar" ,
+            "OLD_BusinessDayConvention" as "BusinessDayConvention" ,
+            "OLD_NoticePeriodLength" as "NoticePeriodLength" ,
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit" ,
+            "OLD_PeriodUntilExercisePeriodEnd" as "PeriodUntilExercisePeriodEnd" ,
+            "OLD_PeriodUntilExercisePeriodStart" as "PeriodUntilExercisePeriodStart" ,
+            "OLD_PeriodUntilTimeUnit" as "PeriodUntilTimeUnit" ,
+            "OLD_ProlongationOptionType" as "ProlongationOptionType" ,
+            "OLD_ProlongationRightHolder" as "ProlongationRightHolder" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardFixedTermDeposit.IDSystem",
+                        "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+                        "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                                "OLD"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" as "OLD_ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                                "OLD"."ASSOC_StandardFixedTermDeposit.IDSystem" as "OLD_ASSOC_StandardFixedTermDeposit.IDSystem",
+                                "OLD"."ASSOC_StandardFixedTermDeposit.PricingScheme" as "OLD_ASSOC_StandardFixedTermDeposit.PricingScheme",
+                                "OLD"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."AdditionalTermLength" as "OLD_AdditionalTermLength",
+                                "OLD"."AdditionalTermLengthTimeUnit" as "OLD_AdditionalTermLengthTimeUnit",
+                                "OLD"."AutomaticProlongation" as "OLD_AutomaticProlongation",
+                                "OLD"."AutomaticProlongationTriggerPeriodLength" as "OLD_AutomaticProlongationTriggerPeriodLength",
+                                "OLD"."AutomaticProlongationTriggerPeriodTimeUnit" as "OLD_AutomaticProlongationTriggerPeriodTimeUnit",
+                                "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                                "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                                "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                                "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                                "OLD"."PeriodUntilExercisePeriodEnd" as "OLD_PeriodUntilExercisePeriodEnd",
+                                "OLD"."PeriodUntilExercisePeriodStart" as "OLD_PeriodUntilExercisePeriodStart",
+                                "OLD"."PeriodUntilTimeUnit" as "OLD_PeriodUntilTimeUnit",
+                                "OLD"."ProlongationOptionType" as "OLD_ProlongationOptionType",
+                                "OLD"."ProlongationRightHolder" as "OLD_ProlongationRightHolder",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardProlongationOption" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.IDSystem" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.IDSystem" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.IDSystem" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.PricingScheme" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::StandardProlongationOption" (
+        "SequenceNumber",
+        "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+        "ASSOC_StandardFixedTermDeposit.IDSystem",
+        "ASSOC_StandardFixedTermDeposit.PricingScheme",
+        "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdditionalTermLength",
+        "AdditionalTermLengthTimeUnit",
+        "AutomaticProlongation",
+        "AutomaticProlongationTriggerPeriodLength",
+        "AutomaticProlongationTriggerPeriodTimeUnit",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "PeriodUntilExercisePeriodEnd",
+        "PeriodUntilExercisePeriodStart",
+        "PeriodUntilTimeUnit",
+        "ProlongationOptionType",
+        "ProlongationRightHolder",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_SequenceNumber" as "SequenceNumber",
+            "OLD_ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" as "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+            "OLD_ASSOC_StandardFixedTermDeposit.IDSystem" as "ASSOC_StandardFixedTermDeposit.IDSystem",
+            "OLD_ASSOC_StandardFixedTermDeposit.PricingScheme" as "ASSOC_StandardFixedTermDeposit.PricingScheme",
+            "OLD_ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" as "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_AdditionalTermLength" as "AdditionalTermLength",
+            "OLD_AdditionalTermLengthTimeUnit" as "AdditionalTermLengthTimeUnit",
+            "OLD_AutomaticProlongation" as "AutomaticProlongation",
+            "OLD_AutomaticProlongationTriggerPeriodLength" as "AutomaticProlongationTriggerPeriodLength",
+            "OLD_AutomaticProlongationTriggerPeriodTimeUnit" as "AutomaticProlongationTriggerPeriodTimeUnit",
+            "OLD_BusinessCalendar" as "BusinessCalendar",
+            "OLD_BusinessDayConvention" as "BusinessDayConvention",
+            "OLD_NoticePeriodLength" as "NoticePeriodLength",
+            "OLD_NoticePeriodTimeUnit" as "NoticePeriodTimeUnit",
+            "OLD_PeriodUntilExercisePeriodEnd" as "PeriodUntilExercisePeriodEnd",
+            "OLD_PeriodUntilExercisePeriodStart" as "PeriodUntilExercisePeriodStart",
+            "OLD_PeriodUntilTimeUnit" as "PeriodUntilTimeUnit",
+            "OLD_ProlongationOptionType" as "ProlongationOptionType",
+            "OLD_ProlongationRightHolder" as "ProlongationRightHolder",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."SequenceNumber",
+                        "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                        "IN"."ASSOC_StandardFixedTermDeposit.IDSystem",
+                        "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+                        "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."SequenceNumber" as "OLD_SequenceNumber",
+                        "OLD"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" as "OLD_ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+                        "OLD"."ASSOC_StandardFixedTermDeposit.IDSystem" as "OLD_ASSOC_StandardFixedTermDeposit.IDSystem",
+                        "OLD"."ASSOC_StandardFixedTermDeposit.PricingScheme" as "OLD_ASSOC_StandardFixedTermDeposit.PricingScheme",
+                        "OLD"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" as "OLD_ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."AdditionalTermLength" as "OLD_AdditionalTermLength",
+                        "OLD"."AdditionalTermLengthTimeUnit" as "OLD_AdditionalTermLengthTimeUnit",
+                        "OLD"."AutomaticProlongation" as "OLD_AutomaticProlongation",
+                        "OLD"."AutomaticProlongationTriggerPeriodLength" as "OLD_AutomaticProlongationTriggerPeriodLength",
+                        "OLD"."AutomaticProlongationTriggerPeriodTimeUnit" as "OLD_AutomaticProlongationTriggerPeriodTimeUnit",
+                        "OLD"."BusinessCalendar" as "OLD_BusinessCalendar",
+                        "OLD"."BusinessDayConvention" as "OLD_BusinessDayConvention",
+                        "OLD"."NoticePeriodLength" as "OLD_NoticePeriodLength",
+                        "OLD"."NoticePeriodTimeUnit" as "OLD_NoticePeriodTimeUnit",
+                        "OLD"."PeriodUntilExercisePeriodEnd" as "OLD_PeriodUntilExercisePeriodEnd",
+                        "OLD"."PeriodUntilExercisePeriodStart" as "OLD_PeriodUntilExercisePeriodStart",
+                        "OLD"."PeriodUntilTimeUnit" as "OLD_PeriodUntilTimeUnit",
+                        "OLD"."ProlongationOptionType" as "OLD_ProlongationOptionType",
+                        "OLD"."ProlongationRightHolder" as "OLD_ProlongationRightHolder",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::StandardProlongationOption" as "OLD"
+            on
+                ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.IDSystem" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.IDSystem" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.IDSystem" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.PricingScheme" and
+                ( case when "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::StandardProlongationOption"
+    where (
+        "SequenceNumber",
+        "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+        "ASSOC_StandardFixedTermDeposit.IDSystem",
+        "ASSOC_StandardFixedTermDeposit.PricingScheme",
+        "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."SequenceNumber",
+            "OLD"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+            "OLD"."ASSOC_StandardFixedTermDeposit.IDSystem",
+            "OLD"."ASSOC_StandardFixedTermDeposit.PricingScheme",
+            "OLD"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::StandardProlongationOption" as "OLD"
+        on
+           ( case when "IN"."SequenceNumber" is null then -1 else "IN"."SequenceNumber" end ) = "OLD"."SequenceNumber" and
+           ( case when "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" and
+           ( case when "IN"."ASSOC_StandardFixedTermDeposit.IDSystem" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.IDSystem" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.IDSystem" and
+           ( case when "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.PricingScheme" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.PricingScheme" and
+           ( case when "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" is null then '' else "IN"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" end ) = "OLD"."ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+    --Insert ALL the input data 
+    insert into "sap.fsdm::StandardProlongationOption" (
+        "SequenceNumber",
+        "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+        "ASSOC_StandardFixedTermDeposit.IDSystem",
+        "ASSOC_StandardFixedTermDeposit.PricingScheme",
+        "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "AdditionalTermLength",
+        "AdditionalTermLengthTimeUnit",
+        "AutomaticProlongation",
+        "AutomaticProlongationTriggerPeriodLength",
+        "AutomaticProlongationTriggerPeriodTimeUnit",
+        "BusinessCalendar",
+        "BusinessDayConvention",
+        "NoticePeriodLength",
+        "NoticePeriodTimeUnit",
+        "PeriodUntilExercisePeriodEnd",
+        "PeriodUntilExercisePeriodStart",
+        "PeriodUntilTimeUnit",
+        "ProlongationOptionType",
+        "ProlongationRightHolder",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+)    (
+        select
+            ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+            ( case when "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" is null then '' else "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID" end ) as "ASSOC_StandardFixedTermDeposit.FinancialStandardProductID",
+            ( case when "ASSOC_StandardFixedTermDeposit.IDSystem" is null then '' else "ASSOC_StandardFixedTermDeposit.IDSystem" end ) as "ASSOC_StandardFixedTermDeposit.IDSystem",
+            ( case when "ASSOC_StandardFixedTermDeposit.PricingScheme" is null then '' else "ASSOC_StandardFixedTermDeposit.PricingScheme" end ) as "ASSOC_StandardFixedTermDeposit.PricingScheme",
+            ( case when "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" is null then '' else "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID" end ) as "ASSOC_StandardFixedTermDeposit.ASSOC_Company.BusinessPartnerID",
+            "BusinessValidFrom"  ,
+            "BusinessValidTo"  ,
+            "AdditionalTermLength"  ,
+            "AdditionalTermLengthTimeUnit"  ,
+            "AutomaticProlongation"  ,
+            "AutomaticProlongationTriggerPeriodLength"  ,
+            "AutomaticProlongationTriggerPeriodTimeUnit"  ,
+            "BusinessCalendar"  ,
+            "BusinessDayConvention"  ,
+            "NoticePeriodLength"  ,
+            "NoticePeriodTimeUnit"  ,
+            "PeriodUntilExercisePeriodEnd"  ,
+            "PeriodUntilExercisePeriodStart"  ,
+            "PeriodUntilTimeUnit"  ,
+            "ProlongationOptionType"  ,
+            "ProlongationRightHolder"  ,
+            "SourceSystemID"  ,
+            "ChangeTimestampInSourceSystem"  ,
+            "ChangingUserInSourceSystem"  ,
+            "ChangingProcessType"  ,
+            "ChangingProcessID"  
+        from :row );
+
+END

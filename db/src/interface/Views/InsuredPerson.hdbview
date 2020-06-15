@@ -1,0 +1,40 @@
+view "sap.fsdm.Views::InsuredPerson_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "SequenceOrdinalNumber" as "SequenceOrdinalNumber",
+      "_IndividualPerson.BusinessPartnerID" as "_IndividualPerson_BusinessPartnerID",
+      "_InsuranceCoverage.ID" as "_InsuranceCoverage_ID",
+      "_InsuranceCoverage._InsuranceContract.FinancialContractID" as "_InsuranceCoverage__InsuranceContract_FinancialContractID",
+      "_InsuranceCoverage._InsuranceContract.IDSystem" as "_InsuranceCoverage__InsuranceContract_IDSystem",
+      "_InsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" as "_InsuranceCoverage__InsuredObject__FinancialContract_FinancialContractID",
+      "_InsuranceCoverage._InsuredObject._FinancialContract.IDSystem" as "_InsuranceCoverage__InsuredObject__FinancialContract_IDSystem",
+      "_InsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" as "_InsuranceCoverage__InsuredObject__PhysicalAsset_PhysicalAssetID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "_Address.AddressType" as "_Address_AddressType",
+      "_Address.SequenceNumber" as "_Address_SequenceNumber",
+      "_Address.ASSOC_BankingChannel.BankingChannelID" as "_Address_ASSOC_BankingChannel_BankingChannelID",
+      "_Address.ASSOC_BusinessPartnerID.BusinessPartnerID" as "_Address_ASSOC_BusinessPartnerID_BusinessPartnerID",
+      "_Address.ASSOC_OrganizationalUnit.OrganizationalUnitID" as "_Address_ASSOC_OrganizationalUnit_OrganizationalUnitID",
+      "_Address.ASSOC_OrganizationalUnit.ASSOC_OrganizationHostingOrganizationalUnit.BusinessPartnerID" as "_Address_ASSOC_OrganizationalUnit_ASSOC_OrganizationHostingOrganizationalUnit_BusinessPartnerID",
+      "_Address.ASSOC_PhysicalAsset.PhysicalAssetID" as "_Address_ASSOC_PhysicalAsset_PhysicalAssetID",
+      "_Address._Claim.ID" as "_Address__Claim_ID",
+      "_Address._Claim.IDSystem" as "_Address__Claim_IDSystem",
+      "ActuarialAge" as "ActuarialAge",
+      "HeightInCentimetersAtInception" as "HeightInCentimetersAtInception",
+      "HeightInFeetAtInception" as "HeightInFeetAtInception",
+      "HeightInInchesAtInception" as "HeightInInchesAtInception",
+      "RiskGroup" as "RiskGroup",
+      "WeightInKilogramsAtInception" as "WeightInKilogramsAtInception",
+      "WeightInPoundsAtInception" as "WeightInPoundsAtInception",
+      "WeightInStonesAtInception" as "WeightInStonesAtInception",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::InsuredPerson"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

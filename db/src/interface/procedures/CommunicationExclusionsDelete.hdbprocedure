@@ -1,0 +1,216 @@
+PROCEDURE "sap.fsdm.procedures::CommunicationExclusionsDelete" (IN ROW "sap.fsdm.tabletypes::CommunicationExclusionsTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'ASSOC_CommunicatingCompany.BusinessPartnerID=' || TO_VARCHAR("ASSOC_CommunicatingCompany.BusinessPartnerID") || ' ' ||
+                'ASSOC_Partner.BusinessPartnerID=' || TO_VARCHAR("ASSOC_Partner.BusinessPartnerID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+                        "IN"."ASSOC_Partner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+                        "IN"."ASSOC_Partner.BusinessPartnerID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "ASSOC_CommunicatingCompany.BusinessPartnerID",
+                        "ASSOC_Partner.BusinessPartnerID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+                                    "IN"."ASSOC_Partner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+                                    "IN"."ASSOC_Partner.BusinessPartnerID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::CommunicationExclusions" (
+        "ASSOC_CommunicatingCompany.BusinessPartnerID",
+        "ASSOC_Partner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "NoEmailCommunication",
+        "NoTextMessageCommunication",
+        "NoVoiceCommunication",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_CommunicatingCompany.BusinessPartnerID" as "ASSOC_CommunicatingCompany.BusinessPartnerID" ,
+            "OLD_ASSOC_Partner.BusinessPartnerID" as "ASSOC_Partner.BusinessPartnerID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_NoEmailCommunication" as "NoEmailCommunication" ,
+            "OLD_NoTextMessageCommunication" as "NoTextMessageCommunication" ,
+            "OLD_NoVoiceCommunication" as "NoVoiceCommunication" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+                        "OLD"."ASSOC_Partner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID" as "OLD_ASSOC_CommunicatingCompany.BusinessPartnerID",
+                "OLD"."ASSOC_Partner.BusinessPartnerID" as "OLD_ASSOC_Partner.BusinessPartnerID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."NoEmailCommunication" as "OLD_NoEmailCommunication",
+                "OLD"."NoTextMessageCommunication" as "OLD_NoTextMessageCommunication",
+                "OLD"."NoVoiceCommunication" as "OLD_NoVoiceCommunication",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CommunicationExclusions" as "OLD"
+            on
+                      ( "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID" = "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID" or "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID" is null ) and
+                      ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::CommunicationExclusions" (
+        "ASSOC_CommunicatingCompany.BusinessPartnerID",
+        "ASSOC_Partner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "NoEmailCommunication",
+        "NoTextMessageCommunication",
+        "NoVoiceCommunication",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD_ASSOC_CommunicatingCompany.BusinessPartnerID" as "ASSOC_CommunicatingCompany.BusinessPartnerID",
+            "OLD_ASSOC_Partner.BusinessPartnerID" as "ASSOC_Partner.BusinessPartnerID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_NoEmailCommunication" as "NoEmailCommunication",
+            "OLD_NoTextMessageCommunication" as "NoTextMessageCommunication",
+            "OLD_NoVoiceCommunication" as "NoVoiceCommunication",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+                        "OLD"."ASSOC_Partner.BusinessPartnerID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID" as "OLD_ASSOC_CommunicatingCompany.BusinessPartnerID",
+                "OLD"."ASSOC_Partner.BusinessPartnerID" as "OLD_ASSOC_Partner.BusinessPartnerID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."NoEmailCommunication" as "OLD_NoEmailCommunication",
+                "OLD"."NoTextMessageCommunication" as "OLD_NoTextMessageCommunication",
+                "OLD"."NoVoiceCommunication" as "OLD_NoVoiceCommunication",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::CommunicationExclusions" as "OLD"
+            on
+                                                ( "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID" = "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID" or "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID" is null ) and
+                                                ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::CommunicationExclusions"
+    where (
+        "ASSOC_CommunicatingCompany.BusinessPartnerID",
+        "ASSOC_Partner.BusinessPartnerID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID",
+            "OLD"."ASSOC_Partner.BusinessPartnerID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::CommunicationExclusions" as "OLD"
+        on
+                                       ( "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID" = "OLD"."ASSOC_CommunicatingCompany.BusinessPartnerID" or "IN"."ASSOC_CommunicatingCompany.BusinessPartnerID" is null ) and
+                                       ( "IN"."ASSOC_Partner.BusinessPartnerID" = "OLD"."ASSOC_Partner.BusinessPartnerID" or "IN"."ASSOC_Partner.BusinessPartnerID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

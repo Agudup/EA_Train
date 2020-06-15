@@ -1,0 +1,46 @@
+view "sap.fsdm.SQLViews::AmortizedValuationCost_View" 
+as select
+      "AVCCalculationMethod" ,
+      "_AccountingSystem.AccountingSystemID" ,
+      "_FinancialContract.FinancialContractID" ,
+      "_FinancialContract.IDSystem" ,
+      "_FinancialInstrument.FinancialInstrumentID" ,
+      "_InvestmentAccount.FinancialContractID" ,
+      "_InvestmentAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AVC1PaymentCurrency" ,
+      "AVC1PositionCurrency" ,
+      "AVC1TimeInPaymentCurrency" ,
+      "AVC1TimeInPositionCurrency" ,
+      "AVCInPaymentCurrency" ,
+      "AVCInPositionCurrrency" ,
+      "AVCPaymentCurrency" ,
+      "AVCPositionCurrency" ,
+      "EffectiveInterestRate" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::AmortizedValuationCost"
+with associations
+(
+	join "sap.fsdm.SQLViews::AccountingSystem_View" as "_AccountingSystem"
+	  on "_AccountingSystem"."AccountingSystemID" = "_AccountingSystem.AccountingSystemID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract"
+	  on "_FinancialContract"."FinancialContractID" = "_FinancialContract.FinancialContractID" AND 
+	     "_FinancialContract"."IDSystem" = "_FinancialContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument"
+	  on "_FinancialInstrument"."FinancialInstrumentID" = "_FinancialInstrument.FinancialInstrumentID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_InvestmentAccount"
+	  on "_InvestmentAccount"."FinancialContractID" = "_InvestmentAccount.FinancialContractID" AND 
+	     "_InvestmentAccount"."IDSystem" = "_InvestmentAccount.IDSystem"
+	     
+);

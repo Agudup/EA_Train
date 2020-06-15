@@ -1,0 +1,85 @@
+PROCEDURE "sap.fsdm.procedures::IndexSpecificationEraseReadOnly" (IN ROW "sap.fsdm.tabletypes::IndexSpecificationTT_Erase", OUT CURR_DEL "sap.fsdm.tabletypes::IndexSpecificationTT_Del" , OUT HIST_DEL "sap.fsdm.tabletypes::IndexSpecificationTT_Del" )
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "_Index.IndexID" is null and
+                         "_LifeAndAnnuityInsuranceCoverage.ID" is null and
+                         "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" is null and
+                         "_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" is null and
+                         "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" is null and
+                         "_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" is null and
+                         "_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+CURR_DEL = select 
+"_Index.IndexID",
+"_LifeAndAnnuityInsuranceCoverage.ID",
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::IndexSpecification" WHERE("_Index.IndexID" ,
+"_LifeAndAnnuityInsuranceCoverage.ID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "_Index.IndexID" ,
+"_LifeAndAnnuityInsuranceCoverage.ID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW );
+
+--delete data from history table
+HIST_DEL = select 
+"_Index.IndexID",
+"_LifeAndAnnuityInsuranceCoverage.ID",
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID",
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem",
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID",
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem",
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID",
+"BusinessValidFrom",
+"BusinessValidTo"
+from "sap.fsdm::IndexSpecification_Historical" WHERE("_Index.IndexID" ,
+"_LifeAndAnnuityInsuranceCoverage.ID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+)in ( select "_Index.IndexID" ,
+"_LifeAndAnnuityInsuranceCoverage.ID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuranceContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.FinancialContractID" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._FinancialContract.IDSystem" ,
+"_LifeAndAnnuityInsuranceCoverage._InsuredObject._PhysicalAsset.PhysicalAssetID" 
+from :ROW );
+
+END

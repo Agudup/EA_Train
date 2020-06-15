@@ -1,0 +1,135 @@
+PROCEDURE "sap.fsdm.procedures::RefinancingRelationErase" (IN ROW "sap.fsdm.tabletypes::RefinancingRelationTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "RefinancingType" is null and
+                         "ASSOC_RefinancedContract.FinancialContractID" is null and
+                         "ASSOC_RefinancedContract.IDSystem" is null and
+                         "ASSOC_RefinancedPositionCurrency.PositionCurrency" is null and
+                         "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "ASSOC_RefinancingContract.FinancialContractID" is null and
+                         "ASSOC_RefinancingContract.IDSystem" is null and
+                         "ASSOC_RefinancingPositionCurrency.PositionCurrency" is null and
+                         "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null and
+                         "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null and
+                         "_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null and
+                         "_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null and
+                         "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::RefinancingRelation" WHERE
+("RefinancingType" ,
+"ASSOC_RefinancedContract.FinancialContractID" ,
+"ASSOC_RefinancedContract.IDSystem" ,
+"ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+"ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_RefinancingContract.FinancialContractID" ,
+"ASSOC_RefinancingContract.IDSystem" ,
+"ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+"ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+"_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+"_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+)in ( select "OLD"."RefinancingType" ,
+"OLD"."ASSOC_RefinancedContract.FinancialContractID" ,
+"OLD"."ASSOC_RefinancedContract.IDSystem" ,
+"OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+"OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."ASSOC_RefinancingContract.FinancialContractID" ,
+"OLD"."ASSOC_RefinancingContract.IDSystem" ,
+"OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+"OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+"OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+"OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::RefinancingRelation" "OLD"
+on
+  ( "IN"."RefinancingType" = "OLD"."RefinancingType" or "IN"."RefinancingType" is null ) and
+  ( "IN"."ASSOC_RefinancedContract.FinancialContractID" = "OLD"."ASSOC_RefinancedContract.FinancialContractID" or "IN"."ASSOC_RefinancedContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancedContract.IDSystem" = "OLD"."ASSOC_RefinancedContract.IDSystem" or "IN"."ASSOC_RefinancedContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" = "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" or "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_RefinancingContract.FinancialContractID" = "OLD"."ASSOC_RefinancingContract.FinancialContractID" or "IN"."ASSOC_RefinancingContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancingContract.IDSystem" = "OLD"."ASSOC_RefinancingContract.IDSystem" or "IN"."ASSOC_RefinancingContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" = "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" or "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" = "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" or "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null ) and
+  ( "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" = "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" or "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null ) and
+  ( "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" = "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" or "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::RefinancingRelation_Historical" WHERE
+("RefinancingType" ,
+"ASSOC_RefinancedContract.FinancialContractID" ,
+"ASSOC_RefinancedContract.IDSystem" ,
+"ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+"ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"ASSOC_RefinancingContract.FinancialContractID" ,
+"ASSOC_RefinancingContract.IDSystem" ,
+"ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+"ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+"_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+"_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+)in ( select "OLD"."RefinancingType" ,
+"OLD"."ASSOC_RefinancedContract.FinancialContractID" ,
+"OLD"."ASSOC_RefinancedContract.IDSystem" ,
+"OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+"OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."ASSOC_RefinancingContract.FinancialContractID" ,
+"OLD"."ASSOC_RefinancingContract.IDSystem" ,
+"OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+"OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+"OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+"OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+"OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+"OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+from :ROW "IN"
+inner join "sap.fsdm::RefinancingRelation_Historical" "OLD"
+on
+  ( "IN"."RefinancingType" = "OLD"."RefinancingType" or "IN"."RefinancingType" is null ) and
+  ( "IN"."ASSOC_RefinancedContract.FinancialContractID" = "OLD"."ASSOC_RefinancedContract.FinancialContractID" or "IN"."ASSOC_RefinancedContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancedContract.IDSystem" = "OLD"."ASSOC_RefinancedContract.IDSystem" or "IN"."ASSOC_RefinancedContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" = "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" or "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."ASSOC_RefinancingContract.FinancialContractID" = "OLD"."ASSOC_RefinancingContract.FinancialContractID" or "IN"."ASSOC_RefinancingContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancingContract.IDSystem" = "OLD"."ASSOC_RefinancingContract.IDSystem" or "IN"."ASSOC_RefinancingContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" = "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" or "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" is null ) and
+  ( "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" or "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" or "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null ) and
+  ( "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" = "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" or "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null ) and
+  ( "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" = "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" or "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null ) and
+  ( "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" = "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" or "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null ) 
+);
+
+END

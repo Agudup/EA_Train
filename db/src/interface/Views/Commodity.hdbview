@@ -1,0 +1,31 @@
+view "sap.fsdm.Views::Commodity_View" ( IN I_BUSINESS_DATE DATE, IN I_SYSTEM_TIMESTAMP TIMESTAMP)
+as select
+      "CommodityID" as "CommodityID",
+      "BusinessValidFrom" as "BusinessValidFrom",
+      "BusinessValidTo" as "BusinessValidTo",
+      "SystemValidFrom" as "SystemValidFrom",
+      "SystemValidTo" as "SystemValidTo",
+      "BaseCommodityName" as "BaseCommodityName",
+      "Brand" as "Brand",
+      "CalorificValue" as "CalorificValue",
+      "CoalComposition" as "CoalComposition",
+      "CoalProperties" as "CoalProperties",
+      "CoalType" as "CoalType",
+      "CommodityCategory" as "CommodityCategory",
+      "CommodityDescription" as "CommodityDescription",
+      "CommodityName" as "CommodityName",
+      "EnergyCommodityCategory" as "EnergyCommodityCategory",
+      "GasType" as "GasType",
+      "Grade" as "Grade",
+      "OilType" as "OilType",
+      "Shape" as "Shape",
+      "Voltage" as "Voltage",
+      "SourceSystemID" as "SourceSystemID",
+      "ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+      "ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+      "ChangingProcessType" as "ChangingProcessType",
+      "ChangingProcessID" as "ChangingProcessID"
+  
+from "sap.fsdm::Commodity"
+FOR SYSTEM_TIME AS OF :I_SYSTEM_TIMESTAMP
+WHERE "BusinessValidFrom" <= :I_BUSINESS_DATE AND "BusinessValidTo" > :I_BUSINESS_DATE;

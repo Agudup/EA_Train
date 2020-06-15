@@ -1,0 +1,26 @@
+view "sap.fsdm.SQLViews::DigitalBankingPlatformAccess_View" 
+as select
+      "AccountName" ,
+      "ASSOC_BusinessPartner.BusinessPartnerID" ,
+      "ASSOC_DigitalBankingPlatform.BankingChannelID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Status" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::DigitalBankingPlatformAccess"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_BusinessPartner"
+	  on "ASSOC_BusinessPartner"."BusinessPartnerID" = "ASSOC_BusinessPartner.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_DigitalBankingPlatform"
+	  on "ASSOC_DigitalBankingPlatform"."BankingChannelID" = "ASSOC_DigitalBankingPlatform.BankingChannelID"
+	     
+);

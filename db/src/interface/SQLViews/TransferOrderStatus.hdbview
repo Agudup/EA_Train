@@ -1,0 +1,29 @@
+view "sap.fsdm.SQLViews::TransferOrderStatus_View" 
+as select
+      "TransferOrderStatusCategory" ,
+      "ASSOC_TransferOrder.IDSystem" ,
+      "ASSOC_TransferOrder.TransferOrderID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_EmployeeResponsibleForTransferOrderStatusChange.BusinessPartnerID" ,
+      "Status" ,
+      "StatusChangeReason" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::TransferOrderStatus"
+with associations
+(
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_EmployeeResponsibleForTransferOrderStatusChange"
+	  on "ASSOC_EmployeeResponsibleForTransferOrderStatusChange"."BusinessPartnerID" = "ASSOC_EmployeeResponsibleForTransferOrderStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::TransferOrder_View" as "ASSOC_TransferOrder"
+	  on "ASSOC_TransferOrder"."TransferOrderID" = "ASSOC_TransferOrder.TransferOrderID" AND 
+	     "ASSOC_TransferOrder"."IDSystem" = "ASSOC_TransferOrder.IDSystem"
+	     
+);

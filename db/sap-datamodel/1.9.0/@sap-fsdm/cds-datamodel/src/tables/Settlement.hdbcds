@@ -1,0 +1,296 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"BankingChannel";
+using "sap"."fsdm"::"BusinessPartner";
+using "sap"."fsdm"::"InterestAndFeeCalculationResult";
+using "sap"."fsdm"::"CardIssue";
+using "sap"."fsdm"::"CashInventory";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"TransferOrder";
+using "sap"."fsdm"::"Address";
+using "sap"."fsdm"::"CreditCardLoan";
+using "sap"."fsdm"::"FinancialInstrument";
+using "sap"."fsdm"::"Trade";
+
+entity "Settlement" {
+    key "IDSystem"                               : String(40);
+    key "ItemNumber"                             : Integer;
+    key "SettlementID"                           : String(128);
+        "SystemValidFrom"                        : UTCTimestamp not null;
+        "SystemValidTo"                          : UTCTimestamp not null;
+        "ASSOC_BankingChannel"                   : association to BankingChannel { BankingChannelID };
+        "ASSOC_BusinessEventDataOwner"           : association to BusinessPartner { BusinessPartnerID };
+        "ASSOC_CalculatedInterestAndFeesResult"  : association to InterestAndFeeCalculationResult {
+                                                                                                    CalculationPeriodID,
+                                                                                                    InterestAndFeeCalculationMethod,
+                                                                                                    ASSOC_PositionCcyOfMultiCcyContract,
+                                                                                                    BusinessValidFrom,
+                                                                                                    ASSOC_FinancialContractOfCalculatedItems
+                                                                                                  };
+        "ASSOC_CardIssue"                        : association to CardIssue {
+                                                                              CardIssueID,
+                                                                              ASSOC_CardAgreement,
+                                                                              _BankAccount
+                                                                            };
+        "ASSOC_CashInventory"                    : association to CashInventory {
+                                                                                  CashAccountID,
+                                                                                  IDSystem
+                                                                                };
+        "ASSOC_FinancialContract"                : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    };
+        "ASSOC_LocallyManagedDestinationAccount" : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    };
+        "ASSOC_PositionCurrencyForAccount"       : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                            PositionCurrency,
+                                                                                                            ASSOC_MultiCcyAccnt
+                                                                                                          };
+        "ASSOC_Reverses"                         : association to Settlement {
+                                                                               SettlementID,
+                                                                               IDSystem
+                                                                             };
+        "ASSOC_TaxedItemOfTaxItem"               : association to Settlement {
+                                                                               SettlementID,
+                                                                               IDSystem,
+                                                                               ItemNumber
+                                                                             };
+        "ASSOC_TransferOrder"                    : association to TransferOrder {
+                                                                                  IDSystem,
+                                                                                  ItemNumber,
+                                                                                  TransferOrderID
+                                                                                };
+    /**
+    *@Deprecated
+    *@Reason: not suitable since Payment Item itself has no Address
+    *@ReplacedBy: Address Information for Transactions
+    */
+    "_Address"                                   : association to Address {
+                                                                            AddressType,
+                                                                            SequenceNumber,
+                                                                            ASSOC_BankingChannel,
+                                                                            ASSOC_BusinessPartnerID,
+                                                                            ASSOC_OrganizationalUnit,
+                                                                            ASSOC_PhysicalAsset,
+                                                                            _Claim
+                                                                          };
+        "_CreditCardLoan"                        : association to CreditCardLoan {
+                                                                                   ID,
+                                                                                   _CreditCardAgreement
+                                                                                 };
+        "_FinancialInstrument"                   : association to FinancialInstrument { FinancialInstrumentID };
+        "_Trade"                                 : association to Trade {
+                                                                          IDSystem,
+                                                                          TradeID
+                                                                        };
+        "AmountInPositionCurrency"               : Decimal(34, 6);
+        "CreationTimestamp"                      : UTCTimestamp;
+        "CurrencyTranslationTimestamp"           : UTCTimestamp;
+        "CustomerFacingTransactionType"          : String(256);
+        "EndDateOfInterestPeriod"                : LocalDate;
+        "InitiatingPaymentChannel"               : String(40);
+        "IsPostingOnInitiatingAccount"           : Boolean;
+        "Latitude"                               : Decimal(9, 6);
+        "Longitude"                              : Decimal(9, 6);
+        "MerchantCategoryCode"                   : String(40);
+        "MerchantDiscount"                       : Decimal(34, 6);
+        "MerchantDiscountCurrency"               : String(3);
+        "MerchantID"                             : String(128);
+        "MerchantName"                           : String(256);
+        "NominalAmount"                          : Decimal(34, 6);
+        "NominalAmountCurrency"                  : String(3);
+        "OtherAccountIdentificationSystem"       : String(128);
+        "OtherBankAccountCurrency"               : String(3);
+        "OtherBankAccountHolderName"             : String(256);
+        "OtherBankAccountID"                     : String(128);
+        "OtherBankID"                            : String(128);
+        "OtherBankIdentificationSystem"          : String(128);
+        "OtherBankName"                          : String(256);
+        "OtherIBAN"                              : String(128);
+        "OtherSWIFT"                             : String(128);
+        "POSTerminalID"                          : String(256);
+        "PaymentAuthenticationMethod"            : String(40);
+        "PaymentChannel"                         : String(20);
+        "PaymentSequenceGeneratedByTerminal"     : String(128);
+        "PaymentTerminalFIID"                    : String(128);
+        "PositionCurrency"                       : String(3);
+        "PostingDate"                            : LocalDate;
+        "PostingDirection"                       : String(6);
+        "Quantity"                               : Decimal(34, 6);
+        "RelevanceOfPostprocessing"              : String(40);
+        "ReversalByValueIndicator"               : Boolean;
+        "SettlementCategory"                     : String(40);
+        "SettlementItemCategory"                 : String(50);
+        "SettlementType"                         : String(40);
+        "TaxBaseAmount"                          : Decimal(34, 6);
+        "TaxBaseAmountCurrency"                  : String(3);
+        "TaxCode"                                : String(50);
+        "TaxCountry"                             : String(2);
+        "TaxReferenceCode"                       : String(50);
+        "TaxableAmountInTransactionCurrency"     : Decimal(34, 6);
+        "TransactionAmount"                      : Decimal(34, 6);
+        "TransactionAuthorizationCode"           : String(256);
+        "TransactionCity"                        : String(256);
+        "TransactionCountry"                     : String(2);
+        "TransactionCurrency"                    : String(3);
+        "TransactionPlace"                       : String(256);
+        "TransactionRegion"                      : String(50);
+        "TransactionType"                        : String(40);
+        "Unit"                                   : String(10);
+        "UnsignedAmountInPositionCurrency"       : Decimal(34, 6);
+        "UnsignedTransactionAmount"              : Decimal(34, 6);
+        "UsedExchangeRate"                       : Decimal(34, 6);
+        "ValueDate"                              : LocalDate;
+        "SourceSystemID"                         : String(128);
+        "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+        "ChangingUserInSourceSystem"             : String(128);
+        "ChangingProcessType"                    : String(40);
+        "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "Settlement_Historical" {
+    "IDSystem"                               : String(40)   not null;
+    "ItemNumber"                             : Integer      not null;
+    "SettlementID"                           : String(128)  not null;
+    "SystemValidFrom"                        : UTCTimestamp not null;
+    "SystemValidTo"                          : UTCTimestamp not null;
+    "ASSOC_BankingChannel"                   : association to BankingChannel { BankingChannelID };
+    "ASSOC_BusinessEventDataOwner"           : association to BusinessPartner { BusinessPartnerID };
+    "ASSOC_CalculatedInterestAndFeesResult"  : association to InterestAndFeeCalculationResult {
+                                                                                                CalculationPeriodID,
+                                                                                                InterestAndFeeCalculationMethod,
+                                                                                                ASSOC_PositionCcyOfMultiCcyContract,
+                                                                                                BusinessValidFrom,
+                                                                                                ASSOC_FinancialContractOfCalculatedItems
+                                                                                              };
+    "ASSOC_CardIssue"                        : association to CardIssue {
+                                                                          CardIssueID,
+                                                                          ASSOC_CardAgreement,
+                                                                          _BankAccount
+                                                                        };
+    "ASSOC_CashInventory"                    : association to CashInventory {
+                                                                              CashAccountID,
+                                                                              IDSystem
+                                                                            };
+    "ASSOC_FinancialContract"                : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                };
+    "ASSOC_LocallyManagedDestinationAccount" : association to FinancialContract {
+                                                                                  FinancialContractID,
+                                                                                  IDSystem
+                                                                                };
+    "ASSOC_PositionCurrencyForAccount"       : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                        PositionCurrency,
+                                                                                                        ASSOC_MultiCcyAccnt
+                                                                                                      };
+    "ASSOC_Reverses"                         : association to Settlement {
+                                                                           SettlementID,
+                                                                           IDSystem
+                                                                         };
+    "ASSOC_TaxedItemOfTaxItem"               : association to Settlement {
+                                                                           SettlementID,
+                                                                           IDSystem,
+                                                                           ItemNumber
+                                                                         };
+    "ASSOC_TransferOrder"                    : association to TransferOrder {
+                                                                              IDSystem,
+                                                                              ItemNumber,
+                                                                              TransferOrderID
+                                                                            };
+    /**
+    *@Deprecated
+    *@Reason: not suitable since Payment Item itself has no Address
+    *@ReplacedBy: Address Information for Transactions
+    */
+    "_Address"                               : association to Address {
+                                                                        AddressType,
+                                                                        SequenceNumber,
+                                                                        ASSOC_BankingChannel,
+                                                                        ASSOC_BusinessPartnerID,
+                                                                        ASSOC_OrganizationalUnit,
+                                                                        ASSOC_PhysicalAsset,
+                                                                        _Claim
+                                                                      };
+    "_CreditCardLoan"                        : association to CreditCardLoan {
+                                                                               ID,
+                                                                               _CreditCardAgreement
+                                                                             };
+    "_FinancialInstrument"                   : association to FinancialInstrument { FinancialInstrumentID };
+    "_Trade"                                 : association to Trade {
+                                                                      IDSystem,
+                                                                      TradeID
+                                                                    };
+    "AmountInPositionCurrency"               : Decimal(34, 6);
+    "CreationTimestamp"                      : UTCTimestamp;
+    "CurrencyTranslationTimestamp"           : UTCTimestamp;
+    "CustomerFacingTransactionType"          : String(256);
+    "EndDateOfInterestPeriod"                : LocalDate;
+    "InitiatingPaymentChannel"               : String(40);
+    "IsPostingOnInitiatingAccount"           : Boolean;
+    "Latitude"                               : Decimal(9, 6);
+    "Longitude"                              : Decimal(9, 6);
+    "MerchantCategoryCode"                   : String(40);
+    "MerchantDiscount"                       : Decimal(34, 6);
+    "MerchantDiscountCurrency"               : String(3);
+    "MerchantID"                             : String(128);
+    "MerchantName"                           : String(256);
+    "NominalAmount"                          : Decimal(34, 6);
+    "NominalAmountCurrency"                  : String(3);
+    "OtherAccountIdentificationSystem"       : String(128);
+    "OtherBankAccountCurrency"               : String(3);
+    "OtherBankAccountHolderName"             : String(256);
+    "OtherBankAccountID"                     : String(128);
+    "OtherBankID"                            : String(128);
+    "OtherBankIdentificationSystem"          : String(128);
+    "OtherBankName"                          : String(256);
+    "OtherIBAN"                              : String(128);
+    "OtherSWIFT"                             : String(128);
+    "POSTerminalID"                          : String(256);
+    "PaymentAuthenticationMethod"            : String(40);
+    "PaymentChannel"                         : String(20);
+    "PaymentSequenceGeneratedByTerminal"     : String(128);
+    "PaymentTerminalFIID"                    : String(128);
+    "PositionCurrency"                       : String(3);
+    "PostingDate"                            : LocalDate;
+    "PostingDirection"                       : String(6);
+    "Quantity"                               : Decimal(34, 6);
+    "RelevanceOfPostprocessing"              : String(40);
+    "ReversalByValueIndicator"               : Boolean;
+    "SettlementCategory"                     : String(40);
+    "SettlementItemCategory"                 : String(50);
+    "SettlementType"                         : String(40);
+    "TaxBaseAmount"                          : Decimal(34, 6);
+    "TaxBaseAmountCurrency"                  : String(3);
+    "TaxCode"                                : String(50);
+    "TaxCountry"                             : String(2);
+    "TaxReferenceCode"                       : String(50);
+    "TaxableAmountInTransactionCurrency"     : Decimal(34, 6);
+    "TransactionAmount"                      : Decimal(34, 6);
+    "TransactionAuthorizationCode"           : String(256);
+    "TransactionCity"                        : String(256);
+    "TransactionCountry"                     : String(2);
+    "TransactionCurrency"                    : String(3);
+    "TransactionPlace"                       : String(256);
+    "TransactionRegion"                      : String(50);
+    "TransactionType"                        : String(40);
+    "Unit"                                   : String(10);
+    "UnsignedAmountInPositionCurrency"       : Decimal(34, 6);
+    "UnsignedTransactionAmount"              : Decimal(34, 6);
+    "UsedExchangeRate"                       : Decimal(34, 6);
+    "ValueDate"                              : LocalDate;
+    "SourceSystemID"                         : String(128);
+    "ChangeTimestampInSourceSystem"          : UTCTimestamp;
+    "ChangingUserInSourceSystem"             : String(128);
+    "ChangingProcessType"                    : String(40);
+    "ChangingProcessID"                      : String(128);
+}
+technical configuration {
+    column store;
+};

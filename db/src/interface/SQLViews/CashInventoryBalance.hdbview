@@ -1,0 +1,24 @@
+view "sap.fsdm.SQLViews::CashInventoryBalance_View" 
+as select
+      "CurrencyPhysicallyPresent" ,
+      "ASSOC_CashInventory.CashAccountID" ,
+      "ASSOC_CashInventory.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "CashAmountPhysicallyPresent" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::CashInventoryBalance"
+with associations
+(
+	join "sap.fsdm.SQLViews::CashInventory_View" as "ASSOC_CashInventory"
+	  on "ASSOC_CashInventory"."CashAccountID" = "ASSOC_CashInventory.CashAccountID" AND 
+	     "ASSOC_CashInventory"."IDSystem" = "ASSOC_CashInventory.IDSystem"
+	     
+);

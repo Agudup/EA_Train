@@ -1,0 +1,32 @@
+view "sap.fsdm.SQLViews::ContractChannelStatus_View" 
+as select
+      "ASSOC_BankingChannel.BankingChannelID" ,
+      "ASSOC_FinancialContract.FinancialContractID" ,
+      "ASSOC_FinancialContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "ASSOC_EmployeeResponsibleForStatusChange.BusinessPartnerID" ,
+      "ContractChannelStatus" ,
+      "StatusChangeReason" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ContractChannelStatus"
+with associations
+(
+	join "sap.fsdm.SQLViews::BankingChannel_View" as "ASSOC_BankingChannel"
+	  on "ASSOC_BankingChannel"."BankingChannelID" = "ASSOC_BankingChannel.BankingChannelID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "ASSOC_EmployeeResponsibleForStatusChange"
+	  on "ASSOC_EmployeeResponsibleForStatusChange"."BusinessPartnerID" = "ASSOC_EmployeeResponsibleForStatusChange.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "ASSOC_FinancialContract"
+	  on "ASSOC_FinancialContract"."FinancialContractID" = "ASSOC_FinancialContract.FinancialContractID" AND 
+	     "ASSOC_FinancialContract"."IDSystem" = "ASSOC_FinancialContract.IDSystem"
+	     
+);

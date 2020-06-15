@@ -1,0 +1,52 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"OrganizationalUnit";
+using "sap"."fsdm"::"Trade";
+
+entity "OrganizationalUnitTradeAssignment" {
+    key "RoleOfOrganizationalUnit"      : String(50);
+    key "_OrgUnit"                      : association to OrganizationalUnit {
+                                                                              OrganizationalUnitID,
+                                                                              ASSOC_OrganizationHostingOrganizationalUnit
+                                                                            } not null;
+    key "_Trade"                        : association to Trade {
+                                                                 IDSystem,
+                                                                 TradeID
+                                                               }              not null;
+    key "BusinessValidFrom"             : UTCTimestamp;
+    key "BusinessValidTo"               : UTCTimestamp;
+        "SystemValidFrom"               : UTCTimestamp                        not null;
+        "SystemValidTo"                 : UTCTimestamp                        not null;
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "OrganizationalUnitTradeAssignment_Historical" {
+    "RoleOfOrganizationalUnit"      : String(50)                          not null;
+    "_OrgUnit"                      : association to OrganizationalUnit {
+                                                                          OrganizationalUnitID,
+                                                                          ASSOC_OrganizationHostingOrganizationalUnit
+                                                                        } not null;
+    "_Trade"                        : association to Trade {
+                                                             IDSystem,
+                                                             TradeID
+                                                           }              not null;
+    "BusinessValidFrom"             : UTCTimestamp                        not null;
+    "BusinessValidTo"               : UTCTimestamp                        not null;
+    "SystemValidFrom"               : UTCTimestamp                        not null;
+    "SystemValidTo"                 : UTCTimestamp                        not null;
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

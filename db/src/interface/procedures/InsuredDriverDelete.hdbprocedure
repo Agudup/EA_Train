@@ -1,0 +1,248 @@
+PROCEDURE "sap.fsdm.procedures::InsuredDriverDelete" (IN ROW "sap.fsdm.tabletypes::InsuredDriverTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                '_IndividualPerson.BusinessPartnerID=' || TO_VARCHAR("_IndividualPerson.BusinessPartnerID") || ' ' ||
+                '_InsuredVehicle._FinancialContract.FinancialContractID=' || TO_VARCHAR("_InsuredVehicle._FinancialContract.FinancialContractID") || ' ' ||
+                '_InsuredVehicle._FinancialContract.IDSystem=' || TO_VARCHAR("_InsuredVehicle._FinancialContract.IDSystem") || ' ' ||
+                '_InsuredVehicle._PhysicalAsset.PhysicalAssetID=' || TO_VARCHAR("_InsuredVehicle._PhysicalAsset.PhysicalAssetID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "IN"."_InsuredVehicle._FinancialContract.FinancialContractID",
+                        "IN"."_InsuredVehicle._FinancialContract.IDSystem",
+                        "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."_IndividualPerson.BusinessPartnerID",
+                        "IN"."_InsuredVehicle._FinancialContract.FinancialContractID",
+                        "IN"."_InsuredVehicle._FinancialContract.IDSystem",
+                        "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "_IndividualPerson.BusinessPartnerID",
+                        "_InsuredVehicle._FinancialContract.FinancialContractID",
+                        "_InsuredVehicle._FinancialContract.IDSystem",
+                        "_InsuredVehicle._PhysicalAsset.PhysicalAssetID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."_IndividualPerson.BusinessPartnerID",
+                                    "IN"."_InsuredVehicle._FinancialContract.FinancialContractID",
+                                    "IN"."_InsuredVehicle._FinancialContract.IDSystem",
+                                    "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."_IndividualPerson.BusinessPartnerID",
+                                    "IN"."_InsuredVehicle._FinancialContract.FinancialContractID",
+                                    "IN"."_InsuredVehicle._FinancialContract.IDSystem",
+                                    "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+    --Insert chunked versions of object
+    insert into "sap.fsdm::InsuredDriver" (
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuredVehicle._FinancialContract.FinancialContractID",
+        "_InsuredVehicle._FinancialContract.IDSystem",
+        "_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "MainIndicator",
+        "NoClaimsBonusIndicator",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__IndividualPerson.BusinessPartnerID" as "_IndividualPerson.BusinessPartnerID" ,
+            "OLD__InsuredVehicle._FinancialContract.FinancialContractID" as "_InsuredVehicle._FinancialContract.FinancialContractID" ,
+            "OLD__InsuredVehicle._FinancialContract.IDSystem" as "_InsuredVehicle._FinancialContract.IDSystem" ,
+            "OLD__InsuredVehicle._PhysicalAsset.PhysicalAssetID" as "_InsuredVehicle._PhysicalAsset.PhysicalAssetID" ,
+            "NX_" as "BusinessValidFrom" ,
+            "BusinessValidFrom" as "BusinessValidTo" ,
+            "OLD_MainIndicator" as "MainIndicator" ,
+            "OLD_NoClaimsBonusIndicator" as "NoClaimsBonusIndicator" ,
+            "OLD_SourceSystemID" as "SourceSystemID" ,
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+            "OLD_ChangingProcessType" as "ChangingProcessType" ,
+            "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "OLD"."_IndividualPerson.BusinessPartnerID",
+                        "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuredVehicle._FinancialContract.IDSystem",
+                        "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                       order by "OLD"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                "OLD"."_IndividualPerson.BusinessPartnerID" as "OLD__IndividualPerson.BusinessPartnerID",
+                "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" as "OLD__InsuredVehicle._FinancialContract.FinancialContractID",
+                "OLD"."_InsuredVehicle._FinancialContract.IDSystem" as "OLD__InsuredVehicle._FinancialContract.IDSystem",
+                "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" as "OLD__InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."MainIndicator" as "OLD_MainIndicator",
+                "OLD"."NoClaimsBonusIndicator" as "OLD_NoClaimsBonusIndicator",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InsuredDriver" as "OLD"
+            on
+                      ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) and
+                      ( "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" = "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" or "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" is null ) and
+                      ( "IN"."_InsuredVehicle._FinancialContract.IDSystem" = "OLD"."_InsuredVehicle._FinancialContract.IDSystem" or "IN"."_InsuredVehicle._FinancialContract.IDSystem" is null ) and
+                      ( "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" );
+
+    --Insert rightmost chunk
+    insert into "sap.fsdm::InsuredDriver" (
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuredVehicle._FinancialContract.FinancialContractID",
+        "_InsuredVehicle._FinancialContract.IDSystem",
+        "_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "MainIndicator",
+        "NoClaimsBonusIndicator",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+    )
+    (
+        select
+            "OLD__IndividualPerson.BusinessPartnerID" as "_IndividualPerson.BusinessPartnerID",
+            "OLD__InsuredVehicle._FinancialContract.FinancialContractID" as "_InsuredVehicle._FinancialContract.FinancialContractID",
+            "OLD__InsuredVehicle._FinancialContract.IDSystem" as "_InsuredVehicle._FinancialContract.IDSystem",
+            "OLD__InsuredVehicle._PhysicalAsset.PhysicalAssetID" as "_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_MainIndicator" as "MainIndicator",
+            "OLD_NoClaimsBonusIndicator" as "NoClaimsBonusIndicator",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+        from
+        (
+            select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "OLD"."_IndividualPerson.BusinessPartnerID",
+                        "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID",
+                        "OLD"."_InsuredVehicle._FinancialContract.IDSystem",
+                        "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+                        "OLD"."BusinessValidFrom"
+                order by "OLD"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                "OLD"."_IndividualPerson.BusinessPartnerID" as "OLD__IndividualPerson.BusinessPartnerID",
+                "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" as "OLD__InsuredVehicle._FinancialContract.FinancialContractID",
+                "OLD"."_InsuredVehicle._FinancialContract.IDSystem" as "OLD__InsuredVehicle._FinancialContract.IDSystem",
+                "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" as "OLD__InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                "OLD"."MainIndicator" as "OLD_MainIndicator",
+                "OLD"."NoClaimsBonusIndicator" as "OLD_NoClaimsBonusIndicator",
+                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::InsuredDriver" as "OLD"
+            on
+                                                ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) and
+                                                ( "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" = "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" or "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" is null ) and
+                                                ( "IN"."_InsuredVehicle._FinancialContract.IDSystem" = "OLD"."_InsuredVehicle._FinancialContract.IDSystem" or "IN"."_InsuredVehicle._FinancialContract.IDSystem" is null ) and
+                                                ( "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" is null ) 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo");
+
+    delete from "sap.fsdm::InsuredDriver"
+    where (
+        "_IndividualPerson.BusinessPartnerID",
+        "_InsuredVehicle._FinancialContract.FinancialContractID",
+        "_InsuredVehicle._FinancialContract.IDSystem",
+        "_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+    )
+    in
+    (
+        select
+            "OLD"."_IndividualPerson.BusinessPartnerID",
+            "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID",
+            "OLD"."_InsuredVehicle._FinancialContract.IDSystem",
+            "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+        from :row as "IN"
+        inner join "sap.fsdm::InsuredDriver" as "OLD"
+        on
+                                       ( "IN"."_IndividualPerson.BusinessPartnerID" = "OLD"."_IndividualPerson.BusinessPartnerID" or "IN"."_IndividualPerson.BusinessPartnerID" is null ) and
+                                       ( "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" = "OLD"."_InsuredVehicle._FinancialContract.FinancialContractID" or "IN"."_InsuredVehicle._FinancialContract.FinancialContractID" is null ) and
+                                       ( "IN"."_InsuredVehicle._FinancialContract.IDSystem" = "OLD"."_InsuredVehicle._FinancialContract.IDSystem" or "IN"."_InsuredVehicle._FinancialContract.IDSystem" is null ) and
+                                       ( "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" = "OLD"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" or "IN"."_InsuredVehicle._PhysicalAsset.PhysicalAssetID" is null ) 
+        where
+           ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+           ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+END

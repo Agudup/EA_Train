@@ -1,0 +1,122 @@
+PROCEDURE "sap.fsdm.procedures::PaymentIntervalListEntryListErase" (IN ROW "sap.fsdm.tabletypes::PaymentIntervalListEntryTT_Erase")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  declare semantic_keys_null_in_one_or_more_rows condition for sql_error_code 10001;
+  declare exit handler for semantic_keys_null_in_one_or_more_rows
+    BEGIN
+      declare err_msg clob;
+      select 'The input tabletype has one or more rows with all semantic keys as null values' into err_msg
+        from "sap.fsdm.synonyms::DUMMY";
+      resignal set message_text = :err_msg;
+    END;
+  var_find_null = select 1 as find_null
+                    from :row
+                   where
+                         "ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" is null and
+                         "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" is null and
+                         "ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" is null and
+                         "ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" is null and
+                         "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null and
+                         "ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null and
+                         "ASSOC_PaymentIntervalList._CreditCardLoan.ID" is null and
+                         "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null and
+                         "ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" is null and
+                         "PaymentIntervalStartDate" is null and
+                         "PaymentIntervalEndDate" is null 
+;
+  IF NOT IS_EMPTY(:var_find_null) THEN
+    SIGNAL semantic_keys_null_in_one_or_more_rows;
+  END IF;
+
+--delete data from current table
+delete from "sap.fsdm::PaymentIntervalListEntry" WHERE
+("PaymentIntervalEndDate" ,
+"PaymentIntervalStartDate" ,
+"ASSOC_PaymentIntervalList.SequenceNumber" ,
+"ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" ,
+"ASSOC_PaymentIntervalList._CreditCardLoan.ID" ,
+"ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" ,
+"ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" 
+)in ( select "OLD"."PaymentIntervalEndDate" ,
+"OLD"."PaymentIntervalStartDate" ,
+"OLD"."ASSOC_PaymentIntervalList.SequenceNumber" ,
+"OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" ,
+"OLD"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" ,
+"OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"OLD"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" ,
+"OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" ,
+"OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::PaymentIntervalListEntry" "OLD"
+on
+  ( "IN"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" = "OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" or "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" or "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" = "OLD"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" or "IN"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" = "OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" or "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" = "OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" or "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" is null ) and
+  ( "IN"."PaymentIntervalStartDate" = "OLD"."PaymentIntervalStartDate" or "IN"."PaymentIntervalStartDate" is null ) and
+  ( "IN"."PaymentIntervalEndDate" = "OLD"."PaymentIntervalEndDate" or "IN"."PaymentIntervalEndDate" is null ) 
+);
+
+--delete data from history table
+delete from "sap.fsdm::PaymentIntervalListEntry_Historical" WHERE
+("PaymentIntervalEndDate" ,
+"PaymentIntervalStartDate" ,
+"ASSOC_PaymentIntervalList.SequenceNumber" ,
+"ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" ,
+"ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" ,
+"ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" ,
+"ASSOC_PaymentIntervalList._CreditCardLoan.ID" ,
+"ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" ,
+"ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" ,
+"ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" 
+)in ( select "OLD"."PaymentIntervalEndDate" ,
+"OLD"."PaymentIntervalStartDate" ,
+"OLD"."ASSOC_PaymentIntervalList.SequenceNumber" ,
+"OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" ,
+"OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" ,
+"OLD"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" ,
+"OLD"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" ,
+"OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" ,
+"OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" ,
+"OLD"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" ,
+"OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent.ComponentNumber" ,
+"OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" ,
+"OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" 
+from :ROW "IN"
+inner join "sap.fsdm::PaymentIntervalListEntry_Historical" "OLD"
+on
+  ( "IN"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" = "OLD"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" or "IN"."ASSOC_PaymentIntervalList.ASSOC_Receivable.ReceivableID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" = "OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" or "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" = "OLD"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" or "IN"."ASSOC_PaymentIntervalList.ASSOC_FinancialContract.IDSystem" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" = "OLD"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" or "IN"."ASSOC_PaymentIntervalList._DebtInstrument.FinancialInstrumentID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" = "OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" or "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.IDSystem" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" = "OLD"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" or "IN"."ASSOC_PaymentIntervalList._InterestRateOptionComponent._InterestRateOption.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" = "OLD"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" or "IN"."ASSOC_PaymentIntervalList._CreditCardLoan.ID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" = "OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" or "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.FinancialContractID" is null ) and
+  ( "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" = "OLD"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" or "IN"."ASSOC_PaymentIntervalList._CreditCardLoan._CreditCardAgreement.IDSystem" is null ) and
+  ( "IN"."PaymentIntervalStartDate" = "OLD"."PaymentIntervalStartDate" or "IN"."PaymentIntervalStartDate" is null ) and
+  ( "IN"."PaymentIntervalEndDate" = "OLD"."PaymentIntervalEndDate" or "IN"."PaymentIntervalEndDate" is null ) 
+);
+
+END

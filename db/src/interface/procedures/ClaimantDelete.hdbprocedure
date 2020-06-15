@@ -1,0 +1,18 @@
+PROCEDURE "sap.fsdm.procedures::ClaimantDelete" (IN ROW "sap.fsdm.tabletypes::ClaimantTT_Del")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  AS
+BEGIN
+
+  --No Versioning
+  --delete all matching records from the db
+delete from "sap.fsdm::Claimant" WHERE("_BusinessPartner.BusinessPartnerID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+)in ( select "_BusinessPartner.BusinessPartnerID" ,
+"_Claim.ID" ,
+"_Claim.IDSystem" 
+from :ROW );
+
+
+END

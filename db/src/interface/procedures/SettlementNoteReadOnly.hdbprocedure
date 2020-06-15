@@ -1,0 +1,53 @@
+PROCEDURE "sap.fsdm.procedures::SettlementNoteReadOnly" (IN ROW "sap.fsdm.tabletypes::SettlementNoteTT" , OUT CURR_DEL "sap.fsdm.tabletypes::SettlementNoteTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::SettlementNoteTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+  --System Dimension versioning
+
+--Delete entries for update from current table
+CURR_DEL = select 
+"SequenceNumber",
+"ASSOC_SettlementItem.IDSystem",
+"ASSOC_SettlementItem.ItemNumber",
+"ASSOC_SettlementItem.SettlementID"
+from "sap.fsdm::SettlementNote" WHERE("SequenceNumber" ,
+"ASSOC_SettlementItem.IDSystem" ,
+"ASSOC_SettlementItem.ItemNumber" ,
+"ASSOC_SettlementItem.SettlementID" 
+)in ( select     ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+    ( case when "ASSOC_SettlementItem.IDSystem" is null then '' else "ASSOC_SettlementItem.IDSystem" end ) as "ASSOC_SettlementItem.IDSystem",
+    ( case when "ASSOC_SettlementItem.ItemNumber" is null then -1 else "ASSOC_SettlementItem.ItemNumber" end ) as "ASSOC_SettlementItem.ItemNumber",
+    ( case when "ASSOC_SettlementItem.SettlementID" is null then '' else "ASSOC_SettlementItem.SettlementID" end ) as "ASSOC_SettlementItem.SettlementID"
+from :row );
+
+--Insert ALL the input data 
+CURR_INS = select 
+"SequenceNumber",
+"ASSOC_SettlementItem.IDSystem",
+"ASSOC_SettlementItem.ItemNumber",
+"ASSOC_SettlementItem.SettlementID",
+"SettlementNoteContent",
+"SettlementNoteContentType",
+"SourceSystemID",
+"ChangeTimestampInSourceSystem",
+"ChangingUserInSourceSystem",
+"ChangingProcessType",
+"ChangingProcessID"
+from  ( select 
+     ( case when "SequenceNumber" is null then -1 else "SequenceNumber" end ) as "SequenceNumber",
+    ( case when "ASSOC_SettlementItem.IDSystem" is null then '' else "ASSOC_SettlementItem.IDSystem" end ) as "ASSOC_SettlementItem.IDSystem",
+    ( case when "ASSOC_SettlementItem.ItemNumber" is null then -1 else "ASSOC_SettlementItem.ItemNumber" end ) as "ASSOC_SettlementItem.ItemNumber",
+    ( case when "ASSOC_SettlementItem.SettlementID" is null then '' else "ASSOC_SettlementItem.SettlementID" end ) as "ASSOC_SettlementItem.SettlementID",
+  "SettlementNoteContent"  ,
+  "SettlementNoteContentType"  ,
+  "SourceSystemID"  ,
+  "ChangeTimestampInSourceSystem"  ,
+  "ChangingUserInSourceSystem"  ,
+  "ChangingProcessType"  ,
+  "ChangingProcessID"  
+from :row );
+
+END

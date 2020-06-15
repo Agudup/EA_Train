@@ -1,0 +1,39 @@
+view "sap.fsdm.SQLViews::ClassOfInsurance_View" 
+as select
+      "ClassOfInsurance" ,
+      "SubClassOfInsurance" ,
+      "SubSubClassOfInsurance" ,
+      "_ReinsuranceCoverage.CoverageID" ,
+      "_ReinsuranceCoverage.SectionID" ,
+      "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" ,
+      "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "DefaultIndicator" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::ClassOfInsurance"
+with associations
+(
+	join "sap.fsdm.SQLViews::SectionCoverage_View" as "_ReinsuranceCoverage"
+	  on "_ReinsuranceCoverage"."CoverageID" = "_ReinsuranceCoverage.CoverageID" AND 
+	     "_ReinsuranceCoverage"."SectionID" = "_ReinsuranceCoverage.SectionID" AND 
+	     "_ReinsuranceCoverage"."_ReinsuranceContract.FinancialContractID" = "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_ReinsuranceCoverage"."_ReinsuranceContract.IDSystem" = "_ReinsuranceCoverage._ReinsuranceContract.IDSystem"
+	     ,
+	join "sap.fsdm.SQLViews::NonProportionalCoverageLimitDeductible_View" as "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"
+	  on "_ReinsuranceCoverage._ReinsuranceContract.IDSystem" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.IDSystem" AND 
+	     "_ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance._ReinsuranceCoverage._ReinsuranceContract.FinancialContractID" AND 
+	     "_ReinsuranceCoverage.SectionID" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance._ReinsuranceCoverage.SectionID" AND 
+	     "_ReinsuranceCoverage.CoverageID" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance._ReinsuranceCoverage.CoverageID" AND 
+	     "SubSubClassOfInsurance" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance.SubSubClassOfInsurance" AND 
+	     "SubClassOfInsurance" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance.SubClassOfInsurance" AND 
+	     "ClassOfInsurance" = "_NonProportionalCoverageLimitDeductible__ClassOfInsurance"."_ClassOfInsurance.ClassOfInsurance"
+	     
+);

@@ -1,0 +1,31 @@
+view "sap.fsdm.SQLViews::Lien_View" 
+as select
+      "SequenceNumber" ,
+      "_LienAccount.FinancialContractID" ,
+      "_LienAccount.IDSystem" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "Comment" ,
+      "IsLienReleased" ,
+      "LienAmount" ,
+      "LienAmountCurrency" ,
+      "LienExpiryDate" ,
+      "LienReason" ,
+      "LienStartDate" ,
+      "LienType" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Lien"
+with associations
+(
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_LienAccount"
+	  on "_LienAccount"."IDSystem" = "_LienAccount.IDSystem" AND 
+	     "_LienAccount"."FinancialContractID" = "_LienAccount.FinancialContractID"
+	     
+);

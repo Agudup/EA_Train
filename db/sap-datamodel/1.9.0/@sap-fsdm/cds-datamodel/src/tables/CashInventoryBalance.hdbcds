@@ -1,0 +1,45 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"CashInventory";
+
+entity "CashInventoryBalance" {
+    key "CurrencyPhysicallyPresent"     : String(3);
+    key "ASSOC_CashInventory"           : association to CashInventory {
+                                                                         CashAccountID,
+                                                                         IDSystem
+                                                                       } not null;
+    key "BusinessValidFrom"             : LocalDate;
+    key "BusinessValidTo"               : LocalDate;
+        "SystemValidFrom"               : UTCTimestamp                   not null;
+        "SystemValidTo"                 : UTCTimestamp                   not null;
+        "CashAmountPhysicallyPresent"   : Decimal(34, 6);
+        "SourceSystemID"                : String(128);
+        "ChangeTimestampInSourceSystem" : UTCTimestamp;
+        "ChangingUserInSourceSystem"    : String(128);
+        "ChangingProcessType"           : String(40);
+        "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "CashInventoryBalance_Historical" {
+    "CurrencyPhysicallyPresent"     : String(3)                      not null;
+    "ASSOC_CashInventory"           : association to CashInventory {
+                                                                     CashAccountID,
+                                                                     IDSystem
+                                                                   } not null;
+    "BusinessValidFrom"             : LocalDate                      not null;
+    "BusinessValidTo"               : LocalDate                      not null;
+    "SystemValidFrom"               : UTCTimestamp                   not null;
+    "SystemValidTo"                 : UTCTimestamp                   not null;
+    "CashAmountPhysicallyPresent"   : Decimal(34, 6);
+    "SourceSystemID"                : String(128);
+    "ChangeTimestampInSourceSystem" : UTCTimestamp;
+    "ChangingUserInSourceSystem"    : String(128);
+    "ChangingProcessType"           : String(40);
+    "ChangingProcessID"             : String(128);
+}
+technical configuration {
+    column store;
+};

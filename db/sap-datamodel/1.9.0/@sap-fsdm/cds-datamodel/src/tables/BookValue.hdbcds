@@ -1,0 +1,70 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"AccountingSystem";
+using "sap"."fsdm"::"FinancialContract";
+using "sap"."fsdm"::"PositionCurrencyOfMultiCurrencyContract";
+using "sap"."fsdm"::"FinancialInstrument";
+
+entity "BookValue" {
+    key "BookValueType"                    : String(40)                                                   default '';
+    key "ASSOC_AccountingSystem"           : association to AccountingSystem { AccountingSystemID }       not null;
+    key "ASSOC_FinancialContract"          : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                           not null;
+    key "ASSOC_PositionCurrencyForAccount" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                      PositionCurrency,
+                                                                                                      ASSOC_MultiCcyAccnt
+                                                                                                    }     not null;
+    key "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    key "_SecuritiesAccount"               : association to FinancialContract {
+                                                                                FinancialContractID,
+                                                                                IDSystem
+                                                                              }                           not null;
+    key "BusinessValidFrom"                : LocalDate;
+    key "BusinessValidTo"                  : LocalDate;
+        "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+        "SystemValidTo"                    : UTCTimestamp                                                 not null;
+        "BookValue"                        : Decimal(34, 6);
+        "BookValueCurrency"                : String(3);
+        "SourceSystemID"                   : String(128);
+        "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+        "ChangingUserInSourceSystem"       : String(128);
+        "ChangingProcessType"              : String(40);
+        "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "BookValue_Historical" {
+    "BookValueType"                    : String(40)                                                   default '' not null;
+    "ASSOC_AccountingSystem"           : association to AccountingSystem { AccountingSystemID }       not null;
+    "ASSOC_FinancialContract"          : association to FinancialContract {
+                                                                            FinancialContractID,
+                                                                            IDSystem
+                                                                          }                           not null;
+    "ASSOC_PositionCurrencyForAccount" : association to PositionCurrencyOfMultiCurrencyContract {
+                                                                                                  PositionCurrency,
+                                                                                                  ASSOC_MultiCcyAccnt
+                                                                                                }     not null;
+    "_FinancialInstrument"             : association to FinancialInstrument { FinancialInstrumentID } not null;
+    "_SecuritiesAccount"               : association to FinancialContract {
+                                                                            FinancialContractID,
+                                                                            IDSystem
+                                                                          }                           not null;
+    "BusinessValidFrom"                : LocalDate                                                    not null;
+    "BusinessValidTo"                  : LocalDate                                                    not null;
+    "SystemValidFrom"                  : UTCTimestamp                                                 not null;
+    "SystemValidTo"                    : UTCTimestamp                                                 not null;
+    "BookValue"                        : Decimal(34, 6);
+    "BookValueCurrency"                : String(3);
+    "SourceSystemID"                   : String(128);
+    "ChangeTimestampInSourceSystem"    : UTCTimestamp;
+    "ChangingUserInSourceSystem"       : String(128);
+    "ChangingProcessType"              : String(40);
+    "ChangingProcessID"                : String(128);
+}
+technical configuration {
+    column store;
+};

@@ -1,0 +1,490 @@
+PROCEDURE "sap.fsdm.procedures::RefinancingRelationReadOnly" (IN ROW "sap.fsdm.tabletypes::RefinancingRelationTT", OUT CURR_DEL "sap.fsdm.tabletypes::RefinancingRelationTT_Del", OUT CURR_INS "sap.fsdm.tabletypes::RefinancingRelationTT_Out")
+  LANGUAGE SQLSCRIPT
+  SQL SECURITY DEFINER
+  READS SQL DATA
+  AS
+BEGIN
+
+    --Check for period overlap
+    declare period_overlap condition for sql_error_code 10001;
+    declare exit handler for period_overlap
+        begin
+            declare err_msg clob;
+            select TOP 1
+                'Business Period Overlap: Key ' ||
+                'RefinancingType=' || TO_VARCHAR("RefinancingType") || ' ' ||
+                'ASSOC_RefinancedContract.FinancialContractID=' || TO_VARCHAR("ASSOC_RefinancedContract.FinancialContractID") || ' ' ||
+                'ASSOC_RefinancedContract.IDSystem=' || TO_VARCHAR("ASSOC_RefinancedContract.IDSystem") || ' ' ||
+                'ASSOC_RefinancedPositionCurrency.PositionCurrency=' || TO_VARCHAR("ASSOC_RefinancedPositionCurrency.PositionCurrency") || ' ' ||
+                'ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                'ASSOC_RefinancingContract.FinancialContractID=' || TO_VARCHAR("ASSOC_RefinancingContract.FinancialContractID") || ' ' ||
+                'ASSOC_RefinancingContract.IDSystem=' || TO_VARCHAR("ASSOC_RefinancingContract.IDSystem") || ' ' ||
+                'ASSOC_RefinancingPositionCurrency.PositionCurrency=' || TO_VARCHAR("ASSOC_RefinancingPositionCurrency.PositionCurrency") || ' ' ||
+                'ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID=' || TO_VARCHAR("ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID") || ' ' ||
+                'ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem=' || TO_VARCHAR("ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem") || ' ' ||
+                '_CollectionOfRefinancedSecuritiesHolding.CollectionID=' || TO_VARCHAR("_CollectionOfRefinancedSecuritiesHolding.CollectionID") || ' ' ||
+                '_CollectionOfRefinancedSecuritiesHolding.IDSystem=' || TO_VARCHAR("_CollectionOfRefinancedSecuritiesHolding.IDSystem") || ' ' ||
+                '_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID=' || TO_VARCHAR("_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID") || ' ' ||
+                ':Business Period Overlap Error'
+            into err_msg
+            from
+            (
+                select
+                    "IN"."BusinessValidFrom" as "X",
+                    "IN"."BusinessValidTo" as "Y",
+                    lag ( "IN"."BusinessValidFrom", 1)
+                    over ( partition by
+                        "IN"."RefinancingType",
+                        "IN"."ASSOC_RefinancedContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancedContract.IDSystem",
+                        "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_RefinancingContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancingContract.IDSystem",
+                        "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                        "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NX_",
+                    lag("IN"."BusinessValidTo", 1)
+                    over ( partition by
+                        "IN"."RefinancingType",
+                        "IN"."ASSOC_RefinancedContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancedContract.IDSystem",
+                        "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_RefinancingContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancingContract.IDSystem",
+                        "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                        "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID"
+                    order by "IN"."BusinessValidFrom") as "NY_",
+                        "RefinancingType",
+                        "ASSOC_RefinancedContract.FinancialContractID",
+                        "ASSOC_RefinancedContract.IDSystem",
+                        "ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                        "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "ASSOC_RefinancingContract.FinancialContractID",
+                        "ASSOC_RefinancingContract.IDSystem",
+                        "ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                        "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                        "_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                        "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID"
+                from :row as "IN"
+            )
+            where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+            resignal set message_text = :err_msg;
+        end;
+
+    var_overlap = select *
+                    from
+                    (
+                        select
+                            "IN"."BusinessValidFrom" as "X",
+                            "IN"."BusinessValidTo" as "Y",
+                            lag ( "IN"."BusinessValidFrom", 1)
+                            over ( partition by
+                                    "IN"."RefinancingType",
+                                    "IN"."ASSOC_RefinancedContract.FinancialContractID",
+                                    "IN"."ASSOC_RefinancedContract.IDSystem",
+                                    "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                                    "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_RefinancingContract.FinancialContractID",
+                                    "IN"."ASSOC_RefinancingContract.IDSystem",
+                                    "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                                    "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                                    "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                                    "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NX_",
+                            lag ( "IN"."BusinessValidTo", 1)
+                            over ( partition by
+                                    "IN"."RefinancingType",
+                                    "IN"."ASSOC_RefinancedContract.FinancialContractID",
+                                    "IN"."ASSOC_RefinancedContract.IDSystem",
+                                    "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                                    "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."ASSOC_RefinancingContract.FinancialContractID",
+                                    "IN"."ASSOC_RefinancingContract.IDSystem",
+                                    "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                                    "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                    "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                                    "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                                    "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                                    "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID"
+                            order by "IN"."BusinessValidFrom") as "NY_"
+                from :row as "IN"
+                )
+                where ("X" >= "NX_" and "X" < "NY_") or ("Y" > "NX_" and "Y" <= "NY_");
+
+    if not is_empty(:var_overlap) then
+      signal period_overlap;
+    end if;
+
+    :var_overlap.delete();
+
+
+     CURR_DEL = select 
+        "RefinancingType",
+        "ASSOC_RefinancedContract.FinancialContractID",
+        "ASSOC_RefinancedContract.IDSystem",
+        "ASSOC_RefinancedPositionCurrency.PositionCurrency",
+        "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_RefinancingContract.FinancialContractID",
+        "ASSOC_RefinancingContract.IDSystem",
+        "ASSOC_RefinancingPositionCurrency.PositionCurrency",
+        "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+        "_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+        "_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+        "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo"
+        from "sap.fsdm::RefinancingRelation" WHERE
+        (            "RefinancingType" ,
+            "ASSOC_RefinancedContract.FinancialContractID" ,
+            "ASSOC_RefinancedContract.IDSystem" ,
+            "ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+            "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "ASSOC_RefinancingContract.FinancialContractID" ,
+            "ASSOC_RefinancingContract.IDSystem" ,
+            "ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+            "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+            "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+            "_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+            "_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+            "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" ,
+            "BusinessValidFrom" ,
+            "BusinessValidTo" 
+
+        )        
+in ( select
+            "OLD"."RefinancingType",
+            "OLD"."ASSOC_RefinancedContract.FinancialContractID",
+            "OLD"."ASSOC_RefinancedContract.IDSystem",
+            "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+            "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."ASSOC_RefinancingContract.FinancialContractID",
+            "OLD"."ASSOC_RefinancingContract.IDSystem",
+            "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+            "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+            "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+            "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+            "OLD"."BusinessValidFrom",
+            "OLD"."BusinessValidTo"
+            from :row as "IN"
+            inner join "sap.fsdm::RefinancingRelation" as "OLD"
+            on
+               ( case when "IN"."RefinancingType" is null then '' else "IN"."RefinancingType" end ) = "OLD"."RefinancingType" and
+               ( case when "IN"."ASSOC_RefinancedContract.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancedContract.FinancialContractID" end ) = "OLD"."ASSOC_RefinancedContract.FinancialContractID" and
+               ( case when "IN"."ASSOC_RefinancedContract.IDSystem" is null then '' else "IN"."ASSOC_RefinancedContract.IDSystem" end ) = "OLD"."ASSOC_RefinancedContract.IDSystem" and
+               ( case when "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" and
+               ( case when "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" and
+               ( case when "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" and
+               ( case when "IN"."ASSOC_RefinancingContract.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancingContract.FinancialContractID" end ) = "OLD"."ASSOC_RefinancingContract.FinancialContractID" and
+               ( case when "IN"."ASSOC_RefinancingContract.IDSystem" is null then '' else "IN"."ASSOC_RefinancingContract.IDSystem" end ) = "OLD"."ASSOC_RefinancingContract.IDSystem" and
+               ( case when "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" and
+               ( case when "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" and
+               ( case when "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" and
+               ( case when "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null then '' else "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" end ) = "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" and
+               ( case when "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null then '' else "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" end ) = "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" and
+               ( case when "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null then '' else "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" end ) = "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+            where
+               ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+               ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ));
+
+
+--Insert ALL the input data 
+
+    CURR_INS = select 
+        "RefinancingType",
+        "ASSOC_RefinancedContract.FinancialContractID",
+        "ASSOC_RefinancedContract.IDSystem",
+        "ASSOC_RefinancedPositionCurrency.PositionCurrency",
+        "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+        "ASSOC_RefinancingContract.FinancialContractID",
+        "ASSOC_RefinancingContract.IDSystem",
+        "ASSOC_RefinancingPositionCurrency.PositionCurrency",
+        "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+        "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+        "_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+        "_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+        "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+        "BusinessValidFrom",
+        "BusinessValidTo",
+        "DisclosedRefinancing",
+        "IndemnificationAgreement",
+        "IndemnificationPercentage",
+        "MaximumAssumedLiabilityAmount",
+        "MaximumAssumedLiabilityAmountCurrency",
+        "PositionCurrency",
+        "RefinancedAmountInPositionCurrency",
+        "SourceSystemID",
+        "ChangeTimestampInSourceSystem",
+        "ChangingUserInSourceSystem",
+        "ChangingProcessType",
+        "ChangingProcessID"
+        from (
+            (
+                select
+                    ( case when "RefinancingType" is null then '' else "RefinancingType" end ) as "RefinancingType",
+                    ( case when "ASSOC_RefinancedContract.FinancialContractID" is null then '' else "ASSOC_RefinancedContract.FinancialContractID" end ) as "ASSOC_RefinancedContract.FinancialContractID",
+                    ( case when "ASSOC_RefinancedContract.IDSystem" is null then '' else "ASSOC_RefinancedContract.IDSystem" end ) as "ASSOC_RefinancedContract.IDSystem",
+                    ( case when "ASSOC_RefinancedPositionCurrency.PositionCurrency" is null then '' else "ASSOC_RefinancedPositionCurrency.PositionCurrency" end ) as "ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                    ( case when "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) as "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                    ( case when "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) as "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                    ( case when "ASSOC_RefinancingContract.FinancialContractID" is null then '' else "ASSOC_RefinancingContract.FinancialContractID" end ) as "ASSOC_RefinancingContract.FinancialContractID",
+                    ( case when "ASSOC_RefinancingContract.IDSystem" is null then '' else "ASSOC_RefinancingContract.IDSystem" end ) as "ASSOC_RefinancingContract.IDSystem",
+                    ( case when "ASSOC_RefinancingPositionCurrency.PositionCurrency" is null then '' else "ASSOC_RefinancingPositionCurrency.PositionCurrency" end ) as "ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                    ( case when "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) as "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                    ( case when "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) as "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                    ( case when "_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null then '' else "_CollectionOfRefinancedSecuritiesHolding.CollectionID" end ) as "_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                    ( case when "_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null then '' else "_CollectionOfRefinancedSecuritiesHolding.IDSystem" end ) as "_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                    ( case when "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null then '' else "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" end ) as "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+                    "BusinessValidFrom"  ,
+                    "BusinessValidTo"  ,
+                    "DisclosedRefinancing"  ,
+                    "IndemnificationAgreement"  ,
+                    "IndemnificationPercentage"  ,
+                    "MaximumAssumedLiabilityAmount"  ,
+                    "MaximumAssumedLiabilityAmountCurrency"  ,
+                    "PositionCurrency"  ,
+                    "RefinancedAmountInPositionCurrency"  ,
+                    "SourceSystemID"  ,
+                    "ChangeTimestampInSourceSystem"  ,
+                    "ChangingUserInSourceSystem"  ,
+                    "ChangingProcessType"  ,
+                    "ChangingProcessID"  
+                from :row             )
+            UNION ALL
+            (
+                select
+                    "OLD_RefinancingType" as "RefinancingType" ,
+                    "OLD_ASSOC_RefinancedContract.FinancialContractID" as "ASSOC_RefinancedContract.FinancialContractID" ,
+                    "OLD_ASSOC_RefinancedContract.IDSystem" as "ASSOC_RefinancedContract.IDSystem" ,
+                    "OLD_ASSOC_RefinancedPositionCurrency.PositionCurrency" as "ASSOC_RefinancedPositionCurrency.PositionCurrency" ,
+                    "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+                    "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+                    "OLD_ASSOC_RefinancingContract.FinancialContractID" as "ASSOC_RefinancingContract.FinancialContractID" ,
+                    "OLD_ASSOC_RefinancingContract.IDSystem" as "ASSOC_RefinancingContract.IDSystem" ,
+                    "OLD_ASSOC_RefinancingPositionCurrency.PositionCurrency" as "ASSOC_RefinancingPositionCurrency.PositionCurrency" ,
+                    "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" ,
+                    "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" ,
+                    "OLD__CollectionOfRefinancedSecuritiesHolding.CollectionID" as "_CollectionOfRefinancedSecuritiesHolding.CollectionID" ,
+                    "OLD__CollectionOfRefinancedSecuritiesHolding.IDSystem" as "_CollectionOfRefinancedSecuritiesHolding.IDSystem" ,
+                    "OLD__InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" as "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" ,
+                    "NX_" as "BusinessValidFrom" ,
+                    "BusinessValidFrom" as "BusinessValidTo" ,
+                    "OLD_DisclosedRefinancing" as "DisclosedRefinancing" ,
+                    "OLD_IndemnificationAgreement" as "IndemnificationAgreement" ,
+                    "OLD_IndemnificationPercentage" as "IndemnificationPercentage" ,
+                    "OLD_MaximumAssumedLiabilityAmount" as "MaximumAssumedLiabilityAmount" ,
+                    "OLD_MaximumAssumedLiabilityAmountCurrency" as "MaximumAssumedLiabilityAmountCurrency" ,
+                    "OLD_PositionCurrency" as "PositionCurrency" ,
+                    "OLD_RefinancedAmountInPositionCurrency" as "RefinancedAmountInPositionCurrency" ,
+                    "OLD_SourceSystemID" as "SourceSystemID" ,
+                    "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem" ,
+                    "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem" ,
+                    "OLD_ChangingProcessType" as "ChangingProcessType" ,
+                    "OLD_ChangingProcessID" as "ChangingProcessID" 
+        from
+        (
+            select
+                lag("IN"."BusinessValidTo", 1, "OLD"."BusinessValidFrom")
+                over ( partition by
+                        "IN"."RefinancingType",
+                        "IN"."ASSOC_RefinancedContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancedContract.IDSystem",
+                        "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_RefinancingContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancingContract.IDSystem",
+                        "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                        "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                       order by "IN"."BusinessValidFrom") as "NX_",
+                "IN"."BusinessValidFrom",
+                                "OLD"."RefinancingType" as "OLD_RefinancingType",
+                                "OLD"."ASSOC_RefinancedContract.FinancialContractID" as "OLD_ASSOC_RefinancedContract.FinancialContractID",
+                                "OLD"."ASSOC_RefinancedContract.IDSystem" as "OLD_ASSOC_RefinancedContract.IDSystem",
+                                "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" as "OLD_ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                                "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."ASSOC_RefinancingContract.FinancialContractID" as "OLD_ASSOC_RefinancingContract.FinancialContractID",
+                                "OLD"."ASSOC_RefinancingContract.IDSystem" as "OLD_ASSOC_RefinancingContract.IDSystem",
+                                "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" as "OLD_ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                                "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                                "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                                "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" as "OLD__CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                                "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" as "OLD__CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                                "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" as "OLD__InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+                                "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                                "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+                "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+                "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                                "OLD"."DisclosedRefinancing" as "OLD_DisclosedRefinancing",
+                                "OLD"."IndemnificationAgreement" as "OLD_IndemnificationAgreement",
+                                "OLD"."IndemnificationPercentage" as "OLD_IndemnificationPercentage",
+                                "OLD"."MaximumAssumedLiabilityAmount" as "OLD_MaximumAssumedLiabilityAmount",
+                                "OLD"."MaximumAssumedLiabilityAmountCurrency" as "OLD_MaximumAssumedLiabilityAmountCurrency",
+                                "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                                "OLD"."RefinancedAmountInPositionCurrency" as "OLD_RefinancedAmountInPositionCurrency",
+                                "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                                "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                                "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                                "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                                "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::RefinancingRelation" as "OLD"
+            on
+                ( case when "IN"."RefinancingType" is null then '' else "IN"."RefinancingType" end ) = "OLD"."RefinancingType" and
+                ( case when "IN"."ASSOC_RefinancedContract.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancedContract.FinancialContractID" end ) = "OLD"."ASSOC_RefinancedContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancedContract.IDSystem" is null then '' else "IN"."ASSOC_RefinancedContract.IDSystem" end ) = "OLD"."ASSOC_RefinancedContract.IDSystem" and
+                ( case when "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" and
+                ( case when "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" and
+                ( case when "IN"."ASSOC_RefinancingContract.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancingContract.FinancialContractID" end ) = "OLD"."ASSOC_RefinancingContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancingContract.IDSystem" is null then '' else "IN"."ASSOC_RefinancingContract.IDSystem" end ) = "OLD"."ASSOC_RefinancingContract.IDSystem" and
+                ( case when "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" and
+                ( case when "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" and
+                ( case when "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null then '' else "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" end ) = "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" and
+                ( case when "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null then '' else "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" end ) = "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" and
+                ( case when "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null then '' else "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" end ) = "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "BusinessValidFrom" > "NX_" )
+            UNION ALL
+        (
+            select
+            "OLD_RefinancingType" as "RefinancingType",
+            "OLD_ASSOC_RefinancedContract.FinancialContractID" as "ASSOC_RefinancedContract.FinancialContractID",
+            "OLD_ASSOC_RefinancedContract.IDSystem" as "ASSOC_RefinancedContract.IDSystem",
+            "OLD_ASSOC_RefinancedPositionCurrency.PositionCurrency" as "ASSOC_RefinancedPositionCurrency.PositionCurrency",
+            "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD_ASSOC_RefinancingContract.FinancialContractID" as "ASSOC_RefinancingContract.FinancialContractID",
+            "OLD_ASSOC_RefinancingContract.IDSystem" as "ASSOC_RefinancingContract.IDSystem",
+            "OLD_ASSOC_RefinancingPositionCurrency.PositionCurrency" as "ASSOC_RefinancingPositionCurrency.PositionCurrency",
+            "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+            "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+            "OLD__CollectionOfRefinancedSecuritiesHolding.CollectionID" as "_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+            "OLD__CollectionOfRefinancedSecuritiesHolding.IDSystem" as "_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+            "OLD__InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" as "_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+            "BusinessValidTo" as "BusinessValidFrom",
+            "OLD_BusinessValidTo" as "BusinessValidTo",
+            "OLD_DisclosedRefinancing" as "DisclosedRefinancing",
+            "OLD_IndemnificationAgreement" as "IndemnificationAgreement",
+            "OLD_IndemnificationPercentage" as "IndemnificationPercentage",
+            "OLD_MaximumAssumedLiabilityAmount" as "MaximumAssumedLiabilityAmount",
+            "OLD_MaximumAssumedLiabilityAmountCurrency" as "MaximumAssumedLiabilityAmountCurrency",
+            "OLD_PositionCurrency" as "PositionCurrency",
+            "OLD_RefinancedAmountInPositionCurrency" as "RefinancedAmountInPositionCurrency",
+            "OLD_SourceSystemID" as "SourceSystemID",
+            "OLD_ChangeTimestampInSourceSystem" as "ChangeTimestampInSourceSystem",
+            "OLD_ChangingUserInSourceSystem" as "ChangingUserInSourceSystem",
+            "OLD_ChangingProcessType" as "ChangingProcessType",
+            "OLD_ChangingProcessID" as "ChangingProcessID"
+            from
+            (
+                select
+                lead("IN"."BusinessValidFrom", 1, "OLD"."BusinessValidTo")
+                over ( partition by
+                        "IN"."RefinancingType",
+                        "IN"."ASSOC_RefinancedContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancedContract.IDSystem",
+                        "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."ASSOC_RefinancingContract.FinancialContractID",
+                        "IN"."ASSOC_RefinancingContract.IDSystem",
+                        "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                        "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                        "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom"
+                order by "IN"."BusinessValidFrom") AS "NY_",
+                "IN"."BusinessValidTo",
+                        "OLD"."RefinancingType" as "OLD_RefinancingType",
+                        "OLD"."ASSOC_RefinancedContract.FinancialContractID" as "OLD_ASSOC_RefinancedContract.FinancialContractID",
+                        "OLD"."ASSOC_RefinancedContract.IDSystem" as "OLD_ASSOC_RefinancedContract.IDSystem",
+                        "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" as "OLD_ASSOC_RefinancedPositionCurrency.PositionCurrency",
+                        "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."ASSOC_RefinancingContract.FinancialContractID" as "OLD_ASSOC_RefinancingContract.FinancialContractID",
+                        "OLD"."ASSOC_RefinancingContract.IDSystem" as "OLD_ASSOC_RefinancingContract.IDSystem",
+                        "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" as "OLD_ASSOC_RefinancingPositionCurrency.PositionCurrency",
+                        "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" as "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID",
+                        "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" as "OLD_ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem",
+                        "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" as "OLD__CollectionOfRefinancedSecuritiesHolding.CollectionID",
+                        "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" as "OLD__CollectionOfRefinancedSecuritiesHolding.IDSystem",
+                        "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" as "OLD__InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID",
+                        "OLD"."BusinessValidFrom" as "OLD_BusinessValidFrom",
+                        "OLD"."BusinessValidTo" as "OLD_BusinessValidTo",
+            "OLD"."SystemValidFrom" as "OLD_SystemValidFrom",
+            "OLD"."SystemValidTo" as "OLD_SystemValidTo",
+                        "OLD"."DisclosedRefinancing" as "OLD_DisclosedRefinancing",
+                        "OLD"."IndemnificationAgreement" as "OLD_IndemnificationAgreement",
+                        "OLD"."IndemnificationPercentage" as "OLD_IndemnificationPercentage",
+                        "OLD"."MaximumAssumedLiabilityAmount" as "OLD_MaximumAssumedLiabilityAmount",
+                        "OLD"."MaximumAssumedLiabilityAmountCurrency" as "OLD_MaximumAssumedLiabilityAmountCurrency",
+                        "OLD"."PositionCurrency" as "OLD_PositionCurrency",
+                        "OLD"."RefinancedAmountInPositionCurrency" as "OLD_RefinancedAmountInPositionCurrency",
+                        "OLD"."SourceSystemID" as "OLD_SourceSystemID",
+                        "OLD"."ChangeTimestampInSourceSystem" as "OLD_ChangeTimestampInSourceSystem",
+                        "OLD"."ChangingUserInSourceSystem" as "OLD_ChangingUserInSourceSystem",
+                        "OLD"."ChangingProcessType" as "OLD_ChangingProcessType",
+                        "OLD"."ChangingProcessID" as "OLD_ChangingProcessID"
+            from :row as "IN"
+            inner join "sap.fsdm::RefinancingRelation" as "OLD"
+            on
+                ( case when "IN"."RefinancingType" is null then '' else "IN"."RefinancingType" end ) = "OLD"."RefinancingType" and
+                ( case when "IN"."ASSOC_RefinancedContract.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancedContract.FinancialContractID" end ) = "OLD"."ASSOC_RefinancedContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancedContract.IDSystem" is null then '' else "IN"."ASSOC_RefinancedContract.IDSystem" end ) = "OLD"."ASSOC_RefinancedContract.IDSystem" and
+                ( case when "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.PositionCurrency" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.PositionCurrency" and
+                ( case when "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_RefinancedPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" and
+                ( case when "IN"."ASSOC_RefinancingContract.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancingContract.FinancialContractID" end ) = "OLD"."ASSOC_RefinancingContract.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancingContract.IDSystem" is null then '' else "IN"."ASSOC_RefinancingContract.IDSystem" end ) = "OLD"."ASSOC_RefinancingContract.IDSystem" and
+                ( case when "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.PositionCurrency" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.PositionCurrency" and
+                ( case when "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.FinancialContractID" and
+                ( case when "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" is null then '' else "IN"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" end ) = "OLD"."ASSOC_RefinancingPositionCurrency.ASSOC_MultiCcyAccnt.IDSystem" and
+                ( case when "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" is null then '' else "IN"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" end ) = "OLD"."_CollectionOfRefinancedSecuritiesHolding.CollectionID" and
+                ( case when "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" is null then '' else "IN"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" end ) = "OLD"."_CollectionOfRefinancedSecuritiesHolding.IDSystem" and
+                ( case when "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" is null then '' else "IN"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" end ) = "OLD"."_InstrumentOfRefinancedSecuritiesHolding.FinancialInstrumentID" 
+            where
+                         ( "IN"."BusinessValidFrom" < "OLD"."BusinessValidTo" and "IN"."BusinessValidTo" > "OLD"."BusinessValidFrom" ) or
+                         ( "IN"."BusinessValidFrom" = "OLD"."BusinessValidFrom" and "IN"."BusinessValidTo" = "OLD"."BusinessValidTo" ))
+        where "NY_" = "OLD_BusinessValidTo" and "OLD_BusinessValidTo" > "BusinessValidTo"));
+
+
+
+END

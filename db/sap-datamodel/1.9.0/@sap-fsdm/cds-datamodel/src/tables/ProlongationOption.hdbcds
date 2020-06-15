@@ -1,0 +1,69 @@
+namespace "sap"."fsdm";
+
+using "sap"."fsdm"::"FinancialContract";
+
+entity "ProlongationOption" {
+    key "SequenceNumber"                             : Integer;
+    key "ASSOC_FinancialContract"                    : association to FinancialContract {
+                                                                                          FinancialContractID,
+                                                                                          IDSystem
+                                                                                        } not null;
+    key "BusinessValidFrom"                          : LocalDate;
+    key "BusinessValidTo"                            : LocalDate;
+        "SystemValidFrom"                            : UTCTimestamp                       not null;
+        "SystemValidTo"                              : UTCTimestamp                       not null;
+        "AdditionalTermLength"                       : Decimal(34, 6);
+        "AdditionalTermLengthTimeUnit"               : String(12);
+        "AutomaticProlongation"                      : Boolean;
+        "AutomaticProlongationTriggerPeriodLength"   : Decimal(34, 6);
+        "AutomaticProlongationTriggerPeriodTimeUnit" : String(12);
+        "BeginOfExercisePeriod"                      : LocalDate;
+        "BusinessCalendar"                           : String(10);
+        "BusinessDayConvention"                      : String(40);
+        "EndOfExercisePeriod"                        : LocalDate;
+        "NoticePeriodLength"                         : Integer;
+        "NoticePeriodTimeUnit"                       : String(12);
+        "ProlongationOptionType"                     : String(40);
+        "ProlongationRightHolder"                    : String(50);
+        "SourceSystemID"                             : String(128);
+        "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+        "ChangingUserInSourceSystem"                 : String(128);
+        "ChangingProcessType"                        : String(40);
+        "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};
+
+entity "ProlongationOption_Historical" {
+    "SequenceNumber"                             : Integer                            not null;
+    "ASSOC_FinancialContract"                    : association to FinancialContract {
+                                                                                      FinancialContractID,
+                                                                                      IDSystem
+                                                                                    } not null;
+    "BusinessValidFrom"                          : LocalDate                          not null;
+    "BusinessValidTo"                            : LocalDate                          not null;
+    "SystemValidFrom"                            : UTCTimestamp                       not null;
+    "SystemValidTo"                              : UTCTimestamp                       not null;
+    "AdditionalTermLength"                       : Decimal(34, 6);
+    "AdditionalTermLengthTimeUnit"               : String(12);
+    "AutomaticProlongation"                      : Boolean;
+    "AutomaticProlongationTriggerPeriodLength"   : Decimal(34, 6);
+    "AutomaticProlongationTriggerPeriodTimeUnit" : String(12);
+    "BeginOfExercisePeriod"                      : LocalDate;
+    "BusinessCalendar"                           : String(10);
+    "BusinessDayConvention"                      : String(40);
+    "EndOfExercisePeriod"                        : LocalDate;
+    "NoticePeriodLength"                         : Integer;
+    "NoticePeriodTimeUnit"                       : String(12);
+    "ProlongationOptionType"                     : String(40);
+    "ProlongationRightHolder"                    : String(50);
+    "SourceSystemID"                             : String(128);
+    "ChangeTimestampInSourceSystem"              : UTCTimestamp;
+    "ChangingUserInSourceSystem"                 : String(128);
+    "ChangingProcessType"                        : String(40);
+    "ChangingProcessID"                          : String(128);
+}
+technical configuration {
+    column store;
+};

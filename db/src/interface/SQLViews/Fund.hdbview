@@ -1,0 +1,62 @@
+view "sap.fsdm.SQLViews::Fund_View" 
+as select
+      "FundID" ,
+      "_InvestmentCorporation.BusinessPartnerID" ,
+      "BusinessValidFrom" ,
+      "BusinessValidTo" ,
+      "SystemValidFrom" ,
+      "SystemValidTo" ,
+      "AssetClass" ,
+      "BaseCurrency" ,
+      "Benchmark" ,
+      "CustodianBank" ,
+      "CutoffTime" ,
+      "CutoffTimeZone" ,
+      "Domicile" ,
+      "FinancialYearEnd" ,
+      "FundFamily" ,
+      "FundManagingInstitution" ,
+      "FundName" ,
+      "FundType" ,
+      "InvestmentStyle" ,
+      "LaunchDate" ,
+      "NAVCalculationPeriodLength" ,
+      "NAVCalculationTimeUnit" ,
+      "NAVDayBeforeCutoffTime" ,
+      "PortfolioManagingInstitution" ,
+      "RegulatoryAuthority" ,
+      "ReplicationType" ,
+      "SwingPricingMechanism" ,
+      "SourceSystemID" ,
+      "ChangeTimestampInSourceSystem" ,
+      "ChangingUserInSourceSystem" ,
+      "ChangingProcessType" ,
+      "ChangingProcessID" 
+  
+from "sap.fsdm::Fund"
+with associations
+(
+	join "sap.fsdm.SQLViews::ClassificationOfFund_View" as "_ClassificationOfFund__Fund"
+	  on "FundID" = "_ClassificationOfFund__Fund"."_Fund.FundID" AND 
+	     "_InvestmentCorporation.BusinessPartnerID" = "_ClassificationOfFund__Fund"."_Fund._InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialContract_View" as "_FinancialContract__Fund"
+	  on "FundID" = "_FinancialContract__Fund"."_Fund.FundID" AND 
+	     "_InvestmentCorporation.BusinessPartnerID" = "_FinancialContract__Fund"."_Fund._InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FinancialInstrument_View" as "_FinancialInstrument__Fund"
+	  on "FundID" = "_FinancialInstrument__Fund"."_Fund.FundID" AND 
+	     "_InvestmentCorporation.BusinessPartnerID" = "_FinancialInstrument__Fund"."_Fund._InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::BusinessPartner_View" as "_InvestmentCorporation"
+	  on "_InvestmentCorporation"."BusinessPartnerID" = "_InvestmentCorporation.BusinessPartnerID"
+	     ,
+	join "sap.fsdm.SQLViews::FundComposition_View" as "_FundComposition__Fund"
+	  on "_InvestmentCorporation.BusinessPartnerID" = "_FundComposition__Fund"."_Fund._InvestmentCorporation.BusinessPartnerID" AND 
+	     "FundID" = "_FundComposition__Fund"."_Fund.FundID"
+	     ,
+	join "sap.fsdm.SQLViews::Valuation_View" as "_Valuation__Fund"
+	  on "FundID" = "_Valuation__Fund"."_Fund.FundID" AND 
+	     "_InvestmentCorporation.BusinessPartnerID" = "_Valuation__Fund"."_Fund._InvestmentCorporation.BusinessPartnerID"
+	     
+);
