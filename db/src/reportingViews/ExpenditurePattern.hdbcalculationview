@@ -1,0 +1,86 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" id="reportingViews::ExpenditurePattern" applyPrivilegeType="NONE" dataCategory="CUBE" schemaVersion="3.0" defaultClient="$$client$$" outputViewType="Aggregation" cacheInvalidationPeriod="NONE" enforceSqlExecution="false">
+<descriptions defaultDescription="ExpenditurePattern"/>
+<localVariables>
+  <variable id="I_SYSTEM_TIMESTAMP" parameter="true">
+    <descriptions defaultDescription=" System Versioning Timestamp"/>
+    <variableProperties datatype="TIMESTAMP" length="0" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="empty"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+</localVariables>
+<variableMappings>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::Settlement_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::Settlement_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+</variableMappings>
+<dataSources>
+  <DataSource id="views::Settlement_View" type="TABLE_FUNCTION">
+    <resourceUri>views::Settlement_View</resourceUri>
+  </DataSource>
+</dataSources>
+<calculationViews>
+  <calculationView xsi:type="Calculation:ProjectionView" id="Settlement" filterExpressionLanguage="SQL">
+    <viewAttributes>
+      <viewAttribute id="TransactionType">
+        <descriptions defaultDescription="TransactionType"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionAmount" aggregationType="sum">
+        <descriptions defaultDescription="TransactionAmount"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionCurrency">
+        <descriptions defaultDescription="TransactionCurrency"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionPlace">
+        <descriptions defaultDescription="TransactionPlace"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::Settlement_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionType" source="TransactionType"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionAmount" source="TransactionAmount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionCurrency" source="TransactionCurrency"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionPlace" source="TransactionPlace"/>
+    </input>
+    <filter>&quot;TransactionType&quot; = 'Cash Withdrwal' or &quot;TransactionType&quot; = 'Cash Transfer' or &quot;TransactionType&quot; = 'Monthly Installment'</filter>
+  </calculationView>
+</calculationViews>
+<logicalModel id="Settlement">
+  <attributes>
+    <attribute id="TransactionCurrency" order="2" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="TransactionCurrency"/>
+      <keyMapping columnObjectName="Settlement" columnName="TransactionCurrency"/>
+    </attribute>
+    <attribute id="TransactionPlace" order="3" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="TransactionPlace"/>
+      <keyMapping columnObjectName="Settlement" columnName="TransactionPlace"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <baseMeasures>
+    <measure id="TransactionAmount" order="1" aggregationType="sum" measureType="simple">
+      <descriptions defaultDescription="TransactionAmount"/>
+      <measureMapping columnObjectName="Settlement" columnName="TransactionAmount"/>
+    </measure>
+  </baseMeasures>
+  <calculatedMeasures/>
+  <restrictedMeasures/>
+  <localDimensions/>
+</logicalModel>
+<layout>
+  <shapes>
+    <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+      <upperLeftCorner x="40" y="85"/>
+    </shape>
+  
+    <shape expanded="true" modelObjectName="Settlement" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="100" y="213"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+  </shapes>
+</layout>
+</Calculation:scenario>

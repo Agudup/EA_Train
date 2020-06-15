@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" id="reportingViews::BusinessPartnerRating" applyPrivilegeType="NONE" dataCategory="CUBE" dimensionType="STANDARD" schemaVersion="3.0" defaultClient="$$client$$" outputViewType="Aggregation" cacheInvalidationPeriod="NONE" enforceSqlExecution="false">
+<descriptions defaultDescription="BusinessPartnerRating"/>
+<localVariables>
+  <variable id="I_BUSINESS_DATE" parameter="true">
+    <descriptions defaultDescription="Business Date"/>
+    <variableProperties datatype="DATE" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="Date"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+  <variable id="I_SYSTEM_TIMESTAMP" parameter="true">
+    <descriptions defaultDescription="System Versioning Timestamp"/>
+    <variableProperties datatype="TIMESTAMP" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="empty"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+</localVariables>
+<variableMappings>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartner_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::BusinessPartner_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartner_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::BusinessPartner_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::Address_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::Address_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::Address_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::Address_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+</variableMappings>
+<dataSources>
+  <DataSource id="views::BusinessPartner_View" type="TABLE_FUNCTION">
+    <resourceUri>views::BusinessPartner_View</resourceUri>
+  </DataSource>
+  <DataSource id="views::Address_View" type="TABLE_FUNCTION">
+    <resourceUri>views::Address_View</resourceUri>
+  </DataSource>
+</dataSources>
+<calculationViews>
+  <calculationView xsi:type="Calculation:ProjectionView" id="BusinessPartner">
+    <viewAttributes>
+      <viewAttribute id="DateOfBirth">
+        <descriptions defaultDescription="DateOfBirth"/>
+      </viewAttribute>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="GivenName">
+        <descriptions defaultDescription="GivenName"/>
+      </viewAttribute>
+      <viewAttribute id="LastName">
+        <descriptions defaultDescription="LastName"/>
+      </viewAttribute>
+      <viewAttribute id="EducationLevel">
+        <descriptions defaultDescription="EducationLevel"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes>
+      <calculatedViewAttribute id="Age" datatype="INTEGER" expressionLanguage="SQL">
+        <formula>TO_INT(TO_INT(DAYS_BETWEEN( to_date(&quot;DateOfBirth&quot;) , NOW()) / 365)/10) * 10</formula>
+      </calculatedViewAttribute>
+    </calculatedViewAttributes>
+    <restrictedViewAttributes/>
+    <input node="views::BusinessPartner_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="DateOfBirth" source="DateOfBirth"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="GivenName" source="GivenName"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="LastName" source="LastName"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="EducationLevel" source="EducationLevel"/>
+    </input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:ProjectionView" id="Address">
+    <viewAttributes>
+      <viewAttribute id="Country">
+        <descriptions defaultDescription="Country"/>
+      </viewAttribute>
+      <viewAttribute id="City">
+        <descriptions defaultDescription="City"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_BusinessPartnerID_BusinessPartnerID">
+        <descriptions defaultDescription="ASSOC_BusinessPartnerID_BusinessPartnerID"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes>
+      <calculatedViewAttribute id="CountryName" datatype="VARCHAR" length="20" expressionLanguage="COLUMN_ENGINE">
+        <formula>if(&quot;Country&quot; = 'DE', 'Germany', if(&quot;Country&quot; =  'CZ', 'Czech Republic', if(&quot;Country&quot; = 'DK', 'Denmark', if(&quot;Country&quot; = 'FR', 'France', if(&quot;Country&quot; = 'GR', 'Greece', if(&quot;Country&quot; = 'IT', 'Italy', ''))))))</formula>
+      </calculatedViewAttribute>
+    </calculatedViewAttributes>
+    <restrictedViewAttributes/>
+    <input node="views::Address_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="Country" source="Country"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="City" source="City"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_BusinessPartnerID_BusinessPartnerID" source="ASSOC_BusinessPartnerID_BusinessPartnerID"/>
+    </input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:JoinView" id="BPandAddress" joinType="inner">
+    <viewAttributes>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="GivenName">
+        <descriptions defaultDescription="GivenName"/>
+      </viewAttribute>
+      <viewAttribute id="LastName">
+        <descriptions defaultDescription="LastName"/>
+      </viewAttribute>
+      <viewAttribute id="Age" aggregationType="sum">
+        <descriptions defaultDescription="Age"/>
+      </viewAttribute>
+      <viewAttribute id="City">
+        <descriptions defaultDescription="City"/>
+      </viewAttribute>
+      <viewAttribute id="CountryName">
+        <descriptions defaultDescription="CountryName"/>
+      </viewAttribute>
+    
+      <viewAttribute id="Country">
+        <descriptions defaultDescription="Country"/>
+      </viewAttribute>
+    
+      <viewAttribute id="EducationLevel">
+        <descriptions defaultDescription="EducationLevel"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes>
+      <calculatedViewAttribute id="CountOfBusinessPartner" datatype="INTEGER" expressionLanguage="SQL">
+        <formula>1</formula>
+      </calculatedViewAttribute>
+    </calculatedViewAttributes>
+    <restrictedViewAttributes/>
+    <input node="BusinessPartner">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="GivenName" source="GivenName"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="LastName" source="LastName"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="Age" source="Age"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="EducationLevel" source="EducationLevel"/>
+    </input>
+    <input node="Address">
+      <mapping xsi:type="Calculation:AttributeMapping" target="City" source="City"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="CountryName" source="CountryName"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="Country" source="Country"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="ASSOC_BusinessPartnerID_BusinessPartnerID"/>
+    </input>
+    <joinAttribute name="BusinessPartnerID"/>
+  </calculationView>
+</calculationViews>
+<logicalModel id="BPandAddress">
+  <attributes>
+    <attribute id="BusinessPartnerID" order="1" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="BusinessPartnerID"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="BusinessPartnerID"/>
+    </attribute>
+    <attribute id="GivenName" order="2" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="GivenName"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="GivenName"/>
+    </attribute>
+    <attribute id="LastName" order="3" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="LastName"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="LastName"/>
+    </attribute>
+    <attribute id="Age" order="4" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="Age"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="Age"/>
+    </attribute>
+    <attribute id="City" order="5" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="City"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="City"/>
+    </attribute>
+    <attribute id="CountryName" order="7" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="CountryName"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="CountryName"/>
+    </attribute>
+  
+    <attribute id="Country" hidden="true" order="8" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="Country"/>
+  
+      <keyMapping columnObjectName="BPandAddress" columnName="Country"/>
+  
+    </attribute>
+    <attribute id="EducationLevel" order="10" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="EducationLevel"/>
+      <keyMapping columnObjectName="BPandAddress" columnName="EducationLevel"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes>
+    <calculatedAttribute id="BPRatingGroup" order="6" semanticType="empty" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="BPRatingGroup"/>
+      <keyCalculation datatype="NVARCHAR" expressionLanguage="COLUMN_ENGINE" length="3">
+        <formula>if(&quot;EducationLevel&quot; = 'Bachelor', if(&quot;Age&quot; = 20, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), if(&quot;Age&quot; = 30, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), if(&quot;Age&quot; = 40, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), 'CC'))), if(&quot;EducationLevel&quot; = '9thGrade', if(&quot;Age&quot; = 20, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), if(&quot;Age&quot; = 30, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), if(&quot;Age&quot; = 40, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), 'CC'))), if(&quot;EducationLevel&quot; = 'HighSchool', if(&quot;Age&quot; = 20, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), if(&quot;Age&quot; = 30, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), if(&quot;Age&quot; = 40, if( &quot;Country&quot; = 'ZAF', 'AAA', if(&quot;Country&quot; = 'ITA', 'BBB', if(&quot;Country&quot; = 'DEU', 'A', if(&quot;Country&quot; = 'GRC', 'D', if(&quot;Country&quot; = 'RUS', 'BB', if(&quot;Country&quot; = 'IND', 'AA', 'AA')))))), 'CC'))),'CC')))</formula>
+      </keyCalculation>
+    </calculatedAttribute>
+  </calculatedAttributes>
+  <baseMeasures>
+    <measure id="CountOfBusinessPartner" order="9" aggregationType="sum" measureType="simple">
+      <descriptions defaultDescription="CountOfBusinessPartner"/>
+      <measureMapping columnObjectName="BPandAddress" columnName="CountOfBusinessPartner"/>
+    </measure>
+  </baseMeasures>
+  <calculatedMeasures/>
+  <restrictedMeasures/>
+
+  <localDimensions/>
+</logicalModel>
+<layout>
+  <shapes>
+    <shape expanded="false" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+      <upperLeftCorner x="108" y="105"/>
+    
+      <rectangleSize width="140"/>
+    </shape>
+  
+    <shape expanded="true" modelObjectName="BusinessPartner" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="10" y="370"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Address" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="240" y="373"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="BPandAddress" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="126" y="222"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape modelObjectName="BusinessPartner" modelObjectNameSpace="BPandAddress" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="20" y="30"/>
+      <rectangleSize width="250"/>
+    </shape>
+    <shape modelObjectName="Address" modelObjectNameSpace="BPandAddress" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="320" y="30"/>
+      <rectangleSize width="320"/>
+    </shape>
+  </shapes>
+</layout>
+</Calculation:scenario>

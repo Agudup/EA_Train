@@ -1,0 +1,272 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" id="reportingViews::WebAccounts" applyPrivilegeType="NONE" dataCategory="CUBE" schemaVersion="3.0" outputViewType="Aggregation" cacheInvalidationPeriod="NONE" enforceSqlExecution="false">
+<descriptions defaultDescription="WebAccounts"/>
+<localVariables>
+  <variable id="I_BUSINESS_DATE" parameter="true">
+    <descriptions defaultDescription=" Business Date"/>
+    <variableProperties datatype="DATE" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="Date"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+  <variable id="I_SYSTEM_TIMESTAMP" parameter="true">
+    <descriptions defaultDescription=" System Versioning Timestamp"/>
+    <variableProperties datatype="TIMESTAMP" length="0" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="empty"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+</localVariables>
+<variableMappings>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::WebAccount_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::WebAccount_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::WebAccount_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::WebAccount_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartner_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::BusinessPartner_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartner_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::BusinessPartner_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="reportingViews::BusinessPartnerCount">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="reportingViews::BusinessPartnerCount"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="reportingViews::BusinessPartnerCount">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="reportingViews::BusinessPartnerCount"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+</variableMappings>
+<dataSources>
+  <DataSource id="views::WebAccount_View" type="TABLE_FUNCTION">
+    <resourceUri>views::WebAccount_View</resourceUri>
+  </DataSource>
+  <DataSource id="views::BusinessPartner_View" type="TABLE_FUNCTION">
+    <resourceUri>views::BusinessPartner_View</resourceUri>
+  </DataSource>
+  <DataSource id="reportingViews::BusinessPartnerCount">
+    <resourceUri>reportingViews::BusinessPartnerCount</resourceUri>
+  </DataSource>
+</dataSources>
+<calculationViews>
+  <calculationView xsi:type="Calculation:ProjectionView" id="WebAccount">
+    <viewAttributes>
+      <viewAttribute id="ASSOC_Partner_BusinessPartnerID">
+        <descriptions defaultDescription="ASSOC_Partner_BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="WebAccountProvider">
+        <descriptions defaultDescription="WebAccountProvider"/>
+      </viewAttribute>
+    
+      <viewAttribute id="C_ActivityLevel">
+        <descriptions defaultDescription="C_ActivityLevel"/>
+      </viewAttribute></viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::WebAccount_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_Partner_BusinessPartnerID" source="ASSOC_Partner_BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="WebAccountProvider" source="WebAccountProvider"/>
+    
+      <mapping xsi:type="Calculation:AttributeMapping" target="C_ActivityLevel" source="C_ActivityLevel"/></input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:ProjectionView" id="BusinessPartner">
+    <viewAttributes>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="DateOfBirth">
+        <descriptions defaultDescription="DateOfBirth"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes>
+      <calculatedViewAttribute id="AgeBand" datatype="INTEGER" expressionLanguage="SQL">
+        <formula>TO_INT(TO_INT(DAYS_BETWEEN( &quot;DateOfBirth&quot; , NOW()) / 365)/10) * 10</formula>
+      </calculatedViewAttribute>
+    
+      <calculatedViewAttribute id="NumberOfCustomer" datatype="INTEGER" expressionLanguage="SQL">
+    
+        <formula>1</formula>
+    
+      </calculatedViewAttribute>
+    </calculatedViewAttributes>
+    <restrictedViewAttributes/>
+    <input node="views::BusinessPartner_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="DateOfBirth" source="DateOfBirth"/>
+    </input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:JoinView" id="Join_1" cardinality="CN_N" joinType="inner">
+    <viewAttributes>
+      <viewAttribute id="WebAccountProvider">
+        <descriptions defaultDescription="WebAccountProvider"/>
+      </viewAttribute>
+      <viewAttribute id="AgeBand" aggregationType="sum">
+        <descriptions defaultDescription="AgeBand"/>
+      </viewAttribute>
+      <viewAttribute id="BPCount" aggregationType="sum">
+        <descriptions defaultDescription="BPCount"/>
+      </viewAttribute>
+      <viewAttribute id="NumberOfCustomer" aggregationType="sum">
+        <descriptions defaultDescription="Count"/>
+      </viewAttribute>
+      <viewAttribute id="C_ActivityLevel">
+        <descriptions defaultDescription="C_ActivityLevel"/>
+      </viewAttribute>
+      <viewAttribute hidden="true" id="JOIN$ASSOC_Partner_BusinessPartnerID$BusinessPartnerID"/>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="Join_2">
+      <mapping xsi:type="Calculation:AttributeMapping" target="WebAccountProvider" source="WebAccountProvider"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="BPCount" source="BPCount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="C_ActivityLevel" source="C_ActivityLevel"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_Partner_BusinessPartnerID$BusinessPartnerID" source="ASSOC_Partner_BusinessPartnerID"/>
+    </input>
+    <input node="BusinessPartner">
+      <mapping xsi:type="Calculation:AttributeMapping" target="AgeBand" source="AgeBand"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="NumberOfCustomer" source="NumberOfCustomer"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_Partner_BusinessPartnerID$BusinessPartnerID" source="BusinessPartnerID"/>
+    </input>
+    <joinAttribute name="JOIN$ASSOC_Partner_BusinessPartnerID$BusinessPartnerID"/>
+  </calculationView>
+  <calculationView xsi:type="Calculation:JoinView" id="Join_2">
+    <viewAttributes>
+      <viewAttribute id="WebAccountProvider">
+        <descriptions defaultDescription="WebAccountProvider"/>
+      </viewAttribute>
+      <viewAttribute id="BPCount" aggregationType="sum">
+        <descriptions defaultDescription="BPCount"/>
+      </viewAttribute>
+      <viewAttribute id="C_ActivityLevel">
+        <descriptions defaultDescription="C_ActivityLevel"/>
+      </viewAttribute>
+    
+    
+    
+      <viewAttribute id="ASSOC_Partner_BusinessPartnerID">
+        <descriptions defaultDescription="ASSOC_Partner_BusinessPartnerID"/>
+      </viewAttribute></viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="WebAccount">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_Partner_BusinessPartnerID" source="ASSOC_Partner_BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="WebAccountProvider" source="WebAccountProvider"/>
+    
+      <mapping xsi:type="Calculation:AttributeMapping" target="C_ActivityLevel" source="C_ActivityLevel"/></input>
+    <input node="Count">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BPCount" source="BPCount"/>
+    </input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:ProjectionView" id="Count">
+    <viewAttributes>
+      <viewAttribute id="BPCount" aggregationType="sum">
+        <descriptions defaultDescription="BPCount"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="reportingViews::BusinessPartnerCount">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BPCount" source="BPCount"/>
+    </input>
+  </calculationView>
+</calculationViews>
+<logicalModel id="Join_1">
+  <attributes>
+    <attribute id="WebAccountProvider" order="1" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="WebAccountProvider"/>
+      <keyMapping columnObjectName="Join_1" columnName="WebAccountProvider"/>
+    </attribute>
+    <attribute id="AgeBand" order="2" semanticType="empty" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="AgeBand"/>
+      <keyMapping columnObjectName="Join_1" columnName="AgeBand"/>
+    </attribute>
+  
+    <attribute id="BPCount" order="4" semanticType="empty" displayAttribute="false" attributeHierarchyActive="false" hidden="true">
+      <descriptions defaultDescription="BPCount"/>
+  
+      <keyMapping columnObjectName="Join_1" columnName="BPCount"/>
+  
+    </attribute>
+  
+    <attribute id="C_ActivityLevel" order="5" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="C_ActivityLevel"/>
+  
+      <keyMapping columnObjectName="Join_1" columnName="C_ActivityLevel"/>
+  
+    </attribute></attributes>
+  <calculatedAttributes/>
+  <baseMeasures>
+    <measure id="Count" hidden="true" order="6" aggregationType="sum" measureType="simple">
+      <descriptions defaultDescription="Count"/>
+      <measureMapping columnObjectName="Join_1" columnName="NumberOfCustomer"/>
+    </measure>
+  </baseMeasures>
+  <calculatedMeasures>
+    <measure id="NumberOfCustomer" order="3" aggregationType="sum" measureType="simple" datatype="INTEGER" expressionLanguage="SQL">
+      <descriptions defaultDescription="NumberOfCustomer"/>
+      <formula>(&quot;Count&quot;)</formula>
+      
+      
+      
+      
+      
+      </measure>
+  </calculatedMeasures>
+  <restrictedMeasures/>
+  <localDimensions/>
+</logicalModel>
+<layout>
+  <shapes>
+    <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+      <upperLeftCorner x="363" y="112"/>
+    
+      <rectangleSize width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="WebAccount" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="281" y="536"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="BusinessPartner" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="388" y="376"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="363" y="217"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape modelObjectName="Join_2" modelObjectNameSpace="Join_1" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="20" y="30"/>
+      <rectangleSize width="264"/>
+    </shape>
+    <shape modelObjectName="BusinessPartner" modelObjectNameSpace="Join_1" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="320" y="30"/>
+      <rectangleSize width="250"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Join_2" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="126" y="376"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape modelObjectName="WebAccount" modelObjectNameSpace="Join_2" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="20" y="30"/>
+      <rectangleSize width="264"/>
+    </shape>
+    <shape modelObjectName="Count" modelObjectNameSpace="Join_2" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="320" y="30"/>
+      <rectangleSize width="250"/>
+    </shape>
+  
+  
+    <shape expanded="true" modelObjectName="Count" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="91" y="536"/>
+      <rectangleSize height="30" width="140"/>
+    </shape></shapes>
+</layout>
+</Calculation:scenario>

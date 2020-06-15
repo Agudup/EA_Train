@@ -1,0 +1,476 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" id="reportingViews::CustomerClsfn" applyPrivilegeType="NONE" dataCategory="CUBE" schemaVersion="3.0" defaultClient="$$client$$" outputViewType="Aggregation" cacheInvalidationPeriod="NONE" enforceSqlExecution="false">
+<descriptions defaultDescription="CustomerClsfn"/>
+<localVariables>
+  <variable id="I_BUSINESS_DATE" parameter="true">
+    <descriptions defaultDescription="Business Date"/>
+    <variableProperties datatype="DATE" mandatory="true">
+      <valueDomain type="Date"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+  <variable id="I_SYSTEM_TIMESTAMP" parameter="true">
+    <descriptions defaultDescription="System Versioning Timestamp"/>
+    <variableProperties datatype="TIMESTAMP" mandatory="true">
+      <valueDomain type="empty"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+</localVariables>
+<variableMappings>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartner_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::BusinessPartner_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartner_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::BusinessPartner_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::FinancialContract_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::FinancialContract_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::FinancialContract_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::FinancialContract_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::Settlement_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::Settlement_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartnerContractAssignment_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::BusinessPartnerContractAssignment_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::BusinessPartnerContractAssignment_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::BusinessPartnerContractAssignment_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+</variableMappings>
+<dataSources>
+  <DataSource id="views::BusinessPartner_View" type="TABLE_FUNCTION">
+    <resourceUri>views::BusinessPartner_View</resourceUri>
+  </DataSource>
+  <DataSource id="views::FinancialContract_View" type="TABLE_FUNCTION">
+    <resourceUri>views::FinancialContract_View</resourceUri>
+  </DataSource>
+  <DataSource id="views::Settlement_View" type="TABLE_FUNCTION">
+    <resourceUri>views::Settlement_View</resourceUri>
+  </DataSource>
+  <DataSource id="views::BusinessPartnerContractAssignment_View" type="TABLE_FUNCTION">
+    <resourceUri>views::BusinessPartnerContractAssignment_View</resourceUri>
+  </DataSource>
+</dataSources>
+<calculationViews>
+  <calculationView xsi:type="Calculation:ProjectionView" id="BP" filterExpressionLanguage="SQL">
+    <viewAttributes>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+    
+      <viewAttribute id="BusinessPartnerCategory">
+        <descriptions defaultDescription="BusinessPartnerCategory"/>
+      </viewAttribute>
+    
+      <viewAttribute id="DateOfBirth">
+        <descriptions defaultDescription="DateOfBirth"/>
+      </viewAttribute>
+      <viewAttribute id="EducationLevel">
+        <descriptions defaultDescription="EducationLevel"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::BusinessPartner_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+    
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerCategory" source="BusinessPartnerCategory"/>
+    
+      <mapping xsi:type="Calculation:AttributeMapping" target="DateOfBirth" source="DateOfBirth"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="EducationLevel" source="EducationLevel"/>
+    </input>
+    <filter>&quot;BusinessPartnerCategory&quot; = 'Individual'</filter>
+  </calculationView>
+  <calculationView xsi:type="Calculation:ProjectionView" id="FC">
+    <viewAttributes>
+      <viewAttribute id="FinancialContractType">
+        <descriptions defaultDescription="FinancialContractType"/>
+      </viewAttribute>
+      <viewAttribute id="FinancialContractCategory">
+        <descriptions defaultDescription="FinancialContractCategory"/>
+      </viewAttribute>
+    
+      <viewAttribute id="IDSystem">
+        <descriptions defaultDescription="IDSystem"/>
+      </viewAttribute>
+      <viewAttribute id="FinancialContractID">
+        <descriptions defaultDescription="FinancialContractID"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::FinancialContract_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="FinancialContractType" source="FinancialContractType"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="FinancialContractCategory" source="FinancialContractCategory"/>
+    
+      <mapping xsi:type="Calculation:AttributeMapping" target="IDSystem" source="IDSystem"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="FinancialContractID" source="FinancialContractID"/>
+    </input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:JoinView" id="Join_1" joinType="inner">
+    <viewAttributes>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionAmount" aggregationType="sum">
+        <descriptions defaultDescription="TransactionAmount"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionCurrency">
+        <descriptions defaultDescription="TransactionCurrency"/>
+      </viewAttribute>
+      <viewAttribute id="FinancialContractCategory">
+        <descriptions defaultDescription="FinancialContractCategory"/>
+      </viewAttribute>
+      <viewAttribute id="BTCount" aggregationType="sum">
+        <descriptions defaultDescription="BTCount"/>
+      </viewAttribute>
+      <viewAttribute id="AgeBand" aggregationType="sum">
+        <descriptions defaultDescription="AgeBand"/>
+      </viewAttribute>
+      <viewAttribute id="EducationLevel">
+        <descriptions defaultDescription="EducationLevel"/>
+      </viewAttribute>
+      <viewAttribute id="FinancialContractType">
+        <descriptions defaultDescription="FinancialContractType"/>
+      </viewAttribute>
+      <viewAttribute hidden="true" id="JOIN$ASSOC_FinancialContract_FinancialContractID$FinancialContractID"/>
+      <viewAttribute hidden="true" id="JOIN$ASSOC_FinancialContract_IDSystem$IDSystem"/>
+    </viewAttributes>
+    <calculatedViewAttributes>
+      <calculatedViewAttribute id="Count" datatype="INTEGER" expressionLanguage="SQL">
+        <formula>1</formula>
+      </calculatedViewAttribute>
+    </calculatedViewAttributes>
+    <restrictedViewAttributes/>
+    <input node="Aggregation_1">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionAmount" source="TransactionAmount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionCurrency" source="TransactionCurrency"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="BTCount" source="BTCount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="AgeBand" source="AgeBand"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="EducationLevel" source="EducationLevel"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_FinancialContract_FinancialContractID$FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_FinancialContract_IDSystem$IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+    </input>
+    <input node="FC">
+      <mapping xsi:type="Calculation:AttributeMapping" target="FinancialContractCategory" source="FinancialContractCategory"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="FinancialContractType" source="FinancialContractType"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_FinancialContract_FinancialContractID$FinancialContractID" source="FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_FinancialContract_IDSystem$IDSystem" source="IDSystem"/>
+    </input>
+    <joinAttribute name="JOIN$ASSOC_FinancialContract_FinancialContractID$FinancialContractID"/>
+    <joinAttribute name="JOIN$ASSOC_FinancialContract_IDSystem$IDSystem"/>
+  </calculationView>
+  <calculationView xsi:type="Calculation:AggregationView" id="Aggregation_1">
+    <viewAttributes>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionAmount" aggregationType="sum">
+        <descriptions defaultDescription="TransactionAmount"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionCurrency">
+        <descriptions defaultDescription="TransactionCurrency"/>
+      </viewAttribute>
+      <viewAttribute id="BTCount" aggregationType="sum">
+        <descriptions defaultDescription="BTCount"/>
+      </viewAttribute>
+      <viewAttribute id="AgeBand">
+        <descriptions defaultDescription="AgeBand"/>
+      </viewAttribute>
+      <viewAttribute id="EducationLevel">
+        <descriptions defaultDescription="EducationLevel"/>
+      </viewAttribute>
+    
+    
+      <viewAttribute keepFlag="true" id="ASSOC_FinancialContract_FinancialContractID">
+        <descriptions defaultDescription="ASSOC_FinancialContract_FinancialContractID"/>
+      </viewAttribute>
+      <viewAttribute keepFlag="true" id="ASSOC_FinancialContract_IDSystem">
+        <descriptions defaultDescription="ASSOC_FinancialContract_IDSystem"/>
+      </viewAttribute></viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="Settlement_BPCA_BP">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionAmount" source="TransactionAmount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionCurrency" source="TransactionCurrency"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="BTCount" source="BTCount"/>
+    
+      <mapping xsi:type="Calculation:AttributeMapping" target="AgeBand" source="AgeBand"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="EducationLevel" source="EducationLevel"/>
+    </input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:JoinView" id="Settlement_BPCA_BP" joinType="inner">
+    <viewAttributes>
+      <viewAttribute id="BusinessPartnerID">
+        <descriptions defaultDescription="BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_FinancialContract_IDSystem">
+        <descriptions defaultDescription="ASSOC_FinancialContract_IDSystem"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_FinancialContract_FinancialContractID">
+        <descriptions defaultDescription="ASSOC_FinancialContract_FinancialContractID"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionAmount" aggregationType="sum">
+        <descriptions defaultDescription="TransactionAmount"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionCurrency">
+        <descriptions defaultDescription="TransactionCurrency"/>
+      </viewAttribute>
+      <viewAttribute id="EducationLevel">
+        <descriptions defaultDescription="EducationLevel"/>
+      </viewAttribute>
+      <viewAttribute id="DateOfBirth">
+        <descriptions defaultDescription="DateOfBirth"/>
+      </viewAttribute>
+      <viewAttribute hidden="true" id="JOIN$ASSOC_PartnerInParticipation_BusinessPartnerID$BusinessPartnerID"/>
+    </viewAttributes>
+    <calculatedViewAttributes>
+      <calculatedViewAttribute id="BTCount" datatype="INTEGER" expressionLanguage="SQL">
+        <formula>1</formula>
+      </calculatedViewAttribute>
+    
+      <calculatedViewAttribute id="AgeBand" datatype="INTEGER" expressionLanguage="SQL">
+    
+        <formula>TO_INT(TO_INT(DAYS_BETWEEN( &quot;DateOfBirth&quot; , NOW()) / 365)/10) * 10</formula>
+    
+      </calculatedViewAttribute>
+    </calculatedViewAttributes>
+    <restrictedViewAttributes/>
+    <input node="Setlement_BPCA">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionAmount" source="TransactionAmount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionCurrency" source="TransactionCurrency"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_PartnerInParticipation_BusinessPartnerID$BusinessPartnerID" source="ASSOC_PartnerInParticipation_BusinessPartnerID"/>
+    </input>
+    <input node="BP">
+      <mapping xsi:type="Calculation:AttributeMapping" target="BusinessPartnerID" source="BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="DateOfBirth" source="DateOfBirth"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="EducationLevel" source="EducationLevel"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="JOIN$ASSOC_PartnerInParticipation_BusinessPartnerID$BusinessPartnerID" source="BusinessPartnerID"/>
+    </input>
+    <joinAttribute name="JOIN$ASSOC_PartnerInParticipation_BusinessPartnerID$BusinessPartnerID"/>
+  </calculationView>
+  <calculationView xsi:type="Calculation:JoinView" id="Setlement_BPCA" joinType="inner">
+    <viewAttributes>
+      <viewAttribute id="ASSOC_FinancialContract_IDSystem">
+        <descriptions defaultDescription="ASSOC_FinancialContract_IDSystem"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_FinancialContract_FinancialContractID">
+        <descriptions defaultDescription="ASSOC_FinancialContract_FinancialContractID"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionAmount" aggregationType="sum">
+        <descriptions defaultDescription="TransactionAmount"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionCurrency">
+        <descriptions defaultDescription="TransactionCurrency"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_PartnerInParticipation_BusinessPartnerID">
+        <descriptions defaultDescription="ASSOC_PartnerInParticipation_BusinessPartnerID"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="Settlement">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionAmount" source="TransactionAmount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionCurrency" source="TransactionCurrency"/></input>
+    <input node="BPCA">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_PartnerInParticipation_BusinessPartnerID" source="ASSOC_PartnerInParticipation_BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+    </input>
+    <joinAttribute name="ASSOC_FinancialContract_FinancialContractID"/>
+    <joinAttribute name="ASSOC_FinancialContract_IDSystem"/>
+  </calculationView>
+  <calculationView xsi:type="Calculation:ProjectionView" id="Settlement">
+    <viewAttributes>
+      <viewAttribute id="ASSOC_FinancialContract_IDSystem">
+        <descriptions defaultDescription="ASSOC_FinancialContract_IDSystem"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_FinancialContract_FinancialContractID">
+        <descriptions defaultDescription="ASSOC_FinancialContract_FinancialContractID"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionAmount" aggregationType="sum">
+        <descriptions defaultDescription="TransactionAmount"/>
+      </viewAttribute>
+      <viewAttribute id="TransactionCurrency">
+        <descriptions defaultDescription="TransactionCurrency"/>
+      </viewAttribute></viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::Settlement_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionAmount" source="TransactionAmount"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="TransactionCurrency" source="TransactionCurrency"/></input>
+  </calculationView>
+  <calculationView xsi:type="Calculation:ProjectionView" id="BPCA" filterExpressionLanguage="SQL">
+    <viewAttributes>
+      <viewAttribute id="ASSOC_PartnerInParticipation_BusinessPartnerID">
+        <descriptions defaultDescription="ASSOC_PartnerInParticipation_BusinessPartnerID"/>
+      </viewAttribute>
+    
+      <viewAttribute id="ASSOC_FinancialContract_FinancialContractID">
+        <descriptions defaultDescription="ASSOC_FinancialContract_FinancialContractID"/>
+      </viewAttribute>
+      <viewAttribute id="ASSOC_FinancialContract_IDSystem">
+        <descriptions defaultDescription="ASSOC_FinancialContract_IDSystem"/>
+      </viewAttribute>
+      <viewAttribute id="Role">
+        <descriptions defaultDescription="Role"/>
+      </viewAttribute>
+      <viewAttribute id="MainCounterparty">
+        <descriptions defaultDescription="MainCounterparty"/>
+      </viewAttribute></viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::BusinessPartnerContractAssignment_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="Role" source="Role"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="MainCounterparty" source="MainCounterparty"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_IDSystem" source="ASSOC_FinancialContract_IDSystem"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_FinancialContract_FinancialContractID" source="ASSOC_FinancialContract_FinancialContractID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_PartnerInParticipation_BusinessPartnerID" source="ASSOC_PartnerInParticipation_BusinessPartnerID"/>
+    </input>
+    <filter>&quot;Role&quot; = 'AccountHolder'</filter>
+  </calculationView>
+</calculationViews>
+<logicalModel id="Join_1">
+  <attributes>
+    <attribute id="BusinessPartnerID" order="1" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="BusinessPartnerID"/>
+      <keyMapping columnObjectName="Join_1" columnName="BusinessPartnerID"/>
+    </attribute>
+    <attribute id="TransactionCurrency" order="2" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="TransactionCurrency"/>
+      <keyMapping columnObjectName="Join_1" columnName="TransactionCurrency"/>
+    </attribute>
+    <attribute id="FinancialContractCategory" order="3" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="FinancialContractCategory"/>
+      <keyMapping columnObjectName="Join_1" columnName="FinancialContractCategory"/>
+    </attribute>
+  
+    <attribute id="AgeBand" order="7" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="AgeBand"/>
+  
+      <keyMapping columnObjectName="Join_1" columnName="AgeBand"/>
+  
+    </attribute>
+    <attribute id="EducationLevel" order="8" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="EducationLevel"/>
+      <keyMapping columnObjectName="Join_1" columnName="EducationLevel"/>
+    </attribute>
+  
+    <attribute id="FinancialStandardProduct" order="9" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="FinancialContractType"/>
+  
+      <keyMapping columnObjectName="Join_1" columnName="FinancialContractType"/>
+  
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <baseMeasures>
+    <measure id="FinancialStandardProductCount" order="4" aggregationType="sum" measureType="simple">
+      <descriptions defaultDescription="FinancialStandardProductCount"/>
+      <measureMapping columnObjectName="Join_1" columnName="Count"/>
+    </measure>
+    <measure id="BTCount" order="5" aggregationType="sum" measureType="simple">
+      <descriptions defaultDescription="BTCount"/>
+      <measureMapping columnObjectName="Join_1" columnName="BTCount"/>
+    </measure>
+  
+    <measure id="TransactionAmount" order="6" aggregationType="sum" measureType="simple" hidden="true">
+      <descriptions defaultDescription="TransactionAmount"/>
+      <measureMapping columnObjectName="Join_1" columnName="TransactionAmount"/>
+    </measure></baseMeasures>
+  <calculatedMeasures/>
+  <restrictedMeasures/>
+  <localDimensions/>
+</logicalModel>
+<layout>
+  <shapes>
+    <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+      <upperLeftCorner x="297" y="112"/>
+    
+      <rectangleSize width="140"/>
+    </shape>
+  
+    <shape expanded="true" modelObjectName="BP" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="371" y="562"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="FC" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="179" y="337"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Join_1" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="297" y="217"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape modelObjectName="Aggregation_1" modelObjectNameSpace="Join_1" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="20" y="30"/>
+      <rectangleSize width="318"/>
+    </shape>
+    <shape modelObjectName="FC" modelObjectNameSpace="Join_1" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="422" y="33"/>
+      <rectangleSize width="397"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Aggregation_1" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="369" y="337"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Settlement_BPCA_BP" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="306" y="442"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape modelObjectName="Setlement_BPCA" modelObjectNameSpace="Settlement_BPCA_BP" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="20" y="30"/>
+      <rectangleSize width="332"/>
+    </shape>
+    <shape modelObjectName="BP" modelObjectNameSpace="Settlement_BPCA_BP" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="462" y="52"/>
+      <rectangleSize width="250"/>
+    </shape>
+    <shape expanded="true" modelObjectName="Setlement_BPCA" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="115" y="562"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+    <shape modelObjectName="Settlement" modelObjectNameSpace="Setlement_BPCA" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="20" y="30"/>
+      <rectangleSize width="317"/>
+    </shape>
+    <shape modelObjectName="BPCA" modelObjectNameSpace="Setlement_BPCA" modelObjectType="JoinNodeInput">
+      <upperLeftCorner x="417" y="33"/>
+      <rectangleSize width="332"/>
+    </shape>
+  
+  
+  
+    <shape expanded="true" modelObjectName="Settlement" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="92" y="682"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+  
+    <shape expanded="true" modelObjectName="BPCA" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="282" y="682"/>
+      <rectangleSize height="30" width="140"/>
+    </shape></shapes>
+</layout>
+</Calculation:scenario>

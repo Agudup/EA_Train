@@ -1,0 +1,105 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Calculation:scenario xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns:Calculation="http://www.sap.com/ndb/BiModelCalculation.ecore" xmlns:Variable="http://www.sap.com/ndb/BiModelVariable.ecore" id="reportingViews::BusinessPartnerCount" applyPrivilegeType="NONE" dataCategory="CUBE" schemaVersion="3.0" outputViewType="Aggregation" cacheInvalidationPeriod="NONE" enforceSqlExecution="false">
+<descriptions defaultDescription="BusinessPartnerCount"/>
+<localVariables>
+  <variable id="I_BUSINESS_DATE" parameter="true">
+    <descriptions defaultDescription="Business Date"/>
+    <variableProperties datatype="DATE" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="empty"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+  <variable id="I_SYSTEM_TIMESTAMP" parameter="true">
+    <descriptions defaultDescription="System Versioning Timestamp "/>
+    <variableProperties datatype="TIMESTAMP" length="0" mandatory="true" defaultExpressionLanguage="COLUMN_ENGINE">
+      <valueDomain type="empty"/>
+      <selection multiLine="false" type="Single"/>
+      <defaultRange lowValue="format(utcnow(), &apos;yyyy-mm-dd hh24:mi:ss&apos;)" lowExpression="true"/>
+    </variableProperties>
+  </variable>
+</localVariables>
+<variableMappings>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::WebAccount_View">
+    <targetVariable name="I_BUSINESS_DATE" resourceUri="views::WebAccount_View"/>
+    <localVariable>I_BUSINESS_DATE</localVariable>
+  </mapping>
+  <mapping xsi:type="Variable:VariableMapping" dataSource="views::WebAccount_View">
+    <targetVariable name="I_SYSTEM_TIMESTAMP" resourceUri="views::WebAccount_View"/>
+    <localVariable>I_SYSTEM_TIMESTAMP</localVariable>
+  </mapping>
+</variableMappings>
+<dataSources>
+  <DataSource id="views::WebAccount_View" type="TABLE_FUNCTION">
+    <resourceUri>views::WebAccount_View</resourceUri>
+  </DataSource>
+</dataSources>
+<calculationViews>
+  <calculationView xsi:type="Calculation:ProjectionView" id="WebAccount">
+    <viewAttributes>
+      <viewAttribute id="ASSOC_Partner_BusinessPartnerID">
+        <descriptions defaultDescription="ASSOC_Partner_BusinessPartnerID"/>
+      </viewAttribute>
+      <viewAttribute id="WebAccountProvider">
+        <descriptions defaultDescription="WebAccountProvider"/>
+      </viewAttribute>
+      <viewAttribute id="AccountName">
+        <descriptions defaultDescription="AccountName"/>
+      </viewAttribute>
+    </viewAttributes>
+    <calculatedViewAttributes/>
+    <restrictedViewAttributes/>
+    <input node="views::WebAccount_View">
+      <mapping xsi:type="Calculation:AttributeMapping" target="ASSOC_Partner_BusinessPartnerID" source="ASSOC_Partner_BusinessPartnerID"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="WebAccountProvider" source="WebAccountProvider"/>
+      <mapping xsi:type="Calculation:AttributeMapping" target="AccountName" source="AccountName"/>
+    </input>
+  </calculationView>
+</calculationViews>
+<logicalModel id="WebAccount">
+  <attributes>
+    <attribute id="ASSOC_Partner_BusinessPartnerID" hidden="true" order="2" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="ASSOC_Partner_BusinessPartnerID"/>
+      <keyMapping columnObjectName="WebAccount" columnName="ASSOC_Partner_BusinessPartnerID"/>
+    </attribute>
+    <attribute id="WebAccountProvider" hidden="true" order="3" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="WebAccountProvider"/>
+      <keyMapping columnObjectName="WebAccount" columnName="WebAccountProvider"/>
+    </attribute>
+    <attribute id="AccountName" hidden="true" order="4" displayAttribute="false" attributeHierarchyActive="false">
+      <descriptions defaultDescription="AccountName"/>
+      <keyMapping columnObjectName="WebAccount" columnName="AccountName"/>
+    </attribute>
+  </attributes>
+  <calculatedAttributes/>
+  <baseMeasures/>
+  <calculatedMeasures>
+    <measure id="BPCount" order="1" aggregationType="sum" measureType="simple" calculatedMeasureType="counter" aggregatable="true" datatype="INTEGER">
+      <descriptions defaultDescription="BPCount"/>
+      <exceptionAggregation>
+        <attribute attributeName="ASSOC_Partner_BusinessPartnerID"/>
+        <attribute attributeName="WebAccountProvider"/>
+        <attribute attributeName="AccountName"/>
+      </exceptionAggregation>
+      <formula>1</formula>
+      
+      
+      </measure>
+  </calculatedMeasures>
+  <restrictedMeasures/>
+  <localDimensions/>
+</logicalModel>
+<layout>
+  <shapes>
+    <shape expanded="true" modelObjectName="Output" modelObjectNameSpace="MeasureGroup">
+      <upperLeftCorner x="92" y="112"/>
+    
+      <rectangleSize width="140"/>
+    </shape>
+    <shape expanded="true" modelObjectName="WebAccount" modelObjectNameSpace="CalculationView">
+      <upperLeftCorner x="92" y="217"/>
+      <rectangleSize height="30" width="140"/>
+    </shape>
+  </shapes>
+</layout>
+</Calculation:scenario>
